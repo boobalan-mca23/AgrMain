@@ -26,7 +26,7 @@ import AgrNewJobCard from "./AgrNewJobCard";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
-
+import './JobCard.css'
 function JobCardDetails() {
   const { id, name } = useParams();
   const [jobCards, setJobCards] = useState([]);
@@ -441,6 +441,9 @@ const handleFilterJobCard=(id,index)=>{
         onClose={handleCloseJobcard}
         fullWidth
         maxWidth="md"
+         PaperProps={{
+        className: "jobcard-dialog-paper",
+       }}
       >
         <AgrNewJobCard
           description={description}

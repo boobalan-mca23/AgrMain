@@ -1,8 +1,5 @@
  /*  */
- .MuiDialog-paper {
-  min-width: 1500px; /* your desired width */
-}
-
+ 
 .tableCell{
   border-bottom: 1px solid black !important;
 }
