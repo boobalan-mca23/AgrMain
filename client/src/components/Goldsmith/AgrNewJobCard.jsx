@@ -291,6 +291,7 @@ function AgrNewJobCard({
                   className="select-small"
                   // disabled={isLoading || !isItemDeliveryEnabled}
                 >
+                  <option value="">Select</option>
                   {touchList.map((option) => (
                     <option key={option.id} value={option.touch}>
                       {option.touch}
@@ -429,6 +430,7 @@ function AgrNewJobCard({
                         rowSpan={item?.deduction.length || 1}
                         className="tableCell"
                       >
+
                         <select
                           value={item?.itemName}
                           onChange={(e) =>
@@ -441,6 +443,7 @@ function AgrNewJobCard({
                           className="select-small"
                           // disabled={isLoading || !isItemDeliveryEnabled}
                         >
+                          <option value="">Select</option>
                           {masterItems.map((option) => (
                             <option key={option.id} value={option?.itemName}>
                               {option?.itemName}
@@ -478,6 +481,7 @@ function AgrNewJobCard({
                           className="select-small"
                           // disabled={isLoading || !isItemDeliveryEnabled}
                         >
+                          <option value="">Select</option>
                           {touchList.map((option) => (
                             <option key={option.id} value={option.touch}>
                               {option.touch}
@@ -518,6 +522,7 @@ function AgrNewJobCard({
                               className="select-small"
                               // disabled={isLoading || !isItemDeliveryEnabled}
                             >
+                              <option value="">Select</option>
                               {stoneOptions.map((option) => (
                                 <option key={option} value={option}>
                                   {option}
@@ -589,6 +594,7 @@ function AgrNewJobCard({
                           className="select-small"
                           // disabled={isLoading || !isItemDeliveryEnabled}
                         >
+                          <option value="">Select</option>
                           {symbolOptions.map((symbol) => (
                             <option key={symbol} value={symbol}>
                               {symbol}
@@ -665,6 +671,7 @@ function AgrNewJobCard({
                                 className="select-small"
                                 // disabled={isLoading || !isItemDeliveryEnabled}
                               >
+                                <option value="">Select</option>
                                 {stoneOptions.map((option) => (
                                   <option key={option} value={option}>
                                     {option}
