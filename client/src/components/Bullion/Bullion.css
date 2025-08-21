@@ -1,0 +1,104 @@
+/* .bullion-container {
+    padding: 20px;
+
+  }
+  
+  .input-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+  
+  }
+  
+  .given-entry {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  
+  .given-input {
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+    gap: 8px;
+  }
+  .bullion-container table td {
+    vertical-align: top;
+  }
+   */
+
+
+
+
+
+
+
+
+   .bullion-container {
+  padding: 20px;
+}
+
+.input-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  /* Allow wrapping on smaller screens if needed */
+  flex-wrap: wrap;
+}
+
+.given-entry {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  background-color: #f5f5f5; /* Light background to visually separate entries */
+  padding: 8px;
+  border-radius: 4px;
+  align-items: center; /* Vertically align content */
+}
+
+/* Target typography directly within given-entry if needed, or rely on global Typography styles */
+.given-entry .MuiTypography-root {
+  font-size: 0.95rem; /* Slightly larger text for clarity */
+}
+
+
+.given-input {
+  display: flex;
+  /* Changed to flex-wrap to prevent overflow on smaller widths if many fields */
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+  gap: 12px; /* Increased gap for better spacing */
+}
+
+/* --- Styles for Input Fields within the Dialog --- */
+/* This targets the actual input element inside Material-UI's TextField */
+.MuiDialogContent-root .MuiTextField-root .MuiInputBase-input {
+  font-size: 1.1rem; /* Increase font size inside input fields */
+  padding: 12px 14px; /* Adjust padding for more vertical space */
+}
+
+/* Ensure TextField takes up reasonable space within flex containers */
+.MuiDialogContent-root .input-row .MuiTextField-root,
+.MuiDialogContent-root .given-input .MuiTextField-root {
+  flex-grow: 1; /* Allow them to grow */
+  min-width: 150px; /* Ensure a minimum width for inputs */
+  /* If you want all text fields to be roughly equal width in a row,
+     you can use flex: 1 1 0px; which means flex-grow, flex-shrink, basis 0 */
+}
+
+
+/* Basic table cell alignment */
+.bullion-container table td {
+  vertical-align: top;
+}
+
+/* Optional: Adjust table header specific styling */
+.bullion-container .MuiTableHead-root th {
+  white-space: nowrap; /* Prevent header text from wrapping too much */
+}
+
+/* Optional: Adjust table cell padding if needed for tighter display */
+.bullion-container .MuiTableCell-root {
+  padding: 8px 16px; /* Example: smaller padding */
+}

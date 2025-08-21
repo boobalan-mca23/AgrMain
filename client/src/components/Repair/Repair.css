@@ -1,0 +1,19 @@
+.repair-container {
+    padding: 20px;
+  }
+  
+  .weight-section {
+    margin-top: 20px;
+  }
+  
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .input-multiplication {
+    display: flex;
+    align-items: center;
+  }
+  
