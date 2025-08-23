@@ -38,12 +38,12 @@ function AgrNewJobCard({
   setItemDelivery,
   receivedMetalReturns,
   setReceivedMetalReturns,
-  masterItems,
-  touchList,
+  dropDownItems,
   openingBalance,
   jobCardLength,
   handleSaveJobCard,
   handleUpdateJobCard,
+  open,
   jobCardId,
 }) {
   const today = new Date().toLocaleDateString("en-IN");
@@ -131,6 +131,15 @@ function AgrNewJobCard({
         Number(totalDeduction(itemIndex, updated));
     }
     updated[itemIndex].finalPurity = recalculateFinalPurity(updated[itemIndex]);
+    setItemDelivery(updated);
+  };
+
+  const handlededuction= (index) => {
+    let newDeduction = { type: "", weight: "" };
+
+    let updated = [...itemDelivery];
+    updated[index].deduction.push(newDeduction);
+
     setItemDelivery(updated);
   };
 
@@ -227,6 +236,15 @@ function AgrNewJobCard({
   }, [givenGold, itemDelivery, receivedMetalReturns]);
   return (
     <>
+    <Dialog
+        open={open}
+        onClose={handleCloseJobcard}
+        fullWidth
+        maxWidth="md"
+         PaperProps={{
+        className: "jobcard-dialog-paper",
+       }}
+      >
       <DialogTitle className="dialogTitle" id="customized-dialog-title">
         <p>{edit ? "Edit JobCard" : "Add New JobCard"}</p>
         <IconButton
@@ -291,8 +309,9 @@ function AgrNewJobCard({
                   className="select-small"
                   // disabled={isLoading || !isItemDeliveryEnabled}
                 >
+                 
                   <option value="">Select</option>
-                  {touchList.map((option) => (
+                  {dropDownItems.touchList.map((option) => (
                     <option key={option.id} value={option.touch}>
                       {option.touch}
                     </option>
@@ -444,7 +463,7 @@ function AgrNewJobCard({
                           // disabled={isLoading || !isItemDeliveryEnabled}
                         >
                           <option value="">Select</option>
-                          {masterItems.map((option) => (
+                          {dropDownItems.masterItems.map((option) => (
                             <option key={option.id} value={option?.itemName}>
                               {option?.itemName}
                             </option>
@@ -482,7 +501,7 @@ function AgrNewJobCard({
                           // disabled={isLoading || !isItemDeliveryEnabled}
                         >
                           <option value="">Select</option>
-                          {touchList.map((option) => (
+                          {dropDownItems.touchList.map((option) => (
                             <option key={option.id} value={option.touch}>
                               {option.touch}
                             </option>
@@ -842,6 +861,7 @@ function AgrNewJobCard({
           Print
         </Button>
       </DialogActions>
+      </Dialog>
     </>
   );
 }
