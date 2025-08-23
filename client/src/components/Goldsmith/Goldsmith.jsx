@@ -69,6 +69,7 @@ const Goldsmith = () => {
   });
   const [open,setOpen]=useState(false)
   const [edit, setEdit] = useState(false);
+  const [lastJobCard,setLastJobCard]=useState({})
 
   useEffect(() => {
     const fetchGoldsmiths = async () => {
@@ -259,6 +260,7 @@ const handleCloseJobcard = () => {
               setReceivedMetalReturns(data.jobcard[0].received);
               setSelectedName(data.jobcard[0].goldsmith);
               setOpeningBalance(data.jobcard[0].total[0].openingBalance);
+              setLastJobCard(data.lastJobCard)
               setOpen(true);
               setEdit(true);
               setNoJobCard({});
@@ -428,6 +430,8 @@ const handleCloseJobcard = () => {
           open={open}
           handleCloseJobcard={handleCloseJobcard}
           handleUpdateJobCard={handleUpdateJobCard}
+          lastJobCardId={lastJobCard.jobcardId}
+          lastIsFinish={lastJobCard.isFinished}
         />
 
       <Dialog

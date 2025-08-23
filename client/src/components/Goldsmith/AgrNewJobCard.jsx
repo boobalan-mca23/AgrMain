@@ -45,6 +45,9 @@ function AgrNewJobCard({
   handleUpdateJobCard,
   open,
   jobCardId,
+  lastJobCardId,
+  lastIsFinish
+  
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
@@ -810,7 +813,17 @@ function AgrNewJobCard({
               </div>
             ))}
             <button
-              disabled={!edit}
+                disabled={
+                      edit
+                        ? !lastJobCardId
+                          ? true // If lastJobCard doesn't exist yet, disable the button
+                          : jobCardId !== lastJobCardId
+                          ? true
+                          : lastIsFinish === "false"
+                          ? false
+                          : true
+                        : true // if edit is false the button is disable in add new jobcard
+                    }
               onClick={() =>
                 setReceivedMetalReturns([
                   ...receivedMetalReturns,

@@ -486,6 +486,8 @@ const handleFilterJobCard=(id,index)=>{
           handleCloseJobcard={handleCloseJobcard}
           handleSaveJobCard={handleSaveJobCard}
           handleUpdateJobCard={handleUpdateJobCard}
+          lastJobCardId={jobCards?.at(-1)?.total[0]?.jobcardId}
+          lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
         />
       
       <ToastContainer
