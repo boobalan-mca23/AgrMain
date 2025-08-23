@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { join } = require("@prisma/client/runtime/library");
 const prisma = new PrismaClient();
 
 // helper function to update nextJobCardBalance
@@ -269,6 +270,27 @@ const updateJobCard = async (req, res) => {
     }
     await updateNextJobBalance(totalOfJobcard.id,goldSmithId) // update nextJobCardNBalance
 
+       if(totalOfJobcard.jobCardBalance===0 || totalOfJobcard.jobCardBalance<0){
+
+          const lastJobCard = await prisma.total.findFirst({
+        where: {
+             id:total?.id,
+             goldsmithId: parseInt(goldSmithId),
+             isFinished: "false",
+             }
+         });
+          if(lastJobCard!==null){
+            
+            await prisma.total.updateMany({where:{
+                    id:{lte:lastJobCard.id},
+                    goldsmithId:parseInt(goldSmithId)
+                  }
+                    ,data:{isFinished:"true"}})
+          }
+         
+
+    }
+
     const allJobCards = await prisma.jobcard.findMany({
       where: {
         goldsmithId: parseInt(goldSmithId),
@@ -418,10 +440,64 @@ const getJobCardById=async(req,res)=>{
        
      
   }
+  const formatDate = (dateString) => {
+    const [day, month, year] = dateString.split("/");
+    return `${year}-${month}-${day}`;
+  };
+  
+  const jobCardFilter = async (req, res) => {
+    const { fromDate, toDate } = req.query;
+    const { id } = req.params;
+    console.log('reqquery',req.query)
+  
+    try {
+      let whereCondition = {};
+  
+      // If id exists and not "null", add goldsmith filter
+      if (id && id !== "null") {
+        whereCondition.goldsmithId = parseInt(id);
+      }
+  
+      // If fromDate and toDate exist and not "null", add date filter
+      if (fromDate && toDate && fromDate !== "null" && toDate !== "null") {
+        const parsedFromDate = new Date(formatDate(fromDate));
+        const parsedToDate = new Date(formatDate(toDate));
+  
+        // Adjust toDate to include the entire day
+        parsedToDate.setHours(23, 59, 59, 999);
+  
+        if (isNaN(parsedFromDate.getTime()) || isNaN(parsedToDate.getTime())) {
+          return res.status(400).json({ error: "Invalid date format" });
+        }
+  
+        whereCondition.createdAt = {
+          gte: parsedFromDate,
+          lte: parsedToDate,
+        };
+      }
+  
+      // If both id = null and dates = null → whereCondition = {} (fetch all)
+      const filterJobCards = await prisma.jobcard.findMany({
+        where: whereCondition,
+        include: {
+          goldsmith:true,
+          givenGold: true,
+          deliveries: true,
+          total: true,
+         },
+      });
+  
+      res.json(filterJobCards);
+    } catch (error) {
+      console.error("Error filtering job cards:", error);
+      res.status(500).json({ error: "Something went wrong" });
+    }
+  };
 module.exports = {
   createJobcard,
   updateJobCard,
   getAllJobCardsByGoldsmithId,
   getJobCardById,
-  getPreviousJobCardBal
+  getPreviousJobCardBal,
+  jobCardFilter
 };
