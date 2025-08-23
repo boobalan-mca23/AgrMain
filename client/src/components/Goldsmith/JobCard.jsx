@@ -26,7 +26,7 @@ import AgrNewJobCard from "./AgrNewJobCard";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
-
+import './JobCard.css'
 function JobCardDetails() {
   const { id, name } = useParams();
   const [jobCards, setJobCards] = useState([]);
@@ -35,7 +35,6 @@ function JobCardDetails() {
   const [givenGold, setGivenGold] = useState([
     { weight: "", touch: "", purity: "" },
   ]);
-
   const [itemDelivery, setItemDelivery] = useState([
     {
       itemName: "",
@@ -48,11 +47,7 @@ function JobCardDetails() {
       finalPurity: "",
     },
   ]);
-
-
-  const [receivedMetalReturns, setReceivedMetalReturns] = useState([
-    { weight: "", touch: "", purity: "" },
-  ]);
+  const [receivedMetalReturns, setReceivedMetalReturns] = useState([{ weight: "", touch: "", purity: "" },]);
   const [dropDownItems,setDropDownItems]=useState({masterItems:[],touchList:[]})
   const [jobCardId,setJobCardId]=useState(0)
   const [jobCardIndex,setJobCardIndex]=useState(0)
@@ -294,7 +289,7 @@ const handleFilterJobCard=(id,index)=>{
               New Job Card
             </Button>
           </Box>
-          {jobCards.length === 0 ? (
+           {jobCards.length === 0 ? (
             <Paper elevation={0} sx={{ p: 4, textAlign: "center" }}>
               <Typography variant="h6" color="textSecondary">
                 No job cards found for this goldsmith
@@ -302,53 +297,68 @@ const handleFilterJobCard=(id,index)=>{
             </Paper>
           ) : (
             <Paper elevation={2} sx={{ overflowX: "auto" }}>
-              <Table sx={{ minWidth: 1500 }}>
-                <TableHead
-                  sx={{
-                    backgroundColor: "#e3f2fd",
-                    "& th": {
-                      backgroundColor: "#e3f2fd",
-                      color: "#0d47a1",
-                      fontWeight: "bold",
-                      fontSize: "1rem",
-                    },
-                  }}
+              <table>
+                <thead
+                className="jobCardThead"
                 >
-                  <TableRow>
-                    <TableCell rowSpan={2}>S.No</TableCell>
-                    <TableCell rowSpan={2}>Date</TableCell>
-                    <TableCell rowSpan={2}>Description</TableCell>
-                    <TableCell colSpan={4}>Given Gold</TableCell>
-                    <TableCell rowSpan={2}>Actions</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>ItemDate</TableCell>
-                    <TableCell>Weight</TableCell>
-                    <TableCell>Touch</TableCell>
-                    <TableCell>Purity</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+                  <tr>
+                    <td rowSpan={2}>S.No</td>
+                    <td rowSpan={2}>Date</td>
+                    <td rowSpan={2}>Description</td>
+                    <td colSpan={4}>Given Gold</td>
+                    <td colSpan={9}>Itm Delivery</td>
+                    <td rowSpan={2}>Balance</td>
+                    <td rowSpan={2}>Actions</td>
+                  </tr>
+                  <tr>
+                    <td>ItemDate</td>
+                    <td>Wt</td>
+                    <td>Touch</td>
+                    <td>Purity</td>
+                    <td>DlyDate</td>
+                    <td>Itme Name</td>
+                    <td>Wt</td>
+                    <td>tch</td>
+                    <td>
+                      Dedecution
+                     <td>type</td>
+                     <td>weight</td>
+                    </td>
+                    <td>NetWt</td>
+                    <td>wastageTyp</td>
+                    <td>wastageValue</td>
+                    <td>FinalPurity</td>
+                  </tr>
+               
+                </thead>
+                <tbody className="jobCardTbody">
                   {jobCards.map((job, jobIndex) => {
                     const given = job.givenGold;
+                    const deliveries=job.deliveries;
+                    const received=job.received;
+
                    
                     const maxRows =
                       Math.max(
                         given?.length,
+                        deliveries?.length,
+                        received?.length
                         
                       ) || 1;
 
                     return [...Array(maxRows)].map((_, i) => {
-                      const g = given?.[i] || {};
+                      const g = given?.[i] ||{};
+                      const d = deliveries?.[i] ||{};
+                      const r=received?.[i]||{}
                       
                       const total = job.total?.[0];
 
                       return (
-                        <TableRow key={`${job.id}-${i}`}>
+                        <tr key={`${job.id}-${i}`}>
                           {i === 0 && (
                             <>
-                              <TableCell rowSpan={maxRows}> {jobIndex + 1}</TableCell>
-                              <TableCell rowSpan={maxRows}>
+                              <td rowSpan={maxRows}> {jobIndex + 1}</td>
+                              <td rowSpan={maxRows}>
                                 {new Date(job.createdAt).toLocaleDateString(
                                   "en-GB",
                                   {
@@ -357,12 +367,12 @@ const handleFilterJobCard=(id,index)=>{
                                     year: "numeric",
                                   }
                                 )}
-                              </TableCell>
-                              <TableCell rowSpan={maxRows}>{job.description}</TableCell>
+                              </td>
+                              <td rowSpan={maxRows}>{job.description}</td>
                             </>
                           )}
 
-                          <TableCell>
+                          <td>
                             {g?.createdAt
                               ? new Date(g?.createdAt).toLocaleDateString(
                                   "en-GB",
@@ -373,16 +383,16 @@ const handleFilterJobCard=(id,index)=>{
                                   }
                                 )
                               : "-"}
-                          </TableCell>
+                          </td>
                          
-                          <TableCell>{Number(g?.weight)?.toFixed(3) || "-"}</TableCell>
+                          <td>{Number(g?.weight)?.toFixed(3) || "-"}</td>
                           {/* {i === 0 && (
                             <td rowSpan={maxRows}>{total?.givenWt || "-"}</td>
                           )} */}
-                          <TableCell>{g?.touch || "-"}</TableCell>
-                          <TableCell>{g?.purity || "-"}</TableCell>
-                          {/* <td>
-                            {" "}
+                          <td>{g?.touch || "-"}</td>
+                          <td>{g?.purity || "-"}</td>
+                          <td>
+                         
                             {d?.createdAt
                               ? new Date(d?.createdAt).toLocaleDateString(
                                   "en-GB",
@@ -393,24 +403,27 @@ const handleFilterJobCard=(id,index)=>{
                                   }
                                 )
                               : "-"}
-                          </td> */}
-                          {/* <td>{d?.itemName || "-"}</td>
-                          <td>{d?.sealName || "-"}</td>
-                          <td>{Number(d?.weight)?.toFixed(3) || "-"}</td> */}
-
-                          {/* {i === 0 && (
+                          </td>
+                          <td>{d?.itemName || "-"}</td>
+                          <td>{(d?.itemWeight) || "-"}</td>
+                          <td>{d?.touch || "-"}</td>
+                        
+                          <td>{d?.deduction && d?.deduction.length>=1?d?.deduction.map((ded,dedInd)=>(
+                            <tr>
+                           <td>{ded.type}</td>
+                           <td>{ded.weight}</td>
+                          </tr>)):(<>No stone</>)}</td>
+                          <td>{d?.netWeight || "-"}</td>
+                          <td>{d?.wastageType || "-"}</td>
+                          <td>{d?.wastageValue || "-"}</td>
+                          <td>{d?.finalPurity || "-"}</td>
+                          {i === 0 && (
                             <>
-                              <td rowSpan={maxRows}>
-                                {(total?.stoneWt).toFixed(3) ?? "-"}
-                              </td>
-                              <td rowSpan={maxRows}>
-                                {(total?.wastage).toFixed(3) ?? "-"}
-                              </td>
-                              <td rowSpan={maxRows}>
-                                {(total?.balance).toFixed(3) ?? "-"}
+                             <td rowSpan={maxRows}>
+                                {(total?.jobCardBalance).toFixed(3) ?? "-"}
                               </td>
                             </>
-                          )} */}
+                          )}
                           {/* <td>{r?.weight || "-"}</td>
                           <td>{r?.touch || "-"}</td> */}
 
@@ -427,7 +440,7 @@ const handleFilterJobCard=(id,index)=>{
                                 )}
                               </td> */}
 
-                              <TableCell rowSpan={maxRows}>
+                              <td rowSpan={maxRows}>
                                 <button
                                   style={{
                                     color: "white",
@@ -440,17 +453,17 @@ const handleFilterJobCard=(id,index)=>{
                                 >
                                   View
                                 </button>
-                              </TableCell>
+                              </td>
                             </>
                           )}
-                        </TableRow>
+                        </tr>
                       );
                     });
                   })}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </Paper>
-          )}
+          )} 
         </Paper>
       </Container>
     

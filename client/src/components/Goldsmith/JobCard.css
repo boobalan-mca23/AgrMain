@@ -1,0 +1,13 @@
+.jobCardThead{
+  background-color: cadetblue;
+  color: black;
+  
+}
+.jobCardThead tr td{
+    border:2px solid black ;
+    font-size: 1rem;
+    font-weight: bold;
+}
+.jobCardTbody tr td{
+    border:2px solid black ;
+}
