@@ -26,7 +26,7 @@ import AgrNewJobCard from "./AgrNewJobCard";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
-import './JobCard.css'
+
 function JobCardDetails() {
   const { id, name } = useParams();
   const [jobCards, setJobCards] = useState([]);
@@ -53,16 +53,15 @@ function JobCardDetails() {
   const [receivedMetalReturns, setReceivedMetalReturns] = useState([
     { weight: "", touch: "", purity: "" },
   ]);
-  const [masterItems, setMasterItems] = useState([]);
-  const [touchList, setTouchList] = useState([]);
+  const [dropDownItems,setDropDownItems]=useState({masterItems:[],touchList:[]})
   const [jobCardId,setJobCardId]=useState(0)
   const [jobCardIndex,setJobCardIndex]=useState(0)
-  const [openJobcardDialog, setOpenJobcardDialog] = useState(false);
+  const [open, setOpen] = useState(false);
   const [openingBalance, setOpeningBalance] = useState(0);
   const [edit, setEdit] = useState(false);
- 
+   
   const handleOpenJobcard = async () => {
-    setOpenJobcardDialog(true);
+    setOpen(true);
 
     try {
       const res = await axios.get(
@@ -78,7 +77,7 @@ function JobCardDetails() {
     }
   };
   const handleCloseJobcard = () => {
-    setOpenJobcardDialog(false);
+    setOpen(false);
     setEdit(false)
     setDescription("")
     setGivenGold([{ weight: "", touch: "", purity: "" }])
@@ -92,7 +91,7 @@ function JobCardDetails() {
       wastageValue: "",
       finalPurity: "",
     },])
-    setReceivedMetalReturns([ { weight: "", touch: "", purity: "" }])
+    setReceivedMetalReturns([])
   };
 
 
@@ -112,7 +111,7 @@ const handleFilterJobCard=(id,index)=>{
       JSON.parse(JSON.stringify(filteredJobcard[0]?.received || []))
     );
      setOpeningBalance(JSON.parse(JSON.stringify(filteredJobcard[0]?.total[0]?.openingBalance || 0)))
-     setOpenJobcardDialog(true);
+     setOpen(true);
      setEdit(true);
 }
 
@@ -199,7 +198,7 @@ const handleFilterJobCard=(id,index)=>{
       wastageValue: "",
       finalPurity: "",
     }])
-      setReceivedMetalReturns([{ weight: "", touch: "", purity: "" }])
+      setReceivedMetalReturns([])
       setJobCards(response.data.allJobCards)
       toast.success(response.data.message);
     } catch (err) {
@@ -224,12 +223,16 @@ const handleFilterJobCard=(id,index)=>{
     };
     const fetchMasterItems = async () => {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-items/`);
-      setMasterItems(res.data);
+      setDropDownItems((prev)=>({...prev,
+        masterItems:res.data
+      }))
     };
     const fetchTouch = async () => {
       try {
         const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
-        setTouchList(res.data);
+          setDropDownItems((prev)=>({...prev,
+          touchList:res.data
+      }))
       } catch (err) {
         console.error("Failed to fetch touch values", err);
       }
@@ -450,15 +453,7 @@ const handleFilterJobCard=(id,index)=>{
           )}
         </Paper>
       </Container>
-      <Dialog
-        open={openJobcardDialog}
-        onClose={handleCloseJobcard}
-        fullWidth
-        maxWidth="md"
-         PaperProps={{
-        className: "jobcard-dialog-paper",
-       }}
-      >
+    
         <AgrNewJobCard
           description={description}
           setDescription={setDescription}
@@ -468,20 +463,18 @@ const handleFilterJobCard=(id,index)=>{
           setItemDelivery={setItemDelivery}
           receivedMetalReturns={receivedMetalReturns}
           setReceivedMetalReturns={setReceivedMetalReturns}
-          masterItems={masterItems}
-          setMasterItems={setMasterItems}
-          touchList={touchList}
-          setTouchList={setTouchList}
+          dropDownItems={dropDownItems}
           openingBalance={openingBalance}
           name={name}
           edit={edit}
           jobCardLength={jobCardLength}
           jobCardId={jobCardId}
+          open={open}
           handleCloseJobcard={handleCloseJobcard}
           handleSaveJobCard={handleSaveJobCard}
           handleUpdateJobCard={handleUpdateJobCard}
         />
-      </Dialog>
+      
       <ToastContainer
         position="top-right"
         autoClose={2000}

@@ -1,4 +1,6 @@
- 
+ .jobcard-dialog-paper{
+    min-width: 1500px;
+}
  
 .tableCell{
   border-bottom: 1px solid black !important;

@@ -27,18 +27,48 @@ import "react-toastify/dist/ReactToastify.css";
 import "./Goldsmith.css";
 import { Link } from "react-router-dom";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
+import AgrNewJobCard from "./AgrNewJobCard";
+import axios from "axios";
 
 const Goldsmith = () => {
   const [goldsmith, setGoldsmith] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [description, setDescription] = useState("");
+  const [givenGold, setGivenGold] = useState([
+    { weight: "", touch: "", purity: "" },
+  ]);
 
+  const [itemDelivery, setItemDelivery] = useState([
+    {
+      itemName: "",
+      itemWeight: "",
+      touch: "",
+      deduction: [{ type: "", weight: "" }],
+      netWeight: "",
+      wastageType: "",
+      wastageValue: "",
+      finalPurity: "",
+    },
+  ]);
+
+  const [selectedName, setSelectedName] = useState({});
+  const [receivedMetalReturns, setReceivedMetalReturns] = useState([
+    { weight: "", touch: "", purity: "" },
+  ]);
+  const [dropDownItems,setDropDownItems]=useState({masterItems:[],touchList:[]})
+  const [jobCardError, setJobCardError] = useState({});
+  const [jobCardId, setJobCardId] = useState(null);
+  const [noJobCard, setNoJobCard] = useState({});
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState(null);
+  const [openingBalance, setOpeningBalance] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     address: "",
   });
+  const [open,setOpen]=useState(false)
+  const [edit, setEdit] = useState(false);
 
   useEffect(() => {
     const fetchGoldsmiths = async () => {
@@ -50,7 +80,27 @@ const Goldsmith = () => {
         console.error("Error fetching goldsmith data:", error);
       }
     };
+    const fetchMasterItems = async () => {
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-items/`);
+      setDropDownItems((prev)=>({...prev,
+        masterItems:res.data
+      }))
+    };
+    const fetchTouch = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+      setDropDownItems((prev)=>({...prev,
+          touchList:res.data
+      }))
+      } catch (err) {
+        console.error("Failed to fetch touch values", err);
+      }
+    };
+
+    fetchMasterItems();
+    fetchTouch();
     fetchGoldsmiths();
+
   }, []);
 
   const handleEditClick = (goldsmith) => {
@@ -100,9 +150,131 @@ const Goldsmith = () => {
       gs.address && gs.address.toLowerCase().includes(searchTerm.toLowerCase());
     return nameMatch || phoneMatch || addressMatch;
   });
+const handleCloseJobcard = () => {
+    setOpen(false);
+    setEdit(false)
+    setDescription("")
+    setGivenGold([{ weight: "", touch: "", purity: "" }])
+    setItemDelivery([{
+      itemName: "",
+      ItemWeight: "",
+      Touch: "",
+      deduction: [{ type: "", weight: "" }], 
+      netwt: "",
+      wastageType: "",
+      wastageValue: "",
+      finalPurity: "",
+    },])
+    setReceivedMetalReturns([])
+  };
+  const handleUpdateJobCard = async (
+    givenTotal,
+    deliveryTotal,
+    receivedTotal,
+    jobCardBalance,
+    openingBalance
+  ) => {
+    const payload = {
+      description,
+      givenGold,
+      itemDelivery,
+      receiveSection:receivedMetalReturns,
+      total: {
+        id:jobCardId,
+        givenTotal,
+        deliveryTotal,
+        receivedTotal,
+        jobCardBalance,
+        openingBalance
+      },
+    };
+   
+    try {
+      const response = await axios.put(
+        `${BACKEND_SERVER_URL}/api/assignments/${selectedName.id}/${jobCardId}`, // id is GoldSmith and jobCard id
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      handleCloseJobcard();
+      setGivenGold([{ weight: "", touch: "", purity: "" }])
+      setDescription("")
+      setItemDelivery( [{
+      itemName: "",
+      itemWeight: "",
+      touch: "",
+      deduction: [{ type: "", weight: "" }],
+      netWeight: "",
+      wastageType: "",
+      wastageValue: "",
+      finalPurity: "",
+    }])
+      setReceivedMetalReturns([])
+     
+      toast.success(response.data.message);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+  const handleJobCardId = (id) => {
+    const num = Number(id);
+    if (isNaN(num)) {
+      setJobCardError({ err: "Please Enter Vaild Input" });
+    } else {
+      setJobCardError({});
+      setJobCardId(num);
+    }
+  };
+  const handleSearch = () => {
+      if (!jobCardError.err && !isNaN(jobCardId) && jobCardId !== null) {
+        const fetchJobCardById = async () => {
+          try {
+            const res = await fetch(
+              `${BACKEND_SERVER_URL}/api/assignments/${jobCardId}/jobcard`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            const data = await res.json();
+            console.log('data',data)
+            if (res.status === 404) {
+              setOpen(false);
+              setEdit(false);
+              setNoJobCard({ err: "No Job Card For This Id" });
+            } else {
+              setDescription(data.jobcard[0].description) 
+              setGivenGold(data.jobcard[0].givenGold);
+              setItemDelivery(
+                data.jobcard[0].deliveries.length >= 1
+                  ? data.jobcard[0].deliveries
+                  : []
+              );
+           
+              setReceivedMetalReturns(data.jobcard[0].received);
+              setSelectedName(data.jobcard[0].goldsmith);
+              setOpeningBalance(data.jobcard[0].total[0].openingBalance);
+              setOpen(true);
+              setEdit(true);
+              setNoJobCard({});
+            }
+          } catch (err) {
+            toast.error(err.message);
+          }
+        };
+        fetchJobCardById();
+      }
+    };
 
   return (
-    <Container maxWidth="md">
+      <div className="homeContainer">
+
+     
       <Paper className="customer-details-container" elevation={3} sx={{ p: 3 }}>
         <Typography variant="h5" align="center" gutterBottom>
          Goldsmith Details
@@ -209,6 +381,54 @@ const Goldsmith = () => {
         </Table>
       </Paper>
 
+     <div className="customer-details-container">
+        <Typography variant="h6" gutterBottom>
+          Search Job Card
+        </Typography>
+        <div className="searchBox">
+          <div className="inputWithError">
+            <TextField
+              id="outlined-basic"
+              label="JobCard Id"
+              onChange={(e) => handleJobCardId(e.target.value)}
+              variant="outlined"
+              autoComplete="off"
+            />
+            {jobCardError.err && (
+              <p className="errorText">{jobCardError.err}</p>
+            )}
+            {noJobCard.err && <p className="errorText">{noJobCard.err}</p>}
+          </div>
+
+          <Button
+            className="searchBtn"
+            variant="contained"
+            onClick={handleSearch}
+            disabled={!!jobCardError.err}
+          >
+            Search
+          </Button>
+        </div>
+      </div>
+
+        <AgrNewJobCard
+          description={description}
+          setDescription={setDescription}
+          givenGold={givenGold}
+          setGivenGold={setGivenGold}
+          itemDelivery={itemDelivery}
+          setItemDelivery={setItemDelivery}
+          receivedMetalReturns={receivedMetalReturns}
+          setReceivedMetalReturns={setReceivedMetalReturns}
+          dropDownItems={dropDownItems}
+          openingBalance={openingBalance}
+          name={selectedName.name}
+          edit={edit}
+          jobCardId={jobCardId}
+          open={open}
+          handleCloseJobcard={handleCloseJobcard}
+          handleUpdateJobCard={handleUpdateJobCard}
+        />
 
       <Dialog
         open={openEditDialog}
@@ -256,8 +476,9 @@ const Goldsmith = () => {
         </DialogActions>
       </Dialog>
 
+
       <ToastContainer position="top-right" autoClose={3000} />
-    </Container>
+   </div>
   );
 };
 
