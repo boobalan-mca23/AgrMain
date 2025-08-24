@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Mastercustomer.css";
 import {
   Button,
@@ -19,6 +19,25 @@ function MasterCustomer() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [customers, setCustomers] = useState([]);
+
+  // ✅ Fetch customers on component mount
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
+        if (response.ok) {
+          const data = await response.json();
+          setCustomers(data); // assuming API returns an array of customers
+        } else {
+          console.error("Failed to fetch customers");
+        }
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -44,17 +63,17 @@ function MasterCustomer() {
     };
 
     try {
-     const response = await fetch(`${BACKEND_SERVER_URL}/api/customers/create`, {
-       method: "POST",
-       headers: {
-         "Content-Type": "application/json",
-       },
-       body: JSON.stringify(customerData),
-     });
+      const response = await fetch(`${BACKEND_SERVER_URL}/api/customers/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(customerData),
+      });
 
       if (response.ok) {
         const newCustomer = await response.json();
-        setCustomers((prev) => [...prev, newCustomer]);
+        setCustomers((prev) => [...prev, newCustomer]); // update state
         toast.success("Customer added successfully!");
         closeModal();
       } else {
