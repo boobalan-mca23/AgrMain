@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Mastergoldsmith.css";
 import {
   Button,
@@ -21,6 +21,21 @@ function Mastergoldsmith() {
   const [address, setAddress] = useState("");
   const [goldsmith, setGoldsmith] = useState([]);
 
+  // ✅ Fetch goldsmith data when component loads
+  useEffect(() => {
+    const fetchGoldsmiths = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_SERVER_URL}/api/goldsmith`);
+        setGoldsmith(response.data); // assuming API returns an array
+      } catch (error) {
+        console.error("Error fetching goldsmiths:", error);
+        toast.error("Failed to load goldsmith data.");
+      }
+    };
+
+    fetchGoldsmiths();
+  }, []);
+
   const openModal = () => {
     setIsModalOpen(true);
     setgoldsmithName("");
@@ -36,7 +51,7 @@ function Mastergoldsmith() {
     if (goldsmithName.trim()) {
       const newGoldsmith = {
         name: goldsmithName,
-        phonenumber: phoneNumber || null,
+        phone: phoneNumber || null,
         address: address || null,
       };
 
@@ -46,7 +61,7 @@ function Mastergoldsmith() {
           newGoldsmith
         );
 
-        setGoldsmith([...goldsmith, response.data]);
+        setGoldsmith((prev) => [...prev, response.data]); // update state
         closeModal();
         toast.success("Goldsmith added successfully!");
       } catch (error) {
@@ -118,7 +133,7 @@ function Mastergoldsmith() {
         </DialogActions>
       </Dialog>
       <ToastContainer
-        position="top-right" 
+        position="top-right"
         autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
@@ -140,11 +155,11 @@ function Mastergoldsmith() {
               </tr>
             </thead>
             <tbody>
-              {goldsmith.map((goldsmith, index) => (
+              {goldsmith.map((item, index) => (
                 <tr key={index}>
-                  <td>{goldsmith.name}</td>
-                  <td>{goldsmith.phone}</td>
-                  <td>{goldsmith.address}</td>
+                  <td>{item.name}</td>
+                  <td>{item.phone}</td>
+                  <td>{item.address}</td>
                 </tr>
               ))}
             </tbody>
