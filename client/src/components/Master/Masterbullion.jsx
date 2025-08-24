@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Mastercustomer.css";
 import {
   Button,
@@ -20,6 +20,25 @@ function MasterBullion() {
   const [address, setAddress] = useState("");
   const [customers, setCustomers] = useState([]);
 
+  // ✅ Fetch bullion data on page load
+  useEffect(() => {
+    const fetchBullions = async () => {
+      try {
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion`);
+        if (response.ok) {
+          const data = await response.json();
+          setCustomers(data); // assuming API returns an array of bullion objects
+        } else {
+          console.error("Failed to fetch bullion data");
+        }
+      } catch (error) {
+        console.error("Error fetching bullion data:", error);
+      }
+    };
+
+    fetchBullions();
+  }, []);
+
   const openModal = () => {
     setIsModalOpen(true);
     setCustomerName("");
@@ -33,14 +52,14 @@ function MasterBullion() {
 
   const handleSaveCustomer = async () => {
     if (customerName.trim() === "") {
-      alert("Bullion name is required.");
+      toast.error("Bullion name is required.");
       return;
     }
 
     const customerData = {
       name: customerName,
-      phone: phoneNumber,
-      address: address,
+      phone: phoneNumber || null,
+      address: address || null,
     };
 
     try {
@@ -57,7 +76,7 @@ function MasterBullion() {
 
       if (response.ok) {
         const newCustomer = await response.json();
-        setCustomers((prev) => [...prev, newCustomer]);
+        setCustomers((prev) => [...prev, newCustomer]); // update state instantly
         toast.success("Bullion added successfully!");
         closeModal();
       } else {
