@@ -13,63 +13,64 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 
-function MasterCustomer() {
+function MasterBullion() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [customerName, setCustomerName] = useState("");
+  const [bullionName, setBullionName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [customers, setCustomers] = useState([]);
+  const [bullions, setBullions] = useState([]);
 
+  // Validation states
   const [errors, setErrors] = useState({ name: "", phone: "" });
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [submitted, setSubmitted] = useState(false);
 
+  // Refs for focus control
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
 
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchBullions = async () => {
       try {
-        const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion`);
         if (response.ok) {
           const data = await response.json();
-          setCustomers(data);
+          setBullions(data);
+        } else {
+          console.error("Failed to fetch bullion data");
         }
       } catch (error) {
-        console.error("Error fetching customers:", error);
+        console.error("Error fetching bullion data:", error);
       }
     };
-    fetchCustomers();
+
+    fetchBullions();
   }, []);
 
   const openModal = () => {
     setIsModalOpen(true);
-    setCustomerName("");
+    setBullionName("");
     setPhoneNumber("");
     setAddress("");
     setErrors({ name: "", phone: "" });
     setTouched({ name: false, phone: false });
     setSubmitted(false);
-    // single, programmatic focus to avoid autoFocus/blur loops
-    setTimeout(() => nameRef.current?.focus(), 0);
+    requestAnimationFrame(() => nameRef.current?.focus());
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
+  const closeModal = () => setIsModalOpen(false);
 
   const validateField = (field, value) => {
     let error = "";
     if (field === "name") {
-      if (!value.trim()) error = "Customer name is required.";
+      if (!value.trim()) error = "Bullion name is required.";
+      else if (!/^[a-zA-Z\s]+$/.test(value)) error = "Name should contain only letters.";
     }
     if (field === "phone") {
-      if (!value.trim()) {
-        error = "Phone number is required.";
-      } else if (!/^\d{10}$/.test(value)) {
-        error = "Phone number must be 10 digits.";
-      }
+      const v = value.trim();
+      if (!v) error = "Phone number is required.";
+      else if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
     }
     setErrors((prev) => ({ ...prev, [field]: error }));
     return error === "";
@@ -81,16 +82,15 @@ function MasterCustomer() {
   };
 
   const validateForm = () => {
-    const nameValid = validateField("name", customerName);
+    const nameValid = validateField("name", bullionName);
     const phoneValid = validateField("phone", phoneNumber);
     return nameValid && phoneValid;
   };
 
-  const handleSaveCustomer = async () => {
-    setSubmitted(true); // gate showing errors on untouched fields
+  const handleSaveBullion = async () => {
+    setSubmitted(true);
 
-    // compute validity synchronously for focusing logic
-    const nameOk = customerName.trim().length > 0;
+    const nameOk = bullionName.trim() && /^[a-zA-Z\s]+$/.test(bullionName);
     const phoneOk = /^\d{10}$/.test(phoneNumber.trim());
 
     if (!validateForm()) {
@@ -102,37 +102,40 @@ function MasterCustomer() {
       return;
     }
 
-    const customerData = {
-      name: customerName.trim(),
+    const bullionData = {
+      name: bullionName.trim(),
       phone: phoneNumber.trim(),
-      address: address.trim(),
+      address: address.trim() || null,
     };
 
     try {
-      const response = await fetch(`${BACKEND_SERVER_URL}/api/customers/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(customerData),
-      });
+      const response = await fetch(
+        `${BACKEND_SERVER_URL}/api/master-bullion/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bullionData),
+        }
+      );
 
       if (response.ok) {
-        const newCustomer = await response.json();
-        setCustomers((prev) => [...prev, newCustomer]);
-        toast.success("Customer added successfully!");
+        const newBullion = await response.json();
+        setBullions((prev) => [...prev, newBullion]);
+        toast.success("Bullion added successfully!");
         closeModal();
       } else {
         const err = await response.json();
         toast.error("Error: " + err.message);
       }
     } catch (error) {
-      console.error("Error saving customer:", error);
+      console.error("Error saving bullion:", error);
       toast.error("Something went wrong.");
     }
   };
 
   return (
     <>
-      <ToastContainer position="top-right" autoClose={1000} hideProgressBar />
+      <ToastContainer position="top-right" autoClose={2000} hideProgressBar />
 
       <div className="customer-container">
         <Button
@@ -146,23 +149,22 @@ function MasterCustomer() {
           variant="contained"
           onClick={openModal}
         >
-          Add Customer
+          Add Bullion
         </Button>
 
-        {/* Turn off Dialog's auto focus to avoid initial blur shenanigans */}
         <Dialog open={isModalOpen} onClose={closeModal} disableAutoFocus>
-          <DialogTitle>Add New Customer</DialogTitle>
+          <DialogTitle>Add New Bullion</DialogTitle>
           <DialogContent>
-            {/* Customer Name */}
+            {/* Bullion Name */}
             <TextField
               inputRef={nameRef}
               margin="dense"
-              label="Customer Name"
+              label="Bullion Name"
               type="text"
               fullWidth
-              value={customerName}
+              value={bullionName}
               onChange={(e) => {
-                setCustomerName(e.target.value);
+                setBullionName(e.target.value);
                 if (touched.name || submitted) validateField("name", e.target.value);
               }}
               onBlur={(e) => handleBlur("name", e.target.value)}
@@ -199,11 +201,11 @@ function MasterCustomer() {
               helperText={(touched.phone || submitted) ? errors.phone : ""}
             />
 
-            {/* Address (optional) */}
+            {/* Address */}
             <TextField
               inputRef={addressRef}
               margin="dense"
-              label="Address"
+              label="Address (Optional)"
               type="text"
               fullWidth
               multiline
@@ -213,7 +215,7 @@ function MasterCustomer() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  handleSaveCustomer();
+                  handleSaveBullion();
                 }
               }}
             />
@@ -222,28 +224,28 @@ function MasterCustomer() {
             <Button onClick={closeModal} color="secondary">
               Cancel
             </Button>
-            <Button onClick={handleSaveCustomer} color="primary">
+            <Button onClick={handleSaveBullion} color="primary">
               Save
             </Button>
           </DialogActions>
         </Dialog>
 
-        {customers.length > 0 && (
+        {bullions.length > 0 && (
           <Paper className="customer-table">
             <table border="1" width="100%">
               <thead>
                 <tr>
-                  <th>Customer Name</th>
+                  <th>Bullion Name</th>
                   <th>Phone Number</th>
                   <th>Address</th>
                 </tr>
               </thead>
               <tbody>
-                {customers.map((customer, index) => (
-                  <tr key={index}>
-                    <td>{customer.name}</td>
-                    <td>{customer.phone}</td>
-                    <td>{customer.address || "-"}</td>
+                {bullions.map((b, i) => (
+                  <tr key={i}>
+                    <td>{b.name}</td>
+                    <td>{b.phone}</td>
+                    <td>{b.address || "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -255,4 +257,4 @@ function MasterCustomer() {
   );
 }
 
-export default MasterCustomer;
+export default MasterBullion;
