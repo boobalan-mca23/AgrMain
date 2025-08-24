@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Mastergoldsmith.css";
 import {
   Button,
@@ -16,60 +16,104 @@ import "react-toastify/dist/ReactToastify.css";
 
 function Mastergoldsmith() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [goldsmithName, setgoldsmithName] = useState("");
+  const [goldsmithName, setGoldsmithName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [goldsmith, setGoldsmith] = useState([]);
 
-  // ✅ Fetch goldsmith data when component loads
+  // validation state
+  const [errors, setErrors] = useState({ name: "", phone: "" });
+  const [touched, setTouched] = useState({ name: false, phone: false });
+  const [submitted, setSubmitted] = useState(false);
+
+  // refs
+  const nameRef = useRef(null);
+  const phoneRef = useRef(null);
+  const addressRef = useRef(null);
+
   useEffect(() => {
     const fetchGoldsmiths = async () => {
       try {
-        const response = await axios.get(`${BACKEND_SERVER_URL}/api/goldsmith`);
-        setGoldsmith(response.data); // assuming API returns an array
+        const { data } = await axios.get(`${BACKEND_SERVER_URL}/api/goldsmith`);
+        setGoldsmith(data);
       } catch (error) {
         console.error("Error fetching goldsmiths:", error);
         toast.error("Failed to load goldsmith data.");
       }
     };
-
     fetchGoldsmiths();
   }, []);
 
   const openModal = () => {
     setIsModalOpen(true);
-    setgoldsmithName("");
+    setGoldsmithName("");
     setPhoneNumber("");
     setAddress("");
+    setErrors({ name: "", phone: "" });
+    setTouched({ name: false, phone: false });
+    setSubmitted(false);
+    // single programmatic focus (prevents initial blur/touch flicker)
+    requestAnimationFrame(() => nameRef.current?.focus());
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
   };
 
+  const validateField = (field, value) => {
+    let error = "";
+    if (field === "name") {
+      if (!value.trim()) error = "Goldsmith name is required.";
+    }
+    if (field === "phone") {
+      const v = value.trim();
+      if (v && !/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
+    }
+    setErrors((prev) => ({ ...prev, [field]: error }));
+    return error === "";
+  };
+
+  const handleBlur = (field, value) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    validateField(field, value);
+  };
+
+  const validateForm = () => {
+    const nameValid = validateField("name", goldsmithName);
+    const phoneValid = validateField("phone", phoneNumber);
+    return nameValid && phoneValid;
+  };
+
   const handleSaveGoldsmith = async () => {
-    if (goldsmithName.trim()) {
-      const newGoldsmith = {
-        name: goldsmithName,
-        phone: phoneNumber || null,
-        address: address || null,
-      };
+    setSubmitted(true);
 
-      try {
-        const response = await axios.post(
-          `${BACKEND_SERVER_URL}/api/goldsmith`,
-          newGoldsmith
-        );
+    // compute quickly for focusing
+    const nameOk = goldsmithName.trim().length > 0;
+    const phoneOk = phoneNumber.trim() === "" || /^\d{10}$/.test(phoneNumber.trim());
 
-        setGoldsmith((prev) => [...prev, response.data]); // update state
-        closeModal();
-        toast.success("Goldsmith added successfully!");
-      } catch (error) {
-        console.error("Error creating goldsmith:", error);
-        toast.error("Failed to add goldsmith. Please try again.");
+    if (!validateForm()) {
+      if (!nameOk) {
+        nameRef.current?.focus();
+      } else if (!phoneOk) {
+        phoneRef.current?.focus();
       }
-    } else {
-      toast.warn("Please enter the goldsmith's name.");
+      return;
+    }
+
+    const newGoldsmith = {
+      name: goldsmithName.trim(),
+      phonenumber: phoneNumber.trim() || null,
+      address: address.trim() || null,
+    };
+
+    try {
+      const { data } = await axios.post(`${BACKEND_SERVER_URL}/api/goldsmith`, newGoldsmith);
+      setGoldsmith((prev) => [...prev, data]);
+      toast.success("Goldsmith added successfully!");
+      closeModal();
+    } catch (error) {
+      console.error("Error creating goldsmith:", error);
+      toast.error("Failed to add goldsmith. Please try again.");
     }
   };
 
@@ -89,38 +133,76 @@ function Mastergoldsmith() {
         Add Goldsmith
       </Button>
 
-      <Dialog open={isModalOpen} onClose={closeModal}>
+      {/* disableAutoFocus avoids initial blur → no instant error */}
+      <Dialog open={isModalOpen} onClose={closeModal} disableAutoFocus>
         <DialogTitle>Add New Goldsmith</DialogTitle>
         <DialogContent>
+          {/* Goldsmith Name (required) */}
           <TextField
-            autoFocus
+            inputRef={nameRef}
             margin="dense"
             label="Goldsmith Name"
             type="text"
             fullWidth
             autoComplete="off"
             value={goldsmithName}
-            onChange={(e) => setgoldsmithName(e.target.value)}
+            onChange={(e) => {
+              setGoldsmithName(e.target.value);
+              if (touched.name || submitted) validateField("name", e.target.value);
+            }}
+            onBlur={(e) => handleBlur("name", e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                phoneRef.current?.focus();
+              }
+            }}
+            error={(touched.name || submitted) && !!errors.name}
+            helperText={(touched.name || submitted) ? errors.name : ""}
           />
+
+          {/* Phone Number (optional, 10 digits if provided) */}
           <TextField
+            inputRef={phoneRef}
             margin="dense"
             label="Phone Number"
             type="tel"
             fullWidth
             autoComplete="off"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
+           onChange={(e) => {
+              setPhoneNumber(e.target.value);
+              if (touched.phone) validateField("phone", e.target.value);
+            }}
+            onBlur={(e) => handleBlur("phone", e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addressRef.current?.focus();
+              }
+            }}
+            error={(touched.phone || submitted) && !!errors.phone}
+            helperText={(touched.phone || submitted) ? errors.phone : ""}
           />
+
+          {/* Address (optional) */}
           <TextField
+            inputRef={addressRef}
             margin="dense"
             label="Address"
             type="text"
             fullWidth
             multiline
             rows={4}
-            value={address}
             autoComplete="off"
+            value={address}
             onChange={(e) => setAddress(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSaveGoldsmith();
+              }
+            }}
           />
         </DialogContent>
         <DialogActions>
@@ -132,17 +214,8 @@ function Mastergoldsmith() {
           </Button>
         </DialogActions>
       </Dialog>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
 
       {goldsmith.length > 0 && (
         <Paper className="customer-table">
@@ -158,8 +231,8 @@ function Mastergoldsmith() {
               {goldsmith.map((item, index) => (
                 <tr key={index}>
                   <td>{item.name}</td>
-                  <td>{item.phone}</td>
-                  <td>{item.address}</td>
+                  <td>{item.phone || "-"}</td>
+                  <td>{item.address || "-"}</td>
                 </tr>
               ))}
             </tbody>
