@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Mastercustomer.css";
 import {
   Button,
@@ -15,19 +15,28 @@ import { BACKEND_SERVER_URL } from "../../Config/Config";
 
 function MasterBullion() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [customerName, setCustomerName] = useState("");
+  const [bullionName, setBullionName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [customers, setCustomers] = useState([]);
+  const [bullions, setBullions] = useState([]);
 
-  // ✅ Fetch bullion data on page load
+  // Validation states
+  const [errors, setErrors] = useState({ name: "", phone: "" });
+  const [touched, setTouched] = useState({ name: false, phone: false });
+  const [submitted, setSubmitted] = useState(false);
+
+  // Refs for focus control
+  const nameRef = useRef(null);
+  const phoneRef = useRef(null);
+  const addressRef = useRef(null);
+
   useEffect(() => {
     const fetchBullions = async () => {
       try {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion`);
         if (response.ok) {
           const data = await response.json();
-          setCustomers(data); // assuming API returns an array of bullion objects
+          setBullions(data);
         } else {
           console.error("Failed to fetch bullion data");
         }
@@ -41,25 +50,62 @@ function MasterBullion() {
 
   const openModal = () => {
     setIsModalOpen(true);
-    setCustomerName("");
+    setBullionName("");
     setPhoneNumber("");
     setAddress("");
+    setErrors({ name: "", phone: "" });
+    setTouched({ name: false, phone: false });
+    setSubmitted(false);
+    requestAnimationFrame(() => nameRef.current?.focus());
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const closeModal = () => setIsModalOpen(false);
+
+  const validateField = (field, value) => {
+    let error = "";
+    if (field === "name") {
+      if (!value.trim()) error = "Bullion name is required.";
+      else if (!/^[a-zA-Z\s]+$/.test(value)) error = "Name should contain only letters.";
+    }
+    if (field === "phone") {
+      const v = value.trim();
+      if (!v) error = "Phone number is required.";
+      else if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
+    }
+    setErrors((prev) => ({ ...prev, [field]: error }));
+    return error === "";
   };
 
-  const handleSaveCustomer = async () => {
-    if (customerName.trim() === "") {
-      toast.error("Bullion name is required.");
+  const handleBlur = (field, value) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    validateField(field, value);
+  };
+
+  const validateForm = () => {
+    const nameValid = validateField("name", bullionName);
+    const phoneValid = validateField("phone", phoneNumber);
+    return nameValid && phoneValid;
+  };
+
+  const handleSaveBullion = async () => {
+    setSubmitted(true);
+
+    const nameOk = bullionName.trim() && /^[a-zA-Z\s]+$/.test(bullionName);
+    const phoneOk = /^\d{10}$/.test(phoneNumber.trim());
+
+    if (!validateForm()) {
+      if (!nameOk) {
+        nameRef.current?.focus();
+      } else if (!phoneOk) {
+        phoneRef.current?.focus();
+      }
       return;
     }
 
-    const customerData = {
-      name: customerName,
-      phone: phoneNumber || null,
-      address: address || null,
+    const bullionData = {
+      name: bullionName.trim(),
+      phone: phoneNumber.trim(),
+      address: address.trim() || null,
     };
 
     try {
@@ -67,16 +113,14 @@ function MasterBullion() {
         `${BACKEND_SERVER_URL}/api/master-bullion/create`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(customerData),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bullionData),
         }
       );
 
       if (response.ok) {
-        const newCustomer = await response.json();
-        setCustomers((prev) => [...prev, newCustomer]); // update state instantly
+        const newBullion = await response.json();
+        setBullions((prev) => [...prev, newBullion]);
         toast.success("Bullion added successfully!");
         closeModal();
       } else {
@@ -91,14 +135,7 @@ function MasterBullion() {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={1000}
-        hideProgressBar={true}
-        closeOnClick
-        pauseOnHover={false}
-        draggable={false}
-      />
+      <ToastContainer position="top-right" autoClose={2000} hideProgressBar />
 
       <div className="customer-container">
         <Button
@@ -115,48 +152,85 @@ function MasterBullion() {
           Add Bullion
         </Button>
 
-        <Dialog open={isModalOpen} onClose={closeModal}>
+        <Dialog open={isModalOpen} onClose={closeModal} disableAutoFocus>
           <DialogTitle>Add New Bullion</DialogTitle>
           <DialogContent>
+            {/* Bullion Name */}
             <TextField
-              autoFocus
+              inputRef={nameRef}
               margin="dense"
               label="Bullion Name"
               type="text"
               fullWidth
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
+              value={bullionName}
+              onChange={(e) => {
+                setBullionName(e.target.value);
+                if (touched.name || submitted) validateField("name", e.target.value);
+              }}
+              onBlur={(e) => handleBlur("name", e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  phoneRef.current?.focus();
+                }
+              }}
+              error={(touched.name || submitted) && !!errors.name}
+              helperText={(touched.name || submitted) ? errors.name : ""}
             />
+
+            {/* Phone Number */}
             <TextField
+              inputRef={phoneRef}
               margin="dense"
               label="Phone Number"
               type="tel"
               fullWidth
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={(e) => {
+                setPhoneNumber(e.target.value);
+                if (touched.phone || submitted) validateField("phone", e.target.value);
+              }}
+              onBlur={(e) => handleBlur("phone", e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addressRef.current?.focus();
+                }
+              }}
+              error={(touched.phone || submitted) && !!errors.phone}
+              helperText={(touched.phone || submitted) ? errors.phone : ""}
             />
+
+            {/* Address */}
             <TextField
+              inputRef={addressRef}
               margin="dense"
-              label="Address"
+              label="Address (Optional)"
               type="text"
               fullWidth
               multiline
               rows={4}
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSaveBullion();
+                }
+              }}
             />
           </DialogContent>
           <DialogActions>
             <Button onClick={closeModal} color="secondary">
               Cancel
             </Button>
-            <Button onClick={handleSaveCustomer} color="primary">
+            <Button onClick={handleSaveBullion} color="primary">
               Save
             </Button>
           </DialogActions>
         </Dialog>
 
-        {customers.length > 0 && (
+        {bullions.length > 0 && (
           <Paper className="customer-table">
             <table border="1" width="100%">
               <thead>
@@ -167,11 +241,11 @@ function MasterBullion() {
                 </tr>
               </thead>
               <tbody>
-                {customers.map((customer, index) => (
-                  <tr key={index}>
-                    <td>{customer.name}</td>
-                    <td>{customer.phone || "-"}</td>
-                    <td>{customer.address || "-"}</td>
+                {bullions.map((b, i) => (
+                  <tr key={i}>
+                    <td>{b.name}</td>
+                    <td>{b.phone}</td>
+                    <td>{b.address || "-"}</td>
                   </tr>
                 ))}
               </tbody>
