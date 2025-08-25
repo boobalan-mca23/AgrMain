@@ -27,7 +27,34 @@ const getTouch = async (req, res) => {
   }
 };
 
+const updateTouch =  async (req, res) => {
+  const { id } = req.params;
+  const { touch } = req.body;
+  try {
+    const updated = await prisma.masterTouch.update({
+      where: { id: parseInt(id) },
+      data: { touch: parseFloat(touch) },
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update touch value" });
+  }
+}
+
+const deleteTouch =  async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.masterTouch.delete({
+      where: { id: parseInt(id) },
+    });
+    res.json({ message: "Touch value deleted" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete touch value" });
+  }
+};
 module.exports = {
   createTouch,
   getTouch,
+  updateTouch,
+  deleteTouch,
 };

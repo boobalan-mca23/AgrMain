@@ -6,8 +6,10 @@ import "./Masteradditems.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 
 const Masteradditems = () => {
-  const [touchInput, setTouchInput] = useState(""); 
+  const [touchInput, setTouchInput] = useState("");
   const [touchList, setTouchList] = useState([]);
+  const [editId, setEditId] = useState(null);
+  const [editValue, setEditValue] = useState("");
 
   useEffect(() => {
     fetchTouch();
@@ -33,12 +35,54 @@ const Masteradditems = () => {
         touch: touchInput,
       });
 
-      setTouchInput(""); 
-      fetchTouch(); 
+      setTouchInput("");
+      fetchTouch();
       toast.success("Touch value added successfully!");
     } catch (err) {
       console.error("Failed to add touch", err);
       toast.error("Failed to add touch. Please enter a valid decimal number.");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this touch value?")) {
+      try {
+        await axios.delete(`${BACKEND_SERVER_URL}/api/master-touch/${id}`);
+        toast.success("Touch value deleted!");
+        fetchTouch();
+      } catch (err) {
+        console.error("Failed to delete touch", err);
+        toast.error("Failed to delete. Please try again.");
+      }
+    }
+  };
+
+  const handleEdit = (id, value) => {
+    setEditId(id);
+    setEditValue(value);
+  };
+
+  const handleCancelEdit = () => {
+    setEditId(null);
+    setEditValue("");
+  };
+
+  const handleSaveEdit = async (id) => {
+    if (!editValue) {
+      toast.warn("Touch value cannot be empty.");
+      return;
+    }
+    try {
+      await axios.put(`${BACKEND_SERVER_URL}/api/master-touch/${id}`, {
+        touch: editValue,
+      });
+      toast.success("Touch value updated!");
+      setEditId(null);
+      setEditValue("");
+      fetchTouch();
+    } catch (err) {
+      console.error("Failed to update touch", err);
+      toast.error("Failed to update. Please try again.");
     }
   };
 
@@ -69,13 +113,89 @@ const Masteradditems = () => {
               <tr>
                 <th>SI.No</th>
                 <th>Touch Value</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {touchList.map((item, index) => (
                 <tr key={item.id}>
                   <td>{index + 1}</td>
-                  <td>{item.touch}</td>
+                  <td>
+                    {editId === item.id ? (
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        style={{ width: "90%", padding: "4px" }}
+                      />
+                    ) : (
+                      item.touch
+                    )}
+                  </td>
+                  <td>
+                    {editId === item.id ? (
+                      <>
+                        <button
+                          style={{
+                            marginRight: "5px",
+                            background: "#4CAF50",
+                            color: "#fff",
+                            padding: "4px 8px",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => handleSaveEdit(item.id)}
+                        >
+                          Save
+                        </button>
+                        <button
+                          style={{
+                            background: "#f44336",
+                            color: "#fff",
+                            padding: "4px 8px",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                          onClick={handleCancelEdit}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          style={{
+                            background: "#1DA3A3",
+                            color: "#fff",
+                            padding: "4px 8px",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            marginRight: "5px",
+                          }}
+                          onClick={() => handleEdit(item.id, item.touch)}
+                        >
+                          Edit
+                        </button>
+                        {/* <button
+                          style={{
+                            background: "#e63946",
+                            color: "#fff",
+                            padding: "4px 8px",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          Delete
+                        </button> */}
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
