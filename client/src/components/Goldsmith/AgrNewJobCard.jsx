@@ -25,7 +25,7 @@ import { MdDeleteForever } from "react-icons/md";
 import { useState, useEffect } from "react";
 import "./AgrNewJobCard.css";
 import React from "react";
-import { Opacity } from "@mui/icons-material";
+import {goldRowValidation,itemValidation,receiveRowValidation} from '../jobcardvalidation/JobcardValidation'
 function AgrNewJobCard({
   edit,
   handleCloseJobcard,
@@ -51,6 +51,10 @@ function AgrNewJobCard({
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
+  const [givenGoldErrors,setGivenGoldErrors]=useState([])
+  const [itemDeliveryErrors,setItemDeliveryErrors]=useState([])
+  const [deductionErrors,setDeductionErrors]=useState([])
+  const [receivedErrors,setReceivedErrors]=useState([])
   const stoneOptions = ["Stone", "Enamel", "Beads", "Others"];
   const symbolOptions = ["Touch", "%", "+"];
   const [jobCardBalance, setJobCardBalance] = useState(0);
@@ -90,6 +94,8 @@ function AgrNewJobCard({
       parseFloat(copy[i].touch)
     );
     setGivenGold(copy);
+    goldRowValidation(givenGold,setGivenGoldErrors);
+    
   };
   const totalInputPurityGiven = givenGold.reduce(
     (sum, row) => sum + parseFloat(row.purity || 0),
@@ -112,6 +118,7 @@ function AgrNewJobCard({
     }
     copy[i].finalPurity = recalculateFinalPurity(copy[i]);
     setItemDelivery(copy);
+    itemValidation(itemDelivery,setItemDeliveryErrors)
   };
   const handleReceivedRowChange = (i, field, val) => {
     const copy = [...receivedMetalReturns];
@@ -121,20 +128,22 @@ function AgrNewJobCard({
       parseFloat(copy[i].touch)
     );
     setReceivedMetalReturns(copy);
+    receiveRowValidation(receivedMetalReturns,setReceivedErrors)
   };
 
   const handleDeductionChange = (itemIndex, deductionIndex, field, val) => {
-    console.log("dedIndex", deductionIndex);
+ 
     const updated = [...itemDelivery];
     updated[itemIndex].deduction[deductionIndex][field] = val;
     if (field === "weight") {
-      console.log("totalDed", totalDeduction(itemIndex, updated));
+     
       updated[itemIndex]["netWeight"] =
         updated[itemIndex]["itemWeight"] -
         Number(totalDeduction(itemIndex, updated));
     }
     updated[itemIndex].finalPurity = recalculateFinalPurity(updated[itemIndex]);
     setItemDelivery(updated);
+    
   };
 
   const handlededuction= (index) => {
@@ -165,10 +174,13 @@ function AgrNewJobCard({
   };
 
   const handleRemoveReceive = (i) => {
-    console.log("i", i);
-    let copy = [...receivedMetalReturns];
-    copy = copy.filter((item, index) => index !== i);
-    setReceivedMetalReturns(copy);
+
+    let isTrue=window.confirm('Are Want To Remove Receive Entry')
+    if(isTrue){
+        let copy = [...receivedMetalReturns];
+            copy = copy.filter((_, index) => index !== i);
+            setReceivedMetalReturns(copy);
+    }
   };
 
   const handleRemoveGoldRow = (i) => {
@@ -190,16 +202,31 @@ function AgrNewJobCard({
   );
 
   const handleSave = () => {
+     const goldIsTrue=goldRowValidation(givenGold,setGivenGoldErrors)
+
     if (edit) {
-      handleUpdateJobCard(
-        totalInputPurityGiven,
-        totalFinishedPurity,
-        totalReceivedPurity,
-        jobCardBalance,
-        openingBalance
-      );
+     const itemIsTrue=itemValidation(itemDelivery,setItemDeliveryErrors)
+     const receivedIsTrue= receiveRowValidation(receivedMetalReturns,setReceivedErrors)
+
+       if(goldIsTrue&&itemIsTrue&&receivedIsTrue){
+        console.log('ok ')
+         handleUpdateJobCard(
+          totalInputPurityGiven,
+          totalFinishedPurity,
+          totalReceivedPurity,
+          jobCardBalance,
+          openingBalance
+        )
+       }else{
+         alert('Give Correct Information')
+       }
     } else {
-      handleSaveJobCard(totalInputPurityGiven, jobCardBalance, openingBalance);
+     
+      if(goldIsTrue){
+        handleSaveJobCard(totalInputPurityGiven, jobCardBalance, openingBalance);
+      }else{
+        alert('Give Correct Information')
+      }
     }
   };
 
@@ -292,7 +319,8 @@ function AgrNewJobCard({
             {givenGold.map((row, i) => (
               <div key={row.id || `gold-${i}`} className="row">
                 <strong>{i + 1})</strong>
-                <input
+                <div>
+                   <input
                   type="number"
                   placeholder="Weight"
                   value={row.weight}
@@ -301,10 +329,15 @@ function AgrNewJobCard({
                   }
                   className="input"
                   onWheel={(e) => e.target.blur()}
-                />
+                /><br></br>
+                {givenGoldErrors[i]?.weight && (
+                        <span className="error">{givenGoldErrors[i]?.weight}</span>
+                      )}
+                </div>
                 <span className="operator">x</span>
 
-                <select
+                <div>
+                  <select
                   value={row.touch}
                   onChange={(e) =>
                     handleGoldRowChange(i, "touch", e.target.value)
@@ -319,7 +352,11 @@ function AgrNewJobCard({
                       {option.touch}
                     </option>
                   ))}
-                </select>
+                </select><br></br>
+                 {givenGoldErrors[i]?.touch && (
+                        <span className="error">{givenGoldErrors[i]?.touch}</span>
+                      )}
+                </div>
 
                 <span className="operator">=</span>
                 <input
@@ -329,11 +366,11 @@ function AgrNewJobCard({
                   value={format(row.purity)}
                   className="input-read-only"
                 />
-                <MdDeleteForever
+                {!row.id &&  <MdDeleteForever
                   className="delIcon"
                   size={25}
                   onClick={() => handleRemoveGoldRow(i)}
-                />
+                />}
               </div>
             ))}
           </div>
@@ -452,7 +489,6 @@ function AgrNewJobCard({
                         rowSpan={item?.deduction.length || 1}
                         className="tableCell"
                       >
-
                         <select
                           value={item?.itemName}
                           onChange={(e) =>
@@ -471,7 +507,11 @@ function AgrNewJobCard({
                               {option?.itemName}
                             </option>
                           ))}
-                        </select>
+                        </select><br></br>
+                        {itemDeliveryErrors[index]?.itemName && (
+                        <span className="error">{itemDeliveryErrors[index]?.itemName}</span>
+                        )}
+                       
                       </TableCell>
                       <TableCell
                         rowSpan={item?.deduction.length || 1}
@@ -490,6 +530,10 @@ function AgrNewJobCard({
                           }
                           onWheel={(e) => e.target.blur()}
                         />
+                        <br></br>
+                        {itemDeliveryErrors[index]?.itemWeight && (
+                        <span className="error">{itemDeliveryErrors[index]?.itemWeight}</span>
+                        )}
                       </TableCell>
                       <TableCell
                         rowSpan={item?.deduction.length || 1}
@@ -510,6 +554,10 @@ function AgrNewJobCard({
                             </option>
                           ))}
                         </select>
+                        <br></br>
+                        {itemDeliveryErrors[index]?.touch && (
+                        <span className="error">{itemDeliveryErrors[index]?.touch}</span>
+                        )}
                       </TableCell>
                       <TableCell
                         rowSpan={item?.deduction.length || 1}
@@ -524,7 +572,7 @@ function AgrNewJobCard({
                       </TableCell>
 
                       {/* First deduction row */}
-                      {item.deduction.length >= 1 ? (
+                      {item?.deduction?.length >= 1 ? (
                         <>
                           <TableCell className="tableCell">
                             <select
@@ -551,6 +599,10 @@ function AgrNewJobCard({
                                 </option>
                               ))}
                             </select>
+                            <br></br>
+                        {deductionErrors[0]?.type && (
+                        <span className="error">{deductionErrors[0]?.type}</span>
+                      )}
                           </TableCell>
                           <TableCell className="tableCell">
                             <input
@@ -571,17 +623,21 @@ function AgrNewJobCard({
                               }
                               onWheel={(e) => e.target.blur()}
                             />
+                            <br></br>
+                                   {deductionErrors[0]?.weight && (
+                        <span className="error">{deductionErrors[0]?.weight}</span>
+                      )}
                           </TableCell>
-                          <TableCell className="tableCell">
+                          {item.deduction[0].id ? <TableCell></TableCell>:<TableCell className="tableCell">
                             <button
                               type="button"
                               disabled={!edit}
-                              onClick={() => handleRemoveDeduction(index, 0)}
+                              onClick={() => handleRemoveDeduction(index, 0)} // stone remove
                               className="icon-button"
                             >
                               <MdDeleteForever size={25} className="delIcon" />
                             </button>
-                          </TableCell>
+                          </TableCell>}
                         </>
                       ) : (
                         <TableCell colSpan={3} rowSpan={1}>
@@ -622,7 +678,10 @@ function AgrNewJobCard({
                               {symbol}
                             </option>
                           ))}
-                        </select>
+                        </select><br></br>
+                        {itemDeliveryErrors[index]?.wastageType && (
+                        <span className="error">{itemDeliveryErrors[index]?.wastageType}</span>
+                        )}
                       </TableCell>
                       <TableCell
                         rowSpan={item?.deduction.length || 1}
@@ -641,6 +700,10 @@ function AgrNewJobCard({
                           }
                           onWheel={(e) => e.target.blur()}
                         />
+                        <br></br>
+                        {itemDeliveryErrors[index]?.wastageValue && (
+                        <span className="error">{itemDeliveryErrors[index]?.wastageValue}</span>
+                        )}
                       </TableCell>
                       <TableCell
                         rowSpan={item?.deduction.length || 1}
@@ -660,7 +723,8 @@ function AgrNewJobCard({
                           onWheel={(e) => e.target.blur()}
                         />
                       </TableCell>
-                      <TableCell
+                      {
+                        item.id ? <TableCell></TableCell> :  <TableCell
                         rowSpan={item?.deduction.length || 1}
                         className="tableCell"
                       >
@@ -672,6 +736,7 @@ function AgrNewJobCard({
                           <MdDeleteForever size={25} className="delIcon" />
                         </button>
                       </TableCell>
+                      }
                     </TableRow>
 
                     {/* Remaining stone rows */}
@@ -700,6 +765,10 @@ function AgrNewJobCard({
                                   </option>
                                 ))}
                               </select>
+                              <br></br>
+                              {deductionErrors[i]?.type && (
+                        <span className="error">{deductionErrors[i]?.type}</span>
+                      )}
                             </TableCell>
                             <TableCell className="tableCell">
                               <input
@@ -715,15 +784,18 @@ function AgrNewJobCard({
                                   )
                                 }
                                 onWheel={(e) => e.target.blur()}
-                              />
+                              /><br></br>
+                              {deductionErrors[i]?.weight && (
+                          <span className="error">{deductionErrors[i]?.weight}</span>
+                            )}
                             </TableCell>
-                            <TableCell className="tableCell">
+                             {s.id ? <TableCell></TableCell> : <TableCell className="tableCell">
                               <MdDeleteForever
                                 className="delIcon"
                                 size={25}
                                 onClick={() => handleRemoveDeduction(index, i)}
                               />
-                            </TableCell>
+                            </TableCell>}
                           </TableRow>
                         )
                     )}
@@ -771,7 +843,8 @@ function AgrNewJobCard({
                 key={row.id || `received-${i}`}
                 className="received-section-row"
               >
-                <input
+                <div>
+                  <input
                   type="number"
                   placeholder="Weight"
                   value={row.weight}
@@ -781,8 +854,13 @@ function AgrNewJobCard({
                   className="input-small"
                   // disabled={isLoading || !isReceivedSectionEnabled}
                   onWheel={(e) => e.target.blur()}
-                />
+                /><br></br>
+                      {receivedErrors[i]?.weight && (
+                        <span className="error">{receivedErrors[i]?.weight}</span>
+                      )}
+                </div>
                 <span className="operator">x</span>
+               <div>
                 <input
                   type="number"
                   placeholder="Touch"
@@ -794,6 +872,10 @@ function AgrNewJobCard({
                   // disabled={isLoading || !isReceivedSectionEnabled}
                   onWheel={(e) => e.target.blur()}
                 />
+                {receivedErrors[i]?.touch && (
+                        <span className="error">{receivedErrors[i]?.touch}</span>
+                      )}
+               </div>
                 <span className="operator">=</span>
                 <input
                   type="text"
@@ -804,7 +886,7 @@ function AgrNewJobCard({
                 />
                 <button
                   type="button"
-                  disabled={!edit}
+                  disabled={edit?row.id?true:false:true}
                   onClick={() => handleRemoveReceive(i)}
                   className="icon-button"
                 >
