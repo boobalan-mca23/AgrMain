@@ -32,8 +32,9 @@ model MasterItem {
 }
 
 model MasterTouch {
-  id        Int      @id @default(autoincrement())
-  touch     Float
+  id             Int    @id @default(autoincrement())
+  touch          Float
+  rawGoldStock   RawgoldStock[]
   createdAt DateTime @default(now())
 }
 
@@ -77,7 +78,6 @@ model customer_order {
   id             Int @id @default(autoincrement())
   customer_id    Int
   order_group_id Int
-
   item_name     String
   description   String
   weight        Float
@@ -162,11 +162,13 @@ model givenGold{
   id              Int          @id @default(autoincrement())
   goldsmithId     Int?
   jobcardId       Int?
+  logId           Int?
   weight          Float?
   touch           Float?
   purity          Float?
   goldsmith       Goldsmith?    @relation(fields: [goldsmithId], references: [id])
   jobcard         Jobcard?      @relation(fields: [jobcardId], references: [id])
+  rawGoldLogs     RawGoldLogs?  @relation(fields: [logId], references: [id])
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @default(now())
 }
@@ -222,14 +224,32 @@ model Receivedsection {
   weight      Float?
   touch       Float?
   purity      Float?
+  logId       Int?
   jobcardId   Int    
   goldsmithId Int
+  rawGoldLogs RawGoldLogs? @relation(fields: [logId], references: [id])
   jobcard     Jobcard?  @relation(fields: [jobcardId], references: [id])
   goldsmith   Goldsmith? @relation(fields: [goldsmithId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now())
 }
-
+model RawgoldStock{
+  id          Int           @id @default(autoincrement())
+  touchId     Int
+  weight      Float?
+  masterTouch MasterTouch?  @relation(fields: [touchId], references: [id])
+  rawGoldLogs RawGoldLogs[]
+}
+model RawGoldLogs{
+    id               Int           @id @default(autoincrement())
+    rawGoldStockId   Int
+    weight           Float?
+    touch            Float?
+    purity           Float?
+    rawGoldStock     RawgoldStock? @relation(fields: [rawGoldStockId], references: [id])
+    givenGold        givenGold[]
+    receivedSections Receivedsection[]
+}
 model Balances {
   id                  Int         @id @default(autoincrement())
   goldsmithId         Int

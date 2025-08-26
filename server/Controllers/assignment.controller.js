@@ -108,6 +108,7 @@ const updateJobCard = async (req, res) => {
   const { goldSmithId, jobCardId } = req.params;
   const { description, givenGold, itemDelivery, receiveSection, total } =
     req.body;
+
   try {
     const goldsmithInfo = await prisma.goldsmith.findUnique({
       where: { id: parseInt(goldSmithId) },
@@ -125,6 +126,18 @@ const updateJobCard = async (req, res) => {
     if (!total) {
       return res.status(400).json({ error: "Total information is required" });
     }
+    if(itemDelivery.length>=1){ // validation on jobcard stone section
+      for(const item of itemDelivery ){
+           if(item.deduction){
+            item.deduction.forEach((ded,_)=>{
+                if(!ded.type||!ded.weight||ded.weight < 0||!/^\d*\.?\d*$/.test(ded.weight)){
+                  return res.status(400).json({error:`Give Correct Information in stone section`})
+                }
+             })
+           }
+      }
+    }
+
     // update jobCardTotals
     const totalOfJobcard = await prisma.total.update({
       where: {

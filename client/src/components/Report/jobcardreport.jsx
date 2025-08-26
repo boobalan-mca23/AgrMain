@@ -161,7 +161,9 @@ const JobCardReport = () => {
     setToDate(today);
   }, []);
 
- 
+  const totalStoneWt=(deduction)=>{
+    return deduction.reduce((acc,val)=>val.weight+acc,0)
+  }
   return (
     <>
       <div >
@@ -260,9 +262,7 @@ const JobCardReport = () => {
                       <th >Date</th>
                       <th >JobCard Id</th>
                       <th colSpan="4">Given Wt</th>
-                      {/* <th colSpan="4">Item Wt</th>
-                      <th >Stone Wt</th>
-                      <th >After Wastage</th> */}
+                      <th colSpan="8">Item Delivery</th>
                       <th >Balance</th>
                       {/* <th colSpan="3">ReceiveAmt</th> */}
                       <th>Is Finished</th>
@@ -273,33 +273,34 @@ const JobCardReport = () => {
                       <th>Weight</th>
                       <th>Touch</th>
                       <th>Purity</th>
-                      {/* <th>Dly Date</th>
-                      <th>Name</th>
-                      <th>Seal Name</th>
-                      <th>Weight</th>
-                      <th colSpan={3}></th>
-                      <th>Weight</th>
-                      <th>Touch</th>
-                      <th>ReceiveTotal</th> */}
+                      <th>DlyDate</th>
+                      <th>Itme Name</th>
+                      <th>Wt</th>
+                      <th>tch</th>
+                      <th>stoneWt</th>
+                      <th>NetWt</th>
+                    {/* <td>wastageTyp</td> */}
+                      <th>wastageValue</th>
+                      <th>FinalPurity</th>
                       <th colSpan={2}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {jobCard.map((job, jobIndex) => {
                       const given = job.givenGold;
-                      // const delivery = job.deliveryItem;
+                      const deliveries = job.deliveries;
                       // const receive = job.goldSmithReceived;
                       const maxRows =
                         Math.max(
                           given?.length,
-                          // delivery?.length,
+                          deliveries?.length,
                           // receive?.length
                         ) || 1;
                       const total = job.total?.[0];
 
                       return [...Array(maxRows)].map((_, i) => {
                         const g = given?.[i] || {};
-                        // const d = delivery?.[i] || {};
+                        const d = deliveries?.[i] || {};
                         // const r = receive?.[i] || {};
 
                         return (
@@ -324,13 +325,35 @@ const JobCardReport = () => {
                                   )
                                 : "-"}
                             </td>
-                            <td>{g?.itemName || "-"}</td>
-                            <td>{g?.itemWeight || "-"}</td>
+                            <td>{g?.weight || "-"}</td>
                             <td>{g?.touch || "-"}</td>
                             <td>{g?.purity || "-"}</td>
-                            {/* {i === 0 && (
-                              <td rowSpan={maxRows}>{total?.givenWt || "-"}</td>
-                            )} */}
+                             <td>
+                            {d?.createdAt
+                              ? new Date(d?.createdAt).toLocaleDateString(
+                                  "en-GB",
+                                  {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  }
+                                )
+                              : "-"}
+                          </td>
+                          <td>{d?.itemName || "-"}</td>
+                          <td>{d?.itemWeight || "-"}</td>
+                          <td>{d?.touch || "-"}</td>
+
+                          <td>
+                            {d?.deduction && totalStoneWt(d?.deduction)}
+                          </td>
+                          <td>{d?.netWeight || "-"}</td>
+                         
+                          <td>{d?.wastageValue || "-"}</td>
+                          <td>{d?.finalPurity || "-"}</td>
+                          {i === 0 && (
+                              <td rowSpan={maxRows}>{total?.jobCardBalance|| "-"}</td>
+                            )}
                         
                             {/* <td>
                               {d?.createdAt
