@@ -10,7 +10,16 @@ const createTouch = async (req, res) => {
       return res.status(400).json({ error: "Invalid number" });
     }
     const newTouch = await prisma.masterTouch.create({
-      data: { touch: parsedTouch },
+      data: { touch: parsedTouch ,
+        rawGoldStock:{
+          create:{
+            weight:0,
+            touch:parsedTouch
+          }
+        }
+        
+      },
+      
     });
     res.status(201).json(newTouch);
   } catch (err) {

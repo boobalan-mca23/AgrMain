@@ -236,6 +236,7 @@ model Receivedsection {
 model RawgoldStock{
   id          Int           @id @default(autoincrement())
   touchId     Int
+  touch       Float?
   weight      Float?
   masterTouch MasterTouch?  @relation(fields: [touchId], references: [id])
   rawGoldLogs RawGoldLogs[]

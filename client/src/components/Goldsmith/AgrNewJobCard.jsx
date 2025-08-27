@@ -25,7 +25,11 @@ import { MdDeleteForever } from "react-icons/md";
 import { useState, useEffect } from "react";
 import "./AgrNewJobCard.css";
 import React from "react";
-import {goldRowValidation,itemValidation,receiveRowValidation} from '../jobcardvalidation/JobcardValidation'
+import {
+  goldRowValidation,
+  itemValidation,
+  receiveRowValidation,
+} from "../jobcardvalidation/JobcardValidation";
 function AgrNewJobCard({
   edit,
   handleCloseJobcard,
@@ -46,15 +50,14 @@ function AgrNewJobCard({
   open,
   jobCardId,
   lastJobCardId,
-  lastIsFinish
-  
+  lastIsFinish,
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
-  const [givenGoldErrors,setGivenGoldErrors]=useState([])
-  const [itemDeliveryErrors,setItemDeliveryErrors]=useState([])
-  const [deductionErrors,setDeductionErrors]=useState([])
-  const [receivedErrors,setReceivedErrors]=useState([])
+  const [givenGoldErrors, setGivenGoldErrors] = useState([]);
+  const [itemDeliveryErrors, setItemDeliveryErrors] = useState([]);
+  const [deductionErrors, setDeductionErrors] = useState([]);
+  const [receivedErrors, setReceivedErrors] = useState([]);
   const stoneOptions = ["Stone", "Enamel", "Beads", "Others"];
   const symbolOptions = ["Touch", "%", "+"];
   const [jobCardBalance, setJobCardBalance] = useState(0);
@@ -94,8 +97,7 @@ function AgrNewJobCard({
       parseFloat(copy[i].touch)
     );
     setGivenGold(copy);
-    goldRowValidation(givenGold,setGivenGoldErrors);
-    
+    goldRowValidation(givenGold, setGivenGoldErrors);
   };
   const totalInputPurityGiven = givenGold.reduce(
     (sum, row) => sum + parseFloat(row.purity || 0),
@@ -118,7 +120,7 @@ function AgrNewJobCard({
     }
     copy[i].finalPurity = recalculateFinalPurity(copy[i]);
     setItemDelivery(copy);
-    itemValidation(itemDelivery,setItemDeliveryErrors)
+    itemValidation(itemDelivery, setItemDeliveryErrors);
   };
   const handleReceivedRowChange = (i, field, val) => {
     const copy = [...receivedMetalReturns];
@@ -128,25 +130,22 @@ function AgrNewJobCard({
       parseFloat(copy[i].touch)
     );
     setReceivedMetalReturns(copy);
-    receiveRowValidation(receivedMetalReturns,setReceivedErrors)
+    receiveRowValidation(receivedMetalReturns, setReceivedErrors);
   };
 
   const handleDeductionChange = (itemIndex, deductionIndex, field, val) => {
- 
     const updated = [...itemDelivery];
     updated[itemIndex].deduction[deductionIndex][field] = val;
     if (field === "weight") {
-     
       updated[itemIndex]["netWeight"] =
         updated[itemIndex]["itemWeight"] -
         Number(totalDeduction(itemIndex, updated));
     }
     updated[itemIndex].finalPurity = recalculateFinalPurity(updated[itemIndex]);
     setItemDelivery(updated);
-    
   };
 
-  const handlededuction= (index) => {
+  const handlededuction = (index) => {
     let newDeduction = { type: "", weight: "" };
 
     let updated = [...itemDelivery];
@@ -174,12 +173,11 @@ function AgrNewJobCard({
   };
 
   const handleRemoveReceive = (i) => {
-
-    let isTrue=window.confirm('Are Want To Remove Receive Entry')
-    if(isTrue){
-        let copy = [...receivedMetalReturns];
-            copy = copy.filter((_, index) => index !== i);
-            setReceivedMetalReturns(copy);
+    let isTrue = window.confirm("Are Want To Remove Receive Entry");
+    if (isTrue) {
+      let copy = [...receivedMetalReturns];
+      copy = copy.filter((_, index) => index !== i);
+      setReceivedMetalReturns(copy);
     }
   };
 
@@ -202,30 +200,36 @@ function AgrNewJobCard({
   );
 
   const handleSave = () => {
-     const goldIsTrue=goldRowValidation(givenGold,setGivenGoldErrors)
+    const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
 
     if (edit) {
-     const itemIsTrue=itemValidation(itemDelivery,setItemDeliveryErrors)
-     const receivedIsTrue= receiveRowValidation(receivedMetalReturns,setReceivedErrors)
+      const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
+      const receivedIsTrue = receiveRowValidation(
+        receivedMetalReturns,
+        setReceivedErrors
+      );
 
-       if(goldIsTrue&&itemIsTrue&&receivedIsTrue){
-        console.log('ok ')
-         handleUpdateJobCard(
+      if (goldIsTrue && itemIsTrue && receivedIsTrue) {
+        console.log("ok ");
+        handleUpdateJobCard(
           totalInputPurityGiven,
           totalFinishedPurity,
           totalReceivedPurity,
           jobCardBalance,
           openingBalance
-        )
-       }else{
-         alert('Give Correct Information')
-       }
+        );
+      } else {
+        alert("Give Correct Information");
+      }
     } else {
-     
-      if(goldIsTrue){
-        handleSaveJobCard(totalInputPurityGiven, jobCardBalance, openingBalance);
-      }else{
-        alert('Give Correct Information')
+      if (goldIsTrue) {
+        handleSaveJobCard(
+          totalInputPurityGiven,
+          jobCardBalance,
+          openingBalance
+        );
+      } else {
+        alert("Give Correct Information");
       }
     }
   };
@@ -266,491 +270,340 @@ function AgrNewJobCard({
   }, [givenGold, itemDelivery, receivedMetalReturns]);
   return (
     <>
-    <Dialog
+      <Dialog
         open={open}
         onClose={handleCloseJobcard}
         fullWidth
         maxWidth="md"
-         PaperProps={{
-        className: "jobcard-dialog-paper",
-       }}
+        PaperProps={{
+          className: "jobcard-dialog-paper",
+        }}
       >
-      <DialogTitle className="dialogTitle" id="customized-dialog-title">
-        <p>{edit ? "Edit JobCard" : "Add New JobCard"}</p>
-        <IconButton
-          aria-label="close"
-          onClick={handleCloseJobcard}
-          sx={(theme) => ({
-            position: "absolute",
-            right: 8,
-            top: 8,
-            color: theme.palette.grey[500],
-          })}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent dividers>
-        <Box className="jobCardheader">
-          <Typography>ID:{edit ? jobCardId : jobCardLength}</Typography>
-          <Typography>Name:{name}</Typography>
-          <Typography>Date:{today}</Typography>
-          <Typography>Time:{time}</Typography>
-        </Box>
-
-        <div className="description section">
-          <label htmlFor="description" className="label">
-            Description
-          </label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-            }}
-            className="textarea"
-          />
-        </div>
-        {/* Given Gold */}
-        <Box className="section">
-          <h4 className="section-title">Given Details</h4>
-          <div className="givenGold">
-            {givenGold.map((row, i) => (
-              <div key={row.id || `gold-${i}`} className="row">
-                <strong>{i + 1})</strong>
-                <div>
-                   <input
-                  type="number"
-                  placeholder="Weight"
-                  value={row.weight}
-                  onChange={(e) =>
-                    handleGoldRowChange(i, "weight", e.target.value)
-                  }
-                  className="input"
-                  onWheel={(e) => e.target.blur()}
-                /><br></br>
-                {givenGoldErrors[i]?.weight && (
-                        <span className="error">{givenGoldErrors[i]?.weight}</span>
-                      )}
-                </div>
-                <span className="operator">x</span>
-
-                <div>
-                  <select
-                  value={row.touch}
-                  onChange={(e) =>
-                    handleGoldRowChange(i, "touch", e.target.value)
-                  }
-                  className="select-small"
-                  // disabled={isLoading || !isItemDeliveryEnabled}
-                >
-                 
-                  <option value="">Select</option>
-                  {dropDownItems.touchList.map((option) => (
-                    <option key={option.id} value={option.touch}>
-                      {option.touch}
-                    </option>
-                  ))}
-                </select><br></br>
-                 {givenGoldErrors[i]?.touch && (
-                        <span className="error">{givenGoldErrors[i]?.touch}</span>
-                      )}
-                </div>
-
-                <span className="operator">=</span>
-                <input
-                  type="text"
-                  readOnly
-                  placeholder="Purity"
-                  value={format(row.purity)}
-                  className="input-read-only"
-                />
-                {!row.id &&  <MdDeleteForever
-                  className="delIcon"
-                  size={25}
-                  onClick={() => handleRemoveGoldRow(i)}
-                />}
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={() =>
-              setGivenGold([
-                ...givenGold,
-                { weight: "", touch: "", purity: "" },
-              ])
-            }
-            className="circle-button"
+        <DialogTitle className="dialogTitle" id="customized-dialog-title">
+          <p>{edit ? "Edit JobCard" : "Add New JobCard"}</p>
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseJobcard}
+            sx={(theme) => ({
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: theme.palette.grey[500],
+            })}
           >
-            +
-          </button>
-          <div className="total-purity-container">
-            <span className="total-purity-label">Total Purity:</span>
-            <span className="total-purity-value">
-              {format(totalInputPurityGiven)}
-            </span>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Box className="jobCardheader">
+            <Typography>ID:{edit ? jobCardId : jobCardLength}</Typography>
+            <Typography>Name:{name}</Typography>
+            <Typography>Date:{today}</Typography>
+            <Typography>Time:{time}</Typography>
+          </Box>
+
+          <div className="description section">
+            <label htmlFor="description" className="label">
+              Description
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+              }}
+              className="textarea"
+            />
           </div>
-        </Box>
-        {/* Balance */}
-        <Box className="section">
-          <h3 className="section-title">Balance</h3>
-          <div className="balance-block">
-            <div className="balance-display-row">
-              <span className="balance-label">
-                {openingBalance >= 0 ? "Opening Balance" : "ExceesBalance"}
-              </span>
-              <span className="balance-value">{format(openingBalance)}</span>
+          {/* Given Gold */}
+          <Box className="section">
+            <h4 className="section-title">Given Details</h4>
+            <div className="givenGold">
+              {givenGold.map((row, i) => (
+                <div key={row.id || `gold-${i}`} className="row">
+                  <strong>{i + 1})</strong>
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Weight"
+                      value={row.weight}
+                      onChange={(e) =>
+                        handleGoldRowChange(i, "weight", e.target.value)
+                      }
+                      className="input"
+                      onWheel={(e) => e.target.blur()}
+                    />
+                    <br></br>
+                    {givenGoldErrors[i]?.weight && (
+                      <span className="error">
+                        {givenGoldErrors[i]?.weight}
+                      </span>
+                    )}
+                  </div>
+                  <span className="operator">x</span>
+
+                  <div>
+                    <select
+                      value={row.touch}
+                      onChange={(e) =>
+                        handleGoldRowChange(i, "touch", e.target.value)
+                      }
+                      className="select-small"
+                      // disabled={isLoading || !isItemDeliveryEnabled}
+                    >
+                      <option value="">Select</option>
+                      {dropDownItems.touchList.map((option) => (
+                        <option key={option.id} value={option.touch}>
+                          {option.touch}
+                        </option>
+                      ))}
+                    </select>
+                    <br></br>
+                    {givenGoldErrors[i]?.touch && (
+                      <span className="error">{givenGoldErrors[i]?.touch}</span>
+                    )}
+                  </div>
+
+                  <span className="operator">=</span>
+                  <input
+                    type="text"
+                    readOnly
+                    placeholder="Purity"
+                    value={format(row.purity)}
+                    className="input-read-only"
+                  />
+                  {!row.id && (
+                    <MdDeleteForever
+                      className="delIcon"
+                      size={25}
+                      onClick={() => handleRemoveGoldRow(i)}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="balance-display-row">
-              <span className="balance-label">Total Purity:</span>
-              <span className="balance-value">
+
+            <button
+              onClick={() =>
+                setGivenGold([
+                  ...givenGold,
+                  { weight: "", touch: "", purity: "" },
+                ])
+              }
+              className="circle-button"
+            >
+              +
+            </button>
+            <div className="total-purity-container">
+              <span className="total-purity-label">Total Purity:</span>
+              <span className="total-purity-value">
                 {format(totalInputPurityGiven)}
               </span>
             </div>
-            <div>----------</div>
-            <div className="balance-display-row">
-              <span className="balance-label">Total Balance:</span>
-              <span className="balance-value">
-                {format(totalGivenToGoldsmith)}
-              </span>
+          </Box>
+          {/* Balance */}
+          <Box className="section">
+            <h3 className="section-title">Balance</h3>
+            <div className="balance-block">
+              <div className="balance-display-row">
+                <span className="balance-label">
+                  {openingBalance >= 0 ? "Opening Balance" : "ExceesBalance"}
+                </span>
+                <span className="balance-value">{format(openingBalance)}</span>
+              </div>
+              <div className="balance-display-row">
+                <span className="balance-label">Total Purity:</span>
+                <span className="balance-value">
+                  {format(totalInputPurityGiven)}
+                </span>
+              </div>
+              <div>----------</div>
+              <div className="balance-display-row">
+                <span className="balance-label">Total Balance:</span>
+                <span className="balance-value">
+                  {format(totalGivenToGoldsmith)}
+                </span>
+              </div>
             </div>
-          </div>
-        </Box>
-        {/* Item Delivery Section */}
-        <Box className="section" style={{ opacity: edit ? 1 : 0.5 }}>
-          <h4 className="section-title">Item Delivery</h4>
-          <TableContainer component={Paper} className="jobCardContainer">
-            <Table
-              size="small"
-              sx={{
-                "& td, & th": {
-                  padding: "4px 8px",
-                  fontSize: "1rem",
-                  textAlign: "center",
-                },
-              }}
-              aria-label="item table"
-            >
-              <TableHead className="jobcardhead">
-                <TableRow>
-                  <TableCell rowSpan={2} className="tableCell">
-                    S.No
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Item Name
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Item Weight
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Touch
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Add
-                  </TableCell>
-                  <TableCell colSpan={3} className="tableCell">
-                    Deduction
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Net Weight
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Wastage Type
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Wastage Value
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Final Purity
-                  </TableCell>
-                  <TableCell rowSpan={2} className="tableCell">
-                    Del
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>stone</TableCell>
-                  <TableCell>weight</TableCell>
-                  <TableCell>Del</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {itemDelivery.map((item, index) => (
-                  <React.Fragment key={index}>
-                    <TableRow>
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        {index + 1}
-                      </TableCell>
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <select
-                          value={item?.itemName}
-                          onChange={(e) =>
-                            handleChangeDeliver(
-                              e.target.value,
-                              "itemName",
-                              index
-                            )
-                          }
-                          className="select-small"
-                          // disabled={isLoading || !isItemDeliveryEnabled}
+          </Box>
+          {/* Item Delivery Section */}
+          <Box className="section" style={{ opacity: edit ? 1 : 0.5 }}>
+            <h4 className="section-title">Item Delivery</h4>
+            <TableContainer component={Paper} className="jobCardContainer">
+              <Table
+                size="small"
+                sx={{
+                  "& td, & th": {
+                    padding: "4px 8px",
+                    fontSize: "1rem",
+                    textAlign: "center",
+                  },
+                }}
+                aria-label="item table"
+              >
+                <TableHead className="jobcardhead">
+                  <TableRow>
+                    <TableCell rowSpan={2} className="tableCell">
+                      S.No
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Item Name
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Item Weight
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Touch
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Add
+                    </TableCell>
+                    <TableCell colSpan={3} className="tableCell">
+                      Deduction
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Net Weight
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Wastage Type
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Wastage Value
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Final Purity
+                    </TableCell>
+                    <TableCell rowSpan={2} className="tableCell">
+                      Del
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>stone</TableCell>
+                    <TableCell>weight</TableCell>
+                    <TableCell>Del</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {itemDelivery.map((item, index) => (
+                    <React.Fragment key={index}>
+                      <TableRow>
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
                         >
-                          <option value="">Select</option>
-                          {dropDownItems.masterItems.map((option) => (
-                            <option key={option.id} value={option?.itemName}>
-                              {option?.itemName}
-                            </option>
-                          ))}
-                        </select><br></br>
-                        {itemDeliveryErrors[index]?.itemName && (
-                        <span className="error">{itemDeliveryErrors[index]?.itemName}</span>
-                        )}
-                       
-                      </TableCell>
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <input
-                          value={item?.itemWeight ?? ""}
-                          className="input itemInput"
-                          type="number"
-                          onChange={(e) =>
-                            handleChangeDeliver(
-                              e.target.value,
-                              "itemWeight",
-                              index
-                            )
-                          }
-                          onWheel={(e) => e.target.blur()}
-                        />
-                        <br></br>
-                        {itemDeliveryErrors[index]?.itemWeight && (
-                        <span className="error">{itemDeliveryErrors[index]?.itemWeight}</span>
-                        )}
-                      </TableCell>
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <select
-                          value={item?.touch}
-                          onChange={(e) =>
-                            handleChangeDeliver(e.target.value, "touch", index)
-                          }
-                          className="select-small"
-                          // disabled={isLoading || !isItemDeliveryEnabled}
-                        >
-                          <option value="">Select</option>
-                          {dropDownItems.touchList.map((option) => (
-                            <option key={option.id} value={option.touch}>
-                              {option.touch}
-                            </option>
-                          ))}
-                        </select>
-                        <br></br>
-                        {itemDeliveryErrors[index]?.touch && (
-                        <span className="error">{itemDeliveryErrors[index]?.touch}</span>
-                        )}
-                      </TableCell>
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <Button
-                          disabled={edit ? false : true}
-                          onClick={() => handlededuction(index)}
-                        >
-                          +
-                        </Button>
-                      </TableCell>
-
-                      {/* First deduction row */}
-                      {item?.deduction?.length >= 1 ? (
-                        <>
-                          <TableCell className="tableCell">
-                            <select
-                              value={
-                                item?.deduction.length >= 1
-                                  ? item?.deduction[0].type
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                handleDeductionChange(
-                                  index,
-                                  0,
-                                  "type",
-                                  e.target.value
-                                )
-                              }
-                              className="select-small"
-                              // disabled={isLoading || !isItemDeliveryEnabled}
-                            >
-                              <option value="">Select</option>
-                              {stoneOptions.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                            <br></br>
-                        {deductionErrors[0]?.type && (
-                        <span className="error">{deductionErrors[0]?.type}</span>
-                      )}
-                          </TableCell>
-                          <TableCell className="tableCell">
-                            <input
-                              value={
-                                item?.deduction.length >= 1
-                                  ? item.deduction[0].weight
-                                  : ""
-                              }
-                              className="input"
-                              type="number"
-                              onChange={(e) =>
-                                handleDeductionChange(
-                                  index,
-                                  0,
-                                  "weight",
-                                  e.target.value
-                                )
-                              }
-                              onWheel={(e) => e.target.blur()}
-                            />
-                            <br></br>
-                                   {deductionErrors[0]?.weight && (
-                        <span className="error">{deductionErrors[0]?.weight}</span>
-                      )}
-                          </TableCell>
-                          {item.deduction[0].id ? <TableCell></TableCell>:<TableCell className="tableCell">
-                            <button
-                              type="button"
-                              disabled={!edit}
-                              onClick={() => handleRemoveDeduction(index, 0)} // stone remove
-                              className="icon-button"
-                            >
-                              <MdDeleteForever size={25} className="delIcon" />
-                            </button>
-                          </TableCell>}
-                        </>
-                      ) : (
-                        <TableCell colSpan={3} rowSpan={1}>
-                          No stone
+                          {index + 1}
                         </TableCell>
-                      )}
-
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <input
-                          value={item?.netWeight ?? ""}
-                          className="input itemInput"
-                          readOnly
-                          onWheel={(e) => e.target.blur()}
-                        />
-                      </TableCell>
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <select
-                          value={item?.wastageType}
-                          onChange={(e) =>
-                            handleChangeDeliver(
-                              e.target.value,
-                              "wastageType",
-                              index
-                            )
-                          }
-                          className="select-small"
-                          // disabled={isLoading || !isItemDeliveryEnabled}
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
                         >
-                          <option value="">Select</option>
-                          {symbolOptions.map((symbol) => (
-                            <option key={symbol} value={symbol}>
-                              {symbol}
-                            </option>
-                          ))}
-                        </select><br></br>
-                        {itemDeliveryErrors[index]?.wastageType && (
-                        <span className="error">{itemDeliveryErrors[index]?.wastageType}</span>
-                        )}
-                      </TableCell>
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <input
-                          value={item?.wastageValue ?? ""}
-                          className="input itemInput"
-                          type="number"
-                          onChange={(e) =>
-                            handleChangeDeliver(
-                              e.target.value,
-                              "wastageValue",
-                              index
-                            )
-                          }
-                          onWheel={(e) => e.target.blur()}
-                        />
-                        <br></br>
-                        {itemDeliveryErrors[index]?.wastageValue && (
-                        <span className="error">{itemDeliveryErrors[index]?.wastageValue}</span>
-                        )}
-                      </TableCell>
-                      <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <input
-                          value={item.finalPurity ?? ""}
-                          className="input itemInput"
-                          readOnly
-                          onChange={(e) =>
-                            handleChangeDeliver(
-                              e.target.value,
-                              "finalPurity",
-                              index
-                            )
-                          }
-                          onWheel={(e) => e.target.blur()}
-                        />
-                      </TableCell>
-                      {
-                        item.id ? <TableCell></TableCell> :  <TableCell
-                        rowSpan={item?.deduction.length || 1}
-                        className="tableCell"
-                      >
-                        <button
-                          disabled={!edit}
-                          onClick={() => handleRemovedelivery(index)}
-                          className="icon-button"
+                          <select
+                            value={item?.itemName}
+                            onChange={(e) =>
+                              handleChangeDeliver(
+                                e.target.value,
+                                "itemName",
+                                index
+                              )
+                            }
+                            className="select-small"
+                            // disabled={isLoading || !isItemDeliveryEnabled}
+                          >
+                            <option value="">Select</option>
+                            {dropDownItems.masterItems.map((option) => (
+                              <option key={option.id} value={option?.itemName}>
+                                {option?.itemName}
+                              </option>
+                            ))}
+                          </select>
+                          <br></br>
+                          {itemDeliveryErrors[index]?.itemName && (
+                            <span className="error">
+                              {itemDeliveryErrors[index]?.itemName}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
                         >
-                          <MdDeleteForever size={25} className="delIcon" />
-                        </button>
-                      </TableCell>
-                      }
-                    </TableRow>
+                          <input
+                            value={item?.itemWeight ?? ""}
+                            className="input itemInput"
+                            type="number"
+                            onChange={(e) =>
+                              handleChangeDeliver(
+                                e.target.value,
+                                "itemWeight",
+                                index
+                              )
+                            }
+                            onWheel={(e) => e.target.blur()}
+                          />
+                          <br></br>
+                          {itemDeliveryErrors[index]?.itemWeight && (
+                            <span className="error">
+                              {itemDeliveryErrors[index]?.itemWeight}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <select
+                            value={item?.touch}
+                            onChange={(e) =>
+                              handleChangeDeliver(
+                                e.target.value,
+                                "touch",
+                                index
+                              )
+                            }
+                            className="select-small"
+                            // disabled={isLoading || !isItemDeliveryEnabled}
+                          >
+                            <option value="">Select</option>
+                            {dropDownItems.touchList.map((option) => (
+                              <option key={option.id} value={option.touch}>
+                                {option.touch}
+                              </option>
+                            ))}
+                          </select>
+                          <br></br>
+                          {itemDeliveryErrors[index]?.touch && (
+                            <span className="error">
+                              {itemDeliveryErrors[index]?.touch}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <Button
+                            disabled={edit ? false : true}
+                            onClick={() => handlededuction(index)}
+                          >
+                            +
+                          </Button>
+                        </TableCell>
 
-                    {/* Remaining stone rows */}
-                    {item.deduction.map(
-                      (s, i) =>
-                        i !== 0 && (
-                          <TableRow key={i}>
+                        {/* First deduction row */}
+                        {item?.deduction?.length >= 1 ? (
+                          <>
                             <TableCell className="tableCell">
                               <select
-                                value={s.type}
+                                value={
+                                  item?.deduction.length >= 1
+                                    ? item?.deduction[0].type
+                                    : ""
+                                }
                                 onChange={(e) =>
                                   handleDeductionChange(
                                     index,
-                                    i,
+                                    0,
                                     "type",
                                     e.target.value
                                   )
@@ -766,196 +619,400 @@ function AgrNewJobCard({
                                 ))}
                               </select>
                               <br></br>
-                              {deductionErrors[i]?.type && (
-                        <span className="error">{deductionErrors[i]?.type}</span>
-                      )}
+                              {deductionErrors[0]?.type && (
+                                <span className="error">
+                                  {deductionErrors[0]?.type}
+                                </span>
+                              )}
                             </TableCell>
                             <TableCell className="tableCell">
                               <input
-                                value={s.weight ?? ""}
+                                value={
+                                  item?.deduction.length >= 1
+                                    ? item.deduction[0].weight
+                                    : ""
+                                }
                                 className="input"
                                 type="number"
                                 onChange={(e) =>
                                   handleDeductionChange(
                                     index,
-                                    i,
+                                    0,
                                     "weight",
                                     e.target.value
                                   )
                                 }
                                 onWheel={(e) => e.target.blur()}
-                              /><br></br>
-                              {deductionErrors[i]?.weight && (
-                          <span className="error">{deductionErrors[i]?.weight}</span>
-                            )}
-                            </TableCell>
-                             {s.id ? <TableCell></TableCell> : <TableCell className="tableCell">
-                              <MdDeleteForever
-                                className="delIcon"
-                                size={25}
-                                onClick={() => handleRemoveDeduction(index, i)}
                               />
-                            </TableCell>}
-                          </TableRow>
-                        )
-                    )}
-                  </React.Fragment>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <button
-            disabled={!edit}
-            onClick={() =>
-              setItemDelivery([
-                ...itemDelivery,
-                {
-                  itemName: "",
-                  itemWeight: "",
-                  touch: "",
-                  deduction: [{ type: "", weight: "" }],
-                  netWeight: "",
-                  wastageTyp: "",
-                  wastageValue: "",
-                  finalPurity: "",
-                },
-              ])
-            }
-            className="circle-button"
-          >
-            +
-          </button>
-          <div className="totals-section">
-            <div className="total-row">
-              <span className="total-purity-label">Total Item Purity:</span>
-              <span className="total-purity-value">
-                {format(totalFinishedPurity)}
-              </span>
-            </div>
-          </div>
-        </Box>
-        {/* Received Section */}
-        <Box className="section" style={{ opacity: edit ? 1 : 0.5 }}>
-          <h3 className="section-title">Received Section</h3>
-          <div className="received-section-container">
-            {receivedMetalReturns.map((row, i) => (
-              <div
-                key={row.id || `received-${i}`}
-                className="received-section-row"
-              >
-                <div>
-                  <input
-                  type="number"
-                  placeholder="Weight"
-                  value={row.weight}
-                  onChange={(e) =>
-                    handleReceivedRowChange(i, "weight", e.target.value)
-                  }
-                  className="input-small"
-                  // disabled={isLoading || !isReceivedSectionEnabled}
-                  onWheel={(e) => e.target.blur()}
-                /><br></br>
-                      {receivedErrors[i]?.weight && (
-                        <span className="error">{receivedErrors[i]?.weight}</span>
+                              <br></br>
+                              {deductionErrors[0]?.weight && (
+                                <span className="error">
+                                  {deductionErrors[0]?.weight}
+                                </span>
+                              )}
+                            </TableCell>
+                            {item.deduction[0].id ? (
+                              <TableCell></TableCell>
+                            ) : (
+                              <TableCell className="tableCell">
+                                <button
+                                  type="button"
+                                  disabled={!edit}
+                                  onClick={() =>
+                                    handleRemoveDeduction(index, 0)
+                                  } // stone remove
+                                  className="icon-button"
+                                >
+                                  <MdDeleteForever
+                                    size={25}
+                                    className="delIcon"
+                                  />
+                                </button>
+                              </TableCell>
+                            )}
+                          </>
+                        ) : (
+                          <TableCell colSpan={3} rowSpan={1}>
+                            No stone
+                          </TableCell>
+                        )}
+
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <input
+                            value={item?.netWeight ?? ""}
+                            className="input itemInput"
+                            readOnly
+                            onWheel={(e) => e.target.blur()}
+                          />
+                        </TableCell>
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <select
+                            value={item?.wastageType}
+                            onChange={(e) =>
+                              handleChangeDeliver(
+                                e.target.value,
+                                "wastageType",
+                                index
+                              )
+                            }
+                            className="select-small"
+                            // disabled={isLoading || !isItemDeliveryEnabled}
+                          >
+                            <option value="">Select</option>
+                            {symbolOptions.map((symbol) => (
+                              <option key={symbol} value={symbol}>
+                                {symbol}
+                              </option>
+                            ))}
+                          </select>
+                          <br></br>
+                          {itemDeliveryErrors[index]?.wastageType && (
+                            <span className="error">
+                              {itemDeliveryErrors[index]?.wastageType}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <input
+                            value={item?.wastageValue ?? ""}
+                            className="input itemInput"
+                            type="number"
+                            onChange={(e) =>
+                              handleChangeDeliver(
+                                e.target.value,
+                                "wastageValue",
+                                index
+                              )
+                            }
+                            onWheel={(e) => e.target.blur()}
+                          />
+                          <br></br>
+                          {itemDeliveryErrors[index]?.wastageValue && (
+                            <span className="error">
+                              {itemDeliveryErrors[index]?.wastageValue}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <input
+                            value={item.finalPurity ?? ""}
+                            className="input itemInput"
+                            readOnly
+                            onChange={(e) =>
+                              handleChangeDeliver(
+                                e.target.value,
+                                "finalPurity",
+                                index
+                              )
+                            }
+                            onWheel={(e) => e.target.blur()}
+                          />
+                        </TableCell>
+                        {item.id ? (
+                          <TableCell></TableCell>
+                        ) : (
+                          <TableCell
+                            rowSpan={item?.deduction.length || 1}
+                            className="tableCell"
+                          >
+                            <button
+                              disabled={!edit}
+                              onClick={() => handleRemovedelivery(index)}
+                              className="icon-button"
+                            >
+                              <MdDeleteForever size={25} className="delIcon" />
+                            </button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+
+                      {/* Remaining stone rows */}
+                      {item.deduction.map(
+                        (s, i) =>
+                          i !== 0 && (
+                            <TableRow key={i}>
+                              <TableCell className="tableCell">
+                                <select
+                                  value={s.type}
+                                  onChange={(e) =>
+                                    handleDeductionChange(
+                                      index,
+                                      i,
+                                      "type",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="select-small"
+                                  // disabled={isLoading || !isItemDeliveryEnabled}
+                                >
+                                  <option value="">Select</option>
+                                  {stoneOptions.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                                <br></br>
+                                {deductionErrors[i]?.type && (
+                                  <span className="error">
+                                    {deductionErrors[i]?.type}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="tableCell">
+                                <input
+                                  value={s.weight ?? ""}
+                                  className="input"
+                                  type="number"
+                                  onChange={(e) =>
+                                    handleDeductionChange(
+                                      index,
+                                      i,
+                                      "weight",
+                                      e.target.value
+                                    )
+                                  }
+                                  onWheel={(e) => e.target.blur()}
+                                />
+                                <br></br>
+                                {deductionErrors[i]?.weight && (
+                                  <span className="error">
+                                    {deductionErrors[i]?.weight}
+                                  </span>
+                                )}
+                              </TableCell>
+                              {s.id ? (
+                                <TableCell></TableCell>
+                              ) : (
+                                <TableCell className="tableCell">
+                                  <MdDeleteForever
+                                    className="delIcon"
+                                    size={25}
+                                    onClick={() =>
+                                      handleRemoveDeduction(index, i)
+                                    }
+                                  />
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          )
                       )}
-                </div>
-                <span className="operator">x</span>
-               <div>
-                <input
-                  type="number"
-                  placeholder="Touch"
-                  value={row.touch}
-                  onChange={(e) =>
-                    handleReceivedRowChange(i, "touch", e.target.value)
-                  }
-                  className="input-small"
-                  // disabled={isLoading || !isReceivedSectionEnabled}
-                  onWheel={(e) => e.target.blur()}
-                />
-                {receivedErrors[i]?.touch && (
-                        <span className="error">{receivedErrors[i]?.touch}</span>
-                      )}
-               </div>
-                <span className="operator">=</span>
-                <input
-                  type="text"
-                  readOnly
-                  placeholder="Purity"
-                  value={format(row.purity)}
-                  className="input-read-only input-small"
-                />
-                <button
-                  type="button"
-                  disabled={edit?row.id?true:false:true}
-                  onClick={() => handleRemoveReceive(i)}
-                  className="icon-button"
-                >
-                  <MdDeleteForever size={25} className="delIcon" />
-                </button>
-              </div>
-            ))}
+                    </React.Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
             <button
-                disabled={
-                      edit
-                        ? !lastJobCardId
-                          ? true // If lastJobCard doesn't exist yet, disable the button
-                          : jobCardId !== lastJobCardId
-                          ? true
-                          : lastIsFinish === "false"
-                          ? false
-                          : true
-                        : true // if edit is false the button is disable in add new jobcard
-                    }
+              disabled={!edit}
               onClick={() =>
-                setReceivedMetalReturns([
-                  ...receivedMetalReturns,
-                  { weight: "", touch: "", purity: "" },
+                setItemDelivery([
+                  ...itemDelivery,
+                  {
+                    itemName: "",
+                    itemWeight: "",
+                    touch: "",
+                    deduction: [{ type: "", weight: "" }],
+                    netWeight: "",
+                    wastageTyp: "",
+                    wastageValue: "",
+                    finalPurity: "",
+                  },
                 ])
               }
               className="circle-button"
-              // disabled={isLoading || !isReceivedSectionEnabled}
             >
               +
             </button>
-          </div>
-          <div className="totals-section">
-            <div className="total-row">
-              <span className="total-purity-label">Total Received Purity:</span>
-              <span className="total-purity-value">
-                {format(totalReceivedPurity)}
-              </span>
+            <div className="totals-section">
+              <div className="total-row">
+                <span className="total-purity-label">Total Item Purity:</span>
+                <span className="total-purity-value">
+                  {format(totalFinishedPurity)}
+                </span>
+              </div>
             </div>
-          </div>
-        </Box>
-        <Box className="section" style={{ textAlign: "center" }}>
-          {jobCardBalance < 0 ? (
-            <p className="balance-text-owner">
-              Owner should give balance:
-              <span className="balance-amount">{format(jobCardBalance)}</span>
-            </p>
-          ) : jobCardBalance > 0 ? (
-            <p className="balance-text-goldsmith ">
-              Goldsmith should give balance:
-              <span className="balance-amount">{format(jobCardBalance)}</span>
-            </p>
-          ) : (
-            <p className="balanceNill">
-              balance Nill:
-              <span className="balance-amount">
-                {format(jobCardBalance)}
-              </span>{" "}
-            </p>
-          )}
-        </Box>
-      </DialogContent>
-      <DialogActions className="actionButton">
-        <Button autoFocus onClick={handleSave}>
-          {edit ? "Update" : "Save"}
-        </Button>
-        <Button autoFocus onClick={handleCloseJobcard}>
-          Print
-        </Button>
-      </DialogActions>
+          </Box>
+          {/* Received Section */}
+          <Box className="section" style={{ opacity: edit ? 1 : 0.5 }}>
+            <h3 className="section-title">Received Section</h3>
+            <div className="received-section-container">
+              {receivedMetalReturns.map((row, i) => (
+                <div
+                  key={row.id || `received-${i}`}
+                  className="received-section-row"
+                >
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Weight"
+                      value={row.weight}
+                      onChange={(e) =>
+                        handleReceivedRowChange(i, "weight", e.target.value)
+                      }
+                      className="input-small"
+                      // disabled={isLoading || !isReceivedSectionEnabled}
+                      onWheel={(e) => e.target.blur()}
+                    />
+                    <br></br>
+                    {receivedErrors[i]?.weight && (
+                      <span className="error">{receivedErrors[i]?.weight}</span>
+                    )}
+                  </div>
+                  <span className="operator">x</span>
+                  <div>
+                    <select
+                      value={row.touch}
+                      onChange={(e) =>
+                        handleReceivedRowChange(i, "touch", e.target.value)
+                      }
+                     className="input-small"
+                      // disabled={isLoading || !isItemDeliveryEnabled}
+                    >
+                      <option value="">Select</option>
+                      {dropDownItems.touchList.map((option) => (
+                        <option key={option.id} value={option.touch}>
+                          {option.touch}
+                        </option>
+                      ))}
+                    </select>
+                    {receivedErrors[i]?.touch && (
+                      <span className="error">{receivedErrors[i]?.touch}</span>
+                    )}
+                  </div>
+                  <span className="operator">=</span>
+                  <input
+                    type="text"
+                    readOnly
+                    placeholder="Purity"
+                    value={format(row.purity)}
+                    className="input-read-only input-small"
+                  />
+                  <button
+                    type="button"
+                    disabled={edit ? (row.id ? true : false) : true}
+                    onClick={() => handleRemoveReceive(i)}
+                    className="icon-button"
+                  >
+                    <MdDeleteForever size={25} className="delIcon" />
+                  </button>
+                </div>
+              ))}
+              <button
+                disabled={
+                  edit
+                    ? !lastJobCardId
+                      ? true // If lastJobCard doesn't exist yet, disable the button
+                      : jobCardId !== lastJobCardId
+                      ? true
+                      : lastIsFinish === "false"
+                      ? false
+                      : true
+                    : true // if edit is false the button is disable in add new jobcard
+                }
+                onClick={() =>
+                  setReceivedMetalReturns([
+                    ...receivedMetalReturns,
+                    { weight: "", touch: "", purity: "" },
+                  ])
+                }
+                className="circle-button"
+                // disabled={isLoading || !isReceivedSectionEnabled}
+              >
+                +
+              </button>
+            </div>
+            <div className="totals-section">
+              <div className="total-row">
+                <span className="total-purity-label">
+                  Total Received Purity:
+                </span>
+                <span className="total-purity-value">
+                  {format(totalReceivedPurity)}
+                </span>
+              </div>
+            </div>
+          </Box>
+          <Box className="section" style={{ textAlign: "center" }}>
+            {jobCardBalance < 0 ? (
+              <p className="balance-text-owner">
+                Owner should give balance:
+                <span className="balance-amount">{format(jobCardBalance)}</span>
+              </p>
+            ) : jobCardBalance > 0 ? (
+              <p className="balance-text-goldsmith ">
+                Goldsmith should give balance:
+                <span className="balance-amount">{format(jobCardBalance)}</span>
+              </p>
+            ) : (
+              <p className="balanceNill">
+                balance Nill:
+                <span className="balance-amount">
+                  {format(jobCardBalance)}
+                </span>{" "}
+              </p>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions className="actionButton">
+          <Button autoFocus onClick={handleSave}>
+            {edit ? "Update" : "Save"}
+          </Button>
+          <Button autoFocus onClick={handleCloseJobcard}>
+            Print
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );
