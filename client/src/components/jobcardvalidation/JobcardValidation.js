@@ -61,7 +61,6 @@ const receiveRowValidation = (received, setReceivedErrors) => {
     if (!/^\d*\.?\d*$/.test(row.weight)) {
       rowErrors.weight = "Enter valid weight";
     }
-    if (row.touch < 0) rowErrors.touch = "negative value";
     if (!row.touch) rowErrors.touch = "Touch";
     if (!/^\d*\.?\d*$/.test(row.touch)) {
       rowErrors.touch = "Enter valid touch";
