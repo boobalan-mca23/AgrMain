@@ -7,6 +7,7 @@ import Goldsmith from "./components/Goldsmith/Goldsmith";
 import Billing from "./components/Billing/Billing";
 import Report from "./components/Report/Report";
 import Stock from "./components/Stock/Stock";
+import RawGoldStock from "./components/rawGoldStock/RawGoldStock";
 import Navbar from "./components/Navbar/Navbar";
 import Master from "./components/Master/Master";
 import MasterCustomer from "./components/Master/Mastercustomer";
@@ -143,6 +144,14 @@ function App() {
           element={
             <PageWithNavbar>
               <Stock />
+            </PageWithNavbar>
+          }
+        />
+        <Route
+          path="/rawGoldStock"
+          element={
+            <PageWithNavbar>
+              <RawGoldStock/>
             </PageWithNavbar>
           }
         />

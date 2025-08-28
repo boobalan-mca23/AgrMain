@@ -1,0 +1,40 @@
+.rawgoldhead{
+    text-align: center;
+    font-size: larger;
+    
+}
+.rawGoldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  padding: 20px;
+}
+
+.rawGold {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rawGold:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+.rawGold p {
+  margin: 8px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.rawGold p:first-child {
+  font-weight: 600;
+  color: #0066cc;
+}
+.gr{
+    
+    color: gold;
+    font-size: 1.2rem;
+}

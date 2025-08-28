@@ -17,6 +17,7 @@ const masterBullionRoutes = require("./Routes/masterbullion.routes");
 const bullionPurchaseRoutes = require("./Routes/bullionpurchase.routes");
 const assignmentRoutes = require("./Routes/assignment.routes");
 const repairRoutes = require("./Routes/repair.routes");
+const rawGoldRoutes=require("./Routes/rawGoldStock.routes");
 
 const path = require("path");
 
@@ -33,6 +34,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/rawgold",rawGoldRoutes);
 app.use("/api", userRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/master-items", masterItemRoutes);
