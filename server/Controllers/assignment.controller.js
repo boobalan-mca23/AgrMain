@@ -1,7 +1,88 @@
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
-const setTotalToStock = async () => {
+
+
+const itemToStock = async () => {
+  const items = await prisma.itemDelivery.findMany({
+    include: {
+      deduction: true, // bring all deductions for each delivery
+    },
+  });
+
+  // group by itemName + touch
+  const grouped = items.reduce((acc, item) => {
+    const key = `${item.itemName}-${item.touch}`;
+
+    if (!acc[key]) {
+      acc[key] = {
+        jobcardId: item.jobcardId,
+        itemName: item.itemName,
+        touch: item.touch,
+        totalItemWeight: 0,
+        totalFinalPurity: 0,
+        totalWastageValue: 0,
+        totalStoneWeight: 0,
+        count: 0,
+      };
+    }
+
+    acc[key].totalItemWeight += item.itemWeight || 0;
+    acc[key].totalFinalPurity += item.finalPurity || 0;
+    acc[key].totalWastageValue += item.wastageValue || 0;
+    acc[key].totalStoneWeight += item.deduction.reduce(
+      (sum, d) => sum + (d.stoneWt || 0),
+      0
+    );
+    acc[key].count += 1;
+
+    return acc;
+  }, {});
+
+  let stockInformation = Object.values(grouped);
+
+  for (const stockItem of stockInformation) {
+    let exist = await prisma.productStock.findFirst({
+      where: {
+        itemName: stockItem.itemName,
+        touch: stockItem.touch,
+      },
+      select: { id: true },
+    });
+
+    if (exist) {
+      await prisma.productStock.update({
+        where: { id: exist.id },
+        data: {
+          itemName: stockItem.itemName,
+          itemWeight: stockItem.totalItemWeight,
+          touch: stockItem.touch,
+          stoneWeight: stockItem.totalStoneWeight,
+          wastageValue: stockItem.totalWastageValue,
+          finalWeight: stockItem.totalStoneWeight,
+        },
+      });
+    } else {
+      await prisma.productStock.create({
+        data: {
+          jobcardId: stockItem.jobcardId,
+          itemName: stockItem.itemName,
+          itemWeight: stockItem.totalItemWeight,
+          touch: stockItem.touch,
+          stoneWeight: stockItem.totalStoneWeight,
+          wastageValue: stockItem.totalWastageValue,
+          finalWeight: stockItem.totalStoneWeight,
+        },
+      });
+    }
+  }
+};
+
+
+
+
+
+const setTotalRawGold = async () => {
   //  Group logs by rawGoldStockId and sum weights
   const grouped = await prisma.rawGoldLogs.groupBy({
     by: ["rawGoldStockId"],
@@ -19,15 +100,17 @@ const setTotalToStock = async () => {
       },
     });
   }
-
 };
 
-const addRawGoldStock = async (receiveSection,goldSmithId,jobCardId) => {  // stock update
- 
+
+
+
+
+const addRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
+  // stock update
+
   if (receiveSection.length >= 1) {
     for (const receive of receiveSection) {
-     
-
       let data = {
         goldsmithId: parseInt(goldSmithId),
         jobcardId: parseInt(jobCardId),
@@ -59,9 +142,9 @@ const addRawGoldStock = async (receiveSection,goldSmithId,jobCardId) => {  // st
             id: true, // only return the id
           },
         });
-        const rawGoldLog=await prisma.rawGoldLogs.create({
+        const rawGoldLog = await prisma.rawGoldLogs.create({
           data: {
-            rawGoldStockId:stock.id,
+            rawGoldStockId: stock.id,
             weight: data.weight,
             touch: data.touch,
             purity: data.purity,
@@ -69,14 +152,17 @@ const addRawGoldStock = async (receiveSection,goldSmithId,jobCardId) => {  // st
         });
         data = {
           ...data,
-          logId : rawGoldLog.id 
-       }
+          logId: rawGoldLog.id,
+        };
         await prisma.receivedsection.create({ data });
       }
     }
   }
-   await setTotalToStock()
+  await setTotalRawGold();
 };
+
+
+
 
 const checkStockAvailabilty = (touchValues, givenGold) => {
   // helper function to update nextJobCardBalance
@@ -89,6 +175,8 @@ const checkStockAvailabilty = (touchValues, givenGold) => {
     }
   }
 };
+
+
 
 const updateNextJobBalance = async (id, goldsmithId) => {
   // helper function to update nextJobCardBalance
@@ -126,6 +214,11 @@ const updateNextJobBalance = async (id, goldsmithId) => {
     });
   }
 };
+
+
+
+
+
 // main controllers
 const createJobcard = async (req, res) => {
   try {
@@ -195,6 +288,12 @@ const createJobcard = async (req, res) => {
     });
   }
 };
+
+
+
+
+
+
 // main controllers
 const updateJobCard = async (req, res) => {
   const { goldSmithId, jobCardId } = req.params;
@@ -261,7 +360,9 @@ const updateJobCard = async (req, res) => {
         description: description,
       },
     });
+
     // update given gold information
+
     for (const gold of givenGold) {
       const data = {
         goldsmithId: parseInt(goldSmithId),
@@ -360,9 +461,10 @@ const updateJobCard = async (req, res) => {
           });
         }
       }
+      await itemToStock(); // product stock
     }
     // receive section update and create
-    await addRawGoldStock(receiveSection,goldSmithId,jobCardId);
+    await addRawGoldStock(receiveSection, goldSmithId, jobCardId);
 
     await updateNextJobBalance(totalOfJobcard.id, goldSmithId); // update nextJobCardNBalance
 
@@ -416,6 +518,12 @@ const updateJobCard = async (req, res) => {
   }
 };
 
+
+
+
+
+
+
 // main controllers
 // getAllJobCard By GoldSmithId
 
@@ -465,6 +573,9 @@ const getAllJobCardsByGoldsmithId = async (req, res) => {
   }
 };
 
+
+
+
 // main controllers
 // getJobCardBy Id
 
@@ -510,6 +621,12 @@ const getJobCardById = async (req, res) => {
   }
 };
 
+
+
+
+
+
+
 // main controllers
 const getPreviousJobCardBal = async (req, res) => {
   const { id } = req.params;
@@ -535,6 +652,11 @@ const getPreviousJobCardBal = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
+
+
+
+
 
 // main controllers
 const formatDate = (dateString) => {
@@ -590,6 +712,9 @@ const jobCardFilter = async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 };
+
+
+
 module.exports = {
   createJobcard,
   updateJobCard,

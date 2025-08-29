@@ -35,6 +35,7 @@ model MasterTouch {
   id             Int    @id @default(autoincrement())
   touch          Float
   rawGoldStock   RawgoldStock[]
+ 
   createdAt DateTime @default(now())
 }
 
@@ -154,6 +155,7 @@ model Jobcard {
   givenGold     givenGold[]
   deliveries    itemDelivery[]  
   received      Receivedsection[]
+  productStock  ProductStock[]
   total         Total[] 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @default(now())
@@ -285,4 +287,18 @@ model Repair {
   touch         Float
   netWeight     Float
   createdAt     DateTime   @default(now())
+}
+
+model ProductStock{
+  id           Int   @id @default(autoincrement())
+  jobcardId    Int
+  jobcard      Jobcard?      @relation(fields: [jobcardId], references: [id])
+  itemName     String
+  itemWeight   Float
+  touch        Float
+  stoneWeight  Float
+  wastageValue Float
+  finalWeight  Float
+  createdAt     DateTime   @default(now())
+  
 }
