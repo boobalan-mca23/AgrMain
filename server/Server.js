@@ -18,7 +18,7 @@ const bullionPurchaseRoutes = require("./Routes/bullionpurchase.routes");
 const assignmentRoutes = require("./Routes/assignment.routes");
 const repairRoutes = require("./Routes/repair.routes");
 const rawGoldRoutes=require("./Routes/rawGoldStock.routes");
-
+const productStock=require("./Routes/productStock.routes");
 const path = require("path");
 
 require("dotenv").config();
@@ -50,6 +50,7 @@ app.use("/api/master-bullion", masterBullionRoutes);
 app.use("/api/bullion-purchase", bullionPurchaseRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/repair", repairRoutes);
+app.use("/api/productStock",productStock);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(PORT, () => {

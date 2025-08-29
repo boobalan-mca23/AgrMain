@@ -1,7 +1,26 @@
-import React, { useState } from "react";
-import "./Stock.css";
 
+
+import { useState,useEffect } from "react";
+import axios from 'axios'
+import { BACKEND_SERVER_URL } from "../../Config/Config";
+import "./Stock.css";
 const Stock = () => {
+   const [stockData,setStockData]=useState([])
+
+   useEffect(()=>{
+       const fetchProductStock=async()=>{
+         const res=await axios.get(`${BACKEND_SERVER_URL}/api/productStock`)
+         console.log('res from productStock',res.data.allStock)
+         setStockData(res.data.allStock)
+       }
+       fetchProductStock()
+      
+   },[])
+
+
+
+
+
 
   const stockSummary = [
     { label: "Total Items", value: 10 },
@@ -9,32 +28,9 @@ const Stock = () => {
     { label: "Total Wastage (Goldsmith)", value: "5.000g" },
     { label: "Total Purity (Jewel Stock)", value: "110.000g" },
   ];
+   
 
-  const stockData = [
-    {
-      id: 1,
-      source: "Goldsmith",
-      type: "Ring",
-      weight: 15.5,
-      purityValue: null,
-      wastage: 0.5,
-      status: "In Stock",
-      displayDateIn: "08/08/2025",
-    },
-  
-    {
-      id: 2,
-      source: "Goldsmith",
-      type: "Bracelet",
-      weight: 12.0,
-      purityValue: null,
-      wastage: 0.2,
-      status: "Sold",
-      displayDateIn: "06/08/2025",
-    },
-  ];
-
-  const uniqueTypes = [...new Set(stockData.map((item) => item.type))].sort();
+  // const uniqueTypes = [...new Set(stockData.map((item) => item.type))].sort();
 
   const [filterSource, setFilterSource] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -54,7 +50,7 @@ const Stock = () => {
         ))}
       </div>
 
-      <div className="stock-filters">
+      {/* <div className="stock-filters">
         <select
           value={filterSource}
           onChange={(e) => setFilterSource(e.target.value)}
@@ -90,30 +86,33 @@ const Stock = () => {
           value={filterDate}
           onChange={(e) => setFilterDate(e.target.value)}
         />
-      </div>
+      </div> */}
 
       <div className="stock-table-container">
         <table className="stock-table">
           <thead>
             <tr>
               <th>Serial No</th>
-              <th>Source</th>
-              <th>Type</th>
-              <th>Weight (g)</th>
-              <th>Purity (g)</th>
-              <th>Wastage (g)</th>
-              <th>Status</th>
-              <th>Date In</th>
+              <th>ProductName</th>
+              <th>ItemWeight (g)</th>
+              <th>Tocuh </th>
+              <th>StoneWt (g)</th>
+              <th>WastageValue (g)</th>
+              <th>Final Purity</th>
             </tr>
           </thead>
           <tbody>
             {stockData.map((item, index) => (
               <tr key={item.id}>
                 <td>{index + 1}</td>
-                <td>{item.source}</td>
-                <td>{item.type}</td>
-                <td>{item.weight.toFixed(3)}</td>
-                <td>
+                <td>{item.itemName}</td>
+                <td>{item.itemWeight.toFixed(3)}</td>
+                <td>{item.touch}</td>
+                <td>{item.stoneWeight.toFixed(3)}</td>
+                <td>{item.wastageValue.toFixed(3)}</td>
+                <td>{item.finalWeight.toFixed(3)}</td>
+                
+                {/* <td>
                   {item.source === "Jewel Stock" && item.purityValue !== null
                     ? item.purityValue.toFixed(3)
                     : "N/A"}
@@ -122,15 +121,15 @@ const Stock = () => {
                   {item.source === "Goldsmith" && item.wastage !== null
                     ? item.wastage.toFixed(3)
                     : "N/A"}
-                </td>
-                <td
+                </td> */}
+                {/* <td
                   className={
                     item.status === "Sold" ? "sold-status" : "in-stock-status"
                   }
                 >
                   {item.status}
                 </td>
-                <td>{item.displayDateIn}</td>
+                <td>{item.displayDateIn}</td> */}
               </tr>
             ))}
           </tbody>
