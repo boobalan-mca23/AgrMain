@@ -35,7 +35,7 @@ const Masteradditems = () => {
         toast.success("Item added successfully!");
       } catch (err) {
         console.error("Failed to add item", err);
-        toast.error("Failed to add item. Please try again.");
+        toast.error(err.response.data.msg,{autoClose:2000});
       }
     } else {
       toast.warn("Please enter item name.");

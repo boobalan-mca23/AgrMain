@@ -30,6 +30,9 @@ const itemValidation = (itemDelivery,setItemDeliveryErrors) => {
     if (!/^\d*\.?\d*$/.test(row.itemWeight)) {
       rowErrors.itemWeight = "Enter valid weight";
     }
+     if (row.count <= 0) rowErrors.count = "negative value";
+
+
     if (row.touch < 0) rowErrors.touch = "negative";
     if (!row.touch) rowErrors.touch = "touch";
     if (!/^\d*\.?\d*$/.test(row.touch)) {

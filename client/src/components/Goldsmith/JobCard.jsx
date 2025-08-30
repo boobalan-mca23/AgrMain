@@ -41,6 +41,7 @@ function JobCardDetails() {
     {
       itemName: "",
       itemWeight: "",
+      count:"",
       touch: "",
       deduction: [{ type: "", weight: "" }],
       netWeight: "",
@@ -86,6 +87,7 @@ function JobCardDetails() {
       {
       itemName: "",
       itemWeight: "",
+      count:"",
       touch: "",
       deduction: [{ type: "", weight: "" }],
       netWeight: "",
@@ -183,6 +185,7 @@ function JobCardDetails() {
         openingBalance,
       },
     };
+    console.log('payload',payload)
     try {
       const response = await axios.put(
         `${BACKEND_SERVER_URL}/api/assignments/${id}/${jobCardId}`, // id is GoldSmith and jobCard id
@@ -200,6 +203,7 @@ function JobCardDetails() {
         {
           itemName: "",
           itemWeight: "",
+          count:"",
           touch: "",
           deduction: [{ type: "", weight: "" }],
           netWeight: "",
@@ -320,7 +324,7 @@ function JobCardDetails() {
                     <td rowSpan={2}>Date</td>
                     <td rowSpan={2}>JobCardId</td>
                     <td colSpan={4}>Given Gold</td>
-                    <td colSpan={8}>Itm Delivery</td>
+                    <td colSpan={9}>Itm Delivery</td>
                     <td rowSpan={2}>Balance</td>
                     <td rowSpan={2}>isFinished</td>
                     <td rowSpan={2}>Actions</td>
@@ -333,6 +337,7 @@ function JobCardDetails() {
                     <td>DlyDate</td>
                     <td>Itme Name</td>
                     <td>Wt</td>
+                     <td>count</td>
                     <td>tch</td>
                     <td>stoneWt</td>
                     <td>NetWt</td>
@@ -413,6 +418,7 @@ function JobCardDetails() {
                           </td>
                           <td>{d?.itemName || "-"}</td>
                           <td>{d?.itemWeight || "-"}</td>
+                          <td>{d?.count|| "-"}</td>
                           <td>{d?.touch || "-"}</td>
 
                           <td>

@@ -95,6 +95,7 @@ const Stock = () => {
               <th>Serial No</th>
               <th>ProductName</th>
               <th>ItemWeight (g)</th>
+              <th>Count</th>
               <th>Tocuh </th>
               <th>StoneWt (g)</th>
               <th>WastageValue (g)</th>
@@ -107,6 +108,7 @@ const Stock = () => {
                 <td>{index + 1}</td>
                 <td>{item.itemName}</td>
                 <td>{item.itemWeight.toFixed(3)}</td>
+                <td>{item.count||0}</td>
                 <td>{item.touch}</td>
                 <td>{item.stoneWeight.toFixed(3)}</td>
                 <td>{item.wastageValue.toFixed(3)}</td>

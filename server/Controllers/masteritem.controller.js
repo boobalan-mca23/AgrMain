@@ -5,6 +5,14 @@ exports.createItem = async (req, res) => {
   const { itemName } = req.body;
 
   try {
+     const ifExist=await prisma.masterItem.findFirst({
+      where:{
+        itemName:itemName
+      }
+    })
+    if(ifExist){
+      return res.status(400).json({msg:"Item Name  Already Exist"})
+    }
     const newItem = await prisma.masterItem.create({
       data: {
         itemName,
