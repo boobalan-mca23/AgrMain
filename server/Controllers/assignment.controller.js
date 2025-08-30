@@ -703,6 +703,7 @@ const jobCardFilter = async (req, res) => {
         goldsmith: true,
         givenGold: true,
         deliveries: true,
+        received:true,
         total: true,
       },
     });

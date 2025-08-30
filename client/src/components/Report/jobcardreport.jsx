@@ -263,6 +263,8 @@ const JobCardReport = () => {
                       <th >JobCard Id</th>
                       <th colSpan="4">Given Wt</th>
                       <th colSpan="9">Item Delivery</th>
+                      <th colSpan="3">Receive</th>
+                      <th>Total</th>
                       <th >Balance</th>
                       {/* <th colSpan="3">ReceiveAmt</th> */}
                       <th>Is Finished</th>
@@ -283,26 +285,29 @@ const JobCardReport = () => {
                     {/* <td>wastageTyp</td> */}
                       <th>wastageValue</th>
                       <th>FinalPurity</th>
-                      <th colSpan={2}></th>
+                      <th>weight</th>
+                      <th>touch</th>
+                      <th>purity</th>
+                      <th colSpan={3}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {jobCard.map((job, jobIndex) => {
                       const given = job.givenGold;
                       const deliveries = job.deliveries;
-                      // const receive = job.goldSmithReceived;
+                      const receive = job.received;
                       const maxRows =
                         Math.max(
                           given?.length,
                           deliveries?.length,
-                          // receive?.length
+                          receive?.length
                         ) || 1;
                       const total = job.total?.[0];
 
                       return [...Array(maxRows)].map((_, i) => {
                         const g = given?.[i] || {};
                         const d = deliveries?.[i] || {};
-                        // const r = receive?.[i] || {};
+                        const r = receive?.[i] || {};
 
                         return (
                           <tr key={`${job.id}-${i}`}>
@@ -342,19 +347,29 @@ const JobCardReport = () => {
                               : "-"}
                           </td>
                           <td>{d?.itemName || "-"}</td>
-                          <td>{d?.itemWeight || "-"}</td>
-                          <td>{d?.count || "-"}</td>
-                          <td>{d?.touch || "-"}</td>
+                          <td>{d?.itemWeight || "0"}</td>
+                          <td>{d?.count || "0"}</td>
+                          <td>{d?.touch || "0"}</td>
 
                           <td>
                             {d?.deduction && totalStoneWt(d?.deduction)}
                           </td>
-                          <td>{d?.netWeight || "-"}</td>
+                          <td>{d?.netWeight || "0"}</td>
                          
-                          <td>{d?.wastageValue || "-"}</td>
-                          <td>{d?.finalPurity || "-"}</td>
+                          <td>{d?.wastageValue || "0"}</td>
+                          <td>{d?.finalPurity || "0"}</td>
+                          
+                          <td>{r?.weight || "0"}</td> 
+                          <td>{r?.touch || "0"}</td>
+                          <td>{r?.purity || "0"}</td>
+
                           {i === 0 && (
+                            <>
+                               <td rowSpan={maxRows}>
+                                  {total?.receivedTotal || "-"}
+                                </td>
                               <td rowSpan={maxRows}>{total?.jobCardBalance|| "-"}</td>
+                            </>
                             )}
                         
                             {/* <td>
@@ -384,9 +399,7 @@ const JobCardReport = () => {
                             <td>{r?.touch || "-"}</td> */}
                             {i === 0 && (
                               <>
-                                {/* <td rowSpan={maxRows}>
-                                  {total?.receivedTotal || "-"}
-                                </td> */}
+                                
                                 <td rowSpan={maxRows}>
                                   {total?.isFinished === "true" ? <FaCheck /> :<GrFormSubtract size={30}/>}
                                 </td>

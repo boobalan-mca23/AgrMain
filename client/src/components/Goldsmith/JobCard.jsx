@@ -325,9 +325,11 @@ function JobCardDetails() {
                     <td rowSpan={2}>JobCardId</td>
                     <td colSpan={4}>Given Gold</td>
                     <td colSpan={9}>Itm Delivery</td>
+                    <td colSpan={3}>Received</td>
+                    <td rowSpan={2}>Total</td>
                     <td rowSpan={2}>Balance</td>
                     <td rowSpan={2}>isFinished</td>
-                    <td rowSpan={2}>Actions</td>
+                    <td rowSpan={2}>Action</td>
                   </tr>
                   <tr>
                     <td>ItemDate</td>
@@ -344,6 +346,9 @@ function JobCardDetails() {
                     {/* <td>wastageTyp</td> */}
                     <td>wastageValue</td>
                     <td>FinalPurity</td>
+                    <td>weight</td>
+                    <td>touch</td>
+                    <td>purity</td>
                   </tr>
                 </thead>
                 <tbody className="jobCardTbody">
@@ -428,21 +433,23 @@ function JobCardDetails() {
                           {/* <td>{d?.wastageType || "-"}</td> */}
                           <td>{d?.wastageValue || "-"}</td>
                           <td>{d?.finalPurity || "-"}</td>
-                          {i === 0 && (
+                         
+                          <td>{r?.weight || "-"}</td>
+                          <td>{r?.touch || "-"}</td>
+                          <td>{r?.purity||"-"}</td>
+                            {i === 0 && (
                             <>
+                              <td rowSpan={maxRows}>
+                                {total?.receivedTotal || "-"}
+                              </td>
                               <td rowSpan={maxRows}>
                                 {(total?.jobCardBalance).toFixed(3) ?? "-"}
                               </td>
                             </>
                           )}
-                          {/* <td>{r?.weight || "-"}</td>
-                          <td>{r?.touch || "-"}</td> */}
-
                           {i === 0 && (
                             <>
-                              {/* <td rowSpan={maxRows}>
-                                {total?.receivedTotal || "-"}
-                              </td> */}
+                              
                               <td rowSpan={maxRows}>
                                 {total?.isFinished === "true" ? (
                                   <FaCheck />
