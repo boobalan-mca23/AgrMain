@@ -40,8 +40,8 @@ const Masteradditems = () => {
       toast.success("Touch value added successfully!");
     } catch (err) {
       console.error("Failed to add touch", err);
-      toast.error("Failed to add touch. Please enter a valid decimal number.");
-    }
+      toast.error(err.response.data.msg,{autoClose:2000});
+     }
   };
 
   const handleDelete = async (id) => {

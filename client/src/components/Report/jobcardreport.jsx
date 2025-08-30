@@ -262,7 +262,7 @@ const JobCardReport = () => {
                       <th >Date</th>
                       <th >JobCard Id</th>
                       <th colSpan="4">Given Wt</th>
-                      <th colSpan="8">Item Delivery</th>
+                      <th colSpan="9">Item Delivery</th>
                       <th >Balance</th>
                       {/* <th colSpan="3">ReceiveAmt</th> */}
                       <th>Is Finished</th>
@@ -276,6 +276,7 @@ const JobCardReport = () => {
                       <th>DlyDate</th>
                       <th>Itme Name</th>
                       <th>Wt</th>
+                      <th>Count</th>
                       <th>tch</th>
                       <th>stoneWt</th>
                       <th>NetWt</th>
@@ -342,6 +343,7 @@ const JobCardReport = () => {
                           </td>
                           <td>{d?.itemName || "-"}</td>
                           <td>{d?.itemWeight || "-"}</td>
+                          <td>{d?.count || "-"}</td>
                           <td>{d?.touch || "-"}</td>
 
                           <td>

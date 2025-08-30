@@ -9,7 +9,16 @@ const createTouch = async (req, res) => {
     if (isNaN(parsedTouch)) {
       return res.status(400).json({ error: "Invalid number" });
     }
-    const newTouch = await prisma.masterTouch.create({
+    const ifExist=await prisma.masterTouch.findFirst({
+      where:{
+        touch:parsedTouch
+      }
+    })
+    if(ifExist){
+      return res.status(400).json({msg:"Touch Already Exist"})
+    }
+
+       const newTouch = await prisma.masterTouch.create({
       data: { touch: parsedTouch ,
         rawGoldStock:{
           create:{
@@ -21,7 +30,12 @@ const createTouch = async (req, res) => {
       },
       
     });
-    res.status(201).json(newTouch);
+      
+    return res.status(201).json(newTouch);
+
+    
+    
+    
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
   }

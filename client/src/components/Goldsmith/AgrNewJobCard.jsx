@@ -453,6 +453,9 @@ function AgrNewJobCard({
                     <TableCell rowSpan={2} className="tableCell">
                       Item Weight
                     </TableCell>
+                     <TableCell rowSpan={2} className="tableCell">
+                      Count
+                    </TableCell>
                     <TableCell rowSpan={2} className="tableCell">
                       Touch
                     </TableCell>
@@ -545,6 +548,30 @@ function AgrNewJobCard({
                           {itemDeliveryErrors[index]?.itemWeight && (
                             <span className="error">
                               {itemDeliveryErrors[index]?.itemWeight}
+                            </span>
+                          )}
+                        </TableCell>
+                         <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <input
+                            value={item?.count ?? ""}
+                            className="input itemInput"
+                            type="number"
+                            onChange={(e) =>
+                              handleChangeDeliver(
+                                e.target.value,
+                                "count",
+                                index
+                              )
+                            }
+                            onWheel={(e) => e.target.blur()}
+                          />
+                          <br></br>
+                          {itemDeliveryErrors[index]?.count && (
+                            <span className="error">
+                              {itemDeliveryErrors[index]?.count}
                             </span>
                           )}
                         </TableCell>

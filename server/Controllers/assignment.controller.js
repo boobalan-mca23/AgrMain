@@ -30,17 +30,18 @@ const itemToStock = async () => {
     acc[key].totalItemWeight += item.itemWeight || 0;
     acc[key].totalFinalPurity += item.finalPurity || 0;
     acc[key].totalWastageValue += item.wastageValue || 0;
+    acc[key].count +=item.count ||0;
     acc[key].totalStoneWeight += item.deduction.reduce(
       (sum, d) => sum + (d.stoneWt || 0),
       0
     );
-    acc[key].count += 1;
+    
 
     return acc;
   }, {});
 
   let stockInformation = Object.values(grouped);
-
+   console.log('stock information',stockInformation)
   for (const stockItem of stockInformation) {
     let exist = await prisma.productStock.findFirst({
       where: {
@@ -56,10 +57,11 @@ const itemToStock = async () => {
         data: {
           itemName: stockItem.itemName,
           itemWeight: stockItem.totalItemWeight,
+          count:stockItem.count,
           touch: stockItem.touch,
           stoneWeight: stockItem.totalStoneWeight,
           wastageValue: stockItem.totalWastageValue,
-          finalWeight: stockItem.totalStoneWeight,
+          finalWeight: stockItem.totalFinalPurity ,
         },
       });
     } else {
@@ -68,6 +70,7 @@ const itemToStock = async () => {
           jobcardId: stockItem.jobcardId,
           itemName: stockItem.itemName,
           itemWeight: stockItem.totalItemWeight,
+          count:stockItem.count,
           touch: stockItem.touch,
           stoneWeight: stockItem.totalStoneWeight,
           wastageValue: stockItem.totalWastageValue,
@@ -169,11 +172,7 @@ const checkStockAvailabilty = (touchValues, givenGold) => {
   const touchGroup = {};
   console.log("touchValues", touchValues);
   console.log("givenGold", givenGold);
-  for (const touch of touchValues) {
-    for (const gold of givenGold) {
-      console.log("touch", parseFloat(gold.touch));
-    }
-  }
+ 
 };
 
 
@@ -235,8 +234,8 @@ const createJobcard = async (req, res) => {
       return res.status(400).json({ error: "Given gold data is required" });
     }
 
-    // const touchValues=await prisma.masterTouch.findMany({select:{id:true,touch:true}})
-    //  checkStockAvailabilty(touchValues,givenGold)
+    const touchValues=await prisma.masterTouch.findMany({select:{id:true,touch:true}})
+     checkStockAvailabilty(touchValues,givenGold)
     const givenGoldArr = givenGold.map((item) => ({
       goldsmithId: parseInt(goldSmithId),
       weight: parseFloat(item.weight) || null,
@@ -399,6 +398,7 @@ const updateJobCard = async (req, res) => {
             data: {
               itemName: item?.itemName,
               itemWeight: parseFloat(item?.itemWeight) || 0,
+              count:parseInt(item?.count)||0,
               touch: parseFloat(item?.touch) || 0,
               sealName: item?.sealName,
               netWeight: parseFloat(item?.netWeight) || 0,
@@ -445,6 +445,7 @@ const updateJobCard = async (req, res) => {
               goldsmithId: parseInt(goldSmithId),
               jobcardId: parseInt(jobCardId),
               itemName: item?.itemName,
+              count:parseInt(item?.count)||0,
               itemWeight: parseFloat(item?.itemWeight) || 0,
               touch: parseFloat(item?.touch) || 0,
               sealName: item?.sealName,

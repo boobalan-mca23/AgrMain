@@ -1,10 +1,12 @@
-const express = require("express");
-const router = express.Router();
-const billController = require("../Controllers/bill.controller");
+const express=require('express')
+const router=express.Router()
 
-router.post("/", billController.createBill);
-router.get("/", billController.getBills);
-router.get("/:id", billController.getBillById);
-router.patch("/:id/receive", billController.addReceiveEntry); 
+const bill=require("../Controllers/bill.controllers")
 
-module.exports = router;
+router.post('/',bill.createBill)
+router.put('/updateBill/:billId',bill.updateBill)
+router.get('/customerBill/:customerId',bill.getBillByCustomer)
+router.get('/:billId',bill.getBillById)
+router.get('/',bill.geAllBill)
+
+module.exports=router

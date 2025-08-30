@@ -22,6 +22,8 @@ model Customer {
   createdAt      DateTime         @default(now())
   transactions   Transaction[]
   customerOrders customer_order[]
+  bill           Bill[]
+            
 }
 
 model MasterItem {
@@ -179,6 +181,7 @@ model itemDelivery {
   id               Int           @id @default(autoincrement())
   itemName         String?
   itemWeight       Float?
+  count            Int?
   touch            Float?
   sealName         String?
   netWeight        Float?
@@ -295,10 +298,44 @@ model ProductStock{
   jobcard      Jobcard?      @relation(fields: [jobcardId], references: [id])
   itemName     String
   itemWeight   Float
+  count        Int
   touch        Float
   stoneWeight  Float
   wastageValue Float
   finalWeight  Float
   createdAt     DateTime   @default(now())
-  
-}
+  }
+ model Bill{
+  id           Int @id @default(autoincrement())
+  customer_id  Int
+  billAmount   Float
+  customers    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  orders       OrderItems[]
+  billReceive  billReceived[]
+ }
+ model OrderItems{
+   id          Int @id @default(autoincrement())
+   billId      Int
+   bill        Bill @relation(fields:[billId],references:[id])
+   productName String
+   weight      Float?
+   stoneWeight Float?
+   afterWeight Float?
+   percentage  Float?
+   finalWeight Float?
+   createdAt   DateTime @default(now())
+ }
+
+ model billReceived{
+   id          Int @id @default(autoincrement())
+   billId      Int
+   bill        Bill @relation(fields:[billId],references:[id])
+   goldRate    Int?
+   gold        Float?
+   touch       Float?
+   purity      Float?
+   amount      Float?
+   createdAt   DateTime @default(now())
+ }
+
