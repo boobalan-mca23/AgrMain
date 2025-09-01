@@ -24,10 +24,11 @@ const Billing = () => {
   const [items, setItems] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [availableproducts, setAvailableProducts] = useState(null);
+  const [originalProducts, setOriginalProducts] = useState(null);
   const [billId] = useState(1);
   const [date] = useState(new Date().toLocaleDateString("en-IN"));
   const [time] = useState(
-    new Date().toLocaleTimeString("en-IN", {
+    new Date().toLocaleTimeString("en-IN", {  
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -159,6 +160,24 @@ const Billing = () => {
   );
 
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
+  
+  const handleSearch = (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+
+    if (!searchTerm) {
+      // Reset list
+      setAvailableProducts(originalProducts);
+      return;
+    }
+
+    if (originalProducts) {
+      const filtered = originalProducts.allStock.filter((product) =>
+        product.itemName.toLowerCase().startsWith(searchTerm)
+      );
+      setAvailableProducts({ allStock: filtered });
+    }
+  };
+
 
   const inputStyle = {
     minWidth: "130px",
@@ -195,9 +214,6 @@ const Billing = () => {
       }
     }
     const fetchProductStock = async () => {
-        //  const res= await fecth(`${BACKEND_SERVER_URL}/api/productStock`);
-        //  console.log('res from productStock',res.data.allStock)
-        //  setAvailableProducts(res.data.allStock)
          try {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/productStock`);
         if (!response.ok) {
@@ -205,6 +221,7 @@ const Billing = () => {
         }
         const data = await response.json();
         setAvailableProducts(data);
+        setOriginalProducts(data); //copy
         console.log("Available Products fetched:", data);
       } catch (error) {
         console.error("Error fetching Available Products:", error);
@@ -551,25 +568,10 @@ const Billing = () => {
             label="Search Product"
             variant="outlined"
             size="small"
-            onChange={(e)=>{
-              const searchTerm = e.target.value.toLowerCase();
-              if(availableproducts){
-                const filteredProducts = availableproducts.allStock.filter(product =>
-                  product.itemName.toLowerCase().startsWith(searchTerm)
-                );
-                setAvailableProducts({allStock: filteredProducts});
-                
-                if(searchTerm === ""){
-                  // Reset to original list if search term is empty
-                  fetch(`${BACKEND_SERVER_URL}/api/productStock`)
-                  .then(response => response.json())
-                  .then(data => setAvailableProducts(data))
-                  .catch(error => console.error("Error fetching products:", error));
-                }
-              }
-            }}
+            onChange={handleSearch}
           />
         </Box>
+
         <Table className="table">
           <TableHead>
             <TableRow>
