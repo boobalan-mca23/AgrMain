@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 // createBill
 
 const createBill = async (req, res) => {
-  const { customerId, billTotal, orderItems, received } = req.body;
+  const { customerId, billTotal,hallMark, orderItems, received } = req.body;
 
   try {
     // check customer
@@ -21,6 +21,11 @@ const createBill = async (req, res) => {
         .status(400)
         .json({ msg: "At least one order item is required" });
     }
+    if(!received || received.length<1){
+      return res
+        .status(400)
+        .json({ msg: "At least one received item is required" });
+    }
 
     const modifiyOrders = orderItems.map((item, _) => ({
       productName: item.productName,
@@ -32,10 +37,12 @@ const createBill = async (req, res) => {
     }));
 
     const modifiyReceieve = received.map((receive, _) => ({
+      customer_id: parseInt(customerId),
       goldRate: parseInt(receive.goldRate),
       gold: parseFloat(receive.gold),
       touch: parseFloat(receive.touch),
       purity: parseFloat(receive.purity),
+      receiveHallMark:parseFloat(receive.receiveHallMark),
       amount: parseInt(receive.amount),
     }));
 
@@ -43,19 +50,17 @@ const createBill = async (req, res) => {
       data: {
         customer_id: parseInt(customerId),
         billAmount: parseFloat(billTotal),
+        hallMark:parseFloat(hallMark),
         orders: { create: modifiyOrders },
-        billReceive:
-          received && received.length > 0
-            ? { create: modifiyReceieve }
-            : undefined,
-      },
+       },
       include: {
         orders: true,
-        billReceive: true,
         customers: true,
       },
     });
 
+    await prisma.billReceived.createMany({data:modifiyReceieve})
+    
     res
       .status(201)
       .json({ message: "Bill created successfully", bill: newBill });
