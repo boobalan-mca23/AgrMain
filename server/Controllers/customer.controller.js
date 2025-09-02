@@ -14,7 +14,14 @@ exports.createCustomer = async (req, res) => {
         name,
         phone: phone || null,
         address: address || null,
+        customerBillBalance:{
+          create:{
+              balance:0  
+          }
+        }
       },
+      
+      
     });
     res.status(201).json(newCustomer);
   } catch (error) {
