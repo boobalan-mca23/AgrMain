@@ -23,6 +23,7 @@ model Customer {
   transactions   Transaction[]
   customerOrders customer_order[]
   bill           Bill[]
+  customerBillBalance customerBillBalance[]
             
 }
 
@@ -338,4 +339,12 @@ model ProductStock{
    amount      Float?
    createdAt   DateTime @default(now())
  }
+model customerBillBalance{
+  id           Int @id @default(autoincrement())
+  balance      Float
+  customer_id  Int
+  customers    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+}
 
