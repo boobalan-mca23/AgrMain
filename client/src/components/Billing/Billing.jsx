@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Autocomplete,
@@ -22,11 +21,14 @@ import "./Billing.css";
 
 const Billing = () => {
   const [customers, setCustomers] = useState([]);
+  const [items, setItems] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [availableproducts, setAvailableProducts] = useState(null);
+  const [originalProducts, setOriginalProducts] = useState(null);
   const [billId] = useState(1);
   const [date] = useState(new Date().toLocaleDateString("en-IN"));
   const [time] = useState(
-    new Date().toLocaleTimeString("en-IN", {
+    new Date().toLocaleTimeString("en-IN", {  
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -46,13 +48,15 @@ const Billing = () => {
       touch: "",
       purityWeight: "",
       amount: "",
-      hallmark: "", 
+      hallmark: "",
     },
   ]);
 
   const [billDetailRows, setBillDetailRows] = useState([
-    { productName: "", wt: "", stWt: "", awt: "", percent: "", fwt: "", hallmark: "" },
+    { productName: "", wt: "", stWt: "", awt: "", percent: "", fwt: "" },
   ]);
+
+  const [billHallmark, setBillHallmark] = useState("");
 
   const handleAddRow = () => {
     setRows([
@@ -64,7 +68,7 @@ const Billing = () => {
         touch: "",
         purityWeight: "",
         amount: "",
-        hallmark: "", 
+        hallmark: "",
       },
     ]);
   };
@@ -78,8 +82,14 @@ const Billing = () => {
   const handleAddBillDetailRow = () => {
     setBillDetailRows([
       ...billDetailRows,
-      { productName: "", wt: "", stWt: "", awt: "", percent: "", fwt: "", hallmark: "" },
+      { productName: "", wt: "", stWt: "", awt: "", percent: "", fwt: "" },
     ]);
+  };
+
+  const handleDeleteBillDetailRow = (index) => {
+    const updated = [...billDetailRows];
+    updated.splice(index, 1);
+    setBillDetailRows(updated);
   };
 
   const handleBillDetailChange = (index, field, value) => {
@@ -93,9 +103,6 @@ const Billing = () => {
     const awt = wt - stWt;
     updated[index].awt = awt.toFixed(3);
     updated[index].fwt = ((awt * percent) / 100).toFixed(3);
-    if (field === "hallmark") {
-      updated[index].hallmark = value;
-    }
 
     setBillDetailRows(updated);
   };
@@ -145,11 +152,7 @@ const Billing = () => {
     ? (parseFloat(lastGoldRate) * pureBalance).toFixed(2)
     : "0.00";
 
-
-  const totalBillHallmark = billDetailRows.reduce(
-    (total, row) => total + (parseFloat(row.hallmark) || 0),
-    0
-  );
+  const totalBillHallmark = parseFloat(billHallmark) || 0;
 
   const totalReceivedHallmark = rows.reduce(
     (total, row) => total + (parseFloat(row.hallmark) || 0),
@@ -157,6 +160,24 @@ const Billing = () => {
   );
 
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
+  
+  const handleSearch = (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+
+    if (!searchTerm) {
+      // Reset list
+      setAvailableProducts(originalProducts);
+      return;
+    }
+
+    if (originalProducts) {
+      const filtered = originalProducts.allStock.filter((product) =>
+        product.itemName.toLowerCase().startsWith(searchTerm)
+      );
+      setAvailableProducts({ allStock: filtered });
+    }
+  };
+
 
   const inputStyle = {
     minWidth: "130px",
@@ -179,6 +200,36 @@ const Billing = () => {
       }
     };
 
+    const fecthItems = async () => {
+      try {
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/master-items`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setItems(data);
+        console.log("Items fetched:", data);
+      } catch (error) {
+        console.error("Error fetching items:", error);
+      }
+    }
+    const fetchProductStock = async () => {
+         try {
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/productStock`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setAvailableProducts(data);
+        setOriginalProducts(data); //copy
+        console.log("Available Products fetched:", data);
+      } catch (error) {
+        console.error("Error fetching Available Products:", error);
+      }
+       }
+
+    fetchProductStock();
+    fecthItems();
     fetchCustomers();
   }, []);
 
@@ -239,7 +290,7 @@ const Billing = () => {
           >
             <h3>Bill Details:</h3>
             <IconButton onClick={handleAddBillDetailRow} className="no-print">
-              <AddCircleOutlineIcon />
+                <AddCircleOutlineIcon />
             </IconButton>
           </Box>
 
@@ -253,11 +304,12 @@ const Billing = () => {
                 <TableCell className="th">AWT</TableCell>
                 <TableCell className="th">%</TableCell>
                 <TableCell className="th">FWT</TableCell>
-                <TableCell className="th">Hallmark Bal</TableCell >
+                <TableCell className="th no-print">Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {billDetailRows.map((row, index) => (
+              {billDetailRows.length > 0 ? (
+                billDetailRows.map((row, index) => (
                 <TableRow key={index}>
                   <TableCell className="td">{index + 1}</TableCell>
                   <TableCell className="td">
@@ -274,8 +326,11 @@ const Billing = () => {
                       }
                       inputProps={{ style: inputStyle }}
                     >
-                      <MenuItem value="Chain">Chain</MenuItem>
-                      <MenuItem value="Ring">Ring</MenuItem>
+                      {items.map((item)=>(
+                        <MenuItem key={item._id} value={item.itemName}>
+                          {item.itemName}
+                        </MenuItem>
+                      ))}
                     </TextField>
                   </TableCell>
                   <TableCell className="td">
@@ -329,21 +384,33 @@ const Billing = () => {
                       inputProps={{ style: inputStyle }}
                     />
                   </TableCell>
-                  <TableCell className="td">
-                    <TextField
-                      size="small"
-                      type="number"
-                      value={row.hallmark}
-                      onChange={(e) =>
-                        handleBillDetailChange(index, "hallmark", e.target.value)
-                      }
-                      inputProps={{ style: inputStyle }}
-                    />
+                  <TableCell className="td no-print">
+                    <IconButton onClick={() => handleDeleteBillDetailRow(index)}>
+                      <MdDeleteForever style={{color:"red", fontSize:'20px'}} />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="no-products-message">
+                      No Bill details added
+                    </TableCell>
+                  </TableRow>
+                )}
             </TableBody>
           </Table>
+
+          {/* Single Hallmark box chnage*/}
+          <Box sx={{ textAlign: "right", marginTop: 1 }}>
+            <TextField
+              size="small"
+              type="number"
+              label="Hallmark"
+              value={billHallmark}
+              onChange={(e) => setBillHallmark(e.target.value)}
+              style={{ width: "130px" }}
+            />
+          </Box>
 
           <Box sx={{ textAlign: "right", marginTop: 1, fontWeight: "bold" }}>
             Total FWT: {totalFWT.toFixed(3)}
@@ -373,7 +440,7 @@ const Billing = () => {
                   <TableCell className="th">Touch</TableCell>
                   <TableCell className="th">Purity WT</TableCell>
                   <TableCell className="th">Amount</TableCell>
-                  <TableCell className="th">Hallmark Bal</TableCell> 
+                  <TableCell className="th">Hallmark Bal</TableCell>
                   <TableCell className="th no-print">Action</TableCell>
                 </TableRow>
               </TableHead>
@@ -458,15 +525,15 @@ const Billing = () => {
                       </TableCell>
                       <TableCell className="td no-print">
                         <IconButton onClick={() => handleDeleteRow(index)}>
-                          <MdDeleteForever />
+                          <MdDeleteForever style={{color:"red"}} />
                         </IconButton>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="no-products-message"> 
-                   No received details added
+                    <TableCell colSpan={9} className="no-products-message">
+                      No Received details added
                     </TableCell>
                   </TableRow>
                 )}
@@ -478,7 +545,7 @@ const Billing = () => {
             <div className="flex">
               <strong>Cash Balance: {cashBalance}</strong>
               <strong>Pure Balance: {pureBalance.toFixed(3)}</strong>
-              <strong>Hallmark Balance: {hallmarkBalance.toFixed(3)}</strong> 
+              <strong>Hallmark Balance: {hallmarkBalance.toFixed(3)}</strong>
             </div>
           </Box>
 
@@ -494,32 +561,52 @@ const Billing = () => {
 
       <Box className="right-panel no-print">
         <h3 className="heading">Available Products</h3>
+        {/* //searchbar */}
+        <Box>
+          <TextField
+            style={{ width: "15rem", marginBottom: "10px" }}
+            label="Search Product"
+            variant="outlined"
+            size="small"
+            onChange={handleSearch}
+          />
+        </Box>
+
         <Table className="table">
           <TableHead>
             <TableRow>
               <TableCell className="th">S.No</TableCell>
-              <TableCell className="th">Product</TableCell>
-              <TableCell className="th">Remaining Weights</TableCell>
+              <TableCell className="th">ProductName</TableCell>
+              <TableCell className="th">ItemWeight</TableCell>
+              <TableCell className="th">Count</TableCell>
+              <TableCell className="th">Touch</TableCell>
+
             </TableRow>
           </TableHead>
           <TableBody>
-            {Object.keys(initialProductWeights)
-              .filter((product) =>
-                billDetailRows.some((row) => row.productName === product)
-              )
-              .map((product, index) => {
-                const totalUsed = billDetailRows
-                  .filter((row) => row.productName === product)
-                  .reduce((acc, row) => acc + (parseFloat(row.wt) || 0), 0);
-
-                const remaining =
-                  (initialProductWeights[product] || 0) - totalUsed;
-
+         
+            {availableproducts &&
+              availableproducts.allStock.map((prodata, index) => {
                 return (
-                  <TableRow key={index}>
+                  <TableRow key={index} hover style={{cursor:"pointer"}} onClick={()=>{
+                    const productName = prodata.itemName;
+                    // const initialWeight = initialProductWeights[productName] || 0; // Default to 100 if not found
+                    const initialWeight = prodata.itemWeight || 0; // Default to 100 if not found
+                    const newRow = {
+                      productName: productName,
+                      wt: initialWeight.toString(),
+                      stWt: "0",
+                      awt: initialWeight.toString(),
+                      percent: "100",
+                      fwt: initialWeight.toString(),
+                    };
+                    setBillDetailRows([...billDetailRows, newRow]);
+                  }}>
                     <TableCell className="td">{index + 1}</TableCell>
-                    <TableCell className="td">{product}</TableCell>
-                    <TableCell className="td">{remaining.toFixed(3)}</TableCell>
+                    <TableCell className="td">{prodata.itemName}</TableCell>
+                    <TableCell className="td">{prodata.itemWeight}</TableCell>
+                    <TableCell className="td">{prodata.count}</TableCell>           
+                    <TableCell className="td">{prodata.touch}</TableCell>
                   </TableRow>
                 );
               })}
