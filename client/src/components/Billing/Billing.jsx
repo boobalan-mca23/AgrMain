@@ -25,6 +25,7 @@ const Billing = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [availableproducts, setAvailableProducts] = useState(null);
   const [originalProducts, setOriginalProducts] = useState(null);
+  const [previousBalance, setPreviousBalance] = useState(0);
   const [billId] = useState(1);
   const [date] = useState(new Date().toLocaleDateString("en-IN"));
   const [time] = useState(
@@ -143,7 +144,6 @@ const Billing = () => {
   );
 
   const pureBalance = totalFWT - totalReceivedPurity;
-
   const lastGoldRate = [...rows]
     .reverse()
     .find((row) => parseFloat(row.goldRate))?.goldRate;
@@ -194,6 +194,7 @@ const Billing = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        console.log("Customers fetched:", data);
         setCustomers(data);
       } catch (error) {
         console.error("Error fetching customers:", error);
@@ -215,10 +216,10 @@ const Billing = () => {
     }
     const fetchProductStock = async () => {
          try {
-        const response = await fetch(`${BACKEND_SERVER_URL}/api/productStock`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+          const response = await fetch(`${BACKEND_SERVER_URL}/api/productStock`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
         const data = await response.json();
         setAvailableProducts(data);
         setOriginalProducts(data); //copy
@@ -235,7 +236,7 @@ const Billing = () => {
 
   return (
     <Box className="billing-wrapper">
-      <Box className="left-panel">
+      <Box className="left-panel" style={{ width: "65%" }}>
         <h1 className="heading">Estimate Only</h1>
         <Box className="bill-header">
           <Box className="bill-number">
@@ -254,22 +255,29 @@ const Billing = () => {
         </Box>
 
         <Box className="search-section no-print">
-          <Autocomplete
-            options={customers}
-            getOptionLabel={(option) => option.name || ""}
-            onChange={(_, newValue) => setSelectedCustomer(newValue)}
-            value={selectedCustomer}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                style={{ width: "15rem" }}
-                label="Select Customer"
-                variant="outlined"
-                size="small"
-              />
-            )}
-          />
-        </Box>
+            <Autocomplete
+              options={customers}
+              getOptionLabel={(option) => option.name || ""}
+              onChange={(_, newValue) => {
+                setSelectedCustomer(newValue);
+                if (newValue) {
+                  setPreviousBalance(newValue.balance);
+                } else {
+                  setPreviousBalance(0);
+                }
+              }}
+              value={selectedCustomer}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  style={{ width: "15rem" }}
+                  label="Select Customer"
+                  variant="outlined"
+                  size="small"
+                />
+              )}
+            />
+        </Box> 
 
         {selectedCustomer && (
           <Box className="customer-details">
@@ -294,7 +302,7 @@ const Billing = () => {
             </IconButton>
           </Box>
 
-          <Table className="table">
+          <Table className="table" style={{ marginTop: "10px" }}>
             <TableHead>
               <TableRow>
                 <TableCell className="th">S.No</TableCell>
@@ -400,8 +408,8 @@ const Billing = () => {
             </TableBody>
           </Table>
 
-          {/* Single Hallmark box chnage*/}
-          <Box sx={{ textAlign: "right", marginTop: 1 }}>
+          {/* Hallmark */}
+          <Box sx={{  display: "flex", alignItems: "center", marginTop: 0, flexDirection:"column", position:"relative", left:"30%", top:"70px" }}>
             <TextField
               size="small"
               type="number"
@@ -409,12 +417,44 @@ const Billing = () => {
               value={billHallmark}
               onChange={(e) => setBillHallmark(e.target.value)}
               style={{ width: "130px" }}
-            />
+            /> 
+             {/* <TextField
+              size="small"
+              type="number"
+              label="Hallmark"
+              value={customers.hallmark|| 123.00}
+              disabled
+              // onChange={(e) => setBillHallmark(e.target.value)}
+              style={{ width: "130px" }}
+            /> */}
+
+            <Box style={{ marginTop: 10, fontWeight: "bold"}}>
+               Prev Hallmark : {selectedCustomer ? (selectedCustomer.hallmark ? selectedCustomer.hallmark.toFixed(3) : "0.000") : "0.000"}
+            </Box>
           </Box>
 
           <Box sx={{ textAlign: "right", marginTop: 1, fontWeight: "bold" }}>
-            Total FWT: {totalFWT.toFixed(3)}
-          </Box>
+                {previousBalance > 0 ? (
+                  <span style={{ color: "red" }}>
+                    Excess Balance: {previousBalance.toFixed(3)}
+                  </span>
+                ) : previousBalance < 0 ? (
+                  <span style={{ color: "green" }}>
+                    Opening Balance: {Math.abs(previousBalance).toFixed(3)}
+                  </span>
+                ) : (
+                  <span style={{ color: "green" }}>Balance: 0.000</span>
+                )}
+            </Box>
+
+            <Box sx={{ textAlign: "right", marginTop: 1, fontWeight: "bold" }}>
+               FWT: {totalFWT.toFixed(3)}
+            </Box>
+
+            <Box sx={{ textAlign: "right", marginTop: 1, fontWeight: "bold" }}>
+               Total FWT: {(totalFWT - previousBalance).toFixed(3)}
+            </Box>
+
 
           <Box className="items-section" sx={{ marginTop: 2 }}>
             <div
@@ -430,7 +470,7 @@ const Billing = () => {
               </IconButton>
             </div>
 
-            <Table className="table received-details-table">
+            <Table className="table received-details-table" style={{ marginTop: "10px"}}>
               <TableHead>
                 <TableRow>
                   <TableCell className="th">S.No</TableCell>
@@ -546,6 +586,7 @@ const Billing = () => {
               <strong>Cash Balance: {cashBalance}</strong>
               <strong>Pure Balance: {pureBalance.toFixed(3)}</strong>
               <strong>Hallmark Balance: {hallmarkBalance.toFixed(3)}</strong>
+                 {/* <strong>Hallmark Balance: {(hallmarkBalance-selectedCustomer.hallmark).toFixed(3)}</strong> */}
             </div>
           </Box>
 
@@ -572,7 +613,7 @@ const Billing = () => {
           />
         </Box>
 
-        <Table className="table">
+        <Table className="table" style={{ marginTop: "10px" }}>
           <TableHead>
             <TableRow>
               <TableCell className="th">S.No</TableCell>
@@ -580,11 +621,9 @@ const Billing = () => {
               <TableCell className="th">ItemWeight</TableCell>
               <TableCell className="th">Count</TableCell>
               <TableCell className="th">Touch</TableCell>
-
             </TableRow>
           </TableHead>
-          <TableBody>
-         
+        <TableBody>
             {availableproducts &&
               availableproducts.allStock.map((prodata, index) => {
                 return (
