@@ -16,7 +16,8 @@ exports.createCustomer = async (req, res) => {
         address: address || null,
         customerBillBalance:{
           create:{
-              balance:0  
+              balance:0, 
+              hallMarkBal:0 
           }
         }
       },
@@ -31,7 +32,11 @@ exports.createCustomer = async (req, res) => {
 
 exports.getAllCustomers = async (req, res) => {
   try {
-    const customers = await prisma.customer.findMany();
+    const customers = await prisma.customer.findMany({
+      include:{
+        customerBillBalance:true
+      }
+    });
     res.status(200).json(customers);
   } catch (error) {
     res.status(500).json({ message: "Error fetching customers", error });
@@ -40,9 +45,15 @@ exports.getAllCustomers = async (req, res) => {
 
 exports.getCustomerById = async (req, res) => {
   const { id } = req.params;
+  console.log('customer id',id)
   try {
     const customer = await prisma.customer.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(id)
+        
+       },
+       include:{
+        customerBillBalance:true
+       }
     });
     if (!customer)
       return res.status(404).json({ message: "Customer not found" });

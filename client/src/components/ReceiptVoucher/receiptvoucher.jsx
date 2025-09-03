@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
@@ -25,240 +25,60 @@ import {
   Paper,
   TableContainer,
 } from "@mui/material";
+import axios from "axios";
+import { BACKEND_SERVER_URL } from "../../Config/Config";
+import { ToastContainer, toast } from "react-toastify";
+import "./receiptvoucher.css"
+import { MdDeleteForever } from "react-icons/md";
 
-const Receipt = ({ initialGoldRate = 0 }) => {
+const Receipt = () => {
   const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [customers, setCustomers] = useState([
-    {
-      _id: "1",
-      name: "Customer 1",
-      phone: "1234567890",
-      balance: 10,
-      expure: 0,
-    },
-    {
-      _id: "2",
-      name: "Customer 2",
-      phone: "9876543210",
-      balance: 0,
-      expure: 5,
-    },
-    {
-      _id: "3",
-      name: "Customer 3",
-      phone: "5555555555",
-      balance: 0,
-      expure: 0,
-    },
-  ]);
+  const [customers, setCustomers] = useState([]);
+  const [receiptBalances,setReceiptBalances]=useState({
+    oldbalance:0,
+    hallMark:0
+  })
+
+  const getTodayDate=()=>{
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString("en-GB");
+    return formattedDate 
+  }
+  const [receipt,setReceipt]=useState([{
+    date:getTodayDate(),
+    goldRate:"",
+    gold:"",
+    touch:"",
+    purity:"",
+    amount:"",
+    hallMark:""
+  },
+])
   const [loading, setLoading] = useState(false);
   const [loadingReceipts, setLoadingReceipts] = useState(false);
   const [rows, setRows] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [allReceipts, setAllReceipts] = useState([]);
   const inputRefs = useRef({});
-  const [total, setTotal] = useState(0);
-  const [balance, setBalance] = useState(0);
-  const [excess, setExcess] = useState(0);
-  const [goldRate, setGoldRate] = useState(initialGoldRate);
-  const [customerPure, setCustomerPure] = useState(0);
-  const [customerExcees, setCustomerExcees] = useState(0);
-  const [customerCashBalance, setCustomerCashBalance] = useState(0);
-
-  const handleGoldRate = (goldValue) => {
-    const tempRows = [...rows];
-    for (const r of tempRows) {
-      r.goldRate = goldValue;
-    }
-    setRows(tempRows);
-    setGoldRate(goldValue);
-  };
-
-  const createNewRow = () => ({
-    id: Date.now(),
-    date: new Date().toISOString().slice(0, 10),
-    goldRate: goldRate,
-    givenGold: "",
-    touch: "",
-    purityWeight: "",
-    amount: "",
-  });
-
-  const handleCustomerChange = (event) => {
-    const customerId = event.target.value;
-    setSelectedCustomer(customerId);
-
-    // Mock data for receipts when customer is selected
-    if (customerId) {
-      setAllReceipts([
-        {
-          date: "2023-05-15",
-          goldRate: 5000,
-          givenGold: 10,
-          touch: 92,
-          purityWeight: 9.2,
-          amount: 46000,
-        },
-        {
-          date: "2023-06-20",
-          goldRate: 5200,
-          givenGold: 5,
-          touch: 90,
-          purityWeight: 4.5,
-          amount: 23400,
-        },
-      ]);
-    }
-  };
-
-  const handleInputChange = (id, field, value, index) => {
-    const updatedRows = rows.map((row) => {
-      if (row.id === id) {
-        const updatedRow = { ...row, [field]: value };
-
-        const goldRate = parseFloat(updatedRow.goldRate) || 0;
-        const givenGold = parseFloat(updatedRow.givenGold) || 0;
-        const touch = parseFloat(updatedRow.touch) || 0;
-        const amount = parseFloat(updatedRow.amount) || 0;
-
-        if (field === "goldRate") {
-          updatedRow.amount = (
-            updatedRow.purityWeight * updatedRow.goldRate
-          ).toFixed(2);
-        }
-        if (field === "givenGold" || field === "touch") {
-          const purityWeight = givenGold * (touch / 100);
-          updatedRow.purityWeight = purityWeight.toFixed(3);
-        } else if (field === "amount" && goldRate > 0) {
-          const purityWeight = amount / goldRate;
-          updatedRow.purityWeight = purityWeight.toFixed(3);
-        } else if (field === "goldRate" && updatedRow.purityWeight > 0) {
-          updatedRow.amount = (updatedRow.purityWeight * goldRate).toFixed(2);
-        }
-
-        return updatedRow;
+  // get today date
+  
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_SERVER_URL}/api/customers`);
+          console.log('response',response.data)
+        
+        setCustomers(response.data);
+      } catch (error) {
+        console.error("Error fetching customers:", error);
       }
-      return row;
-    });
-    setRows(updatedRows);
+    };
+    
+    fetchCustomers();
+    
 
-    // Mock calculations for UI demonstration
-    if (balance) {
-      let totalPurity = updatedRows.reduce(
-        (acc, currValue) => acc + Number(currValue.purityWeight),
-        0
-      );
-      let value = balance - totalPurity;
-      if (value >= 0) {
-        setCustomerPure(value);
-        setCustomerExcees(0);
-        for (let i = updatedRows.length - 1; i >= 0; i--) {
-          if (updatedRows[i].goldRate > 0) {
-            setCustomerCashBalance(value * updatedRows[i].goldRate);
-            break;
-          }
-        }
-      } else {
-        setCustomerPure(0);
-        setCustomerExcees(value);
-      }
-    }
-
-    if (excess) {
-      let totalPurity = updatedRows.reduce(
-        (acc, currValue) => acc + Number(currValue.purityWeight),
-        0
-      );
-      let value = excess + totalPurity;
-      setCustomerPure(0);
-      setCustomerExcees(value);
-    }
-
-    if (total === 0 && excess === 0 && balance === 0) {
-      let totalPurity = updatedRows.reduce(
-        (acc, currValue) => acc + Number(currValue.purityWeight),
-        0
-      );
-      let value = excess + totalPurity;
-      setCustomerPure(0);
-      setCustomerExcees(-value);
-    }
-  };
-
-  const registerRef = (rowId, field) => (el) => {
-    if (!inputRefs.current[rowId]) inputRefs.current[rowId] = {};
-    inputRefs.current[rowId][field] = el;
-  };
-
-  const handleKeyDown = (e, rowId, field) => {
-    if (e.key === "Enter") {
-      const fields = ["date", "goldRate", "givenGold", "touch", "amount"];
-      const index = fields.indexOf(field);
-      const nextField = fields[index + 1];
-      if (nextField && inputRefs.current[rowId]?.[nextField]) {
-        inputRefs.current[rowId][nextField].focus();
-      }
-    }
-  };
-
-  const handleAddRow = () => setRows([...rows, createNewRow()]);
-
-  const handleDeleteRow = (index) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this row?"
-    );
-    if (confirmDelete) {
-      const updatedRows = [...rows];
-      updatedRows.splice(index, 1);
-
-      // Mock calculations for UI demonstration
-      if (balance) {
-        let totalPurity = updatedRows.reduce(
-          (acc, currValue) => acc + Number(currValue.purityWeight),
-          0
-        );
-        let value = balance - totalPurity;
-        if (value >= 0) {
-          setCustomerPure(value);
-          setCustomerExcees(0);
-          for (let i = updatedRows.length - 1; i >= 0; i--) {
-            if (updatedRows[i].goldRate > 0) {
-              setCustomerCashBalance(value * updatedRows[i].goldRate);
-              break;
-            }
-          }
-        } else {
-          setCustomerPure(0);
-          setCustomerExcees(value);
-        }
-      }
-
-      if (excess) {
-        let totalPurity = updatedRows.reduce(
-          (acc, currValue) => acc + Number(currValue.purityWeight),
-          0
-        );
-        let value = excess + totalPurity;
-        setCustomerPure(0);
-        setCustomerExcees(value);
-      }
-
-      if (total === 0 && excess === 0 && balance === 0) {
-        let totalPurity = updatedRows.reduce(
-          (acc, currValue) => acc + Number(currValue.purityWeight),
-          0
-        );
-        let value = excess + totalPurity;
-        setCustomerPure(0);
-        setCustomerExcees(-value);
-      }
-      setRows(updatedRows);
-    }
-  };
-
-  const handleSave = () => {
-    alert("Save functionality would be implemented here in a real application");
-  };
+  
+  }, []);
 
   if (loading)
     return (
@@ -266,241 +86,192 @@ const Receipt = ({ initialGoldRate = 0 }) => {
         <CircularProgress />
       </Box>
     );
+  const handleAddRow=()=>{
+ 
+    const newRow={
+    date:getTodayDate(),
+    goldRate:"",
+    gold:"",
+    touch:"",
+    purity:"",
+    amount:"",
+    hallMark:""
+    }
+    setReceipt((prev)=>[...prev,newRow])
+  }
+  const handleRemoveRow=(index)=>{
+     let isTrue=window.confirm("Are You Want to Remove Receipt Row")
+     if(isTrue){
+       const filterRows=receipt.filter((_,i)=>i!==index)
+       console.log('filterRows and index',filterRows,index)
+       setReceipt(filterRows)
+     }
+  }
+  const handleChangeReceipt=(index,field,value)=>{
+   const updatedRows = [...receipt];
+    updatedRows[index][field] = value;
 
+    const goldRate = parseFloat(updatedRows[index].goldRate) || 0;
+    const gold = parseFloat(updatedRows[index].gold) || 0;
+    const touch = parseFloat(updatedRows[index].touch) || 0;
+    const amount = parseFloat(updatedRows[index].amount) || 0;
+
+    let calculatedPurity = 0;
+
+    if (goldRate > 0 && amount > 0) {
+      calculatedPurity = amount / goldRate;
+    } else if (gold > 0 && touch > 0) {
+      calculatedPurity = gold * (touch / 100);
+    }
+
+    updatedRows[index].purity = calculatedPurity.toFixed(3);
+    if (field === "hallmark") {
+      updatedRows[index].hallMark = value;
+    }
+
+    setReceipt(updatedRows);
+    
+  }
+
+    const handleCustomerChange = (event) => {
+    const customerId = event.target.value;
+    setSelectedCustomer(customerId);
+
+    // Mock data for receipts when customer is selected
+    if (customerId) {
+        const fetchPreviousBal=async()=>{
+           try{
+                
+              const response=await axios.get(`${BACKEND_SERVER_URL}/api/customers/${customerId}`)
+            
+              setReceiptBalances({oldbalance:response.data.customerBillBalance[0].balance,
+                hallMark:response.data.customerBillBalance[0].hallMarkBal
+              })
+           }catch(err){
+
+           }
+        }
+        fetchPreviousBal()
+    }
+  };
   return (
-    <Box p={2}>
-      <FormControl size="small" margin="none" sx={{ width: "28%", mb: 1 }}>
-        <InputLabel id="customer-label" size="small">
-          Select Customer
-        </InputLabel>
-        <Select
-          labelId="customer-label"
-          label="Select Customer"
-          value={selectedCustomer}
-          onChange={handleCustomerChange}
-          size="small"
-          sx={{ fontSize: 13, py: 0.8 }}
-        >
-          {customers.map((c) => (
-            <MenuItem key={c._id} value={c._id} sx={{ fontSize: 13 }}>
-              {`${c.name} (${c.phone})`}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        padding={2}
-        bgcolor="#f9f9f9"
-        border="1px solid #ccc"
-        borderRadius="8px"
-        boxShadow="0 2px 6px rgba(0,0,0,0.1)"
-        marginBottom={2}
-        sx={{ width: "28%", mb: 1 }}
-      >
-        <Box>
-          <b>
-            {balance !== 0
-              ? `Old Balance: ₹${balance}`
-              : excess !== 0
-              ? `Excess Balance: ₹${excess}`
-              : `Total: ₹${total}`}
-          </b>
-        </Box>
-      </Box>
+    <>
+      <div >
+        <div className="receiptTitle">
+          
+          <h2>Receipt Voucher</h2>
+        </div>
 
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        my={2}
-      >
-        <Typography variant="h6">Receipt Voucher</Typography>
-        <Box>
-          <Button
-            startIcon={<AddCircleOutlineIcon />}
-            onClick={handleAddRow}
-            size="small"
-            variant="contained"
-            sx={{ mr: 1 }}
-          >
-            Add Row
-          </Button>
-          <Button
-            startIcon={<VisibilityIcon />}
-            onClick={() => setOpenDialog(true)}
-            size="small"
-            variant="outlined"
-          >
-            View Receipts
-          </Button>
-        </Box>
-      </Box>
+        <div >
 
-      <TableContainer component={Paper}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              {[
-                "Date",
-                "Gold Rate",
-                "Given Gold",
-                "Touch",
-                "Purity Weight",
-                "Amount",
-                "Action",
-              ].map((header) => (
-                <TableCell key={header} sx={{ border: "1px solid #ccc" }}>
-                  {header}
-                </TableCell>
+          <div className="receiptFlex">
+            <div>
+              <p className="receiptLabel">Customer Balance</p>
+              <select
+              value={selectedCustomer}
+              onChange={handleCustomerChange}
+              className="receiptSelect"
+            >
+              <option value="Select Customer">Select Customer</option>
+              {customers.map((option) => (
+                <option key={option.id} value={option?.id}>
+                  {option?.name}
+                </option>
               ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row, index) => (
-              <TableRow key={row.id}>
-                {[
-                  "date",
-                  "goldRate",
-                  "givenGold",
-                  "touch",
-                  "purityWeight",
-                  "amount",
-                ].map((field) => (
-                  <TableCell key={field} sx={{ border: "1px solid #eee" }}>
-                    <TextField
-                      type={field === "date" ? "date" : "number"}
-                      value={row[field]}
-                      onChange={(e) =>
-                        handleInputChange(row.id, field, e.target.value, index)
-                      }
-                      onKeyDown={(e) => handleKeyDown(e, row.id, field)}
-                      inputRef={registerRef(row.id, field)}
-                      size="small"
-                      fullWidth
-                      variant="outlined"
-                      label=""
-                      disabled={field === "purityWeight"}
-                      autoComplete="off"
-                    />
-                  </TableCell>
-                ))}
-                <TableCell sx={{ border: "1px solid #eee" }}>
-                  <IconButton onClick={() => handleDeleteRow(index)}>
-                    <DeleteForeverIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </select>
+            </div>
+            <div>
+              <p className="receiptLabel">Old Balance</p>
+              <input
+              className="receiptInput"
+              readOnly
+              value={receiptBalances?.oldbalance||0}
+             />
+            </div>
+            <div>
+              <p className="receiptLabel">Hall Mark Balance</p>
+              <input
+              className="receiptInput"
+              readOnly
+              value={receiptBalances?.hallMark||0}
+             />
+            </div>
+           <div className="receiptbtn">
+              <button onClick={()=>{handleAddRow()}}>Add Row</button>
+              <button>Save</button>
+              <button>View Receipts</button>
+           </div>
 
-      <Box
-        display="flex"
-        justifyContent="space-around"
-        alignItems="center"
-        padding={2}
-        bgcolor="#f0f4f8"
-        borderRadius="10px"
-        boxShadow="0 2px 5px rgba(0,0,0,0.1)"
-        marginBottom={2}
-      >
-        <Box textAlign="center">
-          <b>
-            {customerCashBalance >= 0
-              ? "Customer Cash Balance:"
-              : "Excess Cash Balance :"}{" "}
-            {customerCashBalance.toFixed(2)}
-          </b>
-        </Box>
-        <Box textAlign="center">
-          <b>
-            Excess Balance: {customerExcees > 0 ? "-" : ""}
-            {customerExcees.toFixed(3)}
-          </b>
-        </Box>
-        <Box textAlign="center">
-          <b>Purity Balance: {customerPure.toFixed(3)}</b>
-        </Box>
-      </Box>
 
-      <Box mt={2} display="flex" justifyContent="flex-end">
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSave}
-          size="small"
-          disabled={rows.length < 1}
-        >
-          Save
-        </Button>
-      </Box>
+          </div>
 
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>All Receipts</DialogTitle>
-        <DialogContent>
-          {loadingReceipts ? (
-            <Box textAlign="center" mt={2}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  {[
-                    "Date",
-                    "Gold Rate",
-                    "Given Gold",
-                    "Touch",
-                    "Purity Weight",
-                    "Amount",
-                  ].map((header) => (
-                    <TableCell key={header} sx={{ border: "1px solid #ccc" }}>
-                      {header}
-                    </TableCell>
+          <div className="tableWrapper">
+                  <table className="receiptTable">
+                  <thead className="receipthead">
+                     <tr className="receiptRow">
+                    <th>S.no</th>
+                    <th>Date</th>
+                    <th>GoldRate</th>
+                    <th>Gold</th>
+                    <th>Touch</th>
+                    <th>Purity</th>
+                    <th>Amount</th>
+                    <th>Hall Mark</th>
+                    <th>Action</th>
+                   </tr>
+                </thead>
+                <tbody className="receiptbody">
+                {receipt.map((item,index)=>(
+                     <tr key={index+1}>
+                       <td>{index+1}</td>
+                       <td>{item.date}</td>
+                       <td>
+                        <input className="receiptTableInput"
+                         value={item.goldRate}
+                         onChange={(e)=>handleChangeReceipt(index,"goldRate",e.target.value)}
+                       /></td>
+                       <td><input className="receiptTableInput" 
+                        value={item.gold}
+                        onChange={(e)=>handleChangeReceipt(index,"gold",e.target.value)}
+                       /></td>
+                       <td><input className="receiptTableInput"
+                        value={item.touch}
+                        onChange={(e)=>handleChangeReceipt(index,"touch",e.target.value)}
+                       /></td>
+                       <td><input 
+                        value={item.purity}
+                       readOnly className="receiptTableInput"/></td>
+                       <td><input className="receiptTableInput"
+                        value={item.amount}
+                        onChange={(e)=>handleChangeReceipt(index,"amount",e.target.value)}
+                       /></td>
+                       <td><input className="receiptTableInput"
+                       value={item.hallMark}
+                       onChange={(e)=>handleChangeReceipt(index,"hallmark",e.target.value)}
+                       /></td>
+                       <td className="delIcon"><MdDeleteForever onClick={()=>{handleRemoveRow(index)}}></MdDeleteForever></td>
+                       
+
+                     </tr>
                   ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {allReceipts.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableCell sx={{ border: "1px solid #eee" }}>
-                      {r.date?.slice(0, 10)}
-                    </TableCell>
-                    <TableCell sx={{ border: "1px solid #eee" }}>
-                      {r.goldRate}
-                    </TableCell>
-                    <TableCell sx={{ border: "1px solid #eee" }}>
-                      {r.givenGold}
-                    </TableCell>
-                    <TableCell sx={{ border: "1px solid #eee" }}>
-                      {r.touch}
-                    </TableCell>
-                    <TableCell sx={{ border: "1px solid #eee" }}>
-                      {r.purityWeight}
-                    </TableCell>
-                    <TableCell sx={{ border: "1px solid #eee" }}>
-                      {r.amount}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+                </tbody>
+                  </table>
+
+              </div> 
+          <div className="receiptBalances">
+              <div>
+                  <p>CashBalance 0</p>
+              </div>
+              <div>
+                <p>Pure Balance 0</p>
+              </div>
+              <div>
+                <p>Hall Mark Balance 0</p>
+              </div>
+            </div>    
+        </div>
+      </div>
+    </>
   );
 };
 
