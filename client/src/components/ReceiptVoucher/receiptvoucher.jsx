@@ -96,8 +96,16 @@ const Receipt = () => {
   };
   const handleChangeReceipt = (index, field, value) => {
     const updatedRows = [...receipt];
+    if(field==="type"){
+      // if one row only have one type if we change another type before we set all values are empty
+    updatedRows[index].gold=""
+    updatedRows[index].touch=""
+    updatedRows[index].amount=""
+    updatedRows[index].goldRate=""
+    updatedRows[index].purity=""
+       
+    }
     updatedRows[index][field] = value;
-
     const goldRate = parseFloat(updatedRows[index].goldRate) || 0;
     const gold = parseFloat(updatedRows[index].gold) || 0;
     const touch = parseFloat(updatedRows[index].touch) || 0;
