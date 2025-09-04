@@ -24,7 +24,7 @@ model Customer {
   customerOrders customer_order[]
   bill           Bill[]
   billReceive    billReceived[]
-  customerBillBalance customerBillBalance[]
+  customerBillBalance customerBillBalance?
             
 }
 
@@ -334,6 +334,8 @@ model ProductStock{
    id              Int @id @default(autoincrement())
    customer_id     Int
    customers       Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+   date            String?
+   type            String?
    goldRate        Int?
    gold            Float?
    touch           Float?
@@ -346,7 +348,7 @@ model customerBillBalance{
   id           Int @id @default(autoincrement())
   balance      Float?
   hallMarkBal  Float?
-  customer_id  Int
+  customer_id  Int @unique
   customers    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
 
