@@ -28,87 +28,74 @@ import {
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
-import "./receiptvoucher.css"
+import "./receiptvoucher.css";
 import { MdDeleteForever } from "react-icons/md";
-
+import {receiptValidation} from "../receiptValidation/receiptValidation"
 const Receipt = () => {
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [customers, setCustomers] = useState([]);
-  const [receiptBalances,setReceiptBalances]=useState({
-    oldbalance:0,
-    hallMark:0
-  })
+  const [receiptBalances, setReceiptBalances] = useState({
+    oldbalance: 0,
+    hallMark: 0,
+  });
+  const selectedType = ["GoldRate","Gold"];
 
-  const getTodayDate=()=>{
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString("en-GB");
-    return formattedDate 
-  }
-  const [receipt,setReceipt]=useState([{
-    date:getTodayDate(),
-    goldRate:"",
-    gold:"",
-    touch:"",
-    purity:"",
-    amount:"",
-    hallMark:""
-  },
-])
-  const [loading, setLoading] = useState(false);
-  const [loadingReceipts, setLoadingReceipts] = useState(false);
-  const [rows, setRows] = useState([]);
+  const [receipt, setReceipt] = useState([
+    {
+      date: "",
+      type: "",
+      goldRate: "",
+      gold: "",
+      touch: "",
+      purity: "",
+      amount: "",
+      hallMark: "",
+    },
+  ]);
+  const [receiptErrors,setReceiptErrors]=useState([])
   const [openDialog, setOpenDialog] = useState(false);
   const [allReceipts, setAllReceipts] = useState([]);
   const inputRefs = useRef({});
-  // get today date
-  
+
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
         const response = await axios.get(`${BACKEND_SERVER_URL}/api/customers`);
-          console.log('response',response.data)
-        
+        console.log("response", response.data);
+
         setCustomers(response.data);
       } catch (error) {
         console.error("Error fetching customers:", error);
       }
     };
-    
-    fetchCustomers();
-    
 
-  
+    fetchCustomers();
   }, []);
 
-  if (loading)
-    return (
-      <Box textAlign="center" mt={4}>
-        <CircularProgress />
-      </Box>
-    );
-  const handleAddRow=()=>{
  
-    const newRow={
-    date:getTodayDate(),
-    goldRate:"",
-    gold:"",
-    touch:"",
-    purity:"",
-    amount:"",
-    hallMark:""
+  const handleAddRow = () => {
+    const newRow = {
+      date: "",
+      type: "",
+      goldRate: "",
+      gold: "",
+      touch: "",
+      purity: "",
+      amount: "",
+      hallMark: "",
+    };
+    setReceipt((prev) => [...prev, newRow]);
+  };
+  const handleRemoveRow = (index) => {
+    let isTrue = window.confirm("Are You Want to Remove Receipt Row");
+    if (isTrue) {
+      const filterRows = receipt.filter((_, i) => i !== index);
+      console.log("filterRows and index", filterRows, index);
+      setReceipt(filterRows);
     }
-    setReceipt((prev)=>[...prev,newRow])
-  }
-  const handleRemoveRow=(index)=>{
-     let isTrue=window.confirm("Are You Want to Remove Receipt Row")
-     if(isTrue){
-       const filterRows=receipt.filter((_,i)=>i!==index)
-       console.log('filterRows and index',filterRows,index)
-       setReceipt(filterRows)
-     }
-  }
-  const handleChangeReceipt=(index,field,value)=>{
-   const updatedRows = [...receipt];
+  };
+  const handleChangeReceipt = (index, field, value) => {
+    const updatedRows = [...receipt];
     updatedRows[index][field] = value;
 
     const goldRate = parseFloat(updatedRows[index].goldRate) || 0;
@@ -125,152 +112,323 @@ const Receipt = () => {
     }
 
     updatedRows[index].purity = calculatedPurity.toFixed(3);
-    if (field === "hallmark") {
-      updatedRows[index].hallMark = value;
-    }
 
     setReceipt(updatedRows);
-    
-  }
+    receiptValidation(receipt,setReceiptErrors)
+  };
 
-    const handleCustomerChange = (event) => {
+  const handleCustomerChange = (event) => {
     const customerId = event.target.value;
     setSelectedCustomer(customerId);
 
     // Mock data for receipts when customer is selected
     if (customerId) {
-        const fetchPreviousBal=async()=>{
-           try{
-                
-              const response=await axios.get(`${BACKEND_SERVER_URL}/api/customers/${customerId}`)
-            
-              setReceiptBalances({oldbalance:response.data.customerBillBalance[0].balance,
-                hallMark:response.data.customerBillBalance[0].hallMarkBal
-              })
-           }catch(err){
-
-           }
-        }
-        fetchPreviousBal()
+      const fetchPreviousBal = async () => {
+        try {
+          const response = await axios.get(
+            `${BACKEND_SERVER_URL}/api/customers/${customerId}`
+          );
+          console.log("response from bal", response);
+          setReceiptBalances({
+            oldbalance: response?.data?.customerBillBalance?.balance,
+            hallMark: response?.data?.customerBillBalance?.hallMarkBal,
+          });
+        } catch (err) {}
+      };
+      fetchPreviousBal();
     }
+  };
+  const totalReceivedPurity = receipt.reduce(
+    (acc, row) => acc + (parseFloat(row.purity) || 0),
+    0
+  );
+  const pureBalance = receiptBalances.oldbalance - totalReceivedPurity;
+  const lastGoldRate = [...receipt]
+    .reverse()
+    .find((row) => parseFloat(row.goldRate))?.goldRate;
+
+  const cashBalance = lastGoldRate
+    ? (parseFloat(lastGoldRate) * pureBalance).toFixed(2)
+    : "0.00";
+
+  const totalBillHallmark = parseFloat(receiptBalances.hallMark) || 0;
+
+  const totalReceivedHallmark = receipt.reduce(
+    (total, row) => total + (parseFloat(row.hallMark) || 0),
+    0
+  );
+
+  const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
+
+  const handleSaveReeceipt = () => {
+    const payLoad = {
+      received: receipt,
+      pureBalance: pureBalance,
+      hallmarkBalance: hallmarkBalance,
+    };
+    console.log("payLoad", payLoad);
+    const saveReceipt = async () => {
+      try {
+        let customerId = selectedCustomer;
+        const response = await axios.put(
+          `${BACKEND_SERVER_URL}/api/bill/updateBill/${customerId}`,
+          payLoad
+        );
+        if (response.status === 201) {
+          toast.success(response.data.message, { autoClose: 2000 });
+          setSelectedCustomer("");
+          setReceipt([
+            {
+              date: "",
+              type: "",
+              goldRate: "",
+              gold: "",
+              touch: "",
+              purity: "",
+              amount: "",
+              hallMark: "",
+            },
+          ]);
+          setReceiptBalances({ oldbalance: 0, hallMark: 0 });
+        }
+      } catch (err) {
+         console.log(err)
+         toast.error(err.response.data.error,{autoClose:2000});
+       
+      }
+    };
+    if (!selectedCustomer) return toast.warn("Select Customer");
+  receiptValidation(receipt, setReceiptErrors)
+  ? saveReceipt()
+  : toast.warn("Give Correct Information");
+
   };
   return (
     <>
-      <div >
+      <div>
         <div className="receiptTitle">
-          
           <h2>Receipt Voucher</h2>
         </div>
 
-        <div >
-
+        <div>
           <div className="receiptFlex">
             <div>
               <p className="receiptLabel">Customer Balance</p>
               <select
-              value={selectedCustomer}
-              onChange={handleCustomerChange}
-              className="receiptSelect"
-            >
-              <option value="Select Customer">Select Customer</option>
-              {customers.map((option) => (
-                <option key={option.id} value={option?.id}>
-                  {option?.name}
-                </option>
-              ))}
-            </select>
+                value={selectedCustomer}
+                onChange={handleCustomerChange}
+                className="receiptSelect"
+              >
+                <option value="Select Customer">Select Customer</option>
+                {customers.map((option) => (
+                  <option key={option.id} value={option?.id}>
+                    {option?.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <p className="receiptLabel">Old Balance</p>
               <input
-              className="receiptInput"
-              readOnly
-              value={receiptBalances?.oldbalance||0}
-             />
+                className="receiptInput"
+                readOnly
+                value={(receiptBalances?.oldbalance).toFixed(3) || 0}
+              />
             </div>
             <div>
               <p className="receiptLabel">Hall Mark Balance</p>
               <input
-              className="receiptInput"
-              readOnly
-              value={receiptBalances?.hallMark||0}
-             />
+                className="receiptInput"
+                readOnly
+                value={(receiptBalances?.hallMark).toFixed(3) || 0}
+              />
             </div>
-           <div className="receiptbtn">
-              <button onClick={()=>{handleAddRow()}}>Add Row</button>
-              <button>Save</button>
+            <div className="receiptbtn">
+              <button
+                onClick={() => {
+                  handleAddRow();
+                }}
+              >
+                Add Row
+              </button>
+              <button
+                disabled={receipt.length<=0}
+                onClick={() => {
+                  handleSaveReeceipt();
+                }}
+              >
+                Save
+              </button>
               <button>View Receipts</button>
-           </div>
-
-
+            </div>
           </div>
 
           <div className="tableWrapper">
-                  <table className="receiptTable">
-                  <thead className="receipthead">
-                     <tr className="receiptRow">
-                    <th>S.no</th>
-                    <th>Date</th>
-                    <th>GoldRate</th>
-                    <th>Gold</th>
-                    <th>Touch</th>
-                    <th>Purity</th>
-                    <th>Amount</th>
-                    <th>Hall Mark</th>
-                    <th>Action</th>
-                   </tr>
-                </thead>
-                <tbody className="receiptbody">
-                {receipt.map((item,index)=>(
-                     <tr key={index+1}>
-                       <td>{index+1}</td>
-                       <td>{item.date}</td>
-                       <td>
-                        <input className="receiptTableInput"
-                         value={item.goldRate}
-                         onChange={(e)=>handleChangeReceipt(index,"goldRate",e.target.value)}
-                       /></td>
-                       <td><input className="receiptTableInput" 
+            <table className="receiptTable">
+              <thead className="receipthead">
+                <tr className="receiptRow">
+                  <th>S.no</th>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>GoldRate</th>
+                  <th>Gold</th>
+                  <th>Touch</th>
+                  <th>Purity</th>
+                  <th>Amount</th>
+                  <th>Hall Mark</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody className="receiptbody">
+                {receipt.map((item, index) => (
+                  <tr key={index + 1}>
+                    <td>{index + 1}</td>
+                    <td>
+                      <input
+                        type="date"
+                        className="receiptTableDate"
+                        value={item.date}
+                        onChange={(e) =>
+                          handleChangeReceipt(index, "date", e.target.value)
+                        }
+                      />
+                       <br></br>
+                    {receiptErrors[index]?.date && (
+                      <span className="error">{receiptErrors[index]?.date}</span>
+                    )}
+                    </td>
+                    <td>
+                      <select
+                        value={item.type}
+                        onChange={(e) => {
+                          handleChangeReceipt(index, "type", e.target.value);
+                        }}
+                        className="receiptSelect"
+                      >
+                        <option value="">Select Type</option>
+                        {selectedType.map((option,) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                         <br></br>
+                    {receiptErrors[index]?.type && (
+                      <span className="error">{receiptErrors[index]?.type}</span>
+                    )}
+                    </td>
+                    <td>
+                      <input
+                        disabled={item.type==="GoldRate"?false:true}
+                        className="receiptTableInput"
+                        value={item.goldRate}
+                        onChange={(e) =>
+                          handleChangeReceipt(index, "goldRate", e.target.value)
+                        }
+                      />
+                       <br></br>
+                    {receiptErrors[index]?.goldRate && (
+                      <span className="error">{receiptErrors[index]?.goldRate}</span>
+                    )}
+                    </td>
+                    <td>
+                      <input
+                        disabled={item.type==="Gold"?false:true}
+                        className="receiptTableInput"
                         value={item.gold}
-                        onChange={(e)=>handleChangeReceipt(index,"gold",e.target.value)}
-                       /></td>
-                       <td><input className="receiptTableInput"
+                        onChange={(e) =>
+                          handleChangeReceipt(index, "gold", e.target.value)
+                        }
+                      />
+                        <br></br>
+                    {receiptErrors[index]?.gold && (
+                      <span className="error">{receiptErrors[index]?.gold}</span>
+                    )}
+                    </td>
+                    <td>
+                      <input
+                        disabled={item.type==="Gold"?false:true}
+                        className="receiptTableInput"
                         value={item.touch}
-                        onChange={(e)=>handleChangeReceipt(index,"touch",e.target.value)}
-                       /></td>
-                       <td><input 
+                        onChange={(e) =>
+                          handleChangeReceipt(index, "touch", e.target.value)
+                        }
+                      />
+                         <br></br>
+                    {receiptErrors[index]?.touch && (
+                      <span className="error">{receiptErrors[index]?.touch}</span>
+                    )}
+                    </td>
+                    <td>
+                      <input
                         value={item.purity}
-                       readOnly className="receiptTableInput"/></td>
-                       <td><input className="receiptTableInput"
+                        readOnly
+                        className="receiptTableInput"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        disabled={item.type==="GoldRate"?false:true}
+                        className="receiptTableInput"
                         value={item.amount}
-                        onChange={(e)=>handleChangeReceipt(index,"amount",e.target.value)}
-                       /></td>
-                       <td><input className="receiptTableInput"
-                       value={item.hallMark}
-                       onChange={(e)=>handleChangeReceipt(index,"hallmark",e.target.value)}
-                       /></td>
-                       <td className="delIcon"><MdDeleteForever onClick={()=>{handleRemoveRow(index)}}></MdDeleteForever></td>
-                       
-
-                     </tr>
-                  ))}
-                </tbody>
-                  </table>
-
-              </div> 
+                        onChange={(e) =>
+                          handleChangeReceipt(index, "amount", e.target.value)
+                        }
+                      />
+                        <br></br>
+                    {receiptErrors[index]?.amount && (
+                      <span className="error">{receiptErrors[index]?.amount}</span>
+                    )}
+                    </td>
+                    <td>
+                      <input
+                        className="receiptTableInput"
+                        value={item.hallMark}
+                        onChange={(e) =>
+                          handleChangeReceipt(index, "hallMark", e.target.value)
+                        }
+                      />
+                        <br></br>
+                    {receiptErrors[index]?.hallMark && (
+                      <span className="error">{receiptErrors[index]?.hallMark}</span>
+                    )}
+                    </td>
+                    <td className="delIcon">
+                      <MdDeleteForever
+                        onClick={() => {
+                          handleRemoveRow(index);
+                        }}
+                      ></MdDeleteForever>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <div className="receiptBalances">
-              <div>
-                  <p>CashBalance 0</p>
-              </div>
-              <div>
-                <p>Pure Balance 0</p>
-              </div>
-              <div>
-                <p>Hall Mark Balance 0</p>
-              </div>
-            </div>    
+            <div>
+              <p>CashBalance {cashBalance}</p>
+            </div>
+            <div>
+              <p>old Balance {pureBalance.toFixed(3)}</p>
+            </div>
+            <div>
+              <p>Hall Mark Balance {hallmarkBalance.toFixed(3)}</p>
+            </div>
+          </div>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={true}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </>
   );
 };
