@@ -651,9 +651,9 @@ const Billing = () => {
             }}
           >
             <h3>Bill Details:</h3>
-            <IconButton onClick={handleAddBillDetailRow} className="no-print">
+{/*             <IconButton onClick={handleAddBillDetailRow} className="no-print">
                 <AddCircleOutlineIcon />
-            </IconButton>
+            </IconButton> */}
           </Box>
 
           <Table className="table" style={{ marginTop: "10px" }}>
@@ -676,7 +676,6 @@ const Billing = () => {
                   <TableCell className="td">{index + 1}</TableCell>
                   <TableCell className="td">
                     <TextField
-                      select
                       size="small"
                       value={row.productName}
                       onChange={(e) =>
