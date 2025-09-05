@@ -38,46 +38,31 @@ const Billing = () => {
       hour12: true,
     })
   );
-
-  // Track weight allocations for each product using unique product ID
   const [weightAllocations, setWeightAllocations] = useState({});
-  
-  // Filter state
   const [selectedFilter, setSelectedFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Enhanced fieldErrors state for comprehensive form validation
   const [fieldErrors, setFieldErrors] = useState({});
 
   const initialProductWeights = {
     Chain: 400,
     Ring: 300,
   };
-
-  // Remove default rows - start with empty arrays
   const [rows, setRows] = useState([]);
-
   const [billDetailRows, setBillDetailRows] = useState([]);
-
   const [billHallmark, setBillHallmark] = useState("");
 
-  // Enhanced validation function for all input types
   const validateInput = (value, fieldName, rowIndex, fieldType, inputType = 'number') => {
     const fieldKey = `${fieldType}_${rowIndex}_${fieldName}`;
-    
-    // Clear any existing error for this field
     setFieldErrors(prev => {
       const newErrors = { ...prev };
       delete newErrors[fieldKey];
       return newErrors;
     });
 
-    // If empty, no validation error (unless required)
     if (value === "") {
       return value;
     }
 
-    // Validate based on input type
     switch (inputType) {
       case 'number':
         const numericValue = parseFloat(value);
@@ -118,49 +103,69 @@ const Billing = () => {
     return value;
   };
 
-  // Add the missing validateAllFields function
-  const validateAllFields = () => {
-    let isValid = true;
+    const validateAllFields = () => {
+      let isValid = true;
+      let newErrors = {};
 
-    // Validate bill detail rows
-    billDetailRows.forEach((row, index) => {
-      if (!row.productName || row.productName.trim() === '') {
-        setFieldErrors(prev => ({
-          ...prev,
-          [`billDetail_${index}_productName`]: "Product name is required"
-        }));
-        isValid = false;
+        if (billDetailRows.length === 0 && rows.length === 0) {
+          alert("Please add at least one Bill Detail or Received Detail before saving.");
+          return false;
+        }
+
+      if (billDetailRows.length > 0) {
+        billDetailRows.forEach((row, index) => {
+          if (!row.productName || row.productName.trim() === "") {
+            newErrors[`billDetail_${index}_productName`] = "Product name is required";
+            isValid = false;
+          }
+          if (!row.wt || parseFloat(row.wt) <= 0) {
+            newErrors[`billDetail_${index}_wt`] = "Weight is required";
+            isValid = false;
+          }
+          if (!row.percent || parseFloat(row.percent) <= 0) {
+            newErrors[`billDetail_${index}_percent`] = "Percentage is required";
+            isValid = false;
+          }
+        });
       }
+
       
-      if (!row.wt || parseFloat(row.wt) <= 0) {
-        setFieldErrors(prev => ({
-          ...prev,
-          [`billDetail_${index}_wt`]: "Weight must be greater than 0"
-        }));
-        isValid = false;
+      if (rows.length > 0) {
+        rows.forEach((row, index) => {
+          if (!row.date) {
+            newErrors[`receivedDetail_${index}_date`] = "Date is required";
+            isValid = false;
+          }
+          if (!row.goldRate) {
+            newErrors[`receivedDetail_${index}_goldRate`] = "Gold rate is required";
+            isValid = false;
+          }
+          if (!row.givenGold) {
+            newErrors[`receivedDetail_${index}_givenGold`] = "Gold is required";
+            isValid = false;
+          }
+          if (!row.touch) {
+            newErrors[`receivedDetail_${index}_touch`] = "Touch is required";
+            isValid = false;
+          }
+          if (!row.amount) {
+            newErrors[`receivedDetail_${index}_amount`] = "Amount is required";
+            isValid = false;
+          }
+          if (!row.hallmark) {
+            newErrors[`receivedDetail_${index}_hallmark`] = "Hallmark is required";
+            isValid = false;
+          }
+        });
       }
-    });
 
-    // Validate received detail rows
-    rows.forEach((row, index) => {
-      if (!row.date) {
-        setFieldErrors(prev => ({
-          ...prev,
-          [`receivedDetail_${index}_date`]: "Date is required"
-        }));
-        isValid = false;
-      }
-    });
+      setFieldErrors(newErrors);
+      return isValid;
+    };
 
-    return isValid;
-  };
-
-  // Handle numeric input only (prevent non-numeric characters)
   const handleNumericInput = (e, callback) => {
     const value = e.target.value;
-    // Allow only numbers, decimal point, and backspace/delete
     const numericPattern = /^[0-9]*\.?[0-9]*$/;
-    
     if (numericPattern.test(value) || value === '') {
       callback(e);
     }
@@ -206,8 +211,7 @@ const Billing = () => {
 
   const handleDeleteBillDetailRow = (index) => {
     const rowToDelete = billDetailRows[index];
-    
-    // Remove weight allocation for this specific product using productId
+  
     if (rowToDelete.productId && rowToDelete.id) {
       const newAllocations = { ...weightAllocations };
       if (newAllocations[rowToDelete.productId]) {
@@ -225,24 +229,18 @@ const Billing = () => {
   };
 
   const handleBillDetailChange = (index, field, value) => {
-    // Validate the input
     const validatedValue = validateInput(value, field, index, 'billDetail', field === 'productName' ? 'text' : 'number');
-    
     const updated = [...billDetailRows];
     const currentRow = updated[index];
     const oldWeight = parseFloat(currentRow.wt) || 0;
-    
     updated[index][field] = validatedValue;
-
     const wt = parseFloat(updated[index].wt) || 0;
     const stWt = parseFloat(updated[index].stWt) || 0;
     const percent = parseFloat(updated[index].percent) || 0;
-
     const awt = wt - stWt;
     updated[index].awt = awt.toFixed(3);
     updated[index].fwt = ((awt * percent) / 100).toFixed(3);
 
-    // Update weight allocations when weight changes
     if (field === 'wt' && currentRow.productId) {
       const newAllocations = { ...weightAllocations };
       if (!newAllocations[currentRow.productId]) {
@@ -252,11 +250,9 @@ const Billing = () => {
       setWeightAllocations(newAllocations);
     }
 
-    // Update weight allocations when product name changes
     if (field === 'productName') {
       const newAllocations = { ...weightAllocations };
       
-      // Remove old allocation if it exists
       if (currentRow.productId) {
         if (newAllocations[currentRow.productId] && newAllocations[currentRow.productId][currentRow.id]) {
           delete newAllocations[currentRow.productId][currentRow.id];
@@ -266,12 +262,10 @@ const Billing = () => {
         }
       }
       
-      // Find the selected item to get its ID
       const selectedItem = items.find(item => item.itemName === value);
       if (selectedItem) {
         updated[index].productId = selectedItem._id;
         
-        // Add new allocation if product is selected and has weight
         if (wt > 0) {
           if (!newAllocations[selectedItem._id]) {
             newAllocations[selectedItem._id] = {};
@@ -289,7 +283,6 @@ const Billing = () => {
   };
 
   const handleRowChange = (index, field, value) => {
-    // Validate the input based on field type
     let inputType = 'number';
     if (field === 'date') inputType = 'date';
     
@@ -319,7 +312,6 @@ const Billing = () => {
     setRows(updatedRows);
   };
 
-  // Calculate remaining weight for each specific product using productId
   const getRemainingWeight = (productId, originalWeight) => {
     if (!weightAllocations[productId]) {
       return originalWeight;
@@ -331,9 +323,8 @@ const Billing = () => {
     return Math.max(0, originalWeight - totalAllocated);
   };
 
-  // Handle product click from available products table
+  
   const handleProductClick = (product) => {
-    // Create a unique productId using the product's index or unique identifier
     const productId = `${product.itemName}_${product.itemWeight}_${product.touch}`;
     const remainingWeight = getRemainingWeight(productId, product.itemWeight);
     
@@ -353,7 +344,6 @@ const Billing = () => {
       fwt: remainingWeight.toString(),
     };
     
-    // Update weight allocations
     const newAllocations = { ...weightAllocations };
     if (!newAllocations[productId]) {
       newAllocations[productId] = {};
@@ -364,24 +354,21 @@ const Billing = () => {
     setBillDetailRows([...billDetailRows, newRow]);
   };
 
-  // Enhanced save function with validation and backend request
+  
   const handleSave = async () => {
-    // Check if customer is selected
     if (!selectedCustomer) {
       alert('Please select a customer before saving.');
       return;
     }
 
-    // Validate all existing fields (will show red borders and error messages)
     const isFormValid = validateAllFields();
     
     if (!isFormValid) {
-      alert('Please fill in all required fields (marked in red) before saving.');
+      alert('Please fill in all required fields');
       return;
     }
 
     try {
-      // Prepare the bill data for backend
       const billData = {
         billId: billId,
         date: date,
@@ -391,7 +378,6 @@ const Billing = () => {
         previousBalance: previousBalance,
         billHallmark: parseFloat(billHallmark) || 0,
         
-        // Bill details
         billDetails: billDetailRows.map(row => ({
           productId: row.productId,
           productName: row.productName,
@@ -402,7 +388,6 @@ const Billing = () => {
           finalWeight: parseFloat(row.fwt) || 0
         })),
         
-        // Received details
         receivedDetails: rows.map(row => ({
           date: row.date,
           goldRate: parseFloat(row.goldRate) || 0,
@@ -413,7 +398,6 @@ const Billing = () => {
           hallmark: parseFloat(row.hallmark) || 0
         })),
         
-        // Calculated totals
         totals: {
           totalFWT: totalFWT,
           totalReceivedPurity: totalReceivedPurity,
@@ -422,13 +406,11 @@ const Billing = () => {
           hallmarkBalance: hallmarkBalance
         },
         
-        // Weight allocations for tracking
         weightAllocations: weightAllocations
       };
 
       console.log('Sending bill data to backend:', billData);
 
-      // Make POST request to backend
       const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`, {
         method: 'POST',
         headers: {
@@ -446,14 +428,12 @@ const Billing = () => {
       console.log('Bill saved successfully:', result);
       
       alert('Bill saved successfully!');
-      
-      // Optional: Reset form after successful save
-      // setBillDetailRows([]);
-      // setRows([]);
-      // setSelectedCustomer(null);
-      // setBillHallmark("");
-      // setWeightAllocations({});
-      // setFieldErrors({});
+      setBillDetailRows([]);
+      setRows([]);
+      setSelectedCustomer(null);
+      setBillHallmark("");
+      setWeightAllocations({});
+      setFieldErrors({});
       
     } catch (error) {
       console.error('Error saving bill:', error);
@@ -489,32 +469,27 @@ const Billing = () => {
 
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
   
-  // Enhanced search function that includes touch value
   const handleSearch = (e) => {
     const searchValue = e.target.value.toLowerCase();
     setSearchTerm(searchValue);
     applyFilters(searchValue, selectedFilter);
   };
 
-  // Filter function
   const handleFilterChange = (e) => {
     const filterValue = e.target.value;
     setSelectedFilter(filterValue);
     applyFilters(searchTerm, filterValue);
   };
 
-  // Combined filter and search function
   const applyFilters = (search, filter) => {
     if (!originalProducts) return;
 
     let filtered = originalProducts.allStock;
 
-    // Apply product name filter
     if (filter) {
       filtered = filtered.filter(product => product.itemName === filter);
     }
 
-    // Apply search (item name or touch value)
     if (search) {
       filtered = filtered.filter(product => 
         product.itemName.toLowerCase().includes(search) || 
@@ -525,7 +500,6 @@ const Billing = () => {
     setAvailableProducts({ allStock: filtered });
   };
 
-  // Get unique product names for filter dropdown
   const getUniqueProductNames = () => {
     if (!originalProducts) return [];
     const uniqueNames = [...new Set(originalProducts.allStock.map(product => product.itemName))];
@@ -651,7 +625,7 @@ const Billing = () => {
             }}
           >
             <h3>Bill Details:</h3>
-{/*             <IconButton onClick={handleAddBillDetailRow} className="no-print">
+            {/* <IconButton onClick={handleAddBillDetailRow} className="no-print">
                 <AddCircleOutlineIcon />
             </IconButton> */}
           </Box>
@@ -971,7 +945,6 @@ const Billing = () => {
       <Box className="right-panel no-print">
         <h3 className="heading">Available Products</h3>
         
-        {/* Enhanced Search and Filter Section */}
         <Box sx={{ display: "flex", gap: 1, marginBottom: "10px" }}>
           <TextField
             style={{ width: "12rem" }}
