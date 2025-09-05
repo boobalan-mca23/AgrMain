@@ -428,6 +428,32 @@
   transform: scale(1.1);
 }
 
+.billing-wrapper .right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+}
+
+.billing-wrapper .right-panel .table {
+  table-layout: fixed;      
+  width: 100%;              
+}
+
+.billing-wrapper .right-panel .table th,
+.billing-wrapper .right-panel .table td {
+  white-space: nowrap;      
+  text-overflow: ellipsis;   
+  overflow: hidden;
+}
+
+.billing-wrapper .right-panel .table-container {
+  flex: 1;
+  overflow-y: auto;        
+  overflow-x: hidden;      
+  max-height: 60vh;        
+}
+
+
 /* Responsive Design */
 @media (max-width: 1400px) {
   .billing-wrapper {
@@ -540,3 +566,17 @@
     color: #000;
   }
 }
+
+.billing-wrapper .hallmark-balance-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.billing-wrapper .hallmark-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
