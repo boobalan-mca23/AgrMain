@@ -32,6 +32,7 @@ const itemToStock = async () => {
     acc[key].totalWastageValue += item.wastageValue || 0;
     acc[key].count +=item.count ||0;
     acc[key].totalStoneWeight += item.deduction.reduce(
+      
       (sum, d) => sum + (d.stoneWt || 0),
       0
     );
@@ -170,13 +171,7 @@ const addRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
 
 
 
-const checkStockAvailabilty = (touchValues, givenGold) => {
-  
-  const touchGroup = {};
-  console.log("touchValues", touchValues);
-  console.log("givenGold", givenGold);
- 
-};
+
 
 
 // helper function to update nextJobCardBalance
@@ -237,9 +232,7 @@ const createJobcard = async (req, res) => {
       return res.status(400).json({ error: "Given gold data is required" });
     }
 
-    const touchValues=await prisma.masterTouch.findMany({select:{id:true,touch:true}})
-     checkStockAvailabilty(touchValues,givenGold)
-     
+   
     const givenGoldArr = givenGold.map((item) => ({
       goldsmithId: parseInt(goldSmithId),
       weight: parseFloat(item.weight) || null,
@@ -257,7 +250,7 @@ const createJobcard = async (req, res) => {
       receivedTotal: 0,
       isFinished: "false",
     };
-
+     
     await prisma.jobcard.create({
       data: {
         goldsmithId: parseInt(goldSmithId),
@@ -277,6 +270,12 @@ const createJobcard = async (req, res) => {
       },
       include: {
         givenGold: true,
+        deliveries:{
+          include:{
+            deduction:true
+          }
+        },
+        received:true,
         total: true,
       },
     });

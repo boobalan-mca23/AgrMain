@@ -1,14 +1,25 @@
+.jobCardTableContainer{
+  margin-top: 10px !important;
+  position: relative !important;
+  max-height: 600px !important;
+  overflow: auto !important;
+}
 .jobcardTable{
   width: 100%;
   border-collapse: collapse;
+
 }
+
 .jobCardThead{
   background-color: cadetblue;
   color: black;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   
 }
 .jobCardThead tr td{
-    padding: 10px;
+    padding: 6px;
     border:2px solid black ;
     font-size: 1.05rem;
     font-weight: 500;
@@ -16,7 +27,7 @@
     
 }
 .jobCardTbody tr td{
-    padding: 10px;
+    padding: 6px;
     border:2px solid black ;
     text-align: center;
 }
@@ -29,3 +40,16 @@
   border-radius: 3px ;
   cursor: pointer;
 }
+.totalOfJobCard{
+  position: sticky;
+  bottom: 0;
+  z-index: 99;
+  background-color: rgb(172, 152, 152);
+  color: white;
+  text-align: center;
+}
+.totalOfJobCard tr td{
+  border: 2px solid black;
+  padding: 6px;
+}
+ 

@@ -32,8 +32,15 @@ const JobCardReport = () => {
   const [jobCard, setJobCard] = useState([]);
   const [goldSmith, setGoldSmith] = useState([]);
   const [selectedGoldSmith, setSelectedGoldSmith] = useState({});
-  // const [page, setPage] = useState(0); // 0-indexed for TablePagination
-  // const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [page, setPage] = useState(0); // 0-indexed for TablePagination
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const paginatedData = jobCard.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+
   const [isPrinting, setIsPrinting] = useState(true);
   
 
@@ -110,7 +117,23 @@ const JobCardReport = () => {
   }, 1000); // allow DOM to update
 };
 
+const currentPageTotal = paginatedData.reduce(
+    (acc, job) => {
+      acc.givenWt += job.total[0]?.givenTotal;
+      acc.itemWt += job.total[0]?.deliveryTotal;
+      acc.receive += job.total[0]?.receivedTotal;
+      return acc;
+    },
+    { givenWt: 0, itemWt: 0,receive: 0 } // Initial accumulator
+  );
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
 
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleDateClear = () => {
     setFromDate(null);
@@ -292,7 +315,7 @@ const JobCardReport = () => {
                     </tr>
                   </thead>
                   <tbody className="reportTbody">
-                    {jobCard.map((job, jobIndex) => {
+                    {paginatedData.map((job, jobIndex) => {
                       const given = job.givenGold;
                       const deliveries = job.deliveries;
                       const receive = job.received;
@@ -411,34 +434,28 @@ const JobCardReport = () => {
                     })}
                   
                   </tbody>
-                  {/* <tfoot>
+                  <tfoot className="totalOfJobCardReport">
                       <tr className="totalOfJobCardReport" id="reportFoot" >
-                      <td colSpan="5">
+                      <td colSpan="6">
                         <b>Total</b>
                       </td>
                       <td>
                         <b>{currentPageTotal.givenWt.toFixed(3)}</b>
                       </td>
-                      <td colSpan="5"></td>
+                      <td colSpan="8"></td>
                       <td>
                         <b>{currentPageTotal.itemWt.toFixed(3)}</b>
                       </td>
-                      <td>
-                        <b>{currentPageTotal.stoneWt.toFixed(3)}</b>
-                      </td>
-                      <td>
-                        <b>{currentPageTotal.wastage.toFixed(3)}</b>
-                      </td>
-                      <td colSpan="3"></td>
+                      <td colSpan="2"></td>
                       <td>
                         <b>{currentPageTotal.receive.toFixed(3)}</b>
                       </td>
-                      <td></td>
+                      <td colSpan={3}></td>
                     </tr>
-                  </tfoot> */}
+                  </tfoot>
                 </table>
 
-                 {/* <TablePagination
+                 <TablePagination
                
                 component="div"
                 count={jobCard.length}
@@ -447,7 +464,7 @@ const JobCardReport = () => {
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 rowsPerPageOptions={[5, 10, 25]}
-              /> */}
+              />
               </div>
              
          

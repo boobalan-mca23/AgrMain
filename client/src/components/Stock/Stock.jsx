@@ -3,9 +3,39 @@
 import { useState,useEffect } from "react";
 import axios from 'axios'
 import { BACKEND_SERVER_URL } from "../../Config/Config";
+import {
+  TablePagination,
+} from "@mui/material";
+
 import "./Stock.css";
+
 const Stock = () => {
    const [stockData,setStockData]=useState([])
+
+   const [page, setPage] = useState(0); // 0-indexed for TablePagination
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const paginatedData = stockData.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+const currentPageTotal = paginatedData.reduce(
+    (acc, item) => {
+      acc.itemWt += item.itemWeight;
+      acc.finalWt += item.finalWeight;
+      return acc;
+    },
+    {itemWt: 0,finalWt: 0 } // Initial accumulator
+  );
+
+   const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
    useEffect(()=>{
        const fetchProductStock=async()=>{
@@ -135,7 +165,26 @@ const Stock = () => {
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={2}><strong>Total</strong></td>
+              <td><strong>{(currentPageTotal.itemWt).toFixed(3)}</strong></td>
+              <td colSpan={4}></td>
+              <td><strong>{(currentPageTotal.finalWt).toFixed(3)}</strong></td>
+            </tr>
+          </tfoot>
         </table>
+         {stockData.length >= 1 && (
+            <TablePagination
+              component="div"
+              count={stockData.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25]}
+            />
+          )}
       </div>
     </div>
   );

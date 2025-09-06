@@ -71,7 +71,7 @@ function AgrNewJobCard({
       parseFloat(item.itemWeight || 0) - totalItemDeductions;
     const wastageValue = parseFloat(item.wastageValue || 0);
 
-    if (item.wastageType === "touch") {
+    if (item.wastageType === "Touch") {
       return (itemNetWeightCalc * wastageValue) / 100;
     } else if (item.wastageType === "%") {
       return itemNetWeightCalc + (itemNetWeightCalc * wastageValue) / 100;
