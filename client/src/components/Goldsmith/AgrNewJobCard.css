@@ -1,9 +1,12 @@
  .jobcard-dialog-paper{
     min-width: 1500px;
 }
- 
+ .jobcardhead{
+  background-color: cadetblue;
+  color: white;
+ }
 .tableCell{
-  border-bottom: 1px solid black !important;
+  border: 1px solid black !important;
 }
 
 .section {
@@ -155,6 +158,7 @@
   }
   .icon-button{
     background-color: transparent;
+    border: none;
   }
   .select-small:focus {
     border-color: #3498db;

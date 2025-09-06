@@ -62,7 +62,6 @@
   position: relative !important;
   max-height: 600px !important;
   overflow: auto !important;
-  border-radius: p3x;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin:1vw 3vw;
 }
@@ -72,21 +71,37 @@
   border-collapse: collapse;
 
 }
+#reportHead{
+  position: sticky;
+  top: 0px;
+  z-index: 10;
+}
 .reportThead th{
   border: 1px solid #0b0a0a;
-  padding: 8px;
+  padding: 6px;
   text-align:center;
   background: #1DA3A3;
   color: white;
 }
 .reportTbody tr td{
    border: 1px solid #0b0a0a;
-  padding: 8px;
+  padding: 6px;
   text-align:center;
 }
 
+.totalOfJobCardReport{
+  background-color: rgb(172, 152, 152);
+  color: white;
+  text-align: center;
+  position: sticky;
+  bottom: 0;
+  z-index: 99;
+}
 
-
+.totalOfJobCardReport tr td{
+  border: 2px solid black;
+  padding: 6px;
+}
 
 
 

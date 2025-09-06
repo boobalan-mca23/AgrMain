@@ -12,6 +12,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  TablePagination,
   Paper,
   IconButton,
   Divider,
@@ -19,6 +20,7 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
+
 import { useParams, useLocation } from "react-router-dom";
 import { Add, Visibility } from "@mui/icons-material";
 import { FaCheck } from "react-icons/fa";
@@ -62,6 +64,30 @@ function JobCardDetails() {
   const [open, setOpen] = useState(false);
   const [openingBalance, setOpeningBalance] = useState(0);
   const [edit, setEdit] = useState(false);
+  const [page, setPage] = useState(0); // 0-indexed for TablePagination
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const paginatedData = jobCards.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+const currentPageTotal = paginatedData.reduce(
+    (acc, job) => {
+      acc.givenWt += job.total[0]?.givenTotal;
+      acc.itemWt += job.total[0]?.deliveryTotal;
+      acc.receive += job.total[0]?.receivedTotal;
+      return acc;
+    },
+    { givenWt: 0, itemWt: 0,receive: 0 } // Initial accumulator
+  );
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleOpenJobcard = async () => {
     setOpen(true);
@@ -155,7 +181,6 @@ function JobCardDetails() {
       );
       handleCloseJobcard();
       setGivenGold([{ weight: "", touch: "", purity: "" }]);
-
       setDescription("");
       setJobCards(response.data.allJobCards);
       toast.success(response.data.message);
@@ -309,14 +334,14 @@ function JobCardDetails() {
               New Job Card
             </Button>
           </Box>
-          {jobCards.length === 0 ? (
+          {paginatedData.length === 0 ? (
             <Paper elevation={0} sx={{ p: 4, textAlign: "center" }}>
               <Typography variant="h6" color="textSecondary">
                 No job cards found for this goldsmith
               </Typography>
             </Paper>
           ) : (
-            <Paper elevation={2} sx={{ overflowX: "auto" }}>
+            <Paper className="jobCardTableContainer">
               <table className="jobcardTable">
                 <thead className="jobCardThead">
                   <tr>
@@ -352,7 +377,7 @@ function JobCardDetails() {
                   </tr>
                 </thead>
                 <tbody className="jobCardTbody">
-                  {jobCards.map((job, jobIndex) => {
+                  {paginatedData.map((job, jobIndex) => {
                     const given = job.givenGold;
                     const deliveries = job.deliveries;
                     const received = job.received;
@@ -475,10 +500,42 @@ function JobCardDetails() {
                     });
                   })}
                 </tbody>
+                <tfoot className="totalOfJobCard">
+                <tr>
+                  <td colSpan={6}>
+                    <b>Total</b>
+                  </td> 
+                  <td>
+                    <b> {currentPageTotal.givenWt?.toFixed(3)}</b>
+                  </td>
+                  <td colSpan={8}></td>
+                  <td>
+                    <b>{currentPageTotal?.itemWt?.toFixed(3)}</b>
+                  </td>
+                 
+                  <td colSpan={3}></td>
+                  <td>
+                    <b>{currentPageTotal?.receive?.toFixed(3)}</b>
+                  </td>
+                  <td colSpan={3}></td>
+                </tr>
+              </tfoot>
               </table>
+             
             </Paper>
           )}
         </Paper>
+           {jobCards.length >= 1 && (
+            <TablePagination
+              component="div"
+              count={jobCards.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25]}
+            />
+          )}
       </Container>
 
       <AgrNewJobCard

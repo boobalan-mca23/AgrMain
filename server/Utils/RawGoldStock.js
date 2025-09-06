@@ -192,9 +192,13 @@ const receiptMoveToRawGold = async (received,customerId) => {
   await setTotalRawGold();
 };
 
+const checkStockAvailabilty=()=>{
+
+}
 module.exports={
   moveToRawGoldStock,
-  receiptMoveToRawGold
+  receiptMoveToRawGold,
+  
 }
 
 

@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
-const addRawGold=require('../Utils/addRawGoldStock')
+const addRawGold=require('../Utils/RawGoldStock')
 const createReceipt = async (req, res) => {
 
   const {customerId, received,pureBalance,hallmarkBalance} = req.body;
