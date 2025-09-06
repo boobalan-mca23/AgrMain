@@ -317,7 +317,7 @@ function JobCardDetails() {
             </Paper>
           ) : (
             <Paper elevation={2} sx={{ overflowX: "auto" }}>
-              <table>
+              <table className="jobcardTable">
                 <thead className="jobCardThead">
                   <tr>
                     <td rowSpan={2}>S.No</td>
@@ -460,11 +460,7 @@ function JobCardDetails() {
 
                               <td rowSpan={maxRows}>
                                 <button
-                                  style={{
-                                    color: "white",
-                                    backgroundColor: "green",
-                                    fontSize: "18px",
-                                  }}
+                                  className="jobCardBtn"
                                   onClick={() =>
                                     handleFilterJobCard(job.id, jobIndex)
                                   }

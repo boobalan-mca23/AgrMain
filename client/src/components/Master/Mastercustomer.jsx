@@ -229,18 +229,20 @@ function MasterCustomer() {
         </Dialog>
 
         {customers.length > 0 && (
-          <Paper className="customer-table">
-            <table border="1" width="100%">
+          <Paper >
+            <table  width="100%" className="customer-table">
               <thead>
-                <tr>
-                  <th>Customer Name</th>
+                <tr className="customer-tablehead">
+                  <th>S.no</th>
+                  <th >Customer Name</th>
                   <th>Phone Number</th>
                   <th>Address</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="customer-tablebody">
                 {customers.map((customer, index) => (
                   <tr key={index}>
+                    <td>{index+1}</td>
                     <td>{customer.name}</td>
                     <td>{customer.phone}</td>
                     <td>{customer.address || "-"}</td>

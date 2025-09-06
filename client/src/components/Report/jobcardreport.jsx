@@ -255,9 +255,9 @@ const JobCardReport = () => {
           {jobCard.length >= 1 ? (
          
               <div className="reportContainer" >
-                <table ref={reportRef}>
-                  <thead className="reportThead" id="reportHead">
-                    <tr>
+                <table ref={reportRef} className="reportTable">
+                  <thead  id="reportHead">
+                    <tr className="reportThead">
                       <th >S.No</th>
                       <th >Date</th>
                       <th >JobCard Id</th>
@@ -269,7 +269,7 @@ const JobCardReport = () => {
                       {/* <th colSpan="3">ReceiveAmt</th> */}
                       <th>Is Finished</th>
                     </tr>
-                    <tr>
+                    <tr className="reportThead">
                       <th colSpan={3}></th>
                       <th>Issue Date</th>
                       <th>Weight</th>
@@ -291,7 +291,7 @@ const JobCardReport = () => {
                       <th colSpan={3}></th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="reportTbody">
                     {jobCard.map((job, jobIndex) => {
                       const given = job.givenGold;
                       const deliveries = job.deliveries;
