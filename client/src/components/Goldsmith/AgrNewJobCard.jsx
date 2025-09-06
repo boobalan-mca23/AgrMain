@@ -612,6 +612,7 @@ function AgrNewJobCard({
                           <Button
                             disabled={edit ? false : true}
                             onClick={() => handlededuction(index)}
+                            style={{fontSize:"25px"}}
                           >
                             +
                           </Button>
@@ -920,6 +921,7 @@ function AgrNewJobCard({
                   key={row.id || `received-${i}`}
                   className="received-section-row"
                 >
+                  <strong>{i + 1})</strong> 
                   <div>
                     <input
                       type="number"
@@ -976,7 +978,9 @@ function AgrNewJobCard({
                   </button>
                 </div>
               ))}
-              <button
+             
+            </div>
+             <button
                 disabled={
                   edit
                     ? !lastJobCardId
@@ -999,7 +1003,6 @@ function AgrNewJobCard({
               >
                 +
               </button>
-            </div>
             <div className="totals-section">
               <div className="total-row">
                 <span className="total-purity-label">

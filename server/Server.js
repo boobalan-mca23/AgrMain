@@ -19,6 +19,7 @@ const repairRoutes = require("./Routes/repair.routes");
 const rawGoldRoutes=require("./Routes/rawGoldStock.routes");
 const productStock=require("./Routes/productStock.routes");
 const billRoutes=require("./Routes/bill.routes")
+const receiptRoutes=require("./Routes/receipt.routes")
 const path = require("path");
 
 require("dotenv").config();
@@ -51,6 +52,7 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/repair", repairRoutes);
 app.use("/api/productStock",productStock);
 app.use("/api/bill",billRoutes)
+app.use("/api/receipt",receiptRoutes)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(PORT, () => {
