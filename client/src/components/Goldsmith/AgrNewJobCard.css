@@ -153,7 +153,9 @@
     text-align-last: center;
     transition: border-color 0.3s ease;
   }
-  
+  .icon-button{
+    background-color: transparent;
+  }
   .select-small:focus {
     border-color: #3498db;
     outline: none;
@@ -195,9 +197,9 @@
     font-size: 1rem;
   }
   .received-section-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
     margin-bottom: 15px;
 }
 
@@ -215,8 +217,8 @@
 
 .received-section-row {
   display: grid;
-  grid-template-columns: 1fr min-content 1fr min-content 1fr min-content;
-  gap: 10px;
+  grid-template-columns: min-content 1fr min-content 1fr min-content 1fr min-content;
+  gap: 1px;
   align-items: center;
   min-width: 400px; 
 }

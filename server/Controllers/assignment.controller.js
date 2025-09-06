@@ -90,7 +90,7 @@ const setTotalRawGold = async () => {
   const grouped = await prisma.rawGoldLogs.groupBy({
     by: ["rawGoldStockId"],
     _sum: {
-      weight: true,
+      purity: true,
     },
   });
 
@@ -99,7 +99,7 @@ const setTotalRawGold = async () => {
     await prisma.rawgoldStock.update({
       where: { id: g.rawGoldStockId },
       data: {
-        weight: g._sum.weight || 0, // assumes your stock table has totalWeight column
+        weight: g._sum.purity || 0, // assumes your stock table has totalWeight column
       },
     });
   }
@@ -111,7 +111,7 @@ const setTotalRawGold = async () => {
 
 const addRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
   // stock update
-
+   
   if (receiveSection.length >= 1) {
     for (const receive of receiveSection) {
       let data = {
@@ -122,7 +122,7 @@ const addRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
         purity: parseFloat(receive.purity) || 0,
       };
       if (receive.id) {
-        await prisma.rawGoldLogs.update({
+        await prisma.rawGoldLogs.update({ // this change in raw gold stock
           where: {
             id: receive.logId,
           },
@@ -145,6 +145,9 @@ const addRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
             id: true, // only return the id
           },
         });
+         if (!stock) {
+            throw new Error(`No stock found for touch: ${data.touch}`);
+          }
         const rawGoldLog = await prisma.rawGoldLogs.create({
           data: {
             rawGoldStockId: stock.id,
@@ -168,7 +171,7 @@ const addRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
 
 
 const checkStockAvailabilty = (touchValues, givenGold) => {
-  // helper function to update nextJobCardBalance
+  
   const touchGroup = {};
   console.log("touchValues", touchValues);
   console.log("givenGold", givenGold);
@@ -176,9 +179,9 @@ const checkStockAvailabilty = (touchValues, givenGold) => {
 };
 
 
-
+// helper function to update nextJobCardBalance
 const updateNextJobBalance = async (id, goldsmithId) => {
-  // helper function to update nextJobCardBalance
+  
   let goldSmithJob = await prisma.total.findMany({
     where: {
       id: { gte: id },
@@ -236,6 +239,7 @@ const createJobcard = async (req, res) => {
 
     const touchValues=await prisma.masterTouch.findMany({select:{id:true,touch:true}})
      checkStockAvailabilty(touchValues,givenGold)
+     
     const givenGoldArr = givenGold.map((item) => ({
       goldsmithId: parseInt(goldSmithId),
       weight: parseFloat(item.weight) || null,

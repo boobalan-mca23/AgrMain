@@ -24,6 +24,7 @@ model Customer {
   customerOrders customer_order[]
   bill           Bill[]
   billReceive    billReceived[]
+  receiptVoucher   receiptVoucher[]
   customerBillBalance customerBillBalance?
             
 }
@@ -257,6 +258,8 @@ model RawGoldLogs{
     rawGoldStock     RawgoldStock? @relation(fields: [rawGoldStockId], references: [id])
     givenGold        givenGold[]
     receivedSections Receivedsection[]
+    billReceive      billReceived[]
+    receiptVoucher   receiptVoucher[]
 }
 model Balances {
   id                  Int         @id @default(autoincrement())
@@ -315,6 +318,7 @@ model ProductStock{
   customers    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   orders       OrderItems[]
+  billReceive  billReceived[]
   
  }
  model OrderItems{
@@ -332,8 +336,28 @@ model ProductStock{
 
  model billReceived{
    id              Int @id @default(autoincrement())
+   billId          Int
+   bill            Bill @relation(fields:[billId],references:[id])
    customer_id     Int
    customers       Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+   logId           Int?
+   rawGoldLogs     RawGoldLogs? @relation(fields: [logId], references: [id])
+   date            String?
+   type            String?
+   goldRate        Int?
+   gold            Float?
+   touch           Float?
+   purity          Float?
+   receiveHallMark Float?
+   amount          Float?
+   createdAt   DateTime @default(now())
+ }
+ model receiptVoucher{
+    id              Int @id @default(autoincrement())
+   customer_id     Int
+   customers       Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+   logId           Int?
+   rawGoldLogs     RawGoldLogs? @relation(fields: [logId], references: [id])
    date            String?
    type            String?
    goldRate        Int?
