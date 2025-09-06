@@ -2,25 +2,31 @@
 .customer-container {
   width: 80%;
   margin: 20px auto;
+  
 }
 
 .customer-table {
   margin-top: 20px;
-  background-color: #25274D; 
-  color: white; 
+
+  border-collapse: collapse; 
 }
 
-.customer-table th,
-.customer-table td {
-  border: 1px solid #ddd;
+
+.customer-tablehead th {
+  border: 1px solid #0b0a0a;
   padding: 8px;
-  text-align: left;
-}
-
-.customer-table th {
-  background-color: #25274D; 
+  text-align:center;
+  background: #1DA3A3;
   color: white;
 }
+
+.customer-tablebody tr td{
+  border: 1px solid #0b0a0a;
+  padding: 8px;
+  text-align:center;
+}
+
+
 
 .styled-button {
   margin: 8px;

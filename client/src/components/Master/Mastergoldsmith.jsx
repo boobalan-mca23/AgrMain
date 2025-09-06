@@ -118,7 +118,7 @@ function Mastergoldsmith() {
   };
 
   return (
-    <div className="customer-container">
+    <div className="goldSmith-container">
       <Button
         style={{
           backgroundColor: "#F5F5F5",
@@ -218,18 +218,20 @@ function Mastergoldsmith() {
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
 
       {goldsmith.length > 0 && (
-        <Paper className="customer-table">
-          <table border="1" width="100%">
+        <Paper>
+          <table  className="goldSmith-table" width="100%">
             <thead>
-              <tr>
+              <tr className="goldSmith-tablehead">
+                <th>S.no</th>
                 <th>Goldsmith Name</th>
                 <th>Phone Number</th>
                 <th>Address</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="goldSmith-tablebody">
               {goldsmith.map((item, index) => (
-                <tr key={index}>
+                <tr key={index} >
+                  <td>{index+1}</td>
                   <td>{item.name}</td>
                   <td>{item.phone || "-"}</td>
                   <td>{item.address || "-"}</td>

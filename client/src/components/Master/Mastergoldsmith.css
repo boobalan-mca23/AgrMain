@@ -1,29 +1,30 @@
 
-.customer-container {
+ .goldSmith-container {
   width: 80%;
   margin: 20px auto;
+
 }
 
-.customer-table {
+.goldSmith-table {
   margin-top: 20px;
-  background-color: 
-#F1E3D3; 
-  color: black; 
+  border-collapse: collapse;
+  
 }
 
-.customer-table th,
-.customer-table td {
-  border: solid black;
+.goldSmith-tablehead th {
+  border: 1px solid #0b0a0a;
   padding: 8px;
-  text-align: center;
+  text-align:center;
+  background: #1DA3A3;
+  color: white;
 }
 
-.customer-table th {
-  background-color: 
-#F1E3D3; 
-  color: black;
-  text-align: center;
+.goldSmith-tablebody tr td{
+  border: 1px solid #0b0a0a;
+  padding: 8px;
+  text-align:center;
 }
+
 
 .styled-button {
   margin: 8px;

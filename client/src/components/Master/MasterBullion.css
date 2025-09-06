@@ -1,0 +1,26 @@
+
+ .bullion-container {
+  width: 80%;
+  margin: 20px auto;
+
+}
+
+.bullion-table {
+  margin-top: 20px;
+  border-collapse: collapse;
+  
+}
+
+.bullion-tablehead th {
+  border: 1px solid #0b0a0a;
+  padding: 8px;
+  text-align:center;
+  background: #1DA3A3;
+  color: white;
+}
+
+.bullion-tablebody tr td{
+  border: 1px solid #0b0a0a;
+  padding: 8px;
+  text-align:center;
+}
