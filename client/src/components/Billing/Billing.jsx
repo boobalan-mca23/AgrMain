@@ -209,11 +209,27 @@ const Billing = () => {
     ]);
   };
 
-  const handleDeleteRow = (index) => {
-    const updated = [...rows];
-    updated.splice(index, 1);
-    setRows(updated);
-  };
+  // const handleDeleteRow = (index)  => {
+  //   try {
+  //   var x = window.confirm("Sure you want to delete this row?");
+  //   if(x){
+  //     const updated = [...rows];
+  //     updated.splice(index, 1);
+  //     setRows(updated);
+  //     }else{
+  //       console.log("cancelled deletion");
+  //     }}catch(err){
+  //       console.log("Error in Deleting Row",err);
+  //     }
+  //   }
+
+    const handleDeleteRow = (index) => {
+      const confirmed = window.confirm("Sure you want to delete this row?");
+      if (!confirmed) return console.log("Cancelled deletion");
+
+      setRows(prevRows => prevRows.filter((_, i) => i !== index));
+    };
+
 
   const handleAddBillDetailRow = () => {
     setBillDetailRows([
@@ -232,6 +248,9 @@ const Billing = () => {
   };
 
   const handleDeleteBillDetailRow = (index) => {
+     try {
+    const isdelete = window.confirm("Sure you want to delete this row?");
+    if(isdelete){
     const rowToDelete = billDetailRows[index];
     if (rowToDelete.productId && rowToDelete.id) {
       const newAllocations = { ...weightAllocations };
@@ -246,6 +265,11 @@ const Billing = () => {
     const updated = [...billDetailRows];
     updated.splice(index, 1);
     setBillDetailRows(updated);
+  }else{
+    console.log("cancelled deletion");
+  }}catch(err){
+    console.log("Error in Deleting Row",err);
+  }
   };
 
   const handleBillDetailChange = (index, field, value) => {
@@ -384,83 +408,74 @@ const Billing = () => {
     setBillDetailRows([...billDetailRows, newRow]);
   };
 
-  const handleSave = async () => {
-    if (!selectedCustomer) {
-      alert("Please select a customer before saving.");
-      return;
-    }
-    const isFormValid = validateAllFields();
-    if (!isFormValid) {
-      alert("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      const billData = {
-        billId,
-        date,
-        time,
-        customerId: selectedCustomer._id,
-        customerName: selectedCustomer.name,
-        previousBalance,
-        billHallmark: parseFloat(billHallmark) || 0,
-        billDetails: billDetailRows.map((row) => ({
-          productId: row.productId,
-          productName: row.productName,
-          weight: parseFloat(row.wt) || 0,
-          stoneWeight: parseFloat(row.stWt) || 0,
-          actualWeight: parseFloat(row.awt) || 0,
-          percentage: parseFloat(row.percent) || 0,
-          finalWeight: parseFloat(row.fwt) || 0,
-        })),
-        receivedDetails: rows.map((row) => ({
-          date: row.date,
-          goldRate: parseFloat(row.goldRate) || 0,
-          givenGold: parseFloat(row.givenGold) || 0,
-          touch: parseFloat(row.touch) || 0,
-          purityWeight: parseFloat(row.purityWeight) || 0,
-          amount: parseFloat(row.amount) || 0,
-          hallmark: parseFloat(row.hallmark) || 0,
-        })),
-        totals: {
-          totalFWT,
-          totalReceivedPurity,
-          pureBalance,
-          cashBalance: parseFloat(cashBalance),
-          hallmarkBalance,
-        },
-        weightAllocations,
-      };
-
-      const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(billData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    const handleSave = async () => {
+      if (!selectedCustomer) {
+        alert("Please select a customer before saving.");
+        return;
       }
+      const isFormValid = validateAllFields();
+      if (!isFormValid) {
+        alert("Please fill in all required fields");
+        return;
+      }
+      try {
+                const billData = {
+          customerId: selectedCustomer.id,                     
+          billTotal:  FWT,                                 
+          hallMark: parseFloat(billHallmark) || 0,
+          pureBalance:(TotalFWT - totalReceivedPurity).toFixed(3),
+   	      hallmarkBalance:hallmarkBalance + prevHallmark,
+          orderItems: billDetailRows.map((row) => ({           
+            productName: row.productName,
+            weight: parseFloat(row.wt) || 0,
+            stoneWeight: parseFloat(row.stWt) || 0,
+            afterWeight: parseFloat(row.awt) || 0,
+            percentage: parseFloat(row.percent) || 0,
+            finalWeight: parseFloat(row.fwt) || 0,
+          })),
+          received: rows.map((row) => ({                    
+            date: row.date,
+            goldRate: parseFloat(row.goldRate) || 0,
+            gold: parseFloat(row.givenGold) || 0,
+            touch: parseFloat(row.touch) || 0,
+            purity: parseFloat(row.purityWeight) || 0,
+            receiveHallMark: parseFloat(row.hallmark) || 0,
+            amount: parseFloat(row.amount) || 0,
+          })),
+        };
 
-      const result = await response.json();
-      console.log("Bill saved successfully:", result);
-      alert("Bill saved successfully!");
-      setBillDetailRows([]);
-      setRows([]);
-      setSelectedCustomer(null);
-      setBillHallmark("");
-      setWeightAllocations({});
-      setFieldErrors({});
-    } catch (error) {
-      console.error("Error saving bill:", error);
-      alert(`Error saving bill: ${error.message}`);
-    }
-  };
 
-  const totalFWT = billDetailRows.reduce((total, row) => total + (parseFloat(row.fwt) || 0), 0);
+        console.log("Payload being sent:", billData);
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(billData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.msg || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Bill saved successfully:", result);
+        alert("Bill saved successfully!");
+        setBillDetailRows([]);
+        setRows([]);
+        setSelectedCustomer(null);
+        setBillHallmark("");
+        setWeightAllocations({});
+        setFieldErrors({});
+      } catch (error) {
+        console.error("Error saving bill:", error);
+        alert(`Error saving bill: ${error.message}`);
+      }
+    };
+
+  const FWT = billDetailRows.reduce((total, row) => total + (parseFloat(row.fwt) || 0), 0);
   const totalReceivedPurity = rows.reduce((acc, row) => acc + (parseFloat(row.purityWeight) || 0), 0);
-  const pureBalance = totalFWT - totalReceivedPurity;
+  const TotalFWT = FWT - previousBalance;
+  const pureBalance = TotalFWT - totalReceivedPurity;
   const lastGoldRate = [...rows].reverse().find((row) => parseFloat(row.goldRate))?.goldRate;
   const cashBalance = lastGoldRate ? (parseFloat(lastGoldRate) * pureBalance).toFixed(2) : "0.00";
   const totalBillHallmark = parseFloat(billHallmark) || 0;
@@ -514,6 +529,7 @@ const Billing = () => {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
+        console.log('fecthcustomer',data)
         setCustomers(data);
       } catch (error) {
         console.error("Error fetching customers:", error);
@@ -584,8 +600,11 @@ const Billing = () => {
             onChange={(_, newValue) => {
               setSelectedCustomer(newValue);
               if (newValue){
-               setPreviousBalance(newValue.balance);
-                setPrevHallmark(newValue.prevHallmark || 0);
+                // console.log('newValue',newValue)
+                // console.log('balance',newValue.customerBillBalance.balance)
+                // console.log('hallMarkBal',newValue.customerBillBalance.hallMarkBal)
+                setPreviousBalance(newValue.customerBillBalance.balance);
+                setPrevHallmark(newValue.customerBillBalance.hallMarkBal || 0);
               } else {
                 setPreviousBalance(0);
                 setPrevHallmark(0);
@@ -695,8 +714,7 @@ const Billing = () => {
                   helperText={fieldErrors["hallmark_0_billHallmark"] || ""}
                 />
               </Box>
-
-              {/* Right column: Balance Info */}
+              {/* Balance Info */}
               <Box className="balance-info">
                 {previousBalance > 0 ? (
                   <div className="negative">Excess Balance: {previousBalance.toFixed(3)}</div>
@@ -705,8 +723,8 @@ const Billing = () => {
                 ) : (
                   <div className="neutral">Balance: 0.000</div>
                 )}
-                <div>FWT: {totalFWT.toFixed(3)}</div>
-                <div>Total FWT: {(totalFWT - previousBalance).toFixed(3)}</div>
+                <div>FWT: {FWT.toFixed(3)}</div>
+                <div>Total FWT: {(FWT - previousBalance).toFixed(3)}</div>
               </Box>
             </Box>
 
@@ -721,7 +739,7 @@ const Billing = () => {
 
             <Table className="table received-details-table" style={{ marginTop: "10px" }}>
               <TableHead>
-                <TableRow>
+                <TableRow style={{ textAlign: "center" }}>
                   <TableCell className="th">S.No</TableCell>
                   <TableCell className="th">Date</TableCell>
                   <TableCell className="th">Type</TableCell>
@@ -820,7 +838,8 @@ const Billing = () => {
           <Box className="closing-balance">
             <div className="flex">
               <strong>Cash Balance: {cashBalance}</strong>
-              <strong>Pure Balance: {pureBalance.toFixed(3)}</strong>
+              {console.log("testing pureBalance",pureBalance)}
+              <strong>Pure Balance: {(TotalFWT - totalReceivedPurity).toFixed(3)}</strong>
               <strong>Hallmark Balance: {(hallmarkBalance + prevHallmark).toFixed(3)}</strong>
             </div>
           </Box>
@@ -849,16 +868,16 @@ const Billing = () => {
           </FormControl>
         </Box>
 
-        <Box className="table-container" sx={{ marginTop: "10px" }}>
+        <Box className="table-container" sx={{ marginTop: "10px", }}>
           <Table className="table">
             <TableHead>
               <TableRow>
-                <TableCell className="th">S.No</TableCell>
-                <TableCell className="th">ProductName</TableCell>
-                <TableCell className="th">Original Weight</TableCell>
-                <TableCell className="th">Remaining Weight</TableCell>
-                <TableCell className="th">Count</TableCell>
-                <TableCell className="th">Touch</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>S.No</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Pdt Name</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Original WT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Remaining WT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Count</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Touch</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
