@@ -1,0 +1,99 @@
+.receiptreportHeader {
+  margin: 70px 60px 0px 60px;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.receiptreportHeader h3 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.receipt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 10px;
+  background-color: #fff;
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.receipt:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #f1f1f1;
+}
+
+
+.print-mode {
+  justify-content: flex-start;
+}
+
+
+
+.receiptreportBtn {
+  font-size: 1rem !important;
+  background-color: #2c3e50 !important;
+  color: #fff !important;
+  padding: 0.4rem 1rem !important;
+  border-radius: 6px !important;
+}
+
+
+.receiptreportContainer {
+  position: relative !important;
+  max-height: 600px !important;
+  overflow: auto !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin:1vw 3vw;
+}
+
+.receiptreportTable{
+  width: 100%;
+  border-collapse: collapse;
+
+}
+#receiptreportHead{
+  position: sticky;
+  top: 0px;
+  z-index: 10;
+}
+.receiptreportThead th{
+  border: 1px solid #0b0a0a;
+  padding: 6px;
+  text-align:center;
+  background: #1DA3A3;
+  color: white;
+}
+.receiptreportTbody tr td{
+   border: 1px solid #0b0a0a;
+  padding: 6px;
+  text-align:center;
+}
+
+.totalOfreceiptReport{
+  background-color: rgb(172, 152, 152);
+  color: white;
+  text-align: center;
+  position: sticky;
+  bottom: 0;
+  z-index: 99;
+}
+
+.totalOfreceiptReport tr td{
+  border: 2px solid black;
+  padding: 6px;
+}
+
+
+
