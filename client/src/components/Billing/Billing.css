@@ -1,4 +1,3 @@
-/* Billing Component Specific Styles */
 .billing-wrapper {
   display: flex;
   gap: 20px;
@@ -447,10 +446,13 @@
 }
 
 .billing-wrapper .right-panel .table-container {
-  flex: 1;
+  /* flex: 1; */
   overflow-y: auto;        
-  overflow-x: hidden;      
+  /* overflow-x: hidden; */
   max-height: 60vh;        
+}
+.table-container::-webkit-scrollbar {
+  display: none;
 }
 
 
@@ -474,7 +476,7 @@
 
 @media (max-width: 768px) {
   .billing-wrapper {
-    padding: 10px;
+    padding:20px;
   }
   
   .billing-wrapper .left-panel,
@@ -496,7 +498,7 @@
 }
 
 /* Print Styles */
-@media print {
+/* @media print {
   .billing-wrapper .no-print {
     display: none !important;
   }
@@ -565,7 +567,7 @@
   .billing-wrapper .closing-balance .flex {
     color: #000;
   }
-}
+} */
 
 .billing-wrapper .hallmark-balance-wrapper {
   margin-top: 20px;
