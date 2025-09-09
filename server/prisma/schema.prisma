@@ -190,6 +190,7 @@ model itemDelivery {
   netWeight        Float?
   wastageType      String?
   wastageValue     Float?
+  wastagePure      Float?
   finalPurity      Float?
   goldsmithId      Int?
   goldsmith        Goldsmith?    @relation(fields: [goldsmithId], references: [id])
@@ -307,6 +308,7 @@ model ProductStock{
   touch        Float
   stoneWeight  Float
   wastageValue Float
+  wastagePure  Float?
   finalWeight  Float
   createdAt     DateTime   @default(now())
   }

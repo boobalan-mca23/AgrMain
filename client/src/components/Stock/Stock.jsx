@@ -52,12 +52,12 @@ const currentPageTotal = paginatedData.reduce(
 
 
 
-  const stockSummary = [
-    { label: "Total Items", value: 10 },
-    { label: "Total Weight", value: "125.000g" },
-    { label: "Total Wastage (Goldsmith)", value: "5.000g" },
-    { label: "Total Purity (Jewel Stock)", value: "110.000g" },
-  ];
+  // const stockSummary = [
+  //   { label: "Total Items", value:stockData.length },
+  //   { label: "Total Weight", value: "125.000g" },
+  //   { label: "Total Wastage (Goldsmith)", value: "5.000g" },
+  //   { label: "Total Purity (Jewel Stock)", value: "110.000g" },
+  // ];
    
 
   // const uniqueTypes = [...new Set(stockData.map((item) => item.type))].sort();
@@ -66,18 +66,56 @@ const currentPageTotal = paginatedData.reduce(
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterDate, setFilterDate] = useState("");
+  const calculatePurity=(touch,itemWeight)=>{
+    const purityValue=(touch/100)*itemWeight
+    return purityValue.toFixed(3)
+  }
+ const calculatePurityTotal = (stock) => {
+  const totalPurity = stock.reduce((acc, item) => {
+    return acc + (item.touch / 100) * item.itemWeight;
+  }, 0);
+
+  return totalPurity.toFixed(3);
+};
+
+const calculatewastgePure=(stock)=>{
+  const totalWastage = stock.reduce((acc,item)=>{
+    return acc+ item.wastagePure
+  },0)
+  return totalWastage.toFixed(3)
+}
 
   return (
     <div className="stock-container">
       <h2 className="stock-heading">Stock Dashboard</h2>
 
       <div className="stock-summary">
-        {stockSummary.map((item, index) => (
-          <div key={index} className="stock-card">
-            <p className="stock-label">{item.label}</p>
-            <p className="stock-value">{item.value}</p>
+        
+          <div  className="stock-card">
+            <p className="stock-label">Total Items</p>
+            <p className="stock-value">{stockData.length}</p>
           </div>
-        ))}
+           <div  className="stock-card">
+            <p className="stock-label">Total Weight</p>
+            <div className="stock-weight-grid">
+              {stockData.length>0 && stockData.map((item,index)=>(
+               <>
+                <p>{item.touch} % - {item.itemWeight}={calculatePurity(item.touch,item.itemWeight)}</p>
+               </>
+            ))}
+            </div>
+           <p><strong>Total Purity:</strong>{calculatePurityTotal(stockData)}</p>
+          </div>
+          <div  className="stock-card">
+            <p className="stock-label">Total Wastage </p>
+            <p className="stock-value">{calculatewastgePure(stockData)}</p>
+          </div>
+            <div  className="stock-card">
+            <p className="stock-label">Total Purity</p>
+            <p className="stock-value">{(calculatePurityTotal(stockData)-calculatewastgePure(stockData)).toFixed(3)}</p>
+          </div>
+           
+      
       </div>
 
       {/* <div className="stock-filters">
@@ -129,6 +167,7 @@ const currentPageTotal = paginatedData.reduce(
               <th>Tocuh </th>
               <th>StoneWt (g)</th>
               <th>WastageValue (g)</th>
+              <th>WastagePure (g)</th>
               <th>Final Purity</th>
             </tr>
           </thead>
@@ -142,6 +181,7 @@ const currentPageTotal = paginatedData.reduce(
                 <td>{item.touch}</td>
                 <td>{item.stoneWeight.toFixed(3)}</td>
                 <td>{item.wastageValue.toFixed(3)}</td>
+                <td>{item.wastagePure.toFixed(3)}</td>
                 <td>{item.finalWeight.toFixed(3)}</td>
                 
                 {/* <td>

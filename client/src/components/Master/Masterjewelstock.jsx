@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./masterjewelstock.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 
 const Masterjewelstock = () => {
   const [formData, setFormData] = useState({
@@ -19,9 +20,11 @@ const Masterjewelstock = () => {
   const [totalPurity, setTotalPurity] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [masterTouch,setMasterTouch]=useState([])
 
   useEffect(() => {
     fetchEntries();
+    fetchTouch();
   }, []);
 
   const fetchEntries = async () => {
@@ -36,7 +39,15 @@ const Masterjewelstock = () => {
       toast.error("Error fetching entries.");
     }
   };
-
+   const fetchTouch = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+        
+       setMasterTouch(res.data)
+      } catch (err) {
+        console.error("Failed to fetch touch values", err);
+      }
+    };
   const calculateTotalPurity = (entries) => {
     const total = entries.reduce(
       (sum, entry) => sum + parseFloat(entry.purityValue || 0),
@@ -64,42 +75,43 @@ const Masterjewelstock = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const url = isEditMode
-        ? `${BACKEND_SERVER_URL}/api/jewel-stock/${editId}`
-        : `${BACKEND_SERVER_URL}/api/jewel-stock`;
+    console.log('formData',formData)
+    // try {
+    //   const url = isEditMode
+    //     ? `${BACKEND_SERVER_URL}/api/jewel-stock/${editId}`
+    //     : `${BACKEND_SERVER_URL}/api/jewel-stock`;
 
-      const method = isEditMode ? "PUT" : "POST";
+    //   const method = isEditMode ? "PUT" : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+    //   const response = await fetch(url, {
+    //     method,
+    //     headers: { "Content-Type": "application/json" },
+    //     body: JSON.stringify(formData),
+    //   });
 
-      if (!response.ok) throw new Error("Failed to save entry");
+    //   if (!response.ok) throw new Error("Failed to save entry");
 
-      const newEntry = await response.json();
+    //   const newEntry = await response.json();
 
-      let updatedEntries;
-      if (isEditMode) {
-        updatedEntries = entries.map((entry) =>
-          entry.id === editId ? newEntry : entry
-        );
-        toast.success("Entry updated successfully!");
-      } else {
-        updatedEntries = [...entries, newEntry];
-        toast.success("Stock added successfully!");
-      }
+    //   let updatedEntries;
+    //   if (isEditMode) {
+    //     updatedEntries = entries.map((entry) =>
+    //       entry.id === editId ? newEntry : entry
+    //     );
+    //     toast.success("Entry updated successfully!");
+    //   } else {
+    //     updatedEntries = [...entries, newEntry];
+    //     toast.success("Stock added successfully!");
+    //   }
 
-      setEntries(updatedEntries);
-      calculateTotalPurity(updatedEntries);
-      resetForm();
-      setShowFormPopup(false);
-    } catch (error) {
-      console.error(error);
-      toast.error("Error saving entry.");
-    }
+    //   setEntries(updatedEntries);
+    //   calculateTotalPurity(updatedEntries);
+    //   resetForm();
+    //   setShowFormPopup(false);
+    // } catch (error) {
+    //   console.error(error);
+    //   toast.error("Error saving entry.");
+    // }
   };
 
   const resetForm = () => {
@@ -228,17 +240,18 @@ const handleEdit = (entry) => {
               </div>
               <div className="form-group">
                 <label>Touch (%):</label>
-                <input
-                  type="number"
-                  name="touch"
-                  value={formData.touch}
-                  onChange={handleChange}
-                  onWheel={(e) => e.target.blur()}
-                  step="any"
-                  min="0"
-                  max="100"
-                  required
-                />
+                  <select
+                      value={formData.touch}
+                      name="touch"
+                      onChange={handleChange}
+                      >
+                    <option value="">Select Touch</option>
+                        {masterTouch.map((option) => (
+                          <option key={option.id} value={option?.touch}>
+                            {option?.touch}
+                          </option>
+                        ))}
+                  </select>
               </div>
               <div className="form-group">
                 <label>Purity Value (grams):</label>

@@ -514,6 +514,7 @@ const Billing = () => {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
+        
         setCustomers(data);
       } catch (error) {
         console.error("Error fetching customers:", error);
