@@ -158,6 +158,7 @@ function MasterCustomer() {
               inputRef={nameRef}
               margin="dense"
               label="Customer Name"
+              autoComplete="off"
               type="text"
               fullWidth
               value={customerName}
@@ -183,6 +184,7 @@ function MasterCustomer() {
               label="Phone Number"
               type="tel"
               fullWidth
+              autoComplete="off"
               value={phoneNumber}
               onChange={(e) => {
                 setPhoneNumber(e.target.value);
@@ -204,6 +206,7 @@ function MasterCustomer() {
               inputRef={addressRef}
               margin="dense"
               label="Address"
+              autoComplete="off"
               type="text"
               fullWidth
               multiline

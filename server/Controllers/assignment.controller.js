@@ -12,9 +12,10 @@ const itemToStock = async () => {
   // group by itemName + touch
   const grouped = items.reduce((acc, item) => {
     const key = `${item.itemName}-${item.touch}`;
-
+     
     if (!acc[key]) {
       acc[key] = {
+
         jobcardId: item.jobcardId,
         itemName: item.itemName,
         touch: item.touch,
@@ -43,7 +44,9 @@ const itemToStock = async () => {
   }, {});
 
   let stockInformation = Object.values(grouped);
-   console.log('stock information',stockInformation)
+  
+   await prisma.productStock.deleteMany({}) //
+
   for (const stockItem of stockInformation) {
     let exist = await prisma.productStock.findFirst({
       where: {
@@ -390,6 +393,11 @@ const updateJobCard = async (req, res) => {
         });
       }
     }
+    
+
+
+
+
 
     // update itemDelivery information
     if (itemDelivery.length >= 1) {
