@@ -1,7 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
-
 const prisma = new PrismaClient();
-
+const reduceRawGold=require('../Utils/reduceRawGold')
 
 const itemToStock = async () => {
   const items = await prisma.itemDelivery.findMany({
@@ -20,6 +19,7 @@ const itemToStock = async () => {
         itemName: item.itemName,
         touch: item.touch,
         totalItemWeight: 0,
+        totalWastagePure:0,
         totalFinalPurity: 0,
         totalWastageValue: 0,
         totalStoneWeight: 0,
@@ -30,6 +30,7 @@ const itemToStock = async () => {
     acc[key].totalItemWeight += item.itemWeight || 0;
     acc[key].totalFinalPurity += item.finalPurity || 0;
     acc[key].totalWastageValue += item.wastageValue || 0;
+    acc[key].totalWastagePure += item.wastagePure || 0;
     acc[key].count +=item.count ||0;
     acc[key].totalStoneWeight += item.deduction.reduce(
       
@@ -61,6 +62,7 @@ const itemToStock = async () => {
           count:stockItem.count,
           touch: stockItem.touch,
           stoneWeight: stockItem.totalStoneWeight,
+          wastagePure:stockItem.totalWastagePure,
           wastageValue: stockItem.totalWastageValue,
           finalWeight: stockItem.totalFinalPurity ,
         },
@@ -75,6 +77,7 @@ const itemToStock = async () => {
           touch: stockItem.touch,
           stoneWeight: stockItem.totalStoneWeight,
           wastageValue: stockItem.totalWastageValue,
+          wastagePure:stockItem.totalWastagePure,
           finalWeight: stockItem.totalStoneWeight,
         },
       });
@@ -91,7 +94,7 @@ const setTotalRawGold = async () => {
   const grouped = await prisma.rawGoldLogs.groupBy({
     by: ["rawGoldStockId"],
     _sum: {
-      purity: true,
+      weight: true,
     },
   });
 
@@ -100,7 +103,7 @@ const setTotalRawGold = async () => {
     await prisma.rawgoldStock.update({
       where: { id: g.rawGoldStockId },
       data: {
-        weight: g._sum.purity || 0, // assumes your stock table has totalWeight column
+        weight: g._sum.weight || 0, // assumes your stock table has totalWeight column
       },
     });
   }
@@ -235,9 +238,9 @@ const createJobcard = async (req, res) => {
    
     const givenGoldArr = givenGold.map((item) => ({
       goldsmithId: parseInt(goldSmithId),
-      weight: parseFloat(item.weight) || null,
-      touch: parseFloat(item.touch) || null,
-      purity: parseFloat(item.purity) || null,
+      weight: parseFloat(item.weight) || 0,
+      touch: parseFloat(item.touch) || 0,
+      purity: parseFloat(item.purity) || 0,
     }));
 
     const jobCardTotal = {
@@ -250,20 +253,20 @@ const createJobcard = async (req, res) => {
       receivedTotal: 0,
       isFinished: "false",
     };
-     
+    //  await reduceRawGold.checkAvailability(givenGoldArr)
     await prisma.jobcard.create({
       data: {
         goldsmithId: parseInt(goldSmithId),
         description,
         givenGold: {
           create: givenGoldArr,
-        },
+    },
         total: {
           create: jobCardTotal,
         },
       },
     });
-
+   
     const allJobCards = await prisma.jobcard.findMany({
       where: {
         goldsmithId: parseInt(goldSmithId),
@@ -301,7 +304,7 @@ const updateJobCard = async (req, res) => {
   const { goldSmithId, jobCardId } = req.params;
   const { description, givenGold, itemDelivery, receiveSection, total } =
     req.body;
-
+  console.log("update controller", req.body);
   try {
     const goldsmithInfo = await prisma.goldsmith.findUnique({
       where: { id: parseInt(goldSmithId) },
@@ -407,6 +410,7 @@ const updateJobCard = async (req, res) => {
               netWeight: parseFloat(item?.netWeight) || 0,
               wastageType: item?.wastageType,
               wastageValue: parseFloat(item?.wastageValue) || 0,
+              wastagePure: parseFloat(item?.wastagePure) || 0,
               finalPurity: parseFloat(item.finalPurity) || 0,
             },
           });
@@ -455,6 +459,7 @@ const updateJobCard = async (req, res) => {
               netWeight: parseFloat(item?.netWeight) || 0,
               wastageType: item?.wastageType,
               wastageValue: parseFloat(item?.wastageValue) || 0,
+              wastagePure: parseFloat(item?.wastagePurity) || 0,
               finalPurity: parseFloat(item.finalPurity) || 0,
               ...(deductionArr.length > 0 && {
                 deduction: {

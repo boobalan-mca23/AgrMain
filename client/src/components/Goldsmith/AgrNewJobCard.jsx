@@ -58,8 +58,8 @@ function AgrNewJobCard({
   const [itemDeliveryErrors, setItemDeliveryErrors] = useState([]);
   const [deductionErrors, setDeductionErrors] = useState([]);
   const [receivedErrors, setReceivedErrors] = useState([]);
-  const stoneOptions = ["Stone", "Enamel", "Beads", "Others"];
-  const symbolOptions = ["Touch", "%", "+"];
+  const stoneOptions = ["Stone", "Enamel", "Beads"];
+  const symbolOptions = ["Touch"];
   const [jobCardBalance, setJobCardBalance] = useState(0);
 
   const recalculateFinalPurity = (item) => {
@@ -117,6 +117,9 @@ function AgrNewJobCard({
     if (field === "itemWeight") {
       copy[i]["netWeight"] =
         copy[i]["itemWeight"] - Number(totalDeduction(i, copy));
+    }
+    if(field==="touch" || field==="itemWeight"){
+      copy[i]. wastagePure = (((copy[i].netWeight * copy[i].touch)/100)-copy[i].finalPurity).toFixed(3)
     }
     copy[i].finalPurity = recalculateFinalPurity(copy[i]);
     setItemDelivery(copy);
@@ -474,6 +477,9 @@ function AgrNewJobCard({
                     <TableCell rowSpan={2} className="tableCell">
                       Wastage Value
                     </TableCell>
+                     <TableCell rowSpan={2} className="tableCell">
+                      Wastage Pure
+                    </TableCell>
                     <TableCell rowSpan={2} className="tableCell">
                       Final Purity
                     </TableCell>
@@ -769,6 +775,17 @@ function AgrNewJobCard({
                               {itemDeliveryErrors[index]?.wastageValue}
                             </span>
                           )}
+                        </TableCell>
+                           <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <input
+                            value={item?.wastagePure ?? ""}
+                            className="input itemInput"
+                            type="number"
+                            onWheel={(e) => e.target.blur()}
+                          />
                         </TableCell>
                         <TableCell
                           rowSpan={item?.deduction.length || 1}
