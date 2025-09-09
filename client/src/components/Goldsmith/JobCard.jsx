@@ -120,6 +120,7 @@ const currentPageTotal = paginatedData.reduce(
       netWeight: "",
       wastageType: "",
       wastageValue: "",
+      wastagePure:"",
       finalPurity: "",
     },
     ]);
@@ -235,6 +236,7 @@ const currentPageTotal = paginatedData.reduce(
           netWeight: "",
           wastageType: "",
           wastageValue: "",
+          wastagePure:"",
           finalPurity: "",
         },
       ]);
@@ -350,7 +352,7 @@ const currentPageTotal = paginatedData.reduce(
                     <td rowSpan={2}>Date</td>
                     <td rowSpan={2}>JobCardId</td>
                     <td colSpan={4}>Given Gold</td>
-                    <td colSpan={9}>Itm Delivery</td>
+                    <td colSpan={10}>Itm Delivery</td>
                     <td colSpan={3}>Received</td>
                     <td rowSpan={2}>Total</td>
                     <td rowSpan={2}>Balance</td>
@@ -371,6 +373,7 @@ const currentPageTotal = paginatedData.reduce(
                     <td>NetWt</td>
                     {/* <td>wastageTyp</td> */}
                     <td>wastageValue</td>
+                    <td>wastagePure</td>
                     <td>FinalPurity</td>
                     <td>weight</td>
                     <td>touch</td>
@@ -458,6 +461,7 @@ const currentPageTotal = paginatedData.reduce(
                           <td>{d?.netWeight || "-"}</td>
                           {/* <td>{d?.wastageType || "-"}</td> */}
                           <td>{d?.wastageValue || "-"}</td>
+                          <td>{d?.wastagePure||"-"}</td>
                           <td>{d?.finalPurity || "-"}</td>
                          
                           <td>{r?.weight || "-"}</td>
@@ -518,7 +522,7 @@ const currentPageTotal = paginatedData.reduce(
                   <td>
                     <b>{currentPageTotal?.receive?.toFixed(3)}</b>
                   </td>
-                  <td colSpan={3}></td>
+                  <td colSpan={4}></td>
                 </tr>
               </tfoot>
               </table>

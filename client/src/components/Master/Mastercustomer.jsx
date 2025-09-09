@@ -122,11 +122,11 @@ function MasterCustomer() {
         closeModal();
       } else {
         const err = await response.json();
-        toast.error("Error: " + err.message);
+        toast.error(err.message);
       }
     } catch (error) {
-      console.error("Error saving customer:", error);
-      toast.error("Something went wrong.");
+       console.error("Error saving customer:", error);
+       toast.error(error.response.data.message,{autoClose:1000});
     }
   };
 

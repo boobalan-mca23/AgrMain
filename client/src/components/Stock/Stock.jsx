@@ -211,6 +211,7 @@ const calculatewastgePure=(stock)=>{
               <td><strong>{(currentPageTotal.itemWt).toFixed(3)}</strong></td>
               <td colSpan={4}></td>
               <td><strong>{(currentPageTotal.finalWt).toFixed(3)}</strong></td>
+              <td></td>
             </tr>
           </tfoot>
         </table>

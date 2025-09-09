@@ -113,7 +113,7 @@ function Mastergoldsmith() {
       closeModal();
     } catch (error) {
       console.error("Error creating goldsmith:", error);
-      toast.error("Failed to add goldsmith. Please try again.");
+      toast.error(error.response.data.message,{autoClose:1000});
     }
   };
 
