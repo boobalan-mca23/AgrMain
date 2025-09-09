@@ -57,13 +57,13 @@ const createBill = async (req, res) => {
     await prisma.customerBillBalance.upsert({
       where: { customer_id: parseInt(customerId) },
       update: {
-        balance: pureBalance,
-        hallMarkBal: hallmarkBalance,
+        balance: parseFloat(pureBalance),
+        hallMarkBal: parseFloat(hallmarkBalance),
       },
       create: {
         customer_id: parseInt(customerId),
-        balance: pureBalance,
-        hallMarkBal: hallmarkBalance,
+        balance: parseFloat(pureBalance),
+        hallMarkBal: parseFloat(hallmarkBalance),
       },
     });
     res
@@ -179,7 +179,8 @@ const getBillByCustomer = async (req, res) => {
         const allBills=await prisma.bill.findMany({
             include:{
                 orders:true,
-                billReceive:true
+                billReceive:true,
+                customers:true
             }
         })
         return res.status(200).json({allBills})

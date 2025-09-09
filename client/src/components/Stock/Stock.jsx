@@ -99,9 +99,9 @@ const calculatewastgePure=(stock)=>{
             <p className="stock-label">Total Weight</p>
             <div className="stock-weight-grid">
               {stockData.length>0 && stockData.map((item,index)=>(
-               <>
+               <div key={index+1}>
                 <p>{item.touch} % - {item.itemWeight}={calculatePurity(item.touch,item.itemWeight)}</p>
-               </>
+               </div>
             ))}
             </div>
            <p><strong>Total Purity:</strong>{calculatePurityTotal(stockData)}</p>
