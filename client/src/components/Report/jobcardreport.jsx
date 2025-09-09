@@ -285,7 +285,7 @@ const currentPageTotal = paginatedData.reduce(
                       <th >Date</th>
                       <th >JobCard Id</th>
                       <th colSpan="4">Given Wt</th>
-                      <th colSpan="9">Item Delivery</th>
+                      <th colSpan="10">Item Delivery</th>
                       <th colSpan="3">Receive</th>
                       <th>Total</th>
                       <th >Balance</th>
@@ -307,6 +307,7 @@ const currentPageTotal = paginatedData.reduce(
                       <th>NetWt</th>
                     {/* <td>wastageTyp</td> */}
                       <th>wastageValue</th>
+                      <th>watagePure</th>
                       <th>FinalPurity</th>
                       <th>weight</th>
                       <th>touch</th>
@@ -380,6 +381,7 @@ const currentPageTotal = paginatedData.reduce(
                           <td>{d?.netWeight || "0"}</td>
                          
                           <td>{d?.wastageValue || "0"}</td>
+                          <td>{d?.wastagePure||"0"}</td>
                           <td>{d?.finalPurity || "0"}</td>
                           
                           <td>{r?.weight || "0"}</td> 
@@ -450,7 +452,7 @@ const currentPageTotal = paginatedData.reduce(
                       <td>
                         <b>{currentPageTotal.receive.toFixed(3)}</b>
                       </td>
-                      <td colSpan={3}></td>
+                      <td colSpan={4}></td>
                     </tr>
                   </tfoot>
                 </table>
