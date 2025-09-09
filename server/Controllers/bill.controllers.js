@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const addRawGold=require('../Utils/RawGoldStock')
+const addRawGold=require('../Utils/addRawGoldStock')
 
 
 // createBill

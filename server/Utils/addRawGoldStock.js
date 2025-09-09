@@ -7,7 +7,7 @@ const setTotalRawGold = async () => {
   const grouped = await prisma.rawGoldLogs.groupBy({
     by: ["rawGoldStockId"],
     _sum: {
-      purity: true,
+      weight: true,
     },
   });
 
@@ -16,7 +16,7 @@ const setTotalRawGold = async () => {
     await prisma.rawgoldStock.update({
       where: { id: g.rawGoldStockId },
       data: {
-        weight: g._sum.purity || 0, // assumes your stock table has totalWeight column
+        weight: g._sum.weight || 0, // assumes your stock table has totalWeight column
       },
     });
   }

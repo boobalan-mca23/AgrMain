@@ -49,6 +49,7 @@ function JobCardDetails() {
       netWeight: "",
       wastageType: "",
       wastageValue: "",
+      wastagePure:"",
       finalPurity: "",
     },
   ]);
