@@ -385,7 +385,9 @@ const Billing = () => {
   };
 
   const handleProductClick = (product) => {
-    const productId = `${product.itemName}_${product.itemWeight}_${product.touch}`;
+    // const productId = `${product.itemName}_${product.itemWeight}_${product.touch}`;
+    const productId = product.id;
+    // console.log("Selected Product ID:", productId);
     const remainingWeight = getRemainingWeight(productId, product.itemWeight);
     if (remainingWeight <= 0) {
       alert(`No remaining weight available for ${product.itemName}`);
@@ -419,13 +421,14 @@ const Billing = () => {
         return;
       }
       try {
-                const billData = {
+          const billData = {
           customerId: selectedCustomer.id,                     
           billTotal:  FWT,                                 
           hallMark: parseFloat(billHallmark) || 0,
           pureBalance:(TotalFWT - totalReceivedPurity).toFixed(3),
    	      hallmarkBalance:hallmarkBalance + prevHallmark,
-          orderItems: billDetailRows.map((row) => ({           
+          orderItems: billDetailRows.map((row) => ({      
+            productId: row.productId,
             productName: row.productName,
             weight: parseFloat(row.wt) || 0,
             stoneWeight: parseFloat(row.stWt) || 0,
@@ -458,7 +461,8 @@ const Billing = () => {
         }
 
         const result = await response.json();
-        console.log("Bill saved successfully:", result);
+        // console.log("Bill saved successfully:", result);
+        console.log("Bill saved successfully")
         alert("Bill saved successfully!");
         setBillDetailRows([]);
         setRows([]);
@@ -529,6 +533,7 @@ const Billing = () => {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
+        // console.log('fecthcustomer',data)
         setCustomers(data);
       } catch (error) {
         console.error("Error fetching customers:", error);
@@ -553,6 +558,7 @@ const Billing = () => {
         const data = await response.json();
         setAvailableProducts(data);
         setOriginalProducts(data);
+        // console.log(data);
       } catch (error) {
         console.error("Error fetching Available Products:", error);
       }
@@ -837,7 +843,7 @@ const Billing = () => {
           <Box className="closing-balance">
             <div className="flex">
               <strong>Cash Balance: {cashBalance}</strong>
-              {console.log("testing pureBalance",pureBalance)}
+              {/* {console.log("testing pureBalance",pureBalance)} */}
               <strong>Pure Balance: {(TotalFWT - totalReceivedPurity).toFixed(3)}</strong>
               <strong>Hallmark Balance: {(hallmarkBalance + prevHallmark).toFixed(3)}</strong>
             </div>
@@ -882,7 +888,7 @@ const Billing = () => {
             <TableBody>
               {availableproducts &&
                 availableproducts.allStock.map((prodata, index) => {
-                  const productId = `${prodata.itemName}_${prodata.itemWeight}_${prodata.touch}`;
+                  const productId = prodata.id;
                   const remainingWeight = getRemainingWeight(productId, prodata.itemWeight);
                   const isFullyAllocated = remainingWeight <= 0;
                   return (
@@ -895,6 +901,7 @@ const Billing = () => {
                         opacity: isFullyAllocated ? 0.6 : 1,
                       }}
                       onClick={() => {
+                        // console.log("prodata :",prodata)
                         if (!isFullyAllocated) handleProductClick(prodata);
                       }}
                     >
