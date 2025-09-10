@@ -1,10 +1,12 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const addRawGold=require('../Utils/addRawGoldStock')
+
 
 // createBill
 
 const createBill = async (req, res) => {
-  const { customerId, billTotal,hallMark, orderItems, received } = req.body;
+  const { customerId, billTotal,hallMark, orderItems, received ,pureBalance,hallmarkBalance} = req.body;
 
   try {
     // check customer
@@ -36,16 +38,6 @@ const createBill = async (req, res) => {
       finalWeight: parseFloat(item.finalWeight),
     }));
 
-    const modifiyReceieve = received.map((receive, _) => ({
-      customer_id: parseInt(customerId),
-      goldRate: parseInt(receive.goldRate),
-      gold: parseFloat(receive.gold),
-      touch: parseFloat(receive.touch),
-      purity: parseFloat(receive.purity),
-      receiveHallMark:parseFloat(receive.receiveHallMark),
-      amount: parseInt(receive.amount),
-    }));
-
     const newBill = await prisma.bill.create({
       data: {
         customer_id: parseInt(customerId),
@@ -56,11 +48,24 @@ const createBill = async (req, res) => {
       include: {
         orders: true,
         customers: true,
+        
       },
     });
+    // newbill time we need to move rawgold stock  
+    await addRawGold.moveToRawGoldStock(received,newBill.id,customerId) 
 
-    await prisma.billReceived.createMany({data:modifiyReceieve})
-    
+    await prisma.customerBillBalance.upsert({
+      where: { customer_id: parseInt(customerId) },
+      update: {
+        balance: parseFloat(pureBalance),
+        hallMarkBal: parseFloat(hallmarkBalance),
+      },
+      create: {
+        customer_id: parseInt(customerId),
+        balance: parseFloat(pureBalance),
+        hallMarkBal: parseFloat(hallmarkBalance),
+      },
+    });
     res
       .status(201)
       .json({ message: "Bill created successfully", bill: newBill });
@@ -71,10 +76,10 @@ const createBill = async (req, res) => {
 };
 // update Bill
 
-const updateBill = async (req, res) => {
-  const { customerId } = req.params;
+  const updateBill = async (req, res) => {
+  const { customerId,billId } = req.params;
   const {received,pureBalance,hallmarkBalance} = req.body;
-  console.log('reqBody',req.body)
+  
   console.log('customerId',customerId)
   try {
     // check customer
@@ -91,34 +96,11 @@ const updateBill = async (req, res) => {
         .status(400)
         .json({ msg: "At least one received item is required" });
     }
-
-    // build queries for transaction
-    const queries = received.map((receive) => {
-      const data = {
-        customer_id:parseInt(customerId),
-        date:receive.date,
-        goldRate: parseInt(receive.goldRate)||0,
-        type:receive.type,
-        gold: parseFloat(receive.gold)||0,
-        touch: parseFloat(receive.touch)||0,
-        purity: parseFloat(receive.purity)||0,
-        amount: parseFloat(receive.amount)||0,
-        receiveHallMark:parseFloat(receive.hallMark)||0
-      };
-
-      if (receive.id) {
-        // update existing
-        return prisma.billReceived.update({
-          where: { id: parseInt(receive.id) },
-          data,
-        });
-      } else {
-        // create new
-        return prisma.billReceived.create({ data });
-      }
-
-    });
-   const balanceQuery = prisma.customerBillBalance.upsert({
+    // update bill time we need to create or update rawGoldStock
+     addRawGold.moveToRawGoldStock(received,billId,customerId) 
+   
+   
+    await prisma.customerBillBalance.upsert({
       where: { customer_id: parseInt(customerId) },
       update: {
         balance: pureBalance,
@@ -130,18 +112,15 @@ const updateBill = async (req, res) => {
         hallMarkBal: hallmarkBalance,
       },
     });
-
-    //  run everything in one transaction
-    await prisma.$transaction([...queries, balanceQuery]);
-
-    
-
     res.status(201).json({ message: "Bill updated successfully" });
   } catch (err) {
     console.error(err.message);
     return res.status(500).json({ err: err.message });
   }
 };
+
+
+
 
 // get bills by customer id
 const getBillByCustomer = async (req, res) => {
@@ -200,7 +179,8 @@ const getBillByCustomer = async (req, res) => {
         const allBills=await prisma.bill.findMany({
             include:{
                 orders:true,
-                billReceive:true
+                billReceive:true,
+                customers:true
             }
         })
         return res.status(200).json({allBills})

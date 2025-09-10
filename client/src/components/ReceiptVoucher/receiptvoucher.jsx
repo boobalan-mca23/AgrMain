@@ -39,7 +39,7 @@ const Receipt = () => {
     hallMark: 0,
   });
   const selectedType = ["GoldRate","Gold"];
-
+  const [masterTouch,setMasterTouch]=useState([])
   const [receipt, setReceipt] = useState([
     {
       date: "",
@@ -68,8 +68,17 @@ const Receipt = () => {
         console.error("Error fetching customers:", error);
       }
     };
-
+   const fetchTouch = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+        setMasterTouch(res.data)
+        console.log('res touch',res.data)
+      } catch (err) {
+        console.error("Failed to fetch touch values", err);
+      }
+    };
     fetchCustomers();
+    fetchTouch();
   }, []);
 
  
@@ -170,6 +179,7 @@ const Receipt = () => {
 
   const handleSaveReeceipt = () => {
     const payLoad = {
+      customerId :selectedCustomer,
       received: receipt,
       pureBalance: pureBalance,
       hallmarkBalance: hallmarkBalance,
@@ -177,9 +187,9 @@ const Receipt = () => {
     console.log("payLoad", payLoad);
     const saveReceipt = async () => {
       try {
-        let customerId = selectedCustomer;
-        const response = await axios.put(
-          `${BACKEND_SERVER_URL}/api/bill/updateBill/${customerId}`,
+      
+        const response = await axios.post(
+          `${BACKEND_SERVER_URL}/api/receipt`,
           payLoad
         );
         if (response.status === 201) {
@@ -267,7 +277,7 @@ const Receipt = () => {
               >
                 Save
               </button>
-              <button>View Receipts</button>
+              
             </div>
           </div>
 
@@ -354,14 +364,22 @@ const Receipt = () => {
                     )}
                     </td>
                     <td>
-                      <input
+                     <select
                         disabled={item.type==="Gold"?false:true}
-                        className="receiptTableInput"
                         value={item.touch}
-                        onChange={(e) =>
-                          handleChangeReceipt(index, "touch", e.target.value)
-                        }
-                      />
+                        onChange={(e) => {
+                          handleChangeReceipt(index, "touch", e.target.value);
+                        }}
+                        className="receiptTableInput"
+                      >
+                        <option value="">Select Touch</option>
+                        {masterTouch.map((option,) => (
+                          <option key={option.id} value={option.touch}>
+                            {option.touch}
+                          </option>
+                        ))}
+                      </select>
+                    
                          <br></br>
                     {receiptErrors[index]?.touch && (
                       <span className="error">{receiptErrors[index]?.touch}</span>

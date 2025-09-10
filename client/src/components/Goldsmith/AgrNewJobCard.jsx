@@ -58,8 +58,8 @@ function AgrNewJobCard({
   const [itemDeliveryErrors, setItemDeliveryErrors] = useState([]);
   const [deductionErrors, setDeductionErrors] = useState([]);
   const [receivedErrors, setReceivedErrors] = useState([]);
-  const stoneOptions = ["Stone", "Enamel", "Beads", "Others"];
-  const symbolOptions = ["Touch", "%", "+"];
+  const stoneOptions = ["Stone", "Enamel", "Beads"];
+  const symbolOptions = ["Touch"];
   const [jobCardBalance, setJobCardBalance] = useState(0);
 
   const recalculateFinalPurity = (item) => {
@@ -71,7 +71,7 @@ function AgrNewJobCard({
       parseFloat(item.itemWeight || 0) - totalItemDeductions;
     const wastageValue = parseFloat(item.wastageValue || 0);
 
-    if (item.wastageType === "touch") {
+    if (item.wastageType === "Touch") {
       return (itemNetWeightCalc * wastageValue) / 100;
     } else if (item.wastageType === "%") {
       return itemNetWeightCalc + (itemNetWeightCalc * wastageValue) / 100;
@@ -117,6 +117,9 @@ function AgrNewJobCard({
     if (field === "itemWeight") {
       copy[i]["netWeight"] =
         copy[i]["itemWeight"] - Number(totalDeduction(i, copy));
+    }
+    if(field==="touch" || field==="itemWeight"){
+      copy[i]. wastagePure = (((copy[i].netWeight * copy[i].touch)/100)-copy[i].finalPurity).toFixed(3)
     }
     copy[i].finalPurity = recalculateFinalPurity(copy[i]);
     setItemDelivery(copy);
@@ -474,6 +477,9 @@ function AgrNewJobCard({
                     <TableCell rowSpan={2} className="tableCell">
                       Wastage Value
                     </TableCell>
+                     <TableCell rowSpan={2} className="tableCell">
+                      Wastage Pure
+                    </TableCell>
                     <TableCell rowSpan={2} className="tableCell">
                       Final Purity
                     </TableCell>
@@ -612,6 +618,7 @@ function AgrNewJobCard({
                           <Button
                             disabled={edit ? false : true}
                             onClick={() => handlededuction(index)}
+                            style={{fontSize:"25px"}}
                           >
                             +
                           </Button>
@@ -769,6 +776,17 @@ function AgrNewJobCard({
                             </span>
                           )}
                         </TableCell>
+                           <TableCell
+                          rowSpan={item?.deduction.length || 1}
+                          className="tableCell"
+                        >
+                          <input
+                            value={item?.wastagePure ?? ""}
+                            className="input itemInput"
+                            type="number"
+                            onWheel={(e) => e.target.blur()}
+                          />
+                        </TableCell>
                         <TableCell
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
@@ -920,6 +938,7 @@ function AgrNewJobCard({
                   key={row.id || `received-${i}`}
                   className="received-section-row"
                 >
+                  <strong>{i + 1})</strong> 
                   <div>
                     <input
                       type="number"
@@ -976,7 +995,9 @@ function AgrNewJobCard({
                   </button>
                 </div>
               ))}
-              <button
+             
+            </div>
+             <button
                 disabled={
                   edit
                     ? !lastJobCardId
@@ -999,7 +1020,6 @@ function AgrNewJobCard({
               >
                 +
               </button>
-            </div>
             <div className="totals-section">
               <div className="total-row">
                 <span className="total-purity-label">

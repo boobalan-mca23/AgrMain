@@ -1,292 +1,316 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import dayjs from "dayjs";
+import { FaCheck } from "react-icons/fa";
+import { GrFormSubtract } from "react-icons/gr";
+import './receiptreport.css'
 import {
+  Autocomplete,
+  Button,
+  TextField,
   Table,
   TableBody,
   TableCell,
-  TextField,
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Paper,
-  Typography,
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
 } from "@mui/material";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import { BACKEND_SERVER_URL } from "../../Config/Config";
+import axios from "axios";
+
 
 const ReceiptReport = () => {
-  const [receipts, setReceipts] = useState([]);
-  const [filteredReceipts, setFilteredReceipts] = useState([]);
-  const [dateFilter, setDateFilter] = useState({
-    startDate: "",
-    endDate: "",
-  });
-  const [customerFilter, setCustomerFilter] = useState("all");
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+  const [receipt, setReceipt] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const printRef = useRef();
+  const [selectedCustomer, setSelectedCustomer] = useState({});
+  const [page, setPage] = useState(0); // 0-indexed for TablePagination
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Mock data for UI preview
-  useEffect(() => {
-    const mockReceipts = [
-      {
-        id: 1,
-        customer_id: 101,
-        customer_name: "John Doe",
-        date: "2025-06-10",
-        goldRate: 5700,
-        givenGold: 20,
-        touch: 91.6,
-        purityWeight: 18.32,
-        amount: 104624,
-      },
-      {
-        id: 2,
-        customer_id: 102,
-        customer_name: "Jane Smith",
-        date: "2025-06-11",
-        goldRate: 5750,
-        givenGold: 10,
-        touch: 92,
-        purityWeight: 9.2,
-        amount: 52900,
-      },
-    ];
+  const paginatedData = receipt.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
-    const mockCustomers = [
-      { id: 101, name: "John Doe", phone: "9876543210" },
-      { id: 102, name: "Jane Smith", phone: "9123456780" },
-    ];
 
-    setReceipts(mockReceipts);
-    setFilteredReceipts(mockReceipts);
-    setCustomers(mockCustomers);
-  }, []);
+  const [isPrinting, setIsPrinting] = useState(true);
+  
 
-  useEffect(() => {
-    applyFilters();
-  }, [dateFilter, customerFilter, receipts]);
+  const reportRef = useRef();
 
-  const applyFilters = () => {
-    let result = [...receipts];
+  // Calculate totals for current page
+ 
+  const handleDownloadPdf = async () => {
+  setIsPrinting(false); // show all rows
 
-    if (dateFilter.startDate && dateFilter.endDate) {
-      result = result.filter((receipt) => {
-        const receiptDate = new Date(receipt.date).getTime();
-        const startDate = new Date(dateFilter.startDate).getTime();
-        const endDate = new Date(dateFilter.endDate).getTime();
-        return receiptDate >= startDate && receiptDate <= endDate;
-      });
-    }
+  const clearBtn = document.getElementById("clear");
+  const printBtn = document.getElementById("print");
+  const thead = document.getElementById("reportHead");
+  const tfoot = document.getElementById("reportFoot");
 
-    if (customerFilter !== "all") {
-      result = result.filter(
-        (receipt) => receipt.customer_id === customerFilter
-      );
-    }
+  clearBtn.style.visibility = "hidden";
+  printBtn.style.visibility = "hidden";
+  thead.style.position = "static"; // fix for print
+  tfoot.style.position = "static"; // fix for print
 
-    setFilteredReceipts(result);
-  };
-
-  const handleStartDateChange = (e) => {
-    setDateFilter({ ...dateFilter, startDate: e.target.value });
-  };
-
-  const handleEndDateChange = (e) => {
-    setDateFilter({ ...dateFilter, endDate: e.target.value });
-  };
-
-  const handleCustomerFilterChange = (e) => {
-    setCustomerFilter(e.target.value);
-  };
-
-  const handlePrintPDF = async () => {
-    const input = printRef.current;
-
-    const canvas = await html2canvas(input, { scale: 2, useCORS: true });
+  setTimeout(async () => {
+    const element = reportRef.current;
+    const canvas = await html2canvas(element, { scale: 2 });
 
     const imgData = canvas.toDataURL("image/png");
+
     const pdf = new jsPDF("p", "mm", "a4");
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = 210;
-    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    let heightLeft = imgHeight;
-    let position = 0;
+    // Define margins
+    const margin = 10; // mm
+    const usableWidth = pdfWidth - margin * 2;
+    const imgHeight = (canvas.height * usableWidth) / canvas.width;
 
-    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-    heightLeft -= 297;
+    let position = margin;
+    let remainingHeight = imgHeight;
+    let imgPosition = 0;
 
-    while (heightLeft > 0) {
-      position -= 297;
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-      heightLeft -= 297;
+    if (imgHeight <= pdfHeight - margin * 2) {
+      // fits in one page
+      pdf.addImage(imgData, "PNG", margin, margin, usableWidth, imgHeight);
+    } else {
+      while (remainingHeight > 0) {
+        pdf.addImage(
+          imgData,
+          "PNG",
+          margin,
+          position,
+          usableWidth,
+          imgHeight,
+          undefined,
+          'FAST'
+        );
+
+        remainingHeight -= (pdfHeight - margin * 2);
+        imgPosition -= (pdfHeight - margin * 2);
+
+        if (remainingHeight > 0) {
+          pdf.addPage();
+          position = margin;
+        }
+      }
     }
 
-    pdf.save("Receipt-Report.pdf");
+    pdf.save("Receipt_Report.pdf");
+
+    // Restore UI
+    setIsPrinting(true);
+    clearBtn.style.visibility = "visible";
+    printBtn.style.visibility = "visible";
+    thead.style.position = "sticky";
+    tfoot.style.position = "sticky";
+  }, 1000); // allow DOM to update
+};
+
+// const currentPageTotal = paginatedData.reduce(
+//     (acc, job) => {
+//       acc.givenWt += job.total[0]?.givenTotal;
+//       acc.itemWt += job.total[0]?.deliveryTotal;
+//       acc.receive += job.total[0]?.receivedTotal;
+//       return acc;
+//     },
+//     { givenWt: 0, itemWt: 0,receive: 0 } // Initial accumulator
+//   );
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
   };
 
-  const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "short", day: "numeric" };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
-  const totalAmount = filteredReceipts.reduce(
-    (sum, r) => sum + parseFloat(r.amount),
-    0
-  );
-  const totalPurityWeight = filteredReceipts.reduce(
-    (sum, r) => sum + parseFloat(r.purityWeight),
-    0
-  );
+  const handleDateClear = () => {
+    setFromDate(null);
+    setToDate(null);
+     setSelectedCustomer({})
+  };
+
+  const handleCustomer = (newValue) => {
+    if (!newValue || newValue === null) {
+      return;
+    }
+    setSelectedCustomer(newValue);
+
+    const fetchReceipts = async () => {
+      try {
+        const from = fromDate ? fromDate.format("YYYY-MM-DD") : "";
+        const to = toDate ? toDate.format("YYYY-MM-DD") : "";
+
+        const response = await axios.get(
+          `${BACKEND_SERVER_URL}/api/receipt/${newValue.id}/report`,
+          { params: { fromDate: from, toDate: to } }
+        );
+        console.log("data", response.data);
+        setReceipt(response.data);
+
+      
+      } catch (error) {
+        console.error("Error fetching receipt data:", error);
+      }
+    };
+    fetchReceipts ();
+  };
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_SERVER_URL}/api/customers`);
+        console.log("response", response.data);
+
+        setCustomers(response.data);
+      } catch (error) {
+        console.error("Error fetching customers:", error);
+      }
+    };
+    fetchCustomers();
+    const today = dayjs();
+    setFromDate(today);
+    setToDate(today);
+  }, []);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" align="center" gutterBottom>
-        Receipt Report
-      </Typography>
+    <>
+      <div >
+        <div className="receiptreportHeader">
+          <h3>Receipt Report</h3>
+          <div className={`receipt ${!isPrinting ? "print-mode" : ""}`}>
+            <label>From Date</label>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DemoContainer components={["DatePicker"]}>
+                <DatePicker
+                  value={fromDate}
+                  format="DD/MM/YYYY"
+                  onChange={(newValue) => setFromDate(newValue)}
+                />
+              </DemoContainer>
+            </LocalizationProvider>
+            <label>To Date</label>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DemoContainer components={["DatePicker"]}>
+                <DatePicker
+                  value={toDate}
+                  format="DD/MM/YYYY"
+                  onChange={(newValue) => setToDate(newValue)}
+                />
+              </DemoContainer>
+            </LocalizationProvider>
 
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          mb: 3,
-          alignItems: "center",
-        }}
-      >
-        <TextField
-          label="Start Date"
-          type="date"
-          size="small"
-          value={dateFilter.startDate}
-          onChange={handleStartDateChange}
-          InputLabelProps={{ shrink: true }}
-          sx={{ width: 180 }}
-        />
+            {/* Autocomplete */}
+            <Autocomplete
+              disablePortal
+              options={customers}
+              getOptionLabel={(option) => option.name || ""}
+              sx={{ width: 300 }}
+              value={selectedCustomer}
+              onChange={(event, newValue) => handleCustomer(newValue)}
+              renderInput={(params) => (
+                <TextField {...params} label="Select Customer" />
+              )}
+            />
 
-        <TextField
-          label="End Date"
-          type="date"
-          size="small"
-          value={dateFilter.endDate}
-          onChange={handleEndDateChange}
-          InputLabelProps={{ shrink: true }}
-          sx={{ width: 180 }}
-        />
-
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Customer</InputLabel>
-          <Select
-            value={customerFilter}
-            label="Customer"
-            onChange={handleCustomerFilterChange}
-          >
-            <MenuItem value="all">All Customers</MenuItem>
-            {customers.map((customer) => (
-              <MenuItem key={customer.id} value={customer.id}>
-                {customer.name} ({customer.phone})
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <Button variant="contained" color="primary" onClick={handlePrintPDF}>
-          Export as PDF
-        </Button>
-      </Box>
-
-      <TableContainer
-        component={Paper}
-        ref={printRef}
-        style={{ padding: "20px", overflowX: "auto" }}
-      >
-        <Typography variant="h6" align="center" gutterBottom>
-          Receipt Report
-        </Typography>
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <strong>Customer</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Date</strong>
-              </TableCell>
-              <TableCell align="right">
-                <strong>Gold Rate</strong>
-              </TableCell>
-              <TableCell align="right">
-                <strong>Given Gold</strong>
-              </TableCell>
-              <TableCell align="right">
-                <strong>Touch</strong>
-              </TableCell>
-              <TableCell align="right">
-                <strong>Purity Weight</strong>
-              </TableCell>
-              <TableCell align="right">
-                <strong>Amount</strong>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredReceipts.length > 0 ? (
-              filteredReceipts.map((receipt, index) => (
-                <TableRow
-                  key={receipt.id}
-                  style={{
-                    backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
-                  }}
-                >
-                  <TableCell>{receipt.customer_name}</TableCell>
-                  <TableCell>{formatDate(receipt.date)}</TableCell>
-                  <TableCell align="right">
-                    {parseFloat(receipt.goldRate).toFixed(2)}
-                  </TableCell>
-                  <TableCell align="right">
-                    {parseFloat(receipt.givenGold).toFixed(3)}
-                  </TableCell>
-                  <TableCell align="right">
-                    {parseFloat(receipt.touch).toFixed(2)}%
-                  </TableCell>
-                  <TableCell align="right">
-                    {parseFloat(receipt.purityWeight).toFixed(3)}
-                  </TableCell>
-                  <TableCell align="right">
-                    ₹
-                    {new Intl.NumberFormat("en-IN").format(
-                      parseFloat(receipt.amount).toFixed(2)
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  No receipts found
-                </TableCell>
-              </TableRow>
+            {isPrinting && (
+              <Button
+                id="clear"
+                className="clr noprint receiptreportBtn"
+                onClick={handleDateClear}
+              >
+                Clear
+              </Button>
             )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            {isPrinting && (
+              <div className="noprint">
+                <Button
+                  id="print"
+                  onClick={() => {
+                    handleDownloadPdf();
+                  }}
+                  className="receiptreportBtn"
+                >
+                  Print
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
 
-      {filteredReceipts.length > 0 && (
-        <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-            Total Receipts: {filteredReceipts.length} | Total Purity Weight:{" "}
-            {totalPurityWeight.toFixed(3)} | Total Amount: ₹
-            {new Intl.NumberFormat("en-IN").format(totalAmount.toFixed(2))}
-          </Typography>
-        </Box>
-      )}
-    </Box>
+        <div className="receiptTable" >
+          {receipt.length >= 1 ? (
+         
+              <div className="receiptreportContainer" >
+                <table ref={reportRef} className="receiptreportTable">
+                  <thead  id="receiptreportHead">
+                    <tr className="receiptreportThead">
+                      <th >S.No</th>
+                      <th >Date</th>
+                      <th>Type</th>
+                      <th>GoldRate</th>
+                      <th>Gold</th>
+                      <th>Touch</th>
+                      <th>Purity</th>
+                      <th>Amount</th>
+                      <th>HallMark</th>
+                    </tr>
+                    
+                  </thead>
+                  <tbody className="receiptreportTbody">
+                    {
+                      receipt.map((item,index)=>(
+                        <tr key={index+1}>
+                          <td>{index+1}</td>
+                          <td>{item.date}</td>
+                          <td>{item.type}</td>
+                          <td>{item.goldRate}</td>
+                          <td>{item.gold}</td>
+                          <td>{item.touch}</td>
+                          <td>{item.purity}</td>
+                          <td>{item.amount}</td>
+                          <td>{item.receiveHallMark}</td>
+
+                        </tr>
+                      ))
+                    }
+                   </tbody>
+                </table>
+
+                 <TablePagination
+               
+                component="div"
+                count={receipt.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25]}
+              />
+              </div>
+             
+         
+            
+
+          ) : (
+            <span style={{ display: "block", textAlign: "center" }}>
+              No Receipts For this Customers
+            </span>
+          )}
+        </div>
+      </div>
+    </>
   );
 };
 

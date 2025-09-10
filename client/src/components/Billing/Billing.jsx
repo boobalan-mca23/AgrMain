@@ -14,8 +14,10 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Tooltip,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import PrintIcon from "@mui/icons-material/Print";
 import { MdDeleteForever } from "react-icons/md";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -29,6 +31,7 @@ const Billing = () => {
   const [availableproducts, setAvailableProducts] = useState(null);
   const [originalProducts, setOriginalProducts] = useState(null);
   const [previousBalance, setPreviousBalance] = useState(0);
+  const [prevHallmark, setPrevHallmark] = useState(0);
   const [billId] = useState(1);
   const [date] = useState(new Date().toLocaleDateString("en-IN"));
   const [time] = useState(
@@ -46,6 +49,8 @@ const Billing = () => {
   const [rows, setRows] = useState([]);
   const [billDetailRows, setBillDetailRows] = useState([]);
   const [billHallmark, setBillHallmark] = useState("");
+  const [ismodel,setIsmodel]=useState(false);
+
 
   const validateInput = (
     value,
@@ -208,11 +213,27 @@ const Billing = () => {
     ]);
   };
 
-  const handleDeleteRow = (index) => {
-    const updated = [...rows];
-    updated.splice(index, 1);
-    setRows(updated);
-  };
+  // const handleDeleteRow = (index)  => {
+  //   try {
+  //   var x = window.confirm("Sure you want to delete this row?");
+  //   if(x){
+  //     const updated = [...rows];
+  //     updated.splice(index, 1);
+  //     setRows(updated);
+  //     }else{
+  //       console.log("cancelled deletion");
+  //     }}catch(err){
+  //       console.log("Error in Deleting Row",err);
+  //     }
+  //   }
+
+    const handleDeleteRow = (index) => {
+      const confirmed = window.confirm("Sure you want to delete this row?");
+      if (!confirmed) return console.log("Cancelled deletion");
+
+      setRows(prevRows => prevRows.filter((_, i) => i !== index));
+    };
+
 
   const handleAddBillDetailRow = () => {
     setBillDetailRows([
@@ -231,6 +252,9 @@ const Billing = () => {
   };
 
   const handleDeleteBillDetailRow = (index) => {
+     try {
+    const isdelete = window.confirm("Sure you want to delete this row?");
+    if(isdelete){
     const rowToDelete = billDetailRows[index];
     if (rowToDelete.productId && rowToDelete.id) {
       const newAllocations = { ...weightAllocations };
@@ -245,6 +269,11 @@ const Billing = () => {
     const updated = [...billDetailRows];
     updated.splice(index, 1);
     setBillDetailRows(updated);
+  }else{
+    console.log("cancelled deletion");
+  }}catch(err){
+    console.log("Error in Deleting Row",err);
+  }
   };
 
   const handleBillDetailChange = (index, field, value) => {
@@ -360,7 +389,9 @@ const Billing = () => {
   };
 
   const handleProductClick = (product) => {
-    const productId = `${product.itemName}_${product.itemWeight}_${product.touch}`;
+    // const productId = `${product.itemName}_${product.itemWeight}_${product.touch}`;
+    const productId = product.id;
+    // console.log("Selected Product ID:", productId);
     const remainingWeight = getRemainingWeight(productId, product.itemWeight);
     if (remainingWeight <= 0) {
       alert(`No remaining weight available for ${product.itemName}`);
@@ -383,83 +414,76 @@ const Billing = () => {
     setBillDetailRows([...billDetailRows, newRow]);
   };
 
-  const handleSave = async () => {
-    if (!selectedCustomer) {
-      alert("Please select a customer before saving.");
-      return;
-    }
-    const isFormValid = validateAllFields();
-    if (!isFormValid) {
-      alert("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      const billData = {
-        billId,
-        date,
-        time,
-        customerId: selectedCustomer._id,
-        customerName: selectedCustomer.name,
-        previousBalance,
-        billHallmark: parseFloat(billHallmark) || 0,
-        billDetails: billDetailRows.map((row) => ({
-          productId: row.productId,
-          productName: row.productName,
-          weight: parseFloat(row.wt) || 0,
-          stoneWeight: parseFloat(row.stWt) || 0,
-          actualWeight: parseFloat(row.awt) || 0,
-          percentage: parseFloat(row.percent) || 0,
-          finalWeight: parseFloat(row.fwt) || 0,
-        })),
-        receivedDetails: rows.map((row) => ({
-          date: row.date,
-          goldRate: parseFloat(row.goldRate) || 0,
-          givenGold: parseFloat(row.givenGold) || 0,
-          touch: parseFloat(row.touch) || 0,
-          purityWeight: parseFloat(row.purityWeight) || 0,
-          amount: parseFloat(row.amount) || 0,
-          hallmark: parseFloat(row.hallmark) || 0,
-        })),
-        totals: {
-          totalFWT,
-          totalReceivedPurity,
-          pureBalance,
-          cashBalance: parseFloat(cashBalance),
-          hallmarkBalance,
-        },
-        weightAllocations,
-      };
-
-      const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(billData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    const handleSave = async () => {
+      if (!selectedCustomer) {
+        alert("Please select a customer before saving.");
+        return;
       }
+      const isFormValid = validateAllFields();
+      if (!isFormValid) {
+        alert("Please fill in all required fields");
+        return;
+      }
+      try {
+          const billData = {
+          customerId: selectedCustomer.id,                     
+          billTotal:  FWT,                                 
+          hallMark: parseFloat(billHallmark) || 0,
+          pureBalance:(TotalFWT - totalReceivedPurity).toFixed(3),
+   	      hallmarkBalance:hallmarkBalance + prevHallmark,
+          orderItems: billDetailRows.map((row) => ({      
+            productId: row.productId,
+            productName: row.productName,
+            weight: parseFloat(row.wt) || 0,
+            stoneWeight: parseFloat(row.stWt) || 0,
+            afterWeight: parseFloat(row.awt) || 0,
+            percentage: parseFloat(row.percent) || 0,
+            finalWeight: parseFloat(row.fwt) || 0,
+          })),
+          received: rows.map((row) => ({                    
+            date: row.date,
+            goldRate: parseFloat(row.goldRate) || 0,
+            gold: parseFloat(row.givenGold) || 0,
+            touch: parseFloat(row.touch) || 0,
+            purity: parseFloat(row.purityWeight) || 0,
+            receiveHallMark: parseFloat(row.hallmark) || 0,
+            amount: parseFloat(row.amount) || 0,
+          })),
+        };
 
-      const result = await response.json();
-      console.log("Bill saved successfully:", result);
-      alert("Bill saved successfully!");
-      setBillDetailRows([]);
-      setRows([]);
-      setSelectedCustomer(null);
-      setBillHallmark("");
-      setWeightAllocations({});
-      setFieldErrors({});
-    } catch (error) {
-      console.error("Error saving bill:", error);
-      alert(`Error saving bill: ${error.message}`);
-    }
-  };
 
-  const totalFWT = billDetailRows.reduce((total, row) => total + (parseFloat(row.fwt) || 0), 0);
+        console.log("Payload being sent:", billData);
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(billData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.msg || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        // console.log("Bill saved successfully:", result);
+        console.log("Bill saved successfully")
+        alert("Bill saved successfully!");
+        setBillDetailRows([]);
+        setRows([]);
+        setSelectedCustomer(null);
+        setBillHallmark("");
+        setWeightAllocations({});
+        setFieldErrors({});
+      } catch (error) {
+        console.error("Error saving bill:", error);
+        alert(`Error saving bill: ${error.message}`);
+      }
+    };
+
+  const FWT = billDetailRows.reduce((total, row) => total + (parseFloat(row.fwt) || 0), 0);
   const totalReceivedPurity = rows.reduce((acc, row) => acc + (parseFloat(row.purityWeight) || 0), 0);
-  const pureBalance = totalFWT - totalReceivedPurity;
+  const TotalFWT = FWT - previousBalance;
+  const pureBalance = TotalFWT - totalReceivedPurity;
   const lastGoldRate = [...rows].reverse().find((row) => parseFloat(row.goldRate))?.goldRate;
   const cashBalance = lastGoldRate ? (parseFloat(lastGoldRate) * pureBalance).toFixed(2) : "0.00";
   const totalBillHallmark = parseFloat(billHallmark) || 0;
@@ -496,12 +520,26 @@ const Billing = () => {
     return uniqueNames.sort();
   };
 
-  const inputStyle = {
-    minWidth: "130px",
-    padding: "15px",
-    fontSize: "15px",
-    height: "35px",
-  };
+  const Handlereset = () =>{
+        setBillDetailRows([]);
+        setRows([]);
+        setSelectedCustomer(null);
+        setBillHallmark("");
+        setWeightAllocations({});
+        setFieldErrors({});
+        alert("Bill Reset Successfully");
+  }
+
+
+    const inputStyle = {
+      minWidth: "70px",        
+      width: "100%",           
+      padding: "6px 8px",
+      fontSize: "13px",
+      height: "32px",
+      boxSizing: "border-box",
+    };
+
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -509,6 +547,7 @@ const Billing = () => {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
+        // console.log('fecthcustomer',data)
         setCustomers(data);
       } catch (error) {
         console.error("Error fetching customers:", error);
@@ -533,11 +572,26 @@ const Billing = () => {
         const data = await response.json();
         setAvailableProducts(data);
         setOriginalProducts(data);
+        // console.log(data);
       } catch (error) {
         console.error("Error fetching Available Products:", error);
       }
     };
 
+    const fecthAllBill = async () => {
+      try {
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        // setBills(data);
+        console.log("Fetched bills:", data);
+      } catch (error) {
+        console.error("Error fetching bills:", error);
+      }
+    };
+
+
+    fecthAllBill();  
     fetchProductStock();
     fecthItems();
     fetchCustomers();
@@ -554,6 +608,125 @@ const Billing = () => {
 
   return (
     <Box className="billing-wrapper">
+      <Box
+        className="sidenavbar"
+        sx={{
+          width: "100px",                
+          backgroundColor: "#06387a",
+          padding: "20px 10px",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "15px",
+          borderRight: "1px solid #ddd",
+          height: "100vh",               
+          position: "relative",
+          top: 0,
+          left: 0,
+          zIndex: 1000,
+          color: "white",
+          borderRadius:"40px",
+        }}
+      >
+      
+        {/* <h2 style={{ color: "white", marginBottom: "20px" }}>Billing</h2> */}
+
+        <Tooltip title="Print Bill" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => window.print()}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+              marginTop: "50px",
+            }}
+          >
+            <PrintIcon />
+            {/* <span>Print</span> */}
+          </Box>
+        </Tooltip>
+
+        <Tooltip title="View Bills" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => setIsmodel(true)}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+            }}
+          >
+            <span>View</span>
+          </Box>
+        </Tooltip>
+
+        <Tooltip title="Reset Bill" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => Handlereset()}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+            }}
+          >
+            <span>Reset</span>
+          </Box>
+        </Tooltip>
+        <Tooltip title="Reset Bill" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => alert("Reset clicked")}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+            }}
+          >
+            <span>Save</span>
+          </Box>
+        </Tooltip>
+        <Tooltip title="Reset Bill" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => alert("Reset clicked")}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+            }}
+          >
+            <span>Exit</span>
+          </Box>
+        </Tooltip>
+      </Box>
       <Box className="left-panel" style={{ width: "65%" }}>
         <h1 className="heading">Estimate Only</h1>
         <Box className="bill-header">
@@ -578,8 +751,16 @@ const Billing = () => {
             getOptionLabel={(option) => option.name || ""}
             onChange={(_, newValue) => {
               setSelectedCustomer(newValue);
-              if (newValue) setPreviousBalance(newValue.balance);
-              else setPreviousBalance(0);
+              if (newValue){
+                // console.log('newValue',newValue)
+                // console.log('balance',newValue.customerBillBalance.balance)
+                // console.log('hallMarkBal',newValue.customerBillBalance.hallMarkBal)
+                setPreviousBalance(newValue.customerBillBalance.balance);
+                setPrevHallmark(newValue.customerBillBalance.hallMarkBal || 0);
+              } else {
+                setPreviousBalance(0);
+                setPrevHallmark(0);
+              }
             }}
             value={selectedCustomer}
             renderInput={(params) => (
@@ -602,7 +783,7 @@ const Billing = () => {
             <h3>Bill Details:</h3>
           </Box>
 
-          <Table className="table" style={{ marginTop: "10px" }}>
+          <Table className="table" style={{ marginTop: "10px", minWidth: "500px" ,width:"100%",tableLayout:"fixed" }}>
             <TableHead>
               <TableRow>
                 <TableCell className="th">S.No</TableCell>
@@ -656,31 +837,49 @@ const Billing = () => {
           </Table>
 
           {/* Hallmark */}
-          <Box sx={{ display: "flex", alignItems: "center", marginTop: 0, flexDirection: "column", position: "relative", left: "30%", top: "70px" }}>
-            <TextField
-              size="small"
-              type="text"
-              label="Hallmark"
-              value={billHallmark}
-              onChange={(e) => {
-                const validatedValue = validateInput(e.target.value, "billHallmark", 0, "hallmark", "number");
-                setBillHallmark(validatedValue);
-              }}
-              style={{ width: "130px" }}
-              error={!!fieldErrors["hallmark_0_billHallmark"]}
-              helperText={fieldErrors["hallmark_0_billHallmark"] || ""}
-            />
+            <Box className="hallmark-balance-wrapper" sx={{ display: "flex", justifyContent: "space-between", gap: 4, mt: 2 }}>
+              
+              {/* Left column: Prev & Current Hallmark */}
+              <Box className="hallmark-column" sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box>
+                  <strong>Prev Hallmark:</strong> {prevHallmark ? prevHallmark.toFixed(3) : "000.000"}
+                </Box>
+                <TextField
+                  size="small"
+                  type="text"
+                  label="Current Hallmark"
+                  value={billHallmark}
+                  onChange={(e) =>
+                    handleNumericInput(e, (e) => {
+                      const validatedValue = validateInput(
+                        e.target.value,
+                        "billHallmark",
+                        0,
+                        "hallmark",
+                        "number"
+                      );
+                      setBillHallmark(validatedValue);
+                    })
+                  }
+                  sx={{ width: 150 }}
+                  error={!!fieldErrors["hallmark_0_billHallmark"]}
+                  helperText={fieldErrors["hallmark_0_billHallmark"] || ""}
+                />
+              </Box>
+              {/* Balance Info */}
+              <Box className="balance-info">
+                {previousBalance > 0 ? (
+                  <div className="negative">Excess Balance: {previousBalance.toFixed(3)}</div>
+                ) : previousBalance < 0 ? (
+                  <div className="positive">Opening Balance: {Math.abs(previousBalance).toFixed(3)}</div>
+                ) : (
+                  <div className="neutral">Balance: 0.000</div>
+                )}
+                <div>FWT: {FWT.toFixed(3)}</div>
+                <div>Total FWT: {(FWT - previousBalance).toFixed(3)}</div>
+              </Box>
+            </Box>
 
-            <Box style={{ marginTop: 10, fontWeight: "bold" }}>Prev Hallmark : {selectedCustomer ? (selectedCustomer.hallmark ? selectedCustomer.hallmark.toFixed(3) : "0.000") : "0.000"}</Box>
-          </Box>
-
-          <Box sx={{ textAlign: "right", marginTop: 1, fontWeight: "bold" }}>
-            {previousBalance > 0 ? <span style={{ color: "red" }}>Excess Balance: {previousBalance.toFixed(3)}</span> : previousBalance < 0 ? <span style={{ color: "green" }}>Opening Balance: {Math.abs(previousBalance).toFixed(3)}</span> : <span style={{ color: "green" }}>Balance: 0.000</span>}
-          </Box>
-
-          <Box sx={{ textAlign: "right", marginTop: 1, fontWeight: "bold" }}>FWT: {totalFWT.toFixed(3)}</Box>
-
-          <Box sx={{ textAlign: "right", marginTop: 1, fontWeight: "bold" }}>Total FWT: {(totalFWT - previousBalance).toFixed(3)}</Box>
 
           <Box className="items-section" sx={{ marginTop: 2 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -690,9 +889,9 @@ const Billing = () => {
               </IconButton>
             </div>
 
-            <Table className="table received-details-table" style={{ marginTop: "10px" }}>
+            <Table className="table received-details-table" style={{ marginTop: "10px", minWidth: "500px" ,width:"100%",tableLayout:"fixed"  }}>
               <TableHead>
-                <TableRow>
+                <TableRow style={{ textAlign: "center" }}>
                   <TableCell className="th">S.No</TableCell>
                   <TableCell className="th">Date</TableCell>
                   <TableCell className="th">Type</TableCell>
@@ -791,8 +990,9 @@ const Billing = () => {
           <Box className="closing-balance">
             <div className="flex">
               <strong>Cash Balance: {cashBalance}</strong>
-              <strong>Pure Balance: {pureBalance.toFixed(3)}</strong>
-              <strong>Hallmark Balance: {hallmarkBalance.toFixed(3)}</strong>
+              {/* {console.log("testing pureBalance",pureBalance)} */}
+              <strong>Pure Balance: {(TotalFWT - totalReceivedPurity).toFixed(3)}</strong>
+              <strong>Hallmark Balance: {(hallmarkBalance + prevHallmark).toFixed(3)}</strong>
             </div>
           </Box>
 
@@ -820,51 +1020,77 @@ const Billing = () => {
           </FormControl>
         </Box>
 
-        <Table className="table" style={{ marginTop: "10px" }}>
-          <TableHead>
-            <TableRow>
-              <TableCell className="th">S.No</TableCell>
-              <TableCell className="th">ProductName</TableCell>
-              <TableCell className="th">Original Weight</TableCell>
-              <TableCell className="th">Remaining Weight</TableCell>
-              <TableCell className="th">Count</TableCell>
-              <TableCell className="th">Touch</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {availableproducts &&
-              availableproducts.allStock.map((prodata, index) => {
-                const productId = `${prodata.itemName}_${prodata.itemWeight}_${prodata.touch}`;
-                const remainingWeight = getRemainingWeight(productId, prodata.itemWeight);
-                const isFullyAllocated = remainingWeight <= 0;
-                return (
-                  <TableRow
-                    key={index}
-                    hover
-                    style={{
-                      cursor: isFullyAllocated ? "not-allowed" : "pointer",
-                      backgroundColor: isFullyAllocated ? "#f5f5f5" : "transparent",
-                      opacity: isFullyAllocated ? 0.6 : 1,
-                    }}
-                    onClick={() => {
-                      if (!isFullyAllocated) handleProductClick(prodata);
-                    }}
-                  >
-                    <TableCell className="td">{index + 1}</TableCell>
-                    <TableCell className="td">{prodata.itemName}</TableCell>
-                    <TableCell className="td">{prodata.itemWeight}</TableCell>
-                    <TableCell className="td" style={{ color: remainingWeight <= 0 ? "red" : "green", fontWeight: "bold" }}>
-                      {remainingWeight.toFixed(3)}
-                    </TableCell>
-                    <TableCell className="td">{prodata.count}</TableCell>
-                    <TableCell className="td">{prodata.touch}</TableCell>
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
+        <Box className="table-container" sx={{ marginTop: "10px", }}>
+          <Table className="table">
+            <TableHead>
+              <TableRow>
+                <TableCell className="th" style={{textAlign:'center'}}>S.No</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Pdt Name</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Original WT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Remaining WT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Count</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Touch</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {availableproducts &&
+                availableproducts.allStock.map((prodata, index) => {
+                  const productId = prodata.id;
+                  const remainingWeight = getRemainingWeight(productId, prodata.itemWeight);
+                  const isFullyAllocated = remainingWeight <= 0;
+                  return (
+                    <TableRow
+                      key={index}
+                      hover
+                      style={{
+                        cursor: isFullyAllocated ? "not-allowed" : "pointer",
+                        backgroundColor: isFullyAllocated ? "#f5f5f5" : "transparent",
+                        opacity: isFullyAllocated ? 0.6 : 1,
+                      }}
+                      onClick={() => {
+                        // console.log("prodata :",prodata)
+                        if (!isFullyAllocated) handleProductClick(prodata);
+                      }}
+                    >
+                      <TableCell className="td">{index + 1}</TableCell>
+                      <TableCell className="td">{prodata.itemName}</TableCell>
+                      <TableCell className="td">{prodata.itemWeight}</TableCell>
+                      <TableCell
+                        className="td"
+                        style={{
+                          color: remainingWeight <= 0 ? "red" : "green",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {remainingWeight.toFixed(3)}
+                      </TableCell>
+                      <TableCell className="td">{prodata.count}</TableCell>
+                      <TableCell className="td">{prodata.touch}</TableCell>
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        </Box>
+
         <ToastContainer />
       </Box>
+
+      {ismodel && <Box
+       style={{ position: "fixed",
+        alignSelf:"center",
+        width: "50%",
+        height: "50%",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 2000,
+       }}
+      >
+        <Button onClick={()=>setIsmodel(false)}></Button>
+        
+      </Box>}
     </Box>
   );
 };

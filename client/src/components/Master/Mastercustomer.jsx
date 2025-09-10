@@ -122,11 +122,11 @@ function MasterCustomer() {
         closeModal();
       } else {
         const err = await response.json();
-        toast.error("Error: " + err.message);
+        toast.error(err.message);
       }
     } catch (error) {
-      console.error("Error saving customer:", error);
-      toast.error("Something went wrong.");
+       console.error("Error saving customer:", error);
+       toast.error(error.response.data.message,{autoClose:1000});
     }
   };
 
@@ -158,6 +158,7 @@ function MasterCustomer() {
               inputRef={nameRef}
               margin="dense"
               label="Customer Name"
+              autoComplete="off"
               type="text"
               fullWidth
               value={customerName}
@@ -183,6 +184,7 @@ function MasterCustomer() {
               label="Phone Number"
               type="tel"
               fullWidth
+              autoComplete="off"
               value={phoneNumber}
               onChange={(e) => {
                 setPhoneNumber(e.target.value);
@@ -204,6 +206,7 @@ function MasterCustomer() {
               inputRef={addressRef}
               margin="dense"
               label="Address"
+              autoComplete="off"
               type="text"
               fullWidth
               multiline
@@ -229,18 +232,20 @@ function MasterCustomer() {
         </Dialog>
 
         {customers.length > 0 && (
-          <Paper className="customer-table">
-            <table border="1" width="100%">
+          <Paper >
+            <table  width="100%" className="customer-table">
               <thead>
-                <tr>
-                  <th>Customer Name</th>
+                <tr className="customer-tablehead">
+                  <th>S.no</th>
+                  <th >Customer Name</th>
                   <th>Phone Number</th>
                   <th>Address</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="customer-tablebody">
                 {customers.map((customer, index) => (
                   <tr key={index}>
+                    <td>{index+1}</td>
                     <td>{customer.name}</td>
                     <td>{customer.phone}</td>
                     <td>{customer.address || "-"}</td>

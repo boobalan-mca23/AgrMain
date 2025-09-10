@@ -8,7 +8,18 @@ exports.createCustomer = async (req, res) => {
     return res.status(400).json({ message: "Customer name is required." });
   }
 
+  const ifExist=await prisma.customer.findFirst({
+    where:{
+      phone:phone
+    }
+  })
+
+  if(ifExist){
+    return res.status(400).json({message:"Phone number already exist"})
+  }
+
   try {
+
     const newCustomer = await prisma.customer.create({
       data: {
         name,

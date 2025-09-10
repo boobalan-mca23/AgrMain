@@ -128,7 +128,8 @@ const Navbar = () => {
                 ["Jobcard Report", "/jobcardReport"],
                 // ["Receipt Report", "/receiptreport"],
                 ["Order Report","/orderreport"],
-                ["Jewelstock Report","/jewelstockreport"]
+                ["Jewelstock Report","/jewelstockreport"],
+                ["Receipt Report","/receiptreport"]
 
               ].map(([name, path]) => (
                 <a

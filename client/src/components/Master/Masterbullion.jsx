@@ -12,7 +12,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-
+import './MasterBullion.css'
 function MasterBullion() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [bullionName, setBullionName] = useState("");
@@ -137,7 +137,7 @@ function MasterBullion() {
     <>
       <ToastContainer position="top-right" autoClose={2000} hideProgressBar />
 
-      <div className="customer-container">
+      <div className="bullion-container">
         <Button
           style={{
             backgroundColor: "#F5F5F5",
@@ -231,18 +231,20 @@ function MasterBullion() {
         </Dialog>
 
         {bullions.length > 0 && (
-          <Paper className="customer-table">
-            <table border="1" width="100%">
+          <Paper >
+            <table className="bullion-table" width="100%">
               <thead>
-                <tr>
+                <tr className="bullion-tablehead">
+                  <th>S.no</th>
                   <th>Bullion Name</th>
                   <th>Phone Number</th>
                   <th>Address</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bullion-tablebody">
                 {bullions.map((b, i) => (
                   <tr key={i}>
+                    <td>{i+1}</td>
                     <td>{b.name}</td>
                     <td>{b.phone}</td>
                     <td>{b.address || "-"}</td>
