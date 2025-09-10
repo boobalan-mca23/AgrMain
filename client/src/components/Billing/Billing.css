@@ -1,3 +1,4 @@
+
 .billing-wrapper {
   display: flex;
   gap: 20px;
@@ -5,6 +6,22 @@
   min-height: 100vh;
   background-color: #f8f9fa;
   font-family: 'Roboto', sans-serif;
+}
+
+.sidebar-button{
+  background-color: #1a237e;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  /* margin-bottom: 20px; */
+  margin-top: 50px;
 }
 
 /* Left Panel Styles */
@@ -498,7 +515,7 @@
 }
 
 /* Print Styles */
-/* @media print {
+@media print {
   .billing-wrapper .no-print {
     display: none !important;
   }
@@ -567,7 +584,7 @@
   .billing-wrapper .closing-balance .flex {
     color: #000;
   }
-} */
+}
 
 .billing-wrapper .hallmark-balance-wrapper {
   margin-top: 20px;
@@ -581,4 +598,3 @@
   flex-direction: column;
   gap: 12px;
 }
-
