@@ -17,6 +17,7 @@ const setTotalRawGold = async () => {
       where: { id: g.rawGoldStockId },
       data: {
         weight: g._sum.weight || 0, // assumes your stock table has totalWeight column
+        remainingWt:g._sum.weight||0
       },
     });
   }

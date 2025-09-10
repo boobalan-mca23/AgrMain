@@ -62,6 +62,7 @@ const Goldsmith = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState(null);
   const [openingBalance, setOpeningBalance] = useState(0);
+  const [rawGoldStock, setRawGoldStock]=useState([])
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -97,7 +98,18 @@ const Goldsmith = () => {
         console.error("Failed to fetch touch values", err);
       }
     };
-
+     const fetchRawGold = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_SERVER_URL}/api/rawGold`);
+        setRawGoldStock(response.data.allRawGold);
+        console.log('rawGoldStock',response.data.allRawGold)
+      } catch (err) {
+        console.log(err);
+        alert(err.message);
+      }
+    };
+    
+    fetchRawGold();
     fetchMasterItems();
     fetchTouch();
     fetchGoldsmiths();
@@ -423,6 +435,8 @@ const handleCloseJobcard = () => {
           receivedMetalReturns={receivedMetalReturns}
           setReceivedMetalReturns={setReceivedMetalReturns}
           dropDownItems={dropDownItems}
+          rawGoldStock={rawGoldStock}
+          setRawGoldStock={setRawGoldStock}
           openingBalance={openingBalance}
           name={selectedName.name}
           edit={edit}

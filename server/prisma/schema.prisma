@@ -182,7 +182,6 @@ model givenGold{
 
 model itemDelivery {
   id               Int           @id @default(autoincrement())
-  productlogID     Int?
   itemName         String?
   itemWeight       Float?
   count            Int?
@@ -193,7 +192,6 @@ model itemDelivery {
   wastageValue     Float?
   wastagePure      Float?
   finalPurity      Float?
-  productStockLog  ProductStockLog? @relation(fields:[productlogID],references:[id])
   goldsmithId      Int?
   goldsmith        Goldsmith? @relation(fields: [goldsmithId], references: [id])
   jobcardId        Int?
@@ -206,8 +204,6 @@ model deduction{
   id                 Int           @id @default(autoincrement())
   type               String?
   deliveryId         Int
-  productStockdedId  Int?
-  ProductStockdedLog ProductStockdedLog[]
   weight             Float?
   stoneWt            Float?
   itemDelivery       itemDelivery  @relation(fields: [deliveryId ], references: [id])
@@ -251,6 +247,7 @@ model RawgoldStock{
   touchId     Int
   touch       Float?
   weight      Float?
+  remainingWt Float?
   masterTouch MasterTouch?  @relation(fields: [touchId], references: [id])
   rawGoldLogs RawGoldLogs[]
 }
@@ -266,34 +263,7 @@ model RawGoldLogs{
     billReceive      billReceived[]
     receiptVoucher   receiptVoucher[]
 }
-model ProductStockLog{
-  id                 Int           @id @default(autoincrement())
-  itemName           String?
-  itemWeight         Float?
-  count              Int?
-  touch              Float?
-  sealName           String?
-  netWeight          Float?
-  wastageType        String?
-  wastageValue       Float?
-  wastagePure        Float?
-  finalPurity        Float?  
-  itemDelivery       itemDelivery[]
-  ProductStockdedLog ProductStockdedLog[]
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @default(now()) 
-}
-model ProductStockdedLog{
-  id               Int           @id @default(autoincrement())
-  productlogID     Int?
-  type             String?
-  weight           Float?
-  stoneWt          Float?
-  productStockLog  ProductStockLog? @relation(fields:[productlogID],references:[id])
-  deduction        deduction[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @default(now())
-}
+
 model Balances {
   id                  Int         @id @default(autoincrement())
   goldsmithId         Int

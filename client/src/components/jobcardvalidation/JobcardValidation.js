@@ -76,9 +76,15 @@ const receiveRowValidation = (received, setReceivedErrors) => {
   // Return true if no errors found
   return errors.every((err) => Object.keys(err).length === 0);
 };
+
+const checkAvailabilityStock = (rawGoldStock) => {
+  return rawGoldStock.find((item) => item.remainingWt < 0) ||{stock:"ok"};
+};
+
 export {
   goldRowValidation,
   itemValidation,
-  receiveRowValidation
+  receiveRowValidation,
+  checkAvailabilityStock
 
 };
