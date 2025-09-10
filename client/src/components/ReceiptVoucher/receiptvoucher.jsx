@@ -38,7 +38,7 @@ const Receipt = () => {
     oldbalance: 0,
     hallMark: 0,
   });
-  const selectedType = ["GoldRate","Gold"];
+  const selectedType = ["Cash","Gold"];
   const [masterTouch,setMasterTouch]=useState([])
   const [receipt, setReceipt] = useState([
     {
@@ -231,7 +231,7 @@ const Receipt = () => {
         <div>
           <div className="receiptFlex">
             <div>
-              <p className="receiptLabel">Customer Balance</p>
+              <p className="receiptLabel">Customer Name</p>
               <select
                 value={selectedCustomer}
                 onChange={handleCustomerChange}
@@ -283,7 +283,7 @@ const Receipt = () => {
 
           <div className="tableWrapper">
             <table className="receiptTable">
-              <thead className="receipthead">
+              <thead className="receipthead"> 
                 <tr className="receiptRow">
                   <th>S.no</th>
                   <th>Date</th>
@@ -337,7 +337,7 @@ const Receipt = () => {
                     </td>
                     <td>
                       <input
-                        disabled={item.type==="GoldRate"?false:true}
+                        disabled={item.type==="Cash"?false:true}
                         className="receiptTableInput"
                         value={item.goldRate}
                         onChange={(e) =>

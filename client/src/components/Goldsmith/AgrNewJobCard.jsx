@@ -29,6 +29,7 @@ import {
   goldRowValidation,
   itemValidation,
   receiveRowValidation,
+  checkAvailabilityStock
 } from "../jobcardvalidation/JobcardValidation";
 function AgrNewJobCard({
   edit,
@@ -43,6 +44,8 @@ function AgrNewJobCard({
   receivedMetalReturns,
   setReceivedMetalReturns,
   dropDownItems,
+  rawGoldStock,
+  setRawGoldStock,
   openingBalance,
   jobCardLength,
   handleSaveJobCard,
@@ -89,16 +92,48 @@ function AgrNewJobCard({
       ? ((parseFloat(w) * parseFloat(t)) / 100).toFixed(3)
       : "";
 
-  const handleGoldRowChange = (i, field, val) => {
-    const copy = [...givenGold];
-    copy[i][field] = val;
-    copy[i].purity = calculatePurity(
-      parseFloat(copy[i].weight),
-      parseFloat(copy[i].touch)
-    );
-    setGivenGold(copy);
-    goldRowValidation(givenGold, setGivenGoldErrors);
-  };
+const handleGoldRowChange = (i, field, val) => {
+  const copy = [...givenGold];
+
+  // STEP 1: get old values BEFORE overwrite
+  const oldTouch = copy[i].touch;
+  const oldWeight = copy[i].weight;
+
+  // STEP 2: restore old stock first
+   let updateTouchStock = rawGoldStock.map(r => ({ ...r }));
+    updateTouchStock.forEach(touchItem => {
+    if (parseInt(oldTouch) === touchItem.touch) {
+      touchItem.remainingWt = parseInt(touchItem.remainingWt) + parseInt(oldWeight || 0);
+    }
+  });
+
+  // STEP 3: overwrite new value
+  copy[i][field] = val;
+
+  // STEP 4: deduct new value from stock
+  const newTouch = copy[i].touch;
+  const newWeight = copy[i].weight;
+
+  updateTouchStock.forEach(touchItem => {
+    if (parseInt(newTouch) === touchItem.touch) {
+      touchItem.remainingWt = parseInt(touchItem.remainingWt) - parseInt(newWeight || 0);
+    }
+  });
+
+  // STEP 5: recalc purity
+  copy[i].purity = calculatePurity(
+    parseFloat(copy[i].weight),
+    parseFloat(copy[i].touch)
+  );
+
+  // STEP 6: set state
+  setGivenGold(copy);
+  setRawGoldStock(updateTouchStock);
+  goldRowValidation(copy, setGivenGoldErrors);
+};
+
+
+  
   const totalInputPurityGiven = givenGold.reduce(
     (sum, row) => sum + parseFloat(row.purity || 0),
     0
@@ -118,8 +153,11 @@ function AgrNewJobCard({
       copy[i]["netWeight"] =
         copy[i]["itemWeight"] - Number(totalDeduction(i, copy));
     }
-    if(field==="touch" || field==="itemWeight"){
-      copy[i]. wastagePure = (((copy[i].netWeight * copy[i].touch)/100)-copy[i].finalPurity).toFixed(3)
+    if (field === "touch" || field === "itemWeight") {
+      copy[i].wastagePure = (
+        (copy[i].netWeight * copy[i].touch) / 100 -
+        copy[i].finalPurity
+      ).toFixed(3);
     }
     copy[i].finalPurity = recalculateFinalPurity(copy[i]);
     setItemDelivery(copy);
@@ -187,6 +225,16 @@ function AgrNewJobCard({
   const handleRemoveGoldRow = (i) => {
     const isTrue = window.confirm("Are You Want To Remove This Row");
     if (isTrue) {
+       let touchValue=givenGold[i]['touch'] //  when deleting item we need to reset the gold value
+       let weight=givenGold[i]['weight']
+       
+       const updateTouchStock = rawGoldStock.map(r => ({ ...r })); 
+       updateTouchStock.forEach(touchItem => {
+       if(parseInt(touchValue) === touchItem.touch){
+         touchItem.remainingWt = parseInt(touchItem.remainingWt)+parseInt(weight)
+       } });
+      
+       setRawGoldStock(updateTouchStock)
       const filtergold = givenGold.filter((_, index) => i !== index);
       setGivenGold(filtergold);
     }
@@ -213,7 +261,7 @@ function AgrNewJobCard({
       );
 
       if (goldIsTrue && itemIsTrue && receivedIsTrue) {
-        console.log("ok ");
+        
         handleUpdateJobCard(
           totalInputPurityGiven,
           totalFinishedPurity,
@@ -225,12 +273,20 @@ function AgrNewJobCard({
         alert("Give Correct Information");
       }
     } else {
+      const existStock=checkAvailabilityStock(rawGoldStock)
+      console.log(existStock)
       if (goldIsTrue) {
-        handleSaveJobCard(
-          totalInputPurityGiven,
-          jobCardBalance,
-          openingBalance
-        );
+         if(existStock.stock==="ok"){
+          alert('ok')
+         handleSaveJobCard(
+            totalInputPurityGiven,
+            jobCardBalance,
+            openingBalance
+          );
+        }else{
+          alert(`No stock in ${existStock.touch}`)
+        }
+       
       } else {
         alert("Give Correct Information");
       }
@@ -305,133 +361,174 @@ function AgrNewJobCard({
             <Typography>Date:{today}</Typography>
             <Typography>Time:{time}</Typography>
           </Box>
+          <div className="jobCardFlex">
 
-          <div className="description section">
-            <label htmlFor="description" className="label">
-              Description
-            </label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-              }}
-              className="textarea"
-            />
-          </div>
-          {/* Given Gold */}
-          <Box className="section">
-            <h4 className="section-title">Given Details</h4>
-            <div className="givenGold">
-              {givenGold.map((row, i) => (
-                <div key={row.id || `gold-${i}`} className="row">
-                  <strong>{i + 1})</strong>
-                  <div>
-                    <input
-                      type="number"
-                      placeholder="Weight"
-                      value={row.weight}
-                      onChange={(e) =>
-                        handleGoldRowChange(i, "weight", e.target.value)
-                      }
-                      className="input"
-                      onWheel={(e) => e.target.blur()}
-                    />
-                    <br></br>
-                    {givenGoldErrors[i]?.weight && (
-                      <span className="error">
-                        {givenGoldErrors[i]?.weight}
-                      </span>
-                    )}
-                  </div>
-                  <span className="operator">x</span>
+            <div className="givenGroup">
 
-                  <div>
-                    <select
-                      value={row.touch}
-                      onChange={(e) =>
-                        handleGoldRowChange(i, "touch", e.target.value)
-                      }
-                      className="select-small"
-                      // disabled={isLoading || !isItemDeliveryEnabled}
-                    >
-                      <option value="">Select</option>
-                      {dropDownItems.touchList.map((option) => (
-                        <option key={option.id} value={option.touch}>
-                          {option.touch}
-                        </option>
-                      ))}
-                    </select>
-                    <br></br>
-                    {givenGoldErrors[i]?.touch && (
-                      <span className="error">{givenGoldErrors[i]?.touch}</span>
-                    )}
-                  </div>
+              <div className="description section">
+                <label htmlFor="description" className="label">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                  }}
+                  className="textarea"
+                />
+              </div>
+              {/* Given Gold */}
+              <div className="section">
+                <h4 className="section-title">Given Details</h4>
+                <div className="givenGold">
+                  {givenGold.map((row, i) => (
+                    <div key={row.id || `gold-${i}`} className="row">
+                      <strong>{i + 1})</strong>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder="Weight"
+                          value={row.weight}
+                          onChange={(e) =>
+                            handleGoldRowChange(i, "weight", e.target.value)
+                          }
+                          className="input"
+                          onWheel={(e) => e.target.blur()}
+                        />
+                        <br></br>
+                        {givenGoldErrors[i]?.weight && (
+                          <span className="error">
+                            {givenGoldErrors[i]?.weight}
+                          </span>
+                        )}
+                      </div>
+                      <span className="operator">x</span>
 
-                  <span className="operator">=</span>
-                  <input
-                    type="text"
-                    readOnly
-                    placeholder="Purity"
-                    value={format(row.purity)}
-                    className="input-read-only"
-                  />
-                  {!row.id && (
-                    <MdDeleteForever
-                      className="delIcon"
-                      size={25}
-                      onClick={() => handleRemoveGoldRow(i)}
-                    />
-                  )}
+                      <div>
+                        <select
+                          value={row.touch}
+                          onChange={(e) =>
+                            handleGoldRowChange(i, "touch", e.target.value)
+                          }
+                          className="select-small"
+                          // disabled={isLoading || !isItemDeliveryEnabled}
+                        >
+                          <option value="">Select</option>
+                          {dropDownItems.touchList.map((option) => (
+                            <option key={option.id} value={option.touch}>
+                              {option.touch}
+                            </option>
+                          ))}
+                        </select>
+                        <br></br>
+                        {givenGoldErrors[i]?.touch && (
+                          <span className="error">
+                            {givenGoldErrors[i]?.touch}
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="operator">=</span>
+                      <input
+                        type="text"
+                        readOnly
+                        placeholder="Purity"
+                        value={format(row.purity)}
+                        className="input-read-only"
+                      />
+                      {!row.id && (
+                        <MdDeleteForever
+                          className="delIcon"
+                          size={25}
+                          onClick={() => handleRemoveGoldRow(i)}
+                        />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+
+                <button
+                  onClick={() =>
+                    setGivenGold([
+                      ...givenGold,
+                      { weight: "", touch: "", purity: "" },
+                    ])
+                  }
+                  className="circle-button"
+                >
+                  +
+                </button>
+                <div className="total-purity-container">
+                  <span className="total-purity-label">Total Purity:</span>
+                  <span className="total-purity-value">
+                    {format(totalInputPurityGiven)}
+                  </span>
+                </div>
+              </div>
+              {/* Balance */}
+
+               <div className="section">
+                <h3 className="section-title">Balance</h3>
+                <div className="balance-block">
+                  <div className="balance-display-row">
+                    <span className="balance-label">
+                      {openingBalance >= 0
+                        ? "Opening Balance"
+                        : "ExceesBalance"}
+                    </span>
+                    <span className="balance-value">
+                      {format(openingBalance)}
+                    </span>
+                  </div>
+                  <div className="balance-display-row">
+                    <span className="balance-label">Total Purity:</span>
+                    <span className="balance-value">
+                      {format(totalInputPurityGiven)}
+                    </span>
+                  </div>
+                  <div>----------</div>
+                  <div className="balance-display-row">
+                    <span className="balance-label">Total Balance:</span>
+                    <span className="balance-value">
+                      {format(totalGivenToGoldsmith)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
             </div>
 
-            <button
-              onClick={() =>
-                setGivenGold([
-                  ...givenGold,
-                  { weight: "", touch: "", purity: "" },
-                ])
-              }
-              className="circle-button"
-            >
-              +
-            </button>
-            <div className="total-purity-container">
-              <span className="total-purity-label">Total Purity:</span>
-              <span className="total-purity-value">
-                {format(totalInputPurityGiven)}
-              </span>
+
+            <div className="touchGroup">
+              <strong>Touch Information</strong>
+               <table className="jobCardTouchTable">
+                <thead>
+                  <tr className="jobCardTouchTableRow">
+                    <th>S.No</th>
+                    <th>Touch</th>
+                    <th>Weight</th>
+                    <th>RemainWeight</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  
+                   {rawGoldStock.map((rawStock,index)=>(
+                    <tr key={index+1}className="jobCardTouchTableBody">
+                      <td>{index+1}</td>
+                      <td>{rawStock.touch}</td>
+                      <td>{rawStock.weight}</td>
+                      <td style={{backgroundColor:rawStock.remainingWt<0?"red":""}}>{rawStock.remainingWt}</td>
+                    </tr>
+                   ))}
+                </tbody>
+               </table>
+                
             </div>
-          </Box>
-          {/* Balance */}
-          <Box className="section">
-            <h3 className="section-title">Balance</h3>
-            <div className="balance-block">
-              <div className="balance-display-row">
-                <span className="balance-label">
-                  {openingBalance >= 0 ? "Opening Balance" : "ExceesBalance"}
-                </span>
-                <span className="balance-value">{format(openingBalance)}</span>
-              </div>
-              <div className="balance-display-row">
-                <span className="balance-label">Total Purity:</span>
-                <span className="balance-value">
-                  {format(totalInputPurityGiven)}
-                </span>
-              </div>
-              <div>----------</div>
-              <div className="balance-display-row">
-                <span className="balance-label">Total Balance:</span>
-                <span className="balance-value">
-                  {format(totalGivenToGoldsmith)}
-                </span>
-              </div>
-            </div>
-          </Box>
+          </div>
+
           {/* Item Delivery Section */}
-          <Box className="section" style={{ opacity: edit ? 1 : 0.5 }}>
+          <div className="section" style={{ opacity: edit ? 1 : 0.5 }}>
             <h4 className="section-title">Item Delivery</h4>
             <TableContainer component={Paper} className="jobCardContainer">
               <Table
@@ -456,7 +553,7 @@ function AgrNewJobCard({
                     <TableCell rowSpan={2} className="tableCell">
                       Item Weight
                     </TableCell>
-                     <TableCell rowSpan={2} className="tableCell">
+                    <TableCell rowSpan={2} className="tableCell">
                       Count
                     </TableCell>
                     <TableCell rowSpan={2} className="tableCell">
@@ -477,7 +574,7 @@ function AgrNewJobCard({
                     <TableCell rowSpan={2} className="tableCell">
                       Wastage Value
                     </TableCell>
-                     <TableCell rowSpan={2} className="tableCell">
+                    <TableCell rowSpan={2} className="tableCell">
                       Wastage Pure
                     </TableCell>
                     <TableCell rowSpan={2} className="tableCell">
@@ -557,7 +654,7 @@ function AgrNewJobCard({
                             </span>
                           )}
                         </TableCell>
-                         <TableCell
+                        <TableCell
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
                         >
@@ -618,7 +715,7 @@ function AgrNewJobCard({
                           <Button
                             disabled={edit ? false : true}
                             onClick={() => handlededuction(index)}
-                            style={{fontSize:"25px"}}
+                            style={{ fontSize: "25px" }}
                           >
                             +
                           </Button>
@@ -776,7 +873,7 @@ function AgrNewJobCard({
                             </span>
                           )}
                         </TableCell>
-                           <TableCell
+                        <TableCell
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
                         >
@@ -928,9 +1025,9 @@ function AgrNewJobCard({
                 </span>
               </div>
             </div>
-          </Box>
+          </div>
           {/* Received Section */}
-          <Box className="section" style={{ opacity: edit ? 1 : 0.5 }}>
+          <div className="section" style={{ opacity: edit ? 1 : 0.5 }}>
             <h3 className="section-title">Received Section</h3>
             <div className="received-section-container">
               {receivedMetalReturns.map((row, i) => (
@@ -938,7 +1035,7 @@ function AgrNewJobCard({
                   key={row.id || `received-${i}`}
                   className="received-section-row"
                 >
-                  <strong>{i + 1})</strong> 
+                  <strong>{i + 1})</strong>
                   <div>
                     <input
                       type="number"
@@ -963,7 +1060,7 @@ function AgrNewJobCard({
                       onChange={(e) =>
                         handleReceivedRowChange(i, "touch", e.target.value)
                       }
-                     className="input-small"
+                      className="input-small"
                       // disabled={isLoading || !isItemDeliveryEnabled}
                     >
                       <option value="">Select</option>
@@ -995,31 +1092,30 @@ function AgrNewJobCard({
                   </button>
                 </div>
               ))}
-             
             </div>
-             <button
-                disabled={
-                  edit
-                    ? !lastJobCardId
-                      ? true // If lastJobCard doesn't exist yet, disable the button
-                      : jobCardId !== lastJobCardId
-                      ? true
-                      : lastIsFinish === "false"
-                      ? false
-                      : true
-                    : true // if edit is false the button is disable in add new jobcard
-                }
-                onClick={() =>
-                  setReceivedMetalReturns([
-                    ...receivedMetalReturns,
-                    { weight: "", touch: "", purity: "" },
-                  ])
-                }
-                className="circle-button"
-                // disabled={isLoading || !isReceivedSectionEnabled}
-              >
-                +
-              </button>
+            <button
+              disabled={
+                edit
+                  ? !lastJobCardId
+                    ? true // If lastJobCard doesn't exist yet, disable the button
+                    : jobCardId !== lastJobCardId
+                    ? true
+                    : lastIsFinish === "false"
+                    ? false
+                    : true
+                  : true // if edit is false the button is disable in add new jobcard
+              }
+              onClick={() =>
+                setReceivedMetalReturns([
+                  ...receivedMetalReturns,
+                  { weight: "", touch: "", purity: "" },
+                ])
+              }
+              className="circle-button"
+              // disabled={isLoading || !isReceivedSectionEnabled}
+            >
+              +
+            </button>
             <div className="totals-section">
               <div className="total-row">
                 <span className="total-purity-label">
@@ -1030,8 +1126,8 @@ function AgrNewJobCard({
                 </span>
               </div>
             </div>
-          </Box>
-          <Box className="section" style={{ textAlign: "center" }}>
+          </div>
+          <div className="section" style={{ textAlign: "center" }}>
             {jobCardBalance < 0 ? (
               <p className="balance-text-owner">
                 Owner should give balance:
@@ -1050,7 +1146,7 @@ function AgrNewJobCard({
                 </span>{" "}
               </p>
             )}
-          </Box>
+          </div>
         </DialogContent>
         <DialogActions className="actionButton">
           <Button autoFocus onClick={handleSave}>
