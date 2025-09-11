@@ -176,11 +176,13 @@ function MasterBullion() {
               }}
               error={(touched.name || submitted) && !!errors.name}
               helperText={(touched.name || submitted) ? errors.name : ""}
+              autoComplete="off"
             />
 
             {/* Phone Number */}
             <TextField
               inputRef={phoneRef}
+              autoComplete="off"
               margin="dense"
               label="Phone Number"
               type="tel"
@@ -204,6 +206,7 @@ function MasterBullion() {
             {/* Address */}
             <TextField
               inputRef={addressRef}
+              autoComplete="off"
               margin="dense"
               label="Address (Optional)"
               type="text"

@@ -26,7 +26,7 @@ function Home() {
             navigate("/customer");
           }}
         >
-          LOGIN
+          Go to Home Page
         </button>
       </div>
     </div>
