@@ -12,7 +12,7 @@ const receiptValidation = (receipt, setReceiptErrors) => {
     if (!item.date) rowErrors.date = "date";
     if (!item.type) rowErrors.type = "type";
 
-    if (item.type === "GoldRate") {
+    if (item.type === "Cash") {
       ["goldRate", "amount", "hallMark"].forEach((field) => {
         const err = validateField(item[field], field);
         if (err) rowErrors[field] = err;

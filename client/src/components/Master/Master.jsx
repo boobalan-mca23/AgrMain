@@ -92,12 +92,12 @@ const Master = () => {
             Items
           </button>
 
-          <button
+          {/* <button
             onClick={() => handleTabChange("stock")}
             style={getNavButtonStyle("stock")}
           >
             Jewel Stock
-          </button>
+          </button> */}
 
        {/* <button
             onClick={() => handleTabChange("cashgold")}

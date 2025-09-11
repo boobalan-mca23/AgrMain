@@ -19,7 +19,7 @@ const repairRoutes = require("./Routes/repair.routes");
 const rawGoldRoutes=require("./Routes/rawGoldStock.routes");
 const productStock=require("./Routes/productStock.routes");
 const billRoutes=require("./Routes/bill.routes")
-const receiptRoutes=require("./Routes/receipt.routes")
+const receiptRoutes=require("./Routes/receipt.routes");
 const path = require("path");
 
 require("dotenv").config();

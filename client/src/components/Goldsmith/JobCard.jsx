@@ -37,7 +37,7 @@ function JobCardDetails() {
   const [jobCardLength, setJobCardLength] = useState(0);
   const [description, setDescription] = useState("");
   const [givenGold, setGivenGold] = useState([
-    { weight: "", touch: "", purity: "" },
+    { touchId:"",weight: "", touch: "", purity: "" },
   ]);
   const [itemDelivery, setItemDelivery] = useState([
     {
@@ -60,6 +60,7 @@ function JobCardDetails() {
     masterItems: [],
     touchList: [],
   });
+  const [rawGoldStock,setRawGoldStock]=useState([])
   const [jobCardId, setJobCardId] = useState(0);
   const [jobCardIndex, setJobCardIndex] = useState(0);
   const [open, setOpen] = useState(false);
@@ -106,8 +107,20 @@ const currentPageTotal = paginatedData.reduce(
       toast.error("Something went wrong.");
     }
   };
+  
+  const fetchRawGold = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_SERVER_URL}/api/rawGold`);
+        setRawGoldStock(response.data.allRawGold);
+        console.log('rawGoldStock',response.data.allRawGold)
+      } catch (err) {
+        console.log(err);
+        alert(err.message);
+      }
+    };
+
   const handleCloseJobcard = () => {
-    
+    fetchRawGold();
     setDescription("");
     setGivenGold([{ weight: "", touch: "", purity: "" }]);
     setItemDelivery([
@@ -125,8 +138,10 @@ const currentPageTotal = paginatedData.reduce(
     },
     ]);
     setReceivedMetalReturns([]);
+    
     setOpen(false);
     setEdit(false);
+    console.log('rawGoldStock',rawGoldStock)
   };
 
   const handleFilterJobCard = (id, index) => {
@@ -134,23 +149,14 @@ const currentPageTotal = paginatedData.reduce(
     setJobCardIndex(index);
     let copy = [...jobCards];
     const filteredJobcard = copy.filter((item, _) => item.id === id);
-    setDescription(
-      JSON.parse(JSON.stringify(filteredJobcard[0]?.description || ""))
-    );
-    setGivenGold(
-      JSON.parse(JSON.stringify(filteredJobcard[0]?.givenGold || []))
-    );
-    setItemDelivery(
-      JSON.parse(JSON.stringify(filteredJobcard[0]?.deliveries || []))
-    );
-    setReceivedMetalReturns(
-      JSON.parse(JSON.stringify(filteredJobcard[0]?.received || []))
-    );
-    setOpeningBalance(
-      JSON.parse(
-        JSON.stringify(filteredJobcard[0]?.total[0]?.openingBalance || 0)
-      )
-    );
+
+    const deepClone=(obj)=>JSON.parse(JSON.stringify(obj))
+
+    setDescription(deepClone(filteredJobcard[0]?.description || ""));
+    setGivenGold(deepClone(filteredJobcard[0]?.givenGold || []));
+    setItemDelivery(deepClone(filteredJobcard[0]?.deliveries || []));
+    setReceivedMetalReturns(deepClone(filteredJobcard[0]?.received || []));
+    setOpeningBalance(deepClone(filteredJobcard[0]?.total[0]?.openingBalance || 0));
     setOpen(true);
     setEdit(true);
   };
@@ -170,6 +176,7 @@ const currentPageTotal = paginatedData.reduce(
         jobCardBalance: jobCardBalance,
         openingBalance: openingBalance,
       },
+      rawGoldStock
     };
     try {
       const response = await axios.post(
@@ -187,7 +194,7 @@ const currentPageTotal = paginatedData.reduce(
       setJobCards(response.data.allJobCards);
       toast.success(response.data.message);
     } catch (err) {
-      toast.error(err.message);
+       toast.error(err.response.data.error,{autoClose:2000});
     }
   };
 
@@ -211,6 +218,7 @@ const currentPageTotal = paginatedData.reduce(
         jobCardBalance,
         openingBalance,
       },
+      rawGoldStock
     };
     console.log('payload',payload)
     try {
@@ -251,6 +259,7 @@ const currentPageTotal = paginatedData.reduce(
   const totalStoneWt=(deduction)=>{
     return deduction.reduce((acc,val)=>val.weight+acc,0)
   }
+  
 
   useEffect(() => {
     const fetchJobCards = async () => {
@@ -279,12 +288,12 @@ const currentPageTotal = paginatedData.reduce(
         console.error("Failed to fetch touch values", err);
       }
     };
-
+     
+    fetchRawGold();
     fetchMasterItems();
     fetchTouch();
     fetchJobCards();
   }, []);
-
 
   return (
     <>
@@ -552,6 +561,8 @@ const currentPageTotal = paginatedData.reduce(
         setItemDelivery={setItemDelivery}
         receivedMetalReturns={receivedMetalReturns}
         setReceivedMetalReturns={setReceivedMetalReturns}
+        rawGoldStock={rawGoldStock}
+        setRawGoldStock={setRawGoldStock}
         dropDownItems={dropDownItems}
         openingBalance={openingBalance}
         name={name}

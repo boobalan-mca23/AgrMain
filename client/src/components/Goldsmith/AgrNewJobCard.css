@@ -12,15 +12,43 @@
 .section {
     padding:12px;
     background-color: #fefefe;
-    border-radius: 8px;
-    border: 2px solid #212a30;
-    
-  }
+    border: 1px solid #212a30;
+   }
   .section-title {
     margin-top: 2px;
     color: #2c3e50;
+   }
+  .jobCardFlex {
+   display: grid;
+   grid-template-columns: 2fr 1fr;
+   gap: 20px;
+   border: 2px solid #212a30;
+   padding: 3px;
   }
-
+  .touchGroup{
+    max-height: 460px;   /* control vertical size */
+    overflow-y: auto;    /* scroll vertically */
+    overflow-x: auto;    /* scroll horizontally if needed */
+    border: 1px solid #101010;
+    
+    }
+  .jobCardTouchTable{
+     border-collapse: collapse;
+     width: 100%;
+     text-align: center;
+     
+  }
+  .jobCardTouchTableRow th{
+     position: sticky;
+     top: 0;
+     background-color: cadetblue;
+     color: white;
+     z-index: 2;
+     border: 1px solid black;
+  }
+  .jobCardTouchTableBody td{
+    border: 1px solid black;
+  }
  .dialogTitle{
     display:flex;
     justify-content:space-between;
@@ -129,7 +157,7 @@
   }
    .givenGold {
    display: grid;
-   grid-template-columns: 1fr 1fr 1fr; /* 8 columns */
+   grid-template-columns: 1fr 1fr; /* 8 columns */
    gap: 15px;
    align-items: center;
 }
