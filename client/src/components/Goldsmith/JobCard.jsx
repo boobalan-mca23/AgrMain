@@ -30,6 +30,7 @@ import AgrNewJobCard from "./AgrNewJobCard";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./JobCard.css";
 function JobCardDetails() {
   const { id, name } = useParams();
@@ -176,7 +177,7 @@ const currentPageTotal = paginatedData.reduce(
         jobCardBalance: jobCardBalance,
         openingBalance: openingBalance,
       },
-      rawGoldStock
+   
     };
     try {
       const response = await axios.post(
@@ -192,9 +193,9 @@ const currentPageTotal = paginatedData.reduce(
       setGivenGold([{ weight: "", touch: "", purity: "" }]);
       setDescription("");
       setJobCards(response.data.allJobCards);
-      toast.success(response.data.message);
+        alert('JobCard Created')
     } catch (err) {
-       toast.error(err.response.data.error,{autoClose:2000});
+       toast.error(err.response.data.error);
     }
   };
 
@@ -250,10 +251,11 @@ const currentPageTotal = paginatedData.reduce(
       ]);
       setReceivedMetalReturns([]);
       setJobCards(response.data.allJobCards);
-      toast.success(response.data.message);
+      console.log('update response',response)
+      alert('JobCard Updated')
     } catch (err) {
       console.log(err.response.data.error)
-      toast.error(err.response.data.error,{autoClose:2000});
+      toast.error(err.response.data.error);
     }
   };
   const totalStoneWt=(deduction)=>{
@@ -297,6 +299,7 @@ const currentPageTotal = paginatedData.reduce(
 
   return (
     <>
+     <ToastContainer position="top-right" autoClose={1000} hideProgressBar />
       <Container maxWidth="xxl" sx={{ py: 3 }}>
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
           <Typography
@@ -550,6 +553,7 @@ const currentPageTotal = paginatedData.reduce(
               rowsPerPageOptions={[5, 10, 25]}
             />
           )}
+         
       </Container>
 
       <AgrNewJobCard
@@ -577,17 +581,7 @@ const currentPageTotal = paginatedData.reduce(
         lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
       />
 
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={true}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+     
     </>
   );
 }

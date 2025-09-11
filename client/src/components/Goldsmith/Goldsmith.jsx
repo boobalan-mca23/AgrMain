@@ -204,7 +204,7 @@ const handleCloseJobcard = () => {
         jobCardBalance,
         openingBalance
       },
-      rawGoldStock
+      
     };
    
     try {
@@ -232,7 +232,7 @@ const handleCloseJobcard = () => {
     }])
       setReceivedMetalReturns([])
      
-      toast.success(response.data.message);
+      toast.success(response.data.message,{autoClose:2000});
     } catch (err) {
       toast.error(err.message);
     }

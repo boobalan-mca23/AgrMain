@@ -39,6 +39,7 @@ const createhundredPercentTouch=async()=>{
         rawGoldStock:{
           create:{
             weight:0,
+            remainingWt:0,
             touch:100
           }
         }
@@ -192,13 +193,68 @@ const receiptMoveToRawGold = async (received,customerId) => {
 
   await setTotalRawGold();
 };
-
-const checkStockAvailabilty=()=>{
-
-}
+const jobCardtoRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
+  // stock update
+   
+  if (receiveSection.length >= 1) {
+    for (const receive of receiveSection) {
+      let data = {
+        goldsmithId: parseInt(goldSmithId),
+        jobcardId: parseInt(jobCardId),
+        weight: parseFloat(receive.weight) || 0,
+        touch: parseFloat(receive.touch) || null,
+        purity: parseFloat(receive.purity) || 0,
+      };
+      if (receive.id) {
+        await prisma.rawGoldLogs.update({ // this change in raw gold stock
+          where: {
+            id: receive.logId,
+          },
+          data: {
+            weight: data.weight,
+            touch: data.touch,
+            purity: data.purity,
+          },
+        });
+        await prisma.receivedsection.update({
+          where: { id: parseInt(receive.id) },
+          data,
+        });
+      } else {
+        const stock = await prisma.rawgoldStock.findFirst({
+          where: {
+            touch: data.touch, // match the touch value
+          },
+          select: {
+            id: true, // only return the id
+          },
+        });
+         if (!stock) {
+            throw new Error(`No stock found for touch: ${data.touch}`);
+          }
+        const rawGoldLog = await prisma.rawGoldLogs.create({
+          data: {
+            rawGoldStockId: stock.id,
+            weight: data.weight,
+            touch: data.touch,
+            purity: data.purity,
+          },
+        });
+        data = {
+          ...data,
+          logId: rawGoldLog.id,
+        };
+        await prisma.receivedsection.create({ data });
+      }
+    }
+  }
+  await setTotalRawGold();
+};
 module.exports={
   moveToRawGoldStock,
   receiptMoveToRawGold,
+  jobCardtoRawGoldStock
+
   
 }
 
