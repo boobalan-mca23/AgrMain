@@ -107,8 +107,20 @@ const currentPageTotal = paginatedData.reduce(
       toast.error("Something went wrong.");
     }
   };
+  
+  const fetchRawGold = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_SERVER_URL}/api/rawGold`);
+        setRawGoldStock(response.data.allRawGold);
+        console.log('rawGoldStock',response.data.allRawGold)
+      } catch (err) {
+        console.log(err);
+        alert(err.message);
+      }
+    };
+
   const handleCloseJobcard = () => {
-    
+    fetchRawGold();
     setDescription("");
     setGivenGold([{ weight: "", touch: "", purity: "" }]);
     setItemDelivery([
@@ -164,6 +176,7 @@ const currentPageTotal = paginatedData.reduce(
         jobCardBalance: jobCardBalance,
         openingBalance: openingBalance,
       },
+      rawGoldStock
     };
     try {
       const response = await axios.post(
@@ -205,6 +218,7 @@ const currentPageTotal = paginatedData.reduce(
         jobCardBalance,
         openingBalance,
       },
+      rawGoldStock
     };
     console.log('payload',payload)
     try {
@@ -245,6 +259,7 @@ const currentPageTotal = paginatedData.reduce(
   const totalStoneWt=(deduction)=>{
     return deduction.reduce((acc,val)=>val.weight+acc,0)
   }
+  
 
   useEffect(() => {
     const fetchJobCards = async () => {
@@ -273,16 +288,7 @@ const currentPageTotal = paginatedData.reduce(
         console.error("Failed to fetch touch values", err);
       }
     };
-     const fetchRawGold = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_SERVER_URL}/api/rawGold`);
-        setRawGoldStock(response.data.allRawGold);
-        console.log('rawGoldStock',response.data.allRawGold)
-      } catch (err) {
-        console.log(err);
-        alert(err.message);
-      }
-    };
+     
     fetchRawGold();
     fetchMasterItems();
     fetchTouch();

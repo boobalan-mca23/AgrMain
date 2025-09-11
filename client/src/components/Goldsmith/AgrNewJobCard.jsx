@@ -23,6 +23,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { MdDeleteForever } from "react-icons/md";
 import { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
 import "./AgrNewJobCard.css";
 import React from "react";
 import {
@@ -102,8 +103,9 @@ const handleGoldRowChange = (i, field, val) => {
   // STEP 2: restore old stock first
    let updateTouchStock = rawGoldStock.map(r => ({ ...r }));
     updateTouchStock.forEach(touchItem => {
-    if (parseInt(oldTouch) === touchItem.touch) {
-      touchItem.remainingWt = parseInt(touchItem.remainingWt) + parseInt(oldWeight || 0);
+    if (parseFloat(oldTouch) === touchItem.touch) {
+      if(oldWeight>=0) touchItem.remainingWt = parseFloat(touchItem.remainingWt) + parseFloat(oldWeight || 0);
+     
     }
   });
 
@@ -115,8 +117,8 @@ const handleGoldRowChange = (i, field, val) => {
   const newWeight = copy[i].weight;
 
   updateTouchStock.forEach(touchItem => {
-    if (parseInt(newTouch) === touchItem.touch) {
-      touchItem.remainingWt = parseInt(touchItem.remainingWt) - parseInt(newWeight || 0);
+    if (parseFloat(newTouch) === touchItem.touch) {
+      if(newWeight>=0) touchItem.remainingWt = parseFloat(touchItem.remainingWt) - parseFloat(newWeight || 0);
     }
   });
 
@@ -251,47 +253,43 @@ const handleGoldRowChange = (i, field, val) => {
   );
 
   const handleSave = () => {
-    const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
+  const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
 
-    if (edit) {
-      const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
-      const receivedIsTrue = receiveRowValidation(
-        receivedMetalReturns,
-        setReceivedErrors
-      );
+  if (edit) {
+    const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
+    const receivedIsTrue = receiveRowValidation(receivedMetalReturns, setReceivedErrors);
 
-      if (goldIsTrue && itemIsTrue && receivedIsTrue) {
-        
-        handleUpdateJobCard(
-          totalInputPurityGiven,
-          totalFinishedPurity,
-          totalReceivedPurity,
-          jobCardBalance,
-          openingBalance
-        );
-      } else {
-        alert("Give Correct Information");
-      }
-    } else {
-      const existStock=checkAvailabilityStock(rawGoldStock)
-      console.log(existStock)
-      if (goldIsTrue) {
-         if(existStock.stock==="ok"){
-          alert('ok')
-         handleSaveJobCard(
-            totalInputPurityGiven,
-            jobCardBalance,
-            openingBalance
-          );
-        }else{
-          alert(`No stock in ${existStock.touch}`)
-        }
-       
-      } else {
-        alert("Give Correct Information");
-      }
+    if (!goldIsTrue || !itemIsTrue || !receivedIsTrue) {
+      return toast.warn("Give Valid Information on Job Card", { autoClose: 2000 });
     }
-  };
+
+    return handleUpdateJobCard(
+      totalInputPurityGiven,
+      totalFinishedPurity,
+      totalReceivedPurity,
+      jobCardBalance,
+      openingBalance
+    );
+  }
+
+  if (!goldIsTrue) {
+    return toast.warn("Give Valid Information on Job Card", { autoClose: 2000 });
+  }
+
+  const existStock = checkAvailabilityStock(rawGoldStock);
+  console.log(existStock);
+
+  if (existStock.stock !== "ok") {
+    return toast.warn(`No stock in ${existStock.touch}`, { autoClose: 1000 });
+  }
+
+  handleSaveJobCard(
+    totalInputPurityGiven,
+    jobCardBalance,
+    openingBalance
+  );
+};
+
 
   useEffect(() => {
     const updateTime = () => {
@@ -311,6 +309,7 @@ const handleGoldRowChange = (i, field, val) => {
     return () => clearInterval(timer);
   }, []);
   const safeParse = (val) => (isNaN(parseFloat(val)) ? 0 : parseFloat(val));
+  
   useEffect(() => {
     const balance =
       safeParse(openingBalance) >= 0
@@ -1147,6 +1146,17 @@ const handleGoldRowChange = (i, field, val) => {
               </p>
             )}
           </div>
+          <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={true}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
         </DialogContent>
         <DialogActions className="actionButton">
           <Button autoFocus onClick={handleSave}>
@@ -1157,6 +1167,7 @@ const handleGoldRowChange = (i, field, val) => {
           </Button>
         </DialogActions>
       </Dialog>
+       
     </>
   );
 }
