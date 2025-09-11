@@ -14,8 +14,10 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Tooltip,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import PrintIcon from "@mui/icons-material/Print";
 import { MdDeleteForever } from "react-icons/md";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -47,6 +49,8 @@ const Billing = () => {
   const [rows, setRows] = useState([]);
   const [billDetailRows, setBillDetailRows] = useState([]);
   const [billHallmark, setBillHallmark] = useState("");
+  const [ismodel,setIsmodel]=useState(false);
+
 
   const validateInput = (
     value,
@@ -516,6 +520,16 @@ const Billing = () => {
     return uniqueNames.sort();
   };
 
+  const Handlereset = () =>{
+        setBillDetailRows([]);
+        setRows([]);
+        setSelectedCustomer(null);
+        setBillHallmark("");
+        setWeightAllocations({});
+        setFieldErrors({});
+        alert("Bill Reset Successfully");
+  }
+
 
     const inputStyle = {
       minWidth: "70px",        
@@ -564,6 +578,20 @@ const Billing = () => {
       }
     };
 
+    const fecthAllBill = async () => {
+      try {
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        // setBills(data);
+        console.log("Fetched bills:", data);
+      } catch (error) {
+        console.error("Error fetching bills:", error);
+      }
+    };
+
+
+    fecthAllBill();  
     fetchProductStock();
     fecthItems();
     fetchCustomers();
@@ -580,6 +608,125 @@ const Billing = () => {
 
   return (
     <Box className="billing-wrapper">
+      <Box
+        className="sidenavbar"
+        sx={{
+          width: "100px",                
+          backgroundColor: "#06387a",
+          padding: "20px 10px",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "15px",
+          borderRight: "1px solid #ddd",
+          height: "100vh",               
+          position: "relative",
+          top: 0,
+          left: 0,
+          zIndex: 1000,
+          color: "white",
+          borderRadius:"40px",
+        }}
+      >
+      
+        {/* <h2 style={{ color: "white", marginBottom: "20px" }}>Billing</h2> */}
+
+        <Tooltip title="Print Bill" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => window.print()}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+              marginTop: "50px",
+            }}
+          >
+            <PrintIcon />
+            {/* <span>Print</span> */}
+          </Box>
+        </Tooltip>
+
+        <Tooltip title="View Bills" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => setIsmodel(true)}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+            }}
+          >
+            <span>View</span>
+          </Box>
+        </Tooltip>
+
+        <Tooltip title="Reset Bill" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => Handlereset()}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+            }}
+          >
+            <span>Reset</span>
+          </Box>
+        </Tooltip>
+        <Tooltip title="Reset Bill" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => alert("Reset clicked")}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+            }}
+          >
+            <span>Save</span>
+          </Box>
+        </Tooltip>
+        <Tooltip title="Reset Bill" arrow placement="right">
+          <Box
+            className="sidebar-button"
+            onClick={() => alert("Reset clicked")}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              "&:hover": { backgroundColor: "#0a4c9a" },
+              alignSelf: "center",
+            }}
+          >
+            <span>Exit</span>
+          </Box>
+        </Tooltip>
+      </Box>
       <Box className="left-panel" style={{ width: "65%" }}>
         <h1 className="heading">Estimate Only</h1>
         <Box className="bill-header">
@@ -636,7 +783,7 @@ const Billing = () => {
             <h3>Bill Details:</h3>
           </Box>
 
-          <Table className="table" style={{ marginTop: "10px" }}>
+          <Table className="table" style={{ marginTop: "10px", minWidth: "500px" ,width:"100%",tableLayout:"fixed" }}>
             <TableHead>
               <TableRow>
                 <TableCell className="th">S.No</TableCell>
@@ -742,7 +889,7 @@ const Billing = () => {
               </IconButton>
             </div>
 
-            <Table className="table received-details-table" style={{ marginTop: "10px" }}>
+            <Table className="table received-details-table" style={{ marginTop: "10px", minWidth: "500px" ,width:"100%",tableLayout:"fixed"  }}>
               <TableHead>
                 <TableRow style={{ textAlign: "center" }}>
                   <TableCell className="th">S.No</TableCell>
@@ -928,6 +1075,22 @@ const Billing = () => {
 
         <ToastContainer />
       </Box>
+
+      {ismodel && <Box
+       style={{ position: "fixed",
+        alignSelf:"center",
+        width: "50%",
+        height: "50%",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 2000,
+       }}
+      >
+        <Button onClick={()=>setIsmodel(false)}></Button>
+        
+      </Box>}
     </Box>
   );
 };
