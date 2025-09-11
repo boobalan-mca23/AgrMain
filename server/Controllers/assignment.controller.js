@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const reduceRawGold=require('../Utils/reduceRawGold')
-
+const reduceGold=require('../Utils/reduceRawGold')
+const addRawGold=require('../Utils/addRawGoldStock')
 const itemToStock = async () => {
   const items = await prisma.itemDelivery.findMany({
     include: {
@@ -88,94 +88,6 @@ const itemToStock = async () => {
   }
 };
 
-
-
-
-
-const setTotalRawGold = async () => {
-  //  Group logs by rawGoldStockId and sum weights
-  const grouped = await prisma.rawGoldLogs.groupBy({
-    by: ["rawGoldStockId"],
-    _sum: {
-      weight: true,
-    },
-  });
-
-  //  Loop through each group and update the corresponding stock
-  for (const g of grouped) {
-    await prisma.rawgoldStock.update({
-      where: { id: g.rawGoldStockId },
-      data: {
-        weight: g._sum.weight || 0, // assumes your stock table has totalWeight column
-      },
-    });
-  }
-};
-
-const addRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
-  // stock update
-   
-  if (receiveSection.length >= 1) {
-    for (const receive of receiveSection) {
-      let data = {
-        goldsmithId: parseInt(goldSmithId),
-        jobcardId: parseInt(jobCardId),
-        weight: parseFloat(receive.weight) || 0,
-        touch: parseFloat(receive.touch) || null,
-        purity: parseFloat(receive.purity) || 0,
-      };
-      if (receive.id) {
-        await prisma.rawGoldLogs.update({ // this change in raw gold stock
-          where: {
-            id: receive.logId,
-          },
-          data: {
-            weight: data.weight,
-            touch: data.touch,
-            purity: data.purity,
-          },
-        });
-        await prisma.receivedsection.update({
-          where: { id: parseInt(receive.id) },
-          data,
-        });
-      } else {
-        const stock = await prisma.rawgoldStock.findFirst({
-          where: {
-            touch: data.touch, // match the touch value
-          },
-          select: {
-            id: true, // only return the id
-          },
-        });
-         if (!stock) {
-            throw new Error(`No stock found for touch: ${data.touch}`);
-          }
-        const rawGoldLog = await prisma.rawGoldLogs.create({
-          data: {
-            rawGoldStockId: stock.id,
-            weight: data.weight,
-            touch: data.touch,
-            purity: data.purity,
-          },
-        });
-        data = {
-          ...data,
-          logId: rawGoldLog.id,
-        };
-        await prisma.receivedsection.create({ data });
-      }
-    }
-  }
-  await setTotalRawGold();
-};
-
-
-
-
-
-
-
 // helper function to update nextJobCardBalance
 const updateNextJobBalance = async (id, goldsmithId) => {
   
@@ -215,13 +127,10 @@ const updateNextJobBalance = async (id, goldsmithId) => {
 };
 
 
-
-
-
 // main controllers
 const createJobcard = async (req, res) => {
   try {
-    const { goldSmithId, description, givenGold, total,rawGoldStock } = req.body;
+    const { goldSmithId, description, givenGold, total } = req.body;
     console.log("createController", req.body);
     const goldsmithInfo = await prisma.goldsmith.findUnique({
       where: { id: parseInt(goldSmithId) },
@@ -234,13 +143,6 @@ const createJobcard = async (req, res) => {
       return res.status(400).json({ error: "Given gold data is required" });
     }
 
-   
-    const givenGoldArr = givenGold.map((item) => ({
-      goldsmithId: parseInt(goldSmithId),
-      weight: parseFloat(item.weight) || 0,
-      touch: parseFloat(item.touch) || 0,
-      purity: parseFloat(item.purity) || 0,
-    }));
 
     const jobCardTotal = {
       goldsmithId: parseInt(goldSmithId),
@@ -253,19 +155,16 @@ const createJobcard = async (req, res) => {
       isFinished: "false",
     };
     //  await reduceRawGold.checkAvailability(givenGoldArr)
-    await prisma.jobcard.create({
+    const newJobcard=await prisma.jobcard.create({
       data: {
         goldsmithId: parseInt(goldSmithId),
         description,
-        givenGold: {
-          create: givenGoldArr,
-    },
         total: {
           create: jobCardTotal,
         },
       },
     });
-    await reduceRawGold.reduceRawGold(rawGoldStock) // we need to reduce rawGold stock
+    await reduceGold.reduceRawGold(givenGold,newJobcard.id,goldSmithId) // we need to reduce rawGold stock
     const allJobCards = await prisma.jobcard.findMany({
       where: {
         goldsmithId: parseInt(goldSmithId),
@@ -366,34 +265,8 @@ const updateJobCard = async (req, res) => {
 
     // update given gold information
 
-    for (const gold of givenGold) {
-      const data = {
-        goldsmithId: parseInt(goldSmithId),
-        jobcardId: parseInt(jobCardId),
-        weight: parseFloat(gold.weight) || 0,
-        touch: parseFloat(gold.touch) || 0,
-        purity: parseFloat(gold.purity) || 0,
-      };
-      if (gold?.id) {
-        //if id is there update or create
-        await prisma.givenGold.update({
-          where: {
-            id: gold.id,
-          },
-          data,
-        });
-      } else {
-        await prisma.givenGold.create({
-          data,
-        });
-      }
-    }
+    await reduceGold.reduceRawGold(givenGold,jobCardId,goldSmithId)
     
-
-
-
-
-
     // update itemDelivery information
     if (itemDelivery.length >= 1) {
       for (const item of itemDelivery) {
@@ -476,7 +349,7 @@ const updateJobCard = async (req, res) => {
       await itemToStock(); // product stock
     }
     // receive section update and create
-    await addRawGoldStock(receiveSection, goldSmithId, jobCardId);
+    await addRawGold.jobCardtoRawGoldStock(receiveSection, goldSmithId, jobCardId);
 
     await updateNextJobBalance(totalOfJobcard.id, goldSmithId); // update nextJobCardNBalance
 
@@ -501,7 +374,7 @@ const updateJobCard = async (req, res) => {
         });
       }
     }
-     await reduceRawGold.reduceRawGold(rawGoldStock) // we need to reduce rawGold stock
+     
     const allJobCards = await prisma.jobcard.findMany({
       where: {
         goldsmithId: parseInt(goldSmithId),
@@ -529,12 +402,6 @@ const updateJobCard = async (req, res) => {
     });
   }
 };
-
-
-
-
-
-
 
 // main controllers
 // getAllJobCard By GoldSmithId
@@ -632,8 +499,6 @@ const getJobCardById = async (req, res) => {
     return res.status(500).json({ err: "Server Error" });
   }
 };
-
-
 
 
 
