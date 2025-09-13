@@ -2,14 +2,13 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const addRawGold=require('../Utils/addRawGoldStock')
 
-
 // createBill
 
 const createBill = async (req, res) => {
-  const { customerId, billTotal,hallMark, orderItems, received ,pureBalance,hallmarkBalance} = req.body;
-
+  const {billno,date,time, customerId, billTotal,hallMark, orderItems, received,previousBalance,  prevHallmark, currentHallmark ,pureBalance,hallmarkBalance} = req.body;
+  // billno,date,time,
+  // console.log('req.body',req.body)
   try {
-    // check customer
     const customerExist = await prisma.customer.findUnique({
       where: { id: parseInt(customerId) },
     });
@@ -40,10 +39,17 @@ const createBill = async (req, res) => {
 
     const newBill = await prisma.bill.create({
       data: {
+        billno: billno,
+        date: new Date(date),
+        time: time,
         customer_id: parseInt(customerId),
         billAmount: parseFloat(billTotal),
         hallMark:parseFloat(hallMark),
         orders: { create: modifiyOrders },
+        previousBalance, 
+        prevHallmark,    
+        currentHallmark:req.body.currentHallmark ?? 0, 
+
        },
       include: {
         orders: true,
@@ -64,6 +70,7 @@ const createBill = async (req, res) => {
         customer_id: parseInt(customerId),
         balance: parseFloat(pureBalance),
         hallMarkBal: parseFloat(hallmarkBalance),
+
       },
     });
     res
@@ -118,9 +125,6 @@ const createBill = async (req, res) => {
     return res.status(500).json({ err: err.message });
   }
 };
-
-
-
 
 // get bills by customer id
 const getBillByCustomer = async (req, res) => {
