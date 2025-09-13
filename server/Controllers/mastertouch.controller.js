@@ -12,6 +12,7 @@ const createTouch = async (req, res) => {
     const ifExist=await prisma.masterTouch.findFirst({
       where:{
         touch:parsedTouch
+        
       }
     })
     if(ifExist){
@@ -23,6 +24,7 @@ const createTouch = async (req, res) => {
         rawGoldStock:{
           create:{
             weight:0,
+            remainingWt:0,
             touch:parsedTouch
           }
         }

@@ -232,10 +232,10 @@ const handleGoldRowChange = (i, field, val) => {
        
        const updateTouchStock = rawGoldStock.map(r => ({ ...r })); 
        updateTouchStock.forEach(touchItem => {
-       if(parseInt(touchValue) === touchItem.touch){
-         touchItem.remainingWt = parseInt(touchItem.remainingWt)+parseInt(weight)
+       if(parseFloat(touchValue) === touchItem.touch){
+         touchItem.remainingWt = parseFloat(touchItem.remainingWt)+parseFloat(weight)
        } });
-      
+       console.log('updateStock in delete',updateTouchStock)
        setRawGoldStock(updateTouchStock)
       const filtergold = givenGold.filter((_, index) => i !== index);
       setGivenGold(filtergold);
@@ -254,14 +254,18 @@ const handleGoldRowChange = (i, field, val) => {
 
   const handleSave = () => {
   const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
-
+  const existStock = checkAvailabilityStock(rawGoldStock);
   if (edit) {
     const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
     const receivedIsTrue = receiveRowValidation(receivedMetalReturns, setReceivedErrors);
 
     if (!goldIsTrue || !itemIsTrue || !receivedIsTrue) {
-      return toast.warn("Give Valid Information on Job Card", { autoClose: 2000 });
+      return toast.warn("Give Valid Information on Job Card");
     }
+
+     if (existStock.stock !== "ok") {
+       return toast.warn(`No Gold Stock in Touch ${existStock.touch}`);
+     }
 
     return handleUpdateJobCard(
       totalInputPurityGiven,
@@ -273,14 +277,11 @@ const handleGoldRowChange = (i, field, val) => {
   }
 
   if (!goldIsTrue) {
-    return toast.warn("Give Valid Information on Job Card", { autoClose: 2000 });
+    return toast.warn("Give Valid Information on Job Card");
   }
 
-  const existStock = checkAvailabilityStock(rawGoldStock);
-  console.log(existStock);
-
   if (existStock.stock !== "ok") {
-    return toast.warn(`No stock in ${existStock.touch}`, { autoClose: 1000 });
+    return toast.warn(`No Gold Stock Touch in ${existStock.touch}`);
   }
 
   handleSaveJobCard(
@@ -386,6 +387,7 @@ const handleGoldRowChange = (i, field, val) => {
                       <strong>{i + 1})</strong>
                       <div>
                         <input
+                          disabled={row.id?true:false}
                           type="number"
                           placeholder="Weight"
                           value={row.weight}
@@ -406,6 +408,7 @@ const handleGoldRowChange = (i, field, val) => {
 
                       <div>
                         <select
+                          disabled={row.id?true:false}
                           value={row.touch}
                           onChange={(e) =>
                             handleGoldRowChange(i, "touch", e.target.value)
