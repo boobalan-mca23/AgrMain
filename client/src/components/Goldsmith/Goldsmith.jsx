@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AssignmentIndOutlinedIcon from "@mui/icons-material/AssignmentIndOutlined";
-import EditIcon from "@mui/icons-material/Edit";
+
 import DeleteIcon from "@mui/icons-material/Delete";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -59,15 +59,10 @@ const Goldsmith = () => {
   const [jobCardError, setJobCardError] = useState({});
   const [jobCardId, setJobCardId] = useState(null);
   const [noJobCard, setNoJobCard] = useState({});
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [selectedGoldsmith, setSelectedGoldsmith] = useState(null);
+  
   const [openingBalance, setOpeningBalance] = useState(0);
   const [rawGoldStock, setRawGoldStock]=useState([])
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    address: "",
-  });
+
   const [open,setOpen]=useState(false)
   const [edit, setEdit] = useState(false);
   const [lastJobCard,setLastJobCard]=useState({})
@@ -118,44 +113,7 @@ const Goldsmith = () => {
 
   }, []);
 
-  const handleEditClick = (goldsmith) => {
-    setSelectedGoldsmith(goldsmith);
-    setFormData({
-      name: goldsmith.name,
-      phone: goldsmith.phone,
-      address: goldsmith.address,
-    });
-    setOpenEditDialog(true);
-  };
 
-  const handleEditSubmit = async () => {
-    try {
-      const response = await fetch(
-        `${BACKEND_SERVER_URL}/api/goldsmith/${selectedGoldsmith.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (response.ok) {
-        toast.success("Goldsmith updated successfully");
-
-        setGoldsmith((prev) =>
-          prev.map((g) =>
-            g.id === selectedGoldsmith.id ? { ...g, ...formData } : g
-          )
-        );
-
-        setOpenEditDialog(false);
-      } else {
-        toast.error("Failed to update goldsmith");
-      }
-    } catch (error) {
-      toast.error("Error updating goldsmith");
-    }
-  };
 
   const filteredGoldsmith = goldsmith.filter((gs) => {
     const nameMatch =
@@ -375,16 +333,7 @@ const handleCloseJobcard = () => {
                       </Link>
                     </Tooltip>
 
-                    <Tooltip title="Edit">
-                      <EditIcon
-                        style={{
-                          cursor: "pointer",
-                          marginRight: "10px",
-                          color: "#388e3c",
-                        }}
-                        onClick={() => handleEditClick(goldsmith)}
-                      />
-                    </Tooltip>
+                   
 
                   </TableCell>
                 </TableRow>
@@ -453,51 +402,7 @@ const handleCloseJobcard = () => {
           lastIsFinish={lastJobCard.isFinished}
         />
 
-      <Dialog
-        open={openEditDialog}
-        onClose={() => setOpenEditDialog(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Edit Goldsmith</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Name"
-            value={formData.name}
-            fullWidth
-            margin="normal"
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          />
-          <TextField
-            label="Phone"
-            value={formData.phone}
-            fullWidth
-            margin="normal"
-            onChange={(e) =>
-              setFormData({ ...formData, phone: e.target.value })
-            }
-          />
-          <TextField
-            label="Address"
-            value={formData.address}
-            fullWidth
-            margin="normal"
-            onChange={(e) =>
-              setFormData({ ...formData, address: e.target.value })
-            }
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
-          <Button
-            onClick={handleEditSubmit}
-            variant="contained"
-            color="primary"
-          >
-           Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+     
 
 
       <ToastContainer position="top-right" autoClose={3000} />

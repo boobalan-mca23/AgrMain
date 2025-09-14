@@ -157,6 +157,10 @@ const calculatewastgePure=(stock)=>{
       </div> */}
 
       <div className="stock-table-container">
+       {
+        stockData.length>=1 ? ( 
+        
+        
         <table className="stock-table">
           <thead>
             <tr>
@@ -172,7 +176,7 @@ const calculatewastgePure=(stock)=>{
             </tr>
           </thead>
           <tbody>
-           {stockData.length>=1 ? ( stockData.map((item, index) => (
+          {stockData.map((item, index) => (
               <tr key={item.id}>
                 <td>{index + 1}</td>
                 <td>{item.itemName}</td>
@@ -183,27 +187,8 @@ const calculatewastgePure=(stock)=>{
                 <td>{item.wastageValue.toFixed(3)}</td>
                 <td>{item.wastagePure.toFixed(3)}</td>
                 <td>{item.finalWeight.toFixed(3)}</td>
-                
-                {/* <td>
-                  {item.source === "Jewel Stock" && item.purityValue !== null
-                    ? item.purityValue.toFixed(3)
-                    : "N/A"}
-                </td>
-                <td>
-                  {item.source === "Goldsmith" && item.wastage !== null
-                    ? item.wastage.toFixed(3)
-                    : "N/A"}
-                </td> */}
-                {/* <td
-                  className={
-                    item.status === "Sold" ? "sold-status" : "in-stock-status"
-                  }
-                >
-                  {item.status}
-                </td>
-                <td>{item.displayDateIn}</td> */}
               </tr>
-            ))):(<p>No Product Stock</p>)}
+               ))}
           </tbody>
           <tfoot>
             <tr>
@@ -214,7 +199,8 @@ const calculatewastgePure=(stock)=>{
               <td></td>
             </tr>
           </tfoot>
-        </table>
+        </table>):(<p style={{textAlign:"center",color:"red",fontSize:"larger"}}>No Stock Information</p>)
+       }
          {stockData.length >= 1 && (
             <TablePagination
               component="div"

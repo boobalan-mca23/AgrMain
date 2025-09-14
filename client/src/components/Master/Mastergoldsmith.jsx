@@ -8,7 +8,9 @@ import {
   DialogActions,
   TextField,
   Paper,
+  Tooltip,
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
@@ -20,7 +22,13 @@ function Mastergoldsmith() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [goldsmith, setGoldsmith] = useState([]);
-
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    address: "",
+  });
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedGoldsmith, setSelectedGoldsmith] = useState(null);
   // validation state
   const [errors, setErrors] = useState({ name: "", phone: "" });
   const [touched, setTouched] = useState({ name: false, phone: false });
@@ -84,12 +92,51 @@ function Mastergoldsmith() {
     return nameValid && phoneValid;
   };
 
+  const handleEditClick = (goldsmith) => {
+    setSelectedGoldsmith(goldsmith);
+    setFormData({
+      name: goldsmith.name,
+      phone: goldsmith.phone,
+      address: goldsmith.address,
+    });
+    setOpenEditDialog(true);
+  };
+
+  const handleEditSubmit = async () => {
+    try {
+      const response = await fetch(
+        `${BACKEND_SERVER_URL}/api/goldsmith/${selectedGoldsmith.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Goldsmith updated successfully");
+
+        setGoldsmith((prev) =>
+          prev.map((g) =>
+            g.id === selectedGoldsmith.id ? { ...g, ...formData } : g
+          )
+        );
+
+        setOpenEditDialog(false);
+      } else {
+        toast.error("Failed to update goldsmith");
+      }
+    } catch (error) {
+      toast.error("Error updating goldsmith");
+    }
+  };
   const handleSaveGoldsmith = async () => {
     setSubmitted(true);
 
     // compute quickly for focusing
     const nameOk = goldsmithName.trim().length > 0;
-    const phoneOk = phoneNumber.trim() === "" || /^\d{10}$/.test(phoneNumber.trim());
+    const phoneOk =
+      phoneNumber.trim() === "" || /^\d{10}$/.test(phoneNumber.trim());
 
     if (!validateForm()) {
       if (!nameOk) {
@@ -107,13 +154,16 @@ function Mastergoldsmith() {
     };
 
     try {
-      const { data } = await axios.post(`${BACKEND_SERVER_URL}/api/goldsmith`, newGoldsmith);
+      const { data } = await axios.post(
+        `${BACKEND_SERVER_URL}/api/goldsmith`,
+        newGoldsmith
+      );
       setGoldsmith((prev) => [...prev, data]);
       toast.success("Goldsmith added successfully!");
       closeModal();
     } catch (error) {
       console.error("Error creating goldsmith:", error);
-      toast.error(error.response.data.message,{autoClose:1000});
+      toast.error(error.response.data.message, { autoClose: 1000 });
     }
   };
 
@@ -148,7 +198,8 @@ function Mastergoldsmith() {
             value={goldsmithName}
             onChange={(e) => {
               setGoldsmithName(e.target.value);
-              if (touched.name || submitted) validateField("name", e.target.value);
+              if (touched.name || submitted)
+                validateField("name", e.target.value);
             }}
             onBlur={(e) => handleBlur("name", e.target.value)}
             onKeyDown={(e) => {
@@ -158,7 +209,7 @@ function Mastergoldsmith() {
               }
             }}
             error={(touched.name || submitted) && !!errors.name}
-            helperText={(touched.name || submitted) ? errors.name : ""}
+            helperText={touched.name || submitted ? errors.name : ""}
           />
 
           {/* Phone Number (optional, 10 digits if provided) */}
@@ -170,7 +221,7 @@ function Mastergoldsmith() {
             fullWidth
             autoComplete="off"
             value={phoneNumber}
-           onChange={(e) => {
+            onChange={(e) => {
               setPhoneNumber(e.target.value);
               if (touched.phone) validateField("phone", e.target.value);
             }}
@@ -182,7 +233,7 @@ function Mastergoldsmith() {
               }
             }}
             error={(touched.phone || submitted) && !!errors.phone}
-            helperText={(touched.phone || submitted) ? errors.phone : ""}
+            helperText={touched.phone || submitted ? errors.phone : ""}
           />
 
           {/* Address (optional) */}
@@ -219,28 +270,85 @@ function Mastergoldsmith() {
 
       {goldsmith.length > 0 && (
         <Paper>
-          <table  className="goldSmith-table" width="100%">
+          <table className="goldSmith-table" width="100%">
             <thead>
               <tr className="goldSmith-tablehead">
                 <th>S.no</th>
                 <th>Goldsmith Name</th>
                 <th>Phone Number</th>
                 <th>Address</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody className="goldSmith-tablebody">
               {goldsmith.map((item, index) => (
-                <tr key={index} >
-                  <td>{index+1}</td>
+                <tr key={index}>
+                  <td>{index + 1}</td>
                   <td>{item.name}</td>
                   <td>{item.phone || "-"}</td>
                   <td>{item.address || "-"}</td>
+                  <td>
+                    <EditIcon
+                      style={{
+                        cursor: "pointer",
+                        marginRight: "10px",
+                        color: "#388e3c",
+                      }}
+                      onClick={() => handleEditClick(item)}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Paper>
       )}
+
+      <Dialog
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Edit Goldsmith</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Name"
+            value={formData.name}
+            fullWidth
+            margin="normal"
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          />
+          <TextField
+            label="Phone"
+            value={formData.phone}
+            fullWidth
+            margin="normal"
+            onChange={(e) =>
+              setFormData({ ...formData, phone: e.target.value })
+            }
+          />
+          <TextField
+            label="Address"
+            value={formData.address}
+            fullWidth
+            margin="normal"
+            onChange={(e) =>
+              setFormData({ ...formData, address: e.target.value })
+            }
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleEditSubmit}
+            variant="contained"
+            color="primary"
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
