@@ -24,23 +24,32 @@ const Masteradditems = () => {
     }
   };
 
-  const handleAddItem = async () => {
-    if (itemName.trim()) {
-      try {
-        await axios.post(`${BACKEND_SERVER_URL}/api/master-items/create`, {
-          itemName: itemName.trim(),
-        });
-        setItemName("");
-        fetchItems();
-        toast.success("Item added successfully!");
-      } catch (err) {
-        console.error("Failed to add item", err);
-        toast.error(err.response.data.msg,{autoClose:2000});
-      }
-    } else {
-      toast.warn("Please enter item name.");
+ const handleAddItem = async () => {
+  if (itemName.trim()) {
+    // Regex: only letters, numbers, spaces allowed
+    const validName = /^[a-zA-Z0-9\s]+$/;
+
+    if (!validName.test(itemName.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
     }
-  };
+
+    try {
+      await axios.post(`${BACKEND_SERVER_URL}/api/master-items/create`, {
+        itemName: itemName.trim(),
+      });
+      setItemName("");
+      fetchItems();
+      toast.success("Item added successfully!");
+    } catch (err) {
+      console.error("Failed to add item", err);
+      toast.error(err.response?.data?.msg || "Something went wrong", { autoClose: 2000 });
+    }
+  } else {
+    toast.warn("Please enter item name.");
+  }
+};
+
 
   const handleDelete = async (id) => {
   if (window.confirm("Are you sure you want to delete this item?")) {
@@ -69,6 +78,13 @@ const Masteradditems = () => {
   const handleSaveEdit = async (id) => {
     if (!editValue.trim()) {
       toast.warn("Item name cannot be empty.");
+      return;
+    }
+
+     const validName = /^[a-zA-Z0-9\s]+$/;
+
+    if (!validName.test(editValue.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
     try {

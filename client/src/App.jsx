@@ -140,7 +140,7 @@ function App() {
           }
         />
         <Route
-          path="/stock"
+          path="/productstock"
           element={
             <PageWithNavbar>
               <Stock />

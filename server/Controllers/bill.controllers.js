@@ -189,7 +189,7 @@ const getBillByCustomer = async (req, res) => {
    const customerReport=async(req,res)=>{
       try {
         const {customerId}=req.params
-        const { fromDate, toDate} = req.body;
+        const { fromDate, toDate } = req.query;
       
     const billWhere = {};
     const billReceiveWhere={};
