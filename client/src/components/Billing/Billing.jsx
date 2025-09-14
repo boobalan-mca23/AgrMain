@@ -437,13 +437,8 @@ const Billing = () => {
       const combinedDateTime = new Date(date);
 
       const billData = {
-        billno: bills.length + 1,
         date:combinedDateTime,
         time:combinedDateTime,
-        previousBalance,
-        // currentHallmark: billHallmark,
-        prevHallmark,
-
         customerId: selectedCustomer.id || selectedCustomer._id,
         billTotal: FWT,
         hallMark: toNumber(billHallmark) || 0,
@@ -470,27 +465,27 @@ const Billing = () => {
       };
 
       console.log("Payload being sent:", billData);
-      const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(billData),
-      });
+      // const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify(billData),
+      // });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.msg || `HTTP error! status: ${response.status}`);
-      }
+      // if (!response.ok) {
+      //   const errorData = await response.json().catch(() => ({}));
+      //   throw new Error(errorData.msg || `HTTP error! status: ${response.status}`);
+      // }
 
-      await response.json();
-      toast.success("Bill saved successfully!");
+      // await response.json();
+      // toast.success("Bill saved successfully!");
 
-      // reset local state (same behaviour as original)
-      setBillDetailRows([]);
-      setRows([]);
-      setSelectedCustomer(null);
-      setBillHallmark("");
-      setWeightAllocations({});
-      setFieldErrors({});
+      // // reset local state (same behaviour as original)
+      // setBillDetailRows([]);
+      // setRows([]);
+      // setSelectedCustomer(null);
+      // setBillHallmark("");
+      // setWeightAllocations({});
+      // setFieldErrors({});
     } catch (error) {
       console.error("Error saving bill:", error);
       alert(`Error saving bill: ${error.message}`);

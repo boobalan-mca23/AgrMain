@@ -1,13 +1,12 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const addRawGold=require('../Utils/addRawGoldStock')
-
+const getCustomerBal=require('../Utils/getCustomerBalance')
 // createBill
 
 const createBill = async (req, res) => {
-  const {billno,date,time, customerId, billTotal,hallMark, orderItems, received,previousBalance,  prevHallmark, currentHallmark ,pureBalance,hallmarkBalance} = req.body;
-  // billno,date,time,
-  // console.log('req.body',req.body)
+  const {date,time,customerId, billTotal,hallMark, orderItems, received,pureBalance,hallmarkBalance} = req.body;
+   console.log('req  body in bill',req.body)
   try {
     const customerExist = await prisma.customer.findUnique({
       where: { id: parseInt(customerId) },
@@ -22,11 +21,7 @@ const createBill = async (req, res) => {
         .status(400)
         .json({ msg: "At least one order item is required" });
     }
-    if(!received || received.length<1){
-      return res
-        .status(400)
-        .json({ msg: "At least one received item is required" });
-    }
+  
 
     const modifiyOrders = orderItems.map((item, _) => ({
       productName: item.productName,
@@ -39,17 +34,13 @@ const createBill = async (req, res) => {
 
     const newBill = await prisma.bill.create({
       data: {
-        billno: billno,
+       
         date: new Date(date),
         time: time,
         customer_id: parseInt(customerId),
         billAmount: parseFloat(billTotal),
         hallMark:parseFloat(hallMark),
         orders: { create: modifiyOrders },
-        previousBalance, 
-        prevHallmark,    
-        currentHallmark:req.body.currentHallmark ?? 0, 
-
        },
       include: {
         orders: true,
@@ -200,77 +191,77 @@ const getBillByCustomer = async (req, res) => {
         const {customerId}=req.params
         const { fromDate, toDate} = req.body;
       
-//     const billWhere = {};
-//     const billReceiveWhere={};
-//     const receiptWhere = {};
+    const billWhere = {};
+    const billReceiveWhere={};
+    const receiptWhere = {};
 
-//     // If date range is provided
-//     if (fromDate && toDate) {
-//       const from = new Date(fromDate);
-//       const to = new Date(toDate);
-//       to.setHours(23, 59, 59, 999); // Include full day
+    // If date range is provided
+    if (fromDate && toDate) {
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
+      to.setHours(23, 59, 59, 999); // Include full day
 
-//       billWhere.createdAt  = {
-//         gte: from,
-//         lte: to,
-//       };
-//       billReceiveWhere.createdAt ={
-//         gte: from,
-//         lte: to,
-//       }
-//       receiptWhere.createdAt  = {
-//         gte: from,
-//         lte: to,
-//       };
-//     }
+      billWhere.createdAt  = {
+        gte: from,
+        lte: to,
+      };
+      billReceiveWhere.createdAt ={
+        gte: from,
+        lte: to,
+      }
+      receiptWhere.createdAt  = {
+        gte: from,
+        lte: to,
+      };
+    }
 
-//     // If customer_id is provided
-//     if (!isNaN(parseInt(customer_id))) {
-//        billWhere.customer_id = parseInt(customer_id);
-//        billReceiveWhere.cutomer_id=parseInt(customer_id);
-//        receiptWhere.customer_id = parseInt(customer_id);
-// }
+    // If customer_id is provided
+    if (!isNaN(parseInt(customerId))) {
+       billWhere.customer_id = parseInt(customerId);
+       billReceiveWhere.cutomer_id=parseInt(customerId);
+       receiptWhere.customer_id = parseInt(customerId);
+}
 
-//     let combinedData=[]
-//     // Check if at least date or customer_id is provided
-//     if (fromDate && toDate || customer_id) {
-//       const allBill = await prisma.bill.findMany({
-//         where: billWhere,
-//         include: {
-//           OrderItems: true,
-//         },
-//       });
-//        const billReceived = await prisma.billReceived.findMany({
-//         where: billWhere,
-//       });
+    let combinedData=[]
+    // Check if at least date or customer_id is provided
+    if (fromDate && toDate || customerId) {
+      const allBill = await prisma.bill.findMany({
+        where: billWhere,
+        include: {
+            orders: true,
+        },
+      });
+       const billReceived = await prisma.billReceived.findMany({
+        where: billWhere,
+      });
+       console.log('customer bill ',customerId,allBill)
+       console.log('customer receive',customerId,billReceived)
+      const receipt = await prisma.receiptVoucher.findMany({
+        where: receiptWhere,
+      });
 
-//       const receipt = await prisma.receiptVoucher.findMany({
-//         where: receiptWhere,
-//       });
+      const allReceive=[...billReceived,...receipt]
+      console.log('All bill report',allBill)
+      console.log('All Receive',allReceive)
 
-//       const allReceive=[...billReceived,...receipt]
-//       console.log('bill report',allBill,allReceive)
+       combinedData = [
+        ...allBill.map((bill) => ({
+          type: "bill",
+          info: bill,
+        })),
+        ...allReceive.map((receive) => ({
+          type: receive.billId?"billReceive":"ReceiptVoucher",
+          info: receive,
+        })),
+      ];
 
-//        combinedData = [
-//         ...allBill.map((bill) => ({
-//           type: "bill",
-//           date: new Date(bill.created_at),
-//           info: bill,
-//         })),
-//         ...allReceipt.map((receive) => ({
-//           type: "receive",
-//           date: new Date(receive.date),
-//           info: receive,
-//         })),
-//       ];
+      // get overAll balance
+      const overallBal=await getCustomerBal.getCustomerBalance(customerId)
 
-//       combinedData.sort((a, b) => a.date - b.date);
-//       console.log('partdata',combinedData);
-      
-//       res.status(200).json(combinedData);
-//     } else {
-//       res.status(200).json(combinedData);
-//     }
+      res.status(200).json({data:combinedData,overallBal:overallBal});
+    } else {
+      res.status(200).json(combinedData);
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

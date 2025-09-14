@@ -40,7 +40,6 @@ model MasterTouch {
   id             Int    @id @default(autoincrement())
   touch          Float
   rawGoldStock   RawgoldStock[]
- 
   createdAt DateTime @default(now())
 }
 
@@ -251,6 +250,7 @@ model RawgoldStock{
   touchId     Int
   touch       Float?
   weight      Float?
+  remainingWt Float?
   masterTouch MasterTouch?  @relation(fields: [touchId], references: [id])
   rawGoldLogs RawGoldLogs[]
 }
@@ -346,7 +346,6 @@ model ProductStock{
   }
  model Bill{
   id           Int @id @default(autoincrement())
-  billno       Int ?
   date         DateTime ?
   time         DateTime?
   customer_id  Int
@@ -356,9 +355,7 @@ model ProductStock{
   createdAt    DateTime @default(now())
   orders       OrderItems[] 
   billReceive  billReceived[]
-  previousBalance Float    @default(0)   
-  prevHallmark    Float    @default(0)   
-  currentHallmark Float    @default(0) 
+  
  }
  model OrderItems{
    id          Int @id @default(autoincrement())
@@ -393,19 +390,19 @@ model ProductStock{
  }
  model receiptVoucher{
     id              Int @id @default(autoincrement())
-   customer_id     Int
-   customers       Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-   logId           Int?
-   rawGoldLogs     RawGoldLogs? @relation(fields: [logId], references: [id])
-   date            String?
-   type            String?
-   goldRate        Int?
-   gold            Float?
-   touch           Float?
-   purity          Float?
-   receiveHallMark Float?
-   amount          Float?
-   createdAt   DateTime @default(now())
+    customer_id     Int
+    customers       Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+    logId           Int?
+    rawGoldLogs     RawGoldLogs? @relation(fields: [logId], references: [id])
+    date            String?
+    type            String?
+    goldRate        Int?
+    gold            Float?
+    touch           Float?
+    purity          Float?
+    receiveHallMark Float?
+    amount          Float?
+    createdAt   DateTime @default(now())
  }
 model customerBillBalance{
   id           Int @id @default(autoincrement())
