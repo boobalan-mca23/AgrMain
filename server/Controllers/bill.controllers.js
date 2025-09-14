@@ -189,81 +189,84 @@ const getBillByCustomer = async (req, res) => {
         return res.status(500).json({ err: err.message });
      }
   }
+
+  // customer report controller
    const customerReport=async(req,res)=>{
       try {
-        let { fromDate, toDate, customer_id } = req.body;
-
-    const billWhere = {};
-    const billReceiveWhere={};
-    const receiptWhere = {};
-
-    // If date range is provided
-    if (fromDate && toDate) {
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      to.setHours(23, 59, 59, 999); // Include full day
-
-      billWhere.created_at = {
-        gte: from,
-        lte: to,
-      };
-      billReceiveWhere.created_at={
-        gte: from,
-        lte: to,
-      }
-      receiptWhere.created_at = {
-        gte: from,
-        lte: to,
-      };
-    }
-
-    // If customer_id is provided
-    if (!isNaN(parseInt(customer_id))) {
-       billWhere.customer_id = parseInt(customer_id);
-       billReceiveWhere.cutomer_id=parseInt(customer_id);
-       receiptWhere.customer_id = parseInt(customer_id);
-}
-
-    let combinedData=[]
-    // Check if at least date or customer_id is provided
-    if (fromDate && toDate || customer_id) {
-      const allBill = await prisma.bill.findMany({
-        where: billWhere,
-        include: {
-          OrderItems: true,
-        },
-      });
-       const billReceived = await prisma.billReceived.findMany({
-        where: billWhere,
-      });
-
-      const receipt = await prisma.receiptVoucher.findMany({
-        where: receiptWhere,
-      });
-
-      const allReceive=[...billReceived,...receipt]
-      console.log('bill report',allBill,allReceive)
-
-      //  combinedData = [
-      //   ...allBill.map((bill) => ({
-      //     type: "bill",
-      //     date: new Date(bill.created_at),
-      //     info: bill,
-      //   })),
-      //   ...allReceipt.map((receive) => ({
-      //     type: "receive",
-      //     date: new Date(receive.date),
-      //     info: receive,
-      //   })),
-      // ];
-
-      // combinedData.sort((a, b) => a.date - b.date);
-      // console.log('partdata',combinedData);
+        const {customerId}=req.params
+        const { fromDate, toDate} = req.body;
       
-      // res.status(200).json(combinedData);
-    } else {
-      // res.status(200).json(combinedData);
-    }
+//     const billWhere = {};
+//     const billReceiveWhere={};
+//     const receiptWhere = {};
+
+//     // If date range is provided
+//     if (fromDate && toDate) {
+//       const from = new Date(fromDate);
+//       const to = new Date(toDate);
+//       to.setHours(23, 59, 59, 999); // Include full day
+
+//       billWhere.createdAt  = {
+//         gte: from,
+//         lte: to,
+//       };
+//       billReceiveWhere.createdAt ={
+//         gte: from,
+//         lte: to,
+//       }
+//       receiptWhere.createdAt  = {
+//         gte: from,
+//         lte: to,
+//       };
+//     }
+
+//     // If customer_id is provided
+//     if (!isNaN(parseInt(customer_id))) {
+//        billWhere.customer_id = parseInt(customer_id);
+//        billReceiveWhere.cutomer_id=parseInt(customer_id);
+//        receiptWhere.customer_id = parseInt(customer_id);
+// }
+
+//     let combinedData=[]
+//     // Check if at least date or customer_id is provided
+//     if (fromDate && toDate || customer_id) {
+//       const allBill = await prisma.bill.findMany({
+//         where: billWhere,
+//         include: {
+//           OrderItems: true,
+//         },
+//       });
+//        const billReceived = await prisma.billReceived.findMany({
+//         where: billWhere,
+//       });
+
+//       const receipt = await prisma.receiptVoucher.findMany({
+//         where: receiptWhere,
+//       });
+
+//       const allReceive=[...billReceived,...receipt]
+//       console.log('bill report',allBill,allReceive)
+
+//        combinedData = [
+//         ...allBill.map((bill) => ({
+//           type: "bill",
+//           date: new Date(bill.created_at),
+//           info: bill,
+//         })),
+//         ...allReceipt.map((receive) => ({
+//           type: "receive",
+//           date: new Date(receive.date),
+//           info: receive,
+//         })),
+//       ];
+
+//       combinedData.sort((a, b) => a.date - b.date);
+//       console.log('partdata',combinedData);
+      
+//       res.status(200).json(combinedData);
+//     } else {
+//       res.status(200).json(combinedData);
+//     }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

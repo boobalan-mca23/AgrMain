@@ -29,13 +29,13 @@ const itemToStock = async () => {
     }
 
     acc[key].totalItemWeight += item.itemWeight || 0;
-    acc[key].totalFinalPurity += item.finalPurity || 0;
+    acc[key].totalFinalPurity += item.finalPurity || 0; 
     acc[key].totalWastageValue += item.wastageValue || 0;
     acc[key].totalWastagePure += item.wastagePure || 0;
     acc[key].count +=item.count ||0;
     acc[key].totalStoneWeight += item.deduction.reduce(
       
-      (sum, d) => sum + (d.stoneWt || 0),
+      (sum, d) => sum + (d.weight  || 0),
       0
     );
     
@@ -44,7 +44,7 @@ const itemToStock = async () => {
   }, {});
 
   let stockInformation = Object.values(grouped);
-  
+   console.log('stockInformation',stockInformation)
    await prisma.productStock.deleteMany({}) //
 
   for (const stockItem of stockInformation) {
@@ -81,7 +81,7 @@ const itemToStock = async () => {
           stoneWeight: stockItem.totalStoneWeight,
           wastageValue: stockItem.totalWastageValue,
           wastagePure:stockItem.totalWastagePure,
-          finalWeight: stockItem.totalStoneWeight,
+          finalWeight: stockItem.totalFinalPurity,
         },
       });
     }
