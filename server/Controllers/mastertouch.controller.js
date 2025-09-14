@@ -1,12 +1,12 @@
-
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const createTouch = async (req, res) => {
   const { touch } = req.body;
-  try {
-    const parsedTouch = parseFloat(touch);
-    if (isNaN(parsedTouch)) {
+
+  const parsedTouch = parseFloat(touch);
+  
+   if (isNaN(parsedTouch)) {
       return res.status(400).json({ error: "Invalid number" });
     }
     const ifExist=await prisma.masterTouch.findFirst({
@@ -38,9 +38,8 @@ const createTouch = async (req, res) => {
     
     
     
-  } catch (err) {
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+
+  
 };
 
 const getTouch = async (req, res) => {

@@ -172,7 +172,7 @@ const calculatewastgePure=(stock)=>{
             </tr>
           </thead>
           <tbody>
-            {stockData.map((item, index) => (
+           {stockData.length>=1 ? ( stockData.map((item, index) => (
               <tr key={item.id}>
                 <td>{index + 1}</td>
                 <td>{item.itemName}</td>
@@ -203,7 +203,7 @@ const calculatewastgePure=(stock)=>{
                 </td>
                 <td>{item.displayDateIn}</td> */}
               </tr>
-            ))}
+            ))):(<p>No Product Stock</p>)}
           </tbody>
           <tfoot>
             <tr>

@@ -29,7 +29,7 @@ const Masteradditems = () => {
       toast.warn("Please enter a touch value.");
       return;
     }
-
+    console.log('touchInput',touchInput)
     try {
       await axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, {
         touch: touchInput,
