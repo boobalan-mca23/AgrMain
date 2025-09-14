@@ -444,7 +444,7 @@ const currentPageTotal = paginatedData.reduce(
                               : "-"}
                           </td>
 
-                          <td>{Number(g?.weight)?.toFixed(3) || "-"}</td>
+                          <td>{(g?.weight) || "-"}</td>
                           {/* {i === 0 && (
                             <td rowSpan={maxRows}>{total?.givenWt || "-"}</td>
                           )} */}
@@ -464,21 +464,21 @@ const currentPageTotal = paginatedData.reduce(
                           </td>
                           <td>{d?.itemName || "-"}</td>
                           <td>{d?.itemWeight || "-"}</td>
-                          <td>{d?.count|| "-"}</td>
+                          <td>{d?.count|| "0"}</td>
                           <td>{d?.touch || "-"}</td>
 
                           <td>
                             {d?.deduction && totalStoneWt(d?.deduction)}
                           </td>
-                          <td>{d?.netWeight || "-"}</td>
+                          <td>{d?.netWeight || "0"}</td>
                           {/* <td>{d?.wastageType || "-"}</td> */}
-                          <td>{d?.wastageValue || "-"}</td>
-                          <td>{d?.wastagePure||"-"}</td>
-                          <td>{d?.finalPurity || "-"}</td>
+                          <td>{d?.wastageValue || "0"}</td>
+                          <td>{d?.wastagePure||"0"}</td>
+                          <td>{d?.finalPurity || "0"}</td>
                          
-                          <td>{r?.weight || "-"}</td>
-                          <td>{r?.touch || "-"}</td>
-                          <td>{r?.purity||"-"}</td>
+                          <td>{r?.weight || "0"}</td>
+                          <td>{r?.touch || "0"}</td>
+                          <td>{r?.purity||"0"}</td>
                             {i === 0 && (
                             <>
                               <td rowSpan={maxRows}>
