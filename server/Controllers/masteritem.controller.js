@@ -45,6 +45,15 @@ exports.updateItem = async (req, res) => {
     return res.status(400).json({ error: "Item name cannot be empty" });
   }
 
+  const ifExist=await prisma.masterItem.findFirst({
+      where:{
+        itemName:itemName
+      }
+    })
+    if(ifExist){
+      return res.status(400).json({msg:"Item Name  Already Exist"})
+    }
+
   try {
     const updatedItem = await prisma.masterItem.update({
       where: { id: parseInt(id) },

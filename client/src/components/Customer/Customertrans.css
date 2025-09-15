@@ -30,18 +30,18 @@ h2 {
   border-radius: 5px;
 }
 
-/* table {
+.customerTrantable {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
 }
 
-th,
+.customerTrantable th,
 td {
   border: 1px solid #ddd;
   padding: 10px;
   text-align: center;
-} */
+}
 
 .no-data {
   text-align: center;

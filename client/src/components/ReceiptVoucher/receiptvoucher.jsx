@@ -372,7 +372,7 @@ const Receipt = () => {
                         }}
                         className="receiptTableInput"
                       >
-                        <option value="">Select Touch</option>
+                        <option value="">touch</option>
                         {masterTouch.map((option,) => (
                           <option key={option.id} value={option.touch}>
                             {option.touch}
@@ -433,13 +433,13 @@ const Receipt = () => {
           </div>
           <div className="receiptBalances">
             <div>
-              <p>CashBalance {cashBalance}</p>
+              <p>CashBalance ₹{cashBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
             </div>
             <div>
-              <p>old Balance {pureBalance.toFixed(3)}</p>
+              <p>old Balance {pureBalance.toFixed(3)}gr</p>
             </div>
             <div>
-              <p>Hall Mark Balance {hallmarkBalance.toFixed(3)}</p>
+              <p>Hall Mark Balance {hallmarkBalance.toFixed(3)}gr</p>
             </div>
           </div>
         </div>
