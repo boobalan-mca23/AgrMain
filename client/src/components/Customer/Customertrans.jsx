@@ -330,7 +330,7 @@ const Customertrans = () => {
         </div>
       )}
 
-      <table>
+      <table className="customerTrantable">
         <thead>
           <tr>
             <th>Date</th>
@@ -344,11 +344,11 @@ const Customertrans = () => {
         <tbody>
           {filteredTransactions.map((transaction) => (
             <tr key={transaction.id}>
-              <td>{new Date(transaction.date).toLocaleDateString()}</td>
+              <td>{new Date(transaction.date).toLocaleDateString("en-GB")}</td>
               <td>{transaction.type}</td>
               <td>
                 {transaction.type === "Cash"
-                  ? `₹${transaction.value.toFixed(2)}`
+                  ? `₹${(transaction.value).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
                   : `${transaction.value.toFixed(3)}g`}
               </td>
               <td>

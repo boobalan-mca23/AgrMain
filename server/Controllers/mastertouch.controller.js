@@ -55,6 +55,19 @@ const updateTouch =  async (req, res) => {
   const { id } = req.params;
   const { touch } = req.body;
   try {
+
+
+
+      const ifExist=await prisma.masterTouch.findFirst({
+      where:{
+        touch
+        
+      }
+    })
+    if(ifExist){
+      return res.status(400).json({msg:"Touch Already Exist"})
+    }
+
     const updated = await prisma.masterTouch.update({
       where: { id: parseInt(id) },
       data: { touch: parseFloat(touch) },

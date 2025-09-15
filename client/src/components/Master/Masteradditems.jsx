@@ -24,46 +24,46 @@ const Masteradditems = () => {
     }
   };
 
- const handleAddItem = async () => {
-  if (itemName.trim()) {
-    // Regex: only letters, numbers, spaces allowed
-    const validName = /^[a-zA-Z0-9\s]+$/;
+  const handleAddItem = async () => {
+    if (itemName.trim()) {
+      // Regex: only letters, numbers, spaces allowed
+      const validName = /^[a-zA-Z0-9\s]+$/;
 
-    if (!validName.test(itemName.trim())) {
-      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
-      return;
+      if (!validName.test(itemName.trim())) {
+        toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+        return;
+      }
+
+      try {
+        await axios.post(`${BACKEND_SERVER_URL}/api/master-items/create`, {
+          itemName: itemName.trim(),
+        });
+        setItemName("");
+        fetchItems();
+        toast.success("Item added successfully!");
+      } catch (err) {
+        console.error("Failed to add item", err);
+        toast.error(err.response?.data?.msg || "Something went wrong", {
+          autoClose: 2000,
+        });
+      }
+    } else {
+      toast.warn("Please enter item name.");
     }
-
-    try {
-      await axios.post(`${BACKEND_SERVER_URL}/api/master-items/create`, {
-        itemName: itemName.trim(),
-      });
-      setItemName("");
-      fetchItems();
-      toast.success("Item added successfully!");
-    } catch (err) {
-      console.error("Failed to add item", err);
-      toast.error(err.response?.data?.msg || "Something went wrong", { autoClose: 2000 });
-    }
-  } else {
-    toast.warn("Please enter item name.");
-  }
-};
-
+  };
 
   const handleDelete = async (id) => {
-  if (window.confirm("Are you sure you want to delete this item?")) {
-    try {
-      await axios.delete(`${BACKEND_SERVER_URL}/api/master-items/${id}`);
-      toast.success("Item deleted successfully!");
-      fetchItems();
-    } catch (err) {
-      console.error("Failed to delete item", err);
-      toast.error("Failed to delete item. Please try again.");
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      try {
+        await axios.delete(`${BACKEND_SERVER_URL}/api/master-items/${id}`);
+        toast.success("Item deleted successfully!");
+        fetchItems();
+      } catch (err) {
+        console.error("Failed to delete item", err);
+        toast.error("Failed to delete item. Please try again.");
+      }
     }
-  }
-};
-
+  };
 
   const handleEdit = (id, currentName) => {
     setEditItemId(id);
@@ -80,13 +80,6 @@ const Masteradditems = () => {
       toast.warn("Item name cannot be empty.");
       return;
     }
-
-     const validName = /^[a-zA-Z0-9\s]+$/;
-
-    if (!validName.test(editValue.trim())) {
-      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
-      return;
-    }
     try {
       await axios.put(`${BACKEND_SERVER_URL}/api/master-items/${id}`, {
         itemName: editValue.trim(),
@@ -97,7 +90,9 @@ const Masteradditems = () => {
       fetchItems();
     } catch (err) {
       console.error("Failed to update item", err);
-      toast.error("Failed to update item. Please try again.");
+      toast.error(err.response?.data?.msg || "Something went wrong", {
+          autoClose: 2000,
+        });
     }
   };
 
@@ -147,54 +142,54 @@ const Masteradditems = () => {
                         item.itemName
                       )}
                     </td>
-                   <td>
-                    {editItemId === item.id ? (
-                      <>
-                        <button
-                          style={{
-                            marginRight: "5px",
-                            background: "#4CAF50",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => handleSaveEdit(item.id)}
-                        >
-                          Save
-                        </button>
-                        <button
-                          style={{
-                            background: "#f44336",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                          onClick={handleCancelEdit}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          style={{
-                            background: "#1DA3A3",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            marginRight: "5px",
-                          }}
-                          onClick={() => handleEdit(item.id, item.itemName)}
-                        >
-                          Edit
-                        </button>
-                        {/* <button
+                    <td>
+                      {editItemId === item.id ? (
+                        <>
+                          <button
+                            style={{
+                              marginRight: "5px",
+                              background: "#4CAF50",
+                              color: "#fff",
+                              padding: "4px 8px",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => handleSaveEdit(item.id)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            style={{
+                              background: "#f44336",
+                              color: "#fff",
+                              padding: "4px 8px",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                            }}
+                            onClick={handleCancelEdit}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            style={{
+                              background: "#1DA3A3",
+                              color: "#fff",
+                              padding: "4px 8px",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              marginRight: "5px",
+                            }}
+                            onClick={() => handleEdit(item.id, item.itemName)}
+                          >
+                            Edit
+                          </button>
+                          {/* <button
                           style={{
                             background: "#e63946",
                             color: "#fff",
@@ -207,10 +202,9 @@ const Masteradditems = () => {
                         >
                           Delete
                         </button> */}
-                      </>
-                    )}
-                  </td>
-
+                        </>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

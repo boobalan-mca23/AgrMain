@@ -34,10 +34,10 @@ const CustReport = () => {
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // const paginatedData =billInfo.slice(
-  //   page * rowsPerPage,
-  //   page * rowsPerPage + rowsPerPage
-  // );
+  const paginatedData =billInfo.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   const [isPrinting, setIsPrinting] = useState(true);
 
@@ -114,6 +114,18 @@ const CustReport = () => {
     }, 1000); // allow DOM to update
   };
 
+
+  const currentPageTotal = paginatedData.reduce(
+    (acc, bill) => {
+      if(bill.type === "bill"){
+        acc.billAmount+=bill.info.billAmount
+      }else{
+        acc.billReceive+=bill.info.purity 
+      }
+      return acc;
+    },
+    { billReceive: 0, billAmount: 0} // Initial accumulator
+  );
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -155,23 +167,7 @@ const CustReport = () => {
     fetchBillInfo();
   };
 
-  const billTotal = () => {
-    return billInfo.reduce((acc, item) => {
-      if (item.type === "bill") {
-        acc += item.info.billAmount || 0;
-      }
-      return acc; // ✅ must return accumulator
-    }, 0);
-  };
 
-  const billReceive = () => {
-    return billInfo.reduce((acc, item) => {
-      if (item.type !== "bill") {
-        acc += item.info.purity || 0;
-      }
-      return acc; // ✅ must return accumulator
-    }, 0);
-  };
 
   useEffect(() => {
     const fetchCustomer = async () => {
@@ -256,12 +252,12 @@ const CustReport = () => {
         </div>
 
         <div className="customerReportContainer">
-          {billInfo.length >= 1 ? (
+          {paginatedData.length >= 1 ? (
             <table ref={reportRef} className="customerReportTable">
               <thead id="customerReportHead">
                 <tr>
                   <th>S.no</th>
-                  <th>BillId/ReceiveId</th>
+                  <th>BillId</th>
                   <th>Date</th>
                   <th>Bill&Receive</th>
                   <th>ReceiveAmount</th>
@@ -269,10 +265,10 @@ const CustReport = () => {
                 </tr>
               </thead>
               <tbody className="customerReportTbody">
-                {billInfo.map((bill, index) => (
+                {paginatedData.map((bill, index) => (
                   <tr key={index + 1}>
                     <td>{index + 1}</td>
-                    <td>{bill.info.id}</td>
+                    <td>{bill.type==="bill"?bill.info.id:"-"}</td>
                     <td>
                       {new Date(bill.info.createdAt).toLocaleDateString(
                         "en-GB"
@@ -360,18 +356,20 @@ const CustReport = () => {
                     )}
                   </tr>
                 ))}
-                <tr>
+               
+                 <tr   className="custRepTfoot" >
                   <td colSpan={4}></td>
 
                   <td className="customerTotal">
                     <strong>
-                      Total bill Receive Total:{billReceive().toFixed(3)}
+                      Total bill Receive Total:{(currentPageTotal.billReceive).toFixed(3)}
                     </strong>{" "}
                   </td>
                   <td className="customerTotal">
-                    <strong> Total bill Amount:{billTotal().toFixed(3)}</strong>
+                    <strong> Total bill Amount:{(currentPageTotal.billAmount).toFixed(3)}</strong>
                   </td>
                 </tr>
+               
               </tbody>
             </table>
           ) : (
@@ -389,16 +387,28 @@ const CustReport = () => {
 
         
         </div>
+         <TablePagination
+               
+                component="div"
+                count={billInfo.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25]}
+              />
       </div>
         <div className="overAllBalance">
            <div className="balanceCard balance-negative">
-                 Excess Balance: {overAllBalance<0 ?(overAllBalance).toFixed(3):(0.000)}
+                 Excess Balance: {overAllBalance<0 ?(overAllBalance).toFixed(3):0.000}
            </div>
 
            <div className="balanceCard balance-positive">
-               Balance : {overAllBalance>=0 ?(overAllBalance).toFixed(3):(0.000)}
+               Balance : {overAllBalance>=0 ?(overAllBalance).toFixed(3):0.000}
            </div>
           </div>
+
+           
     </>
   );
 };

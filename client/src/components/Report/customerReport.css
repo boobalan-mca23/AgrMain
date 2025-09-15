@@ -81,7 +81,7 @@
   border: 1px solid #0b0a0a;
   padding: 6px;
   text-align:center; 
- background-image: linear-gradient(60deg, #29323c 0%, #485563 100%);
+  background-image: linear-gradient(60deg, #29323c 0%, #485563 100%);
   color: white;
 }
 
@@ -121,7 +121,7 @@
 .overAllBalance {
   display: flex;
   justify-content: center;
-  margin: 20px auto;
+  margin: 10px auto;
   gap: 20px;
   max-width: 400px;
 }
@@ -143,14 +143,22 @@
 }
 
 .balance-positive {
-
-  background: linear-gradient(135deg, #e53935, #f06292); 
+     background-color:white; 
+     border-left: 8px solid #f06292 ;
+     color: black;
 }
 
 .balance-negative {
-      background: linear-gradient(135deg, #43a047, #66bb6a);
+    background-color: white;
+    border-left:8px solid #43a047;
+    color: black;
  
 }
-
+.custRepTfoot {
+  position: sticky;
+  bottom: 0;
+  background: rgb(235, 166, 136);   /* so it doesn’t overlap rows */
+  z-index: 2;          /* positive z-index to stay above */
+}
 
 
