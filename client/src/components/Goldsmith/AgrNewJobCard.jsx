@@ -155,11 +155,8 @@ const handleGoldRowChange = (i, field, val) => {
       copy[i]["netWeight"] =
         copy[i]["itemWeight"] - Number(totalDeduction(i, copy));
     }
-    if (field === "touch" || field === "itemWeight") {
-      copy[i].wastagePure = (
-        (copy[i].netWeight * copy[i].touch) / 100 -
-        copy[i].finalPurity
-      ).toFixed(3);
+    if (field === "touch" || field === "itemWeight" || field==="wastageValue") {
+      copy[i].wastagePure = ((copy[i].netWeight* copy[i].wastageValue)/100)-(copy[i].netWeight* copy[i].touch/100).toFixed(3)
     }
     copy[i].finalPurity = recalculateFinalPurity(copy[i]);
     setItemDelivery(copy);
@@ -180,9 +177,8 @@ const handleGoldRowChange = (i, field, val) => {
     const updated = [...itemDelivery];
     updated[itemIndex].deduction[deductionIndex][field] = val;
     if (field === "weight") {
-      updated[itemIndex]["netWeight"] =
-        updated[itemIndex]["itemWeight"] -
-        Number(totalDeduction(itemIndex, updated));
+        updated[itemIndex]["netWeight"] =updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated));
+        updated[itemIndex]["wastagePure"] = ((updated[itemIndex]["netWeight"]* updated[itemIndex].wastageValue)/100)-(updated[itemIndex]["netWeight"]* updated[itemIndex]["touch"]/100).toFixed(3)
     }
     updated[itemIndex].finalPurity = recalculateFinalPurity(updated[itemIndex]);
     setItemDelivery(updated);

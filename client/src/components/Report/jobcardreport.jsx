@@ -283,7 +283,7 @@ const currentPageTotal = paginatedData.reduce(
                     <tr className="reportThead">
                       <th >S.No</th>
                       <th >Date</th>
-                      <th >JobCard Id</th>
+                      <th >Id</th>
                       <th colSpan="4">Given Wt</th>
                       <th colSpan="10">Item Delivery</th>
                       <th colSpan="3">Receive</th>
@@ -306,8 +306,8 @@ const currentPageTotal = paginatedData.reduce(
                       <th>stoneWt</th>
                       <th>NetWt</th>
                     {/* <td>wastageTyp</td> */}
-                      <th>wastageValue</th>
-                      <th>watagePure</th>
+                      <th>w.Value</th>
+                      <th>w.Pure</th>
                       <th>FinalPurity</th>
                       <th>weight</th>
                       <th>touch</th>
@@ -444,7 +444,7 @@ const currentPageTotal = paginatedData.reduce(
                       <td>
                         <b>{currentPageTotal.givenWt.toFixed(3)}</b>
                       </td>
-                      <td colSpan="8"></td>
+                      <td colSpan="9"></td>
                       <td>
                         <b>{currentPageTotal.itemWt.toFixed(3)}</b>
                       </td>
