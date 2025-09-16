@@ -394,7 +394,7 @@ const Receipt = () => {
                     </td>
                     <td>
                       <input
-                        disabled={item.type==="GoldRate"?false:true}
+                        disabled={item.type==="Cash"?false:true}
                         className="receiptTableInput"
                         value={item.amount}
                         onChange={(e) =>
