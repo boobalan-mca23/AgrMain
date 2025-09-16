@@ -284,7 +284,7 @@ const updateJobCard = async (req, res) => {
               touch: parseFloat(item?.touch) || 0,
               sealName: item?.sealName,
               netWeight: parseFloat(item?.netWeight) || 0,
-              wastageType: item?.wastageType,
+              // wastageType: item?.wastageType,
               wastageValue: parseFloat(item?.wastageValue) || 0,
               wastagePure: parseFloat(item?.wastagePure) || 0,
               finalPurity: parseFloat(item.finalPurity) || 0,
@@ -333,9 +333,9 @@ const updateJobCard = async (req, res) => {
               touch: parseFloat(item?.touch) || 0,
               sealName: item?.sealName,
               netWeight: parseFloat(item?.netWeight) || 0,
-              wastageType: item?.wastageType,
+              // wastageType: item?.wastageType,
               wastageValue: parseFloat(item?.wastageValue) || 0,
-              wastagePure: parseFloat(item?.wastagePurity) || 0,
+              wastagePure: parseFloat(item?.wastagePure) || 0,
               finalPurity: parseFloat(item.finalPurity) || 0,
               ...(deductionArr.length > 0 && {
                 deduction: {

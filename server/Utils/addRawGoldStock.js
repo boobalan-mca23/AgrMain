@@ -297,7 +297,9 @@ const transactionToRawGold=async(date, type, value, touch, purity, customerId, g
       where:{
         id:parseInt(customerId)},
       data:{
-        balance:-purity||0
+        balance:{
+          increment:-purity||0
+        }
       }
     })
 

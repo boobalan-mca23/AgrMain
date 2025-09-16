@@ -60,6 +60,7 @@ function JobCardDetails() {
   const [dropDownItems, setDropDownItems] = useState({
     masterItems: [],
     touchList: [],
+    masterWastage:[],
   });
   const [rawGoldStock,setRawGoldStock]=useState([])
   const [jobCardId, setJobCardId] = useState(0);
@@ -290,7 +291,16 @@ const currentPageTotal = paginatedData.reduce(
         console.error("Failed to fetch touch values", err);
       }
     };
-     
+    const fetchWastageVal = async () => {
+        try {
+          const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`);
+         console.log("wastage fecth test:",res.data)
+         setDropDownItems((prev) => ({ ...prev, masterWastage: res.data }));
+        } catch (err) {
+          console.error("Failed to fetch touch values", err);
+        }
+      };
+    fetchWastageVal();
     fetchRawGold();
     fetchMasterItems();
     fetchTouch();
