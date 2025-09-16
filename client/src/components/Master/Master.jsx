@@ -4,6 +4,7 @@ import MasterCustomer from "./Mastercustomer";
 import Mastergoldsmith from "./Mastergoldsmith";
 import Masteradditems from "./Masteradditems";
 import Masterjewelstock from "./Masterjewelstock";
+import MasterWastageVal from "./MasterWastageVal";
 import Cashgold from "./Cashgold";
 import { FiLogOut, FiArrowLeft } from "react-icons/fi";
 import Touchentry from "./Touchentry";
@@ -106,6 +107,13 @@ const Master = () => {
             Cash / Gold
           </button> */}
           <button
+            onClick={() => handleTabChange("wastagevalue")}
+            style={getNavButtonStyle("wastagevalue")}
+          >
+            Wastage Value
+          </button>
+
+          <button
             onClick={() => handleTabChange("touchentries")}
             style={getNavButtonStyle("touchentries")}
           >
@@ -133,6 +141,7 @@ const Master = () => {
         {activeTab === "cashgold" && <Cashgold />}
         {activeTab === "touchentries" && <Touchentry />}
         {activeTab === "bullion" && <MasterBullion/>}
+        {activeTab === "wastagevalue" && <MasterWastageVal/>}
       </div>
     </div>
   );
