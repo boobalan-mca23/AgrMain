@@ -8,6 +8,9 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Customertrans = () => {
+  const today = new Date();
+  const formattedToday = today.toISOString().split("T")[0]; // "2025-09-16"
+
   const [searchParams] = useSearchParams();
   const customerId = searchParams.get("id");
   const customerName = searchParams.get("name");
@@ -18,9 +21,9 @@ const Customertrans = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [error, setError] = useState("");
   const [goldRate, setGoldRate] = useState("");
-
+  
   const [newTransaction, setNewTransaction] = useState({
-    date: "",
+    date: formattedToday ,
     value: "",
     type: "Select",
     cashValue: "",
@@ -124,7 +127,7 @@ const Customertrans = () => {
 
   const resetForm = () => {
     setNewTransaction({
-      date: "",
+      date: formattedToday,
       value: "",
       type: "Select",
       cashValue: "",
@@ -199,7 +202,7 @@ const Customertrans = () => {
             </span>
 
             <h3>Add Transaction</h3>
-            <form onSubmit={addTransaction}>
+            <form>
               <label>
                 Date:
                 <input
@@ -311,7 +314,7 @@ const Customertrans = () => {
               )}
 
               <div className="form-actions">
-                <button type="submit" className="save-btn">
+                <button type="submit" className="save-btn" onClick={addTransaction}>
                   Save
                 </button>
                 <button
