@@ -156,9 +156,9 @@ const handleGoldRowChange = (i, field, val) => {
         copy[i]["itemWeight"] - Number(totalDeduction(i, copy));
     }
     if (field === "touch" || field === "itemWeight" || field==="wastageValue") {
-      copy[i].wastagePure = ((copy[i].netWeight* copy[i].wastageValue)/100)-(copy[i].netWeight* copy[i].touch/100).toFixed(3)
+      copy[i].wastagePure = (((copy[i].netWeight* copy[i].wastageValue)/100)-(copy[i].netWeight* copy[i].touch/100)).toFixed(3)
     }
-    copy[i].finalPurity = recalculateFinalPurity(copy[i]);
+    copy[i].finalPurity =  (copy[i].netWeight * copy[i].wastageValue) / 100
     setItemDelivery(copy);
     itemValidation(itemDelivery, setItemDeliveryErrors);
   };
@@ -178,9 +178,10 @@ const handleGoldRowChange = (i, field, val) => {
     updated[itemIndex].deduction[deductionIndex][field] = val;
     if (field === "weight") {
         updated[itemIndex]["netWeight"] =updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated));
-        updated[itemIndex]["wastagePure"] = ((updated[itemIndex]["netWeight"]* updated[itemIndex].wastageValue)/100)-(updated[itemIndex]["netWeight"]* updated[itemIndex]["touch"]/100).toFixed(3)
+        updated[itemIndex]["wastagePure"] = (((updated[itemIndex]["netWeight"]* updated[itemIndex].wastageValue)/100)-(updated[itemIndex]["netWeight"]* updated[itemIndex]["touch"]/100)).toFixed(3)
     }
-    updated[itemIndex].finalPurity = recalculateFinalPurity(updated[itemIndex]);
+    updated[itemIndex]["netWeight"] =updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated));
+    updated[itemIndex].finalPurity = (updated[itemIndex]["netWeight"]*updated[itemIndex]["wastageValue"])/100
     setItemDelivery(updated);
   };
 
@@ -566,9 +567,9 @@ const handleGoldRowChange = (i, field, val) => {
                     <TableCell rowSpan={2} className="tableCell">
                       Net Weight
                     </TableCell>
-                    <TableCell rowSpan={2} className="tableCell">
+                    {/* <TableCell rowSpan={2} className="tableCell">
                       Wastage Type
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell rowSpan={2} className="tableCell">
                       Wastage Value
                     </TableCell>
@@ -817,7 +818,7 @@ const handleGoldRowChange = (i, field, val) => {
                             onWheel={(e) => e.target.blur()}
                           />
                         </TableCell>
-                        <TableCell
+                        {/* <TableCell
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
                         >
@@ -846,15 +847,13 @@ const handleGoldRowChange = (i, field, val) => {
                               {itemDeliveryErrors[index]?.wastageType}
                             </span>
                           )}
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
                         >
-                          <input
-                            value={item?.wastageValue ?? ""}
-                            className="input itemInput"
-                            type="number"
+                          <select
+                            value={item?.wastageValue}
                             onChange={(e) =>
                               handleChangeDeliver(
                                 e.target.value,
@@ -862,8 +861,17 @@ const handleGoldRowChange = (i, field, val) => {
                                 index
                               )
                             }
-                            onWheel={(e) => e.target.blur()}
-                          />
+                            className="select-small"
+                           
+                          >
+                            <option value="">Select</option>
+                            {dropDownItems.masterWastage.map((option) => (
+                              <option key={option.id} value={option.wastage}>
+                                {option.wastage}
+                              </option>
+                            ))}
+                          </select>
+                          
                           <br></br>
                           {itemDeliveryErrors[index]?.wastageValue && (
                             <span className="error">
