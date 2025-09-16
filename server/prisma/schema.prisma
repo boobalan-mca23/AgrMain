@@ -43,6 +43,12 @@ model MasterTouch {
   createdAt DateTime @default(now())
 }
 
+model masterWastage {
+  id           Int    @id @default(autoincrement())
+  wastage      Float
+  createdAt    DateTime @default(now())
+}
+
 model JewelStock {
   id          Int      @id @default(autoincrement())
   jewelName   String
@@ -55,15 +61,13 @@ model JewelStock {
 }
 
 model Transaction {
-  id          Int      @id @default(autoincrement())
-  date        DateTime
-  type        String
-  logId       Int?
-  value       Float?
-  goldRate    Float?
-  purity      Float?
-  touch       Float?
-  rawGoldLogs RawGoldLogs?  @relation(fields: [logId], references: [id])
+  id         Int      @id @default(autoincrement())
+  date       DateTime
+  type       String
+  value      Float
+  goldRate   Float?
+  purity     Float
+  touch      Float?
   customer   Customer @relation(fields: [customerId], references: [id])
   customerId Int
   createdAt  DateTime @default(now())
@@ -267,7 +271,6 @@ model RawGoldLogs{
     receivedSections Receivedsection[]
     billReceive      billReceived[]
     receiptVoucher   receiptVoucher[]
-    transactions     Transaction[] 
 }
 model ProductStockLog{
   id                 Int           @id @default(autoincrement())
@@ -416,4 +419,3 @@ model customerBillBalance{
   createdAt    DateTime @default(now())
 
 }
-
