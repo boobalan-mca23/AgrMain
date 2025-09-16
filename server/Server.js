@@ -20,6 +20,7 @@ const rawGoldRoutes=require("./Routes/rawGoldStock.routes");
 const productStock=require("./Routes/productStock.routes");
 const billRoutes=require("./Routes/bill.routes")
 const receiptRoutes=require("./Routes/receipt.routes");
+const masterWastageRoutes = require("./Routes/masterwastage.routes")
 const path = require("path");
 
 require("dotenv").config();
@@ -46,6 +47,7 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/entries", entryRoutes);
 app.use("/api/customerOrder", customerOrderRoutes);
 app.use("/api/master-touch", masterTouchRoutes);
+app.use("/api/master-wastage", masterWastageRoutes);
 app.use("/api/master-bullion", masterBullionRoutes);
 app.use("/api/bullion-purchase", bullionPurchaseRoutes);
 app.use("/api/assignments", assignmentRoutes);
