@@ -21,7 +21,7 @@ const Customertrans = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [error, setError] = useState("");
   const [goldRate, setGoldRate] = useState("");
-  
+  const [masterTouch,setMasterTouch]=useState([])
   const [newTransaction, setNewTransaction] = useState({
     date: formattedToday ,
     value: "",
@@ -47,6 +47,16 @@ const Customertrans = () => {
       }
     };
 
+     const fetchTouch = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+        console.log('masterTouch',res.data)
+        setMasterTouch(res.data);
+      } catch (err) {
+        console.error("Failed to fetch touch values", err);
+      }
+    };
+    fetchTouch();
     fetchTransactions();
   }, [customerId]);
 
@@ -88,6 +98,17 @@ const Customertrans = () => {
     try {
       if (!newTransaction.date || newTransaction.type === "Select") {
         throw new Error("Date and transaction type are required");
+      }
+      if(newTransaction.type==="Cash"){
+        if(!newTransaction.cashValue || !goldRate){
+          throw new Error("Cash value and goldRate are required");
+        }
+      }
+
+       if(newTransaction.type==="Gold"){
+        if(!newTransaction.goldValue || !newTransaction.touch){
+          throw new Error("gold value and touch are required");
+        }
       }
 
       if (!customerId) {
@@ -291,7 +312,35 @@ const Customertrans = () => {
                   </label>
                   <label>
                     Touch (%):
-                    <input
+                      {/* <select
+                      value={row.touch}
+                      onChange={(e) =>
+                        handleReceivedRowChange(i, "touch", e.target.value)
+                      }
+                      className="input-small"
+                      // disabled={isLoading || !isItemDeliveryEnabled}
+                    >
+                      <option value="">Select</option>
+                      {dropDownItems.touchList.map((option) => (
+                        <option key={option.id} value={option.touch}>
+                          {option.touch}
+                        </option>
+                      ))}
+                    </select> */}
+                    <select
+                      value={newTransaction.touch}
+                      onChange={handleChange}
+                      name="touch"
+                     >
+                      <option value="">Select</option>
+                      
+                      {masterTouch.map((option)=>(
+                        <option key={option.id} value={option.touch}>
+                          {option.touch}
+                        </option>
+                      ))}
+                    </select>
+                    {/* <input
                       type="number"
                       name="touch"
                       value={newTransaction.touch}
@@ -299,7 +348,8 @@ const Customertrans = () => {
                       min="0"
                       max="100"
                       step="0.01"
-                    />
+                      required
+                    /> */}
                   </label>
                   <label>
                     Purity (grams):
@@ -314,7 +364,7 @@ const Customertrans = () => {
               )}
 
               <div className="form-actions">
-                <button type="submit" className="save-btn" onClick={addTransaction}>
+                <button type="button" className="save-btn" onClick={addTransaction}>
                   Save
                 </button>
                 <button

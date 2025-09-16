@@ -42,6 +42,12 @@ model MasterTouch {
   rawGoldStock   RawgoldStock[]
   createdAt DateTime @default(now())
 }
+model masterWastage {
+  id           Int    @id @default(autoincrement())
+  wastage      Float
+  createdAt    DateTime @default(now())
+}
+
 
 model JewelStock {
   id          Int      @id @default(autoincrement())
@@ -256,6 +262,7 @@ model RawgoldStock{
   masterTouch MasterTouch?  @relation(fields: [touchId], references: [id])
   rawGoldLogs RawGoldLogs[]
 }
+
 model RawGoldLogs{
     id               Int           @id @default(autoincrement())
     rawGoldStockId   Int

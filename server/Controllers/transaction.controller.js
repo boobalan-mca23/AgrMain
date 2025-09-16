@@ -1,7 +1,7 @@
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-
+const transToRawGold=require('../Utils/addRawGoldStock')
 const createTransaction = async (req, res) => {
   try {
     const { date, type, value, touch, purity, customerId, goldRate } = req.body;
@@ -9,25 +9,11 @@ const createTransaction = async (req, res) => {
     if (!date || !type || !value || !customerId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
-    console.log('req body',req.body)
+   
+      const transaction=await transToRawGold.transactionToRawGold(date, type, value, touch, purity, customerId, goldRate )
+     console.log('transaction form return function',transaction)
 
-    // const transaction = await prisma.transaction.create({
-    //   data: {
-    //     date: new Date(date),
-    //     type,
-    //     value: parseFloat(value),
-    //     goldRate: type === "Cash" ? parseFloat(goldRate) : null,
-    //     purity: parseFloat(purity),
-    //     touch: type === "Gold" ? parseFloat(touch) : null,
-    //     customer: {
-    //       connect: {
-    //         id: parseInt(customerId),
-    //       },
-    //     },
-    //   },
-    // });
-
-    // res.status(201).json(transaction);
+    res.status(201).json(transaction);
   } catch (error) {
     console.error("Error creating transaction:", error);
     res.status(500).json({ error: "Internal server error" });
