@@ -1277,22 +1277,19 @@ const Billing = () => {
             </Box>
 
             <Box className="balance-info">
-              {previousBalance > 0 ? (
-                <div className="negative">
-                  Opening Balance: {toFixedStr(previousBalance, 3)}
-                </div>
-              ) : previousBalance < 0 ? (
-                <div className="positive">
-                  Excess Balance: {toFixedStr(Math.abs(previousBalance), 3)}
-                </div>
-              ) : (
-                <div className="neutral">Balance: 0.000</div>
+                  {previousBalance > 0 ? (
+                  <div className="negative"> Opening Balance: {toFixedStr(previousBalance, 3)} </div>
+                  ) : previousBalance < 0 ? (
+                  <div className="positive"> Excess Balance: {toFixedStr(Math.abs(previousBalance), 3)} </div>
+                  ) : (
+                  <div className="neutral">Balance: 0.000</div>
+                  )}
+                  <div>FWT: {toFixedStr(FWT, 3)}</div>
+                  {previousBalance > 0 ? (
+                  <div>Total FWT:{" "} {toFixedStr(toNumber(FWT) + toNumber(previousBalance), 3)}</div>
+                  ):(
+                <div>Total FWT:{" "} {toFixedStr(toNumber(FWT) - toNumber(previousBalance), 3)}</div>
               )}
-              <div>FWT: {toFixedStr(FWT, 3)}</div>
-              <div>
-                Total FWT:{" "}
-                {toFixedStr(toNumber(FWT) - toNumber(previousBalance), 3)}
-              </div>
             </Box>
           </Box>
 

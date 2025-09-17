@@ -70,6 +70,7 @@ function JobCardDetails() {
   const [edit, setEdit] = useState(false);
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [isStock,setIsStock]=useState("")
 
   const paginatedData = jobCards.slice(
     page * rowsPerPage,
@@ -146,6 +147,21 @@ const currentPageTotal = paginatedData.reduce(
     console.log('rawGoldStock',rawGoldStock)
   };
 
+  const handleSaveStock=async()=>{
+    
+    const payLoad={
+      "jobCardId":jobCardId, // job cardId
+      "itemDelivery":itemDelivery
+    }
+    try{
+      const response=await axios.post(`${BACKEND_SERVER_URL}/api/assignments/stock`,payLoad)
+
+    }catch(err){
+       toast.error(err.response.data.error);
+    }
+
+  }
+
   const handleFilterJobCard = (id, index) => {
     setJobCardId(id);
     setJobCardIndex(index);
@@ -153,7 +169,7 @@ const currentPageTotal = paginatedData.reduce(
     const filteredJobcard = copy.filter((item, _) => item.id === id);
 
     const deepClone=(obj)=>JSON.parse(JSON.stringify(obj))
-
+    setIsStock(filteredJobcard[0]?.stockIsMove)
     setDescription(deepClone(filteredJobcard[0]?.description || ""));
     setGivenGold(deepClone(filteredJobcard[0]?.givenGold || []));
     setItemDelivery(deepClone(filteredJobcard[0]?.deliveries || []));
@@ -220,7 +236,7 @@ const currentPageTotal = paginatedData.reduce(
         jobCardBalance,
         openingBalance,
       },
-      rawGoldStock
+ 
     };
     console.log('payload',payload)
     try {
@@ -587,8 +603,10 @@ const currentPageTotal = paginatedData.reduce(
         handleCloseJobcard={handleCloseJobcard}
         handleSaveJobCard={handleSaveJobCard}
         handleUpdateJobCard={handleUpdateJobCard}
+        handleSaveStock={handleSaveStock}
         lastJobCardId={jobCards?.at(-1)?.total[0]?.jobcardId}
         lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
+        isStock={isStock}
       />
 
      

@@ -83,7 +83,7 @@ const Master = () => {
             onClick={() => handleTabChange("goldsmith")}
             style={getNavButtonStyle("goldsmith")}
           >
-            Goldsmith
+            Goldsmith Info
           </button>
  
           <button
