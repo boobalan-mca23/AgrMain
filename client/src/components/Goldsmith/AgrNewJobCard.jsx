@@ -51,10 +51,12 @@ function AgrNewJobCard({
   jobCardLength,
   handleSaveJobCard,
   handleUpdateJobCard,
+  handleSaveStock,
   open,
   jobCardId,
   lastJobCardId,
   lastIsFinish,
+  isStock
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
@@ -249,6 +251,12 @@ const handleGoldRowChange = (i, field, val) => {
     0
   );
 
+  const handleStock=()=>{  
+    let isTrue=window.confirm("Do you want to move these items to stock? Once the items are moved, the job card will be closed.")  
+    if(isTrue){
+      handleSaveStock()
+    }
+  }
   const handleSave = () => {
   const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
   const existStock = checkAvailabilityStock(rawGoldStock);
@@ -528,7 +536,15 @@ const handleGoldRowChange = (i, field, val) => {
 
           {/* Item Delivery Section */}
           <div className="section" style={{ opacity: edit ? 1 : 0.5 }}>
-            <h4 className="section-title">Item Delivery</h4>
+            <div className="itemTitleSection">
+            <div>
+              <h4 className="section-title">Item Delivery</h4>
+            </div>
+             {edit && 
+             <div >
+              <button className="itemTitlebtn" onClick={handleStock} disabled={isStock?true:false}>Move To Stock</button>
+            </div>}
+            </div>
             <TableContainer component={Paper} className="jobCardContainer">
               <Table
                 size="small"
@@ -1101,15 +1117,7 @@ const handleGoldRowChange = (i, field, val) => {
             </div>
             <button
               disabled={
-                edit
-                  ? !lastJobCardId
-                    ? true // If lastJobCard doesn't exist yet, disable the button
-                    : jobCardId !== lastJobCardId
-                    ? true
-                    : lastIsFinish === "false"
-                    ? false
-                    : true
-                  : true // if edit is false the button is disable in add new jobcard
+                edit? lastJobCardId===jobCardId ?false:true:false
               }
               onClick={() =>
                 setReceivedMetalReturns([
@@ -1166,7 +1174,7 @@ const handleGoldRowChange = (i, field, val) => {
       />
         </DialogContent>
         <DialogActions className="actionButton">
-          <Button autoFocus onClick={handleSave}>
+          <Button autoFocus onClick={handleSave} disabled={edit ? lastIsFinish==="true" ||isStock?true:false:false}>
             {edit ? "Update" : "Save"}
           </Button>
           <Button autoFocus onClick={handleCloseJobcard}>

@@ -55,11 +55,11 @@ const Goldsmith = () => {
   const [receivedMetalReturns, setReceivedMetalReturns] = useState([
     { weight: "", touch: "", purity: "" },
   ]);
-  const [dropDownItems,setDropDownItems]=useState({masterItems:[],touchList:[]})
+  const [dropDownItems,setDropDownItems]=useState({masterItems:[],touchList:[],masterWastage:[]})
   const [jobCardError, setJobCardError] = useState({});
   const [jobCardId, setJobCardId] = useState(null);
   const [noJobCard, setNoJobCard] = useState({});
-  
+  const [isStock,setIsStock]=useState("")
   const [openingBalance, setOpeningBalance] = useState(0);
   const [rawGoldStock, setRawGoldStock]=useState([])
 
@@ -104,8 +104,17 @@ const Goldsmith = () => {
         console.error("Failed to fetch touch values", err);
       }
     };
+    const fetchWastageVal = async () => {
+        try {
+          const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`);
+         console.log("wastage fecth test:",res.data)
+         setDropDownItems((prev) => ({ ...prev, masterWastage: res.data }));
+        } catch (err) {
+          console.error("Failed to fetch touch values", err);
+        }
+      };
     
-    
+    fetchWastageVal();
     fetchRawGold();
     fetchMasterItems();
     fetchTouch();
@@ -142,6 +151,20 @@ const handleCloseJobcard = () => {
     },])
     setReceivedMetalReturns([])
   };
+  const handleSaveStock=async()=>{
+    
+    const payLoad={
+      "jobCardId":jobCardId, // job cardId
+      "itemDelivery":itemDelivery
+    }
+    try{
+      const response=await axios.post(`${BACKEND_SERVER_URL}/api/assignments/stock`,payLoad)
+      
+    }catch(err){
+       toast.error(err.response.data.error);
+    }
+
+  }
   const handleUpdateJobCard = async (
     givenTotal,
     deliveryTotal,
@@ -236,6 +259,7 @@ const handleCloseJobcard = () => {
               setSelectedName(data.jobcard[0].goldsmith);
               setOpeningBalance(data.jobcard[0].total[0].openingBalance);
               setLastJobCard(data.lastJobCard)
+              setIsStock(data.jobcard[0].stockIsMove)
               setOpen(true);
               setEdit(true);
               setNoJobCard({});
@@ -398,8 +422,10 @@ const handleCloseJobcard = () => {
           open={open}
           handleCloseJobcard={handleCloseJobcard}
           handleUpdateJobCard={handleUpdateJobCard}
+          handleSaveStock={handleSaveStock}
           lastJobCardId={lastJobCard.jobcardId}
           lastIsFinish={lastJobCard.isFinished}
+          isStock={isStock}
         />
 
      

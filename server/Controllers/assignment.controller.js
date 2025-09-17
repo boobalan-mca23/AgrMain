@@ -2,49 +2,141 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const reduceGold=require('../Utils/reduceRawGold')
 const addRawGold=require('../Utils/addRawGoldStock')
-const itemToStock = async () => {
-  const items = await prisma.itemDelivery.findMany({
-    include: {
-      deduction: true, // bring all deductions for each delivery
+
+
+// helper function itemDelivery in jobCard
+
+const moveToItemDelivery=async(itemDelivery,jobCardId,goldSmithId)=>{
+
+  if (itemDelivery.length >= 1) {
+      for (const item of itemDelivery) {
+        if (item?.id) {
+          //itemDelivery update if id is there or create
+
+          const updateItemDel = await prisma.itemDelivery.update({
+            where: {
+              id: item.id,
+            },
+            data: {
+              itemName: item?.itemName,
+              itemWeight: parseFloat(item?.itemWeight) || 0,
+              count:parseInt(item?.count)||0,
+              touch: parseFloat(item?.touch) || 0,
+              sealName: item?.sealName,
+              netWeight: parseFloat(item?.netWeight) || 0,
+              // wastageType: item?.wastageType,
+              wastageValue: parseFloat(item?.wastageValue) || 0,
+              wastagePure: parseFloat(item?.wastagePure) || 0,
+              finalPurity: parseFloat(item.finalPurity) || 0,
+            },
+          });
+
+          // if dedcution id is there update or create
+          if (item.deduction.length >= 1) {
+            for (const ded of item.deduction) {
+              const data = {
+                deliveryId: updateItemDel.id,
+                type: ded.type || null,
+                weight: parseFloat(ded.weight) || 0,
+                stoneWt: parseFloat(ded.stoneWt) || 0,
+              };
+              if (ded.id) {
+                await prisma.deduction.update({
+                  where: {
+                    id: ded.id,
+                  },
+                  data,
+                });
+              } else {
+                await prisma.deduction.create({ data });
+              }
+            }
+          }
+        } else {
+          // itemDelivery create
+          let deductionArr = [];
+
+          if (item.deduction && item.deduction.length >= 1) {
+            deductionArr = item.deduction.map((dely) => ({
+              weight: parseFloat(dely.weight) || 0,
+              type: dely.type || null,
+            }));
+          }
+
+          await prisma.itemDelivery.create({
+            data: {
+              goldsmithId: parseInt(goldSmithId),
+              jobcardId: parseInt(jobCardId),
+              itemName: item?.itemName,
+              count:parseInt(item?.count)||0,
+              itemWeight: parseFloat(item?.itemWeight) || 0,
+              touch: parseFloat(item?.touch) || 0,
+              sealName: item?.sealName,
+              netWeight: parseFloat(item?.netWeight) || 0,
+              // wastageType: item?.wastageType,
+              wastageValue: parseFloat(item?.wastageValue) || 0,
+              wastagePure: parseFloat(item?.wastagePure) || 0,
+              finalPurity: parseFloat(item.finalPurity) || 0,
+              ...(deductionArr.length > 0 && {
+                deduction: {
+                  create: deductionArr,
+                },
+              }),
+            },
+          });
+        }
+      }
+     
+    }
+
+}
+
+
+const itemToStock = async (jobcardId) => {
+   const itemDelivery=await prisma.itemDelivery.findMany({
+    where:{
+     jobcardId:parseInt(jobcardId)
     },
-  });
+    include:{
+      deduction:true
+  }
+  })
 
   // group by itemName + touch
-  const grouped = items.reduce((acc, item) => {
-    const key = `${item.itemName}-${item.touch}`;
+  const grouped = itemDelivery.reduce((acc, item) => {
+    const key = `${item.itemName}-${item.touch}-${item.wastageValue}`;
      
-    if (!acc[key]) {
+     if (!acc[key]) {
       acc[key] = {
-
+     
         jobcardId: item.jobcardId,
         itemName: item.itemName,
+        wastageValue:item.wastageValue,
         touch: item.touch,
         totalItemWeight: 0,
         totalWastagePure:0,
         totalFinalPurity: 0,
-        totalWastageValue: 0,
         totalStoneWeight: 0,
         count: 0,
       };
     }
 
-    acc[key].totalItemWeight += item.itemWeight || 0;
-    acc[key].totalFinalPurity += item.finalPurity || 0; 
-    acc[key].totalWastageValue += item.wastageValue || 0;
-    acc[key].totalWastagePure += item.wastagePure || 0;
-    acc[key].count +=item.count ||0;
+    acc[key].totalItemWeight += parseFloat(item.itemWeight) || 0;
+    acc[key].totalFinalPurity += parseFloat(item.finalPurity) || 0; 
+    acc[key].totalWastagePure += parseFloat(item.wastagePure) || 0;
+    acc[key].count +=parseInt(item.count) ||0;
     acc[key].totalStoneWeight += item.deduction.reduce(
       
-      (sum, d) => sum + (d.weight  || 0),
+      (sum, d) => sum + (parseFloat(d.weight)  || 0),
       0
     );
     
-
-    return acc;
+   return acc;
   }, {});
 
   let stockInformation = Object.values(grouped);
-   console.log('stockInformation',stockInformation)
+   console.log('stockInformation',Object.values(grouped))
+
    await prisma.productStock.deleteMany({}) //
 
   for (const stockItem of stockInformation) {
@@ -52,6 +144,7 @@ const itemToStock = async () => {
       where: {
         itemName: stockItem.itemName,
         touch: stockItem.touch,
+        wastageValue:stockItem.wastageValue
       },
       select: { id: true },
     });
@@ -64,9 +157,9 @@ const itemToStock = async () => {
           itemWeight: stockItem.totalItemWeight,
           count:stockItem.count,
           touch: stockItem.touch,
+          wastageValue:stockItem.wastageValue,
           stoneWeight: stockItem.totalStoneWeight,
           wastagePure:stockItem.totalWastagePure,
-          wastageValue: stockItem.totalWastageValue,
           finalWeight: stockItem.totalFinalPurity ,
         },
       });
@@ -79,13 +172,24 @@ const itemToStock = async () => {
           count:stockItem.count,
           touch: stockItem.touch,
           stoneWeight: stockItem.totalStoneWeight,
-          wastageValue: stockItem.totalWastageValue,
+          wastageValue: stockItem.wastageValue,
           wastagePure:stockItem.totalWastagePure,
           finalWeight: stockItem.totalFinalPurity,
         },
       });
     }
   }
+    await prisma.$transaction([
+  prisma.jobcard.update({
+    where: { id: parseInt(jobcardId) },
+    data: { stockIsMove: true }
+  }),
+  prisma.total.update({
+    where: { jobcardId: parseInt(jobcardId) },
+    data: { isFinished: true }
+  })
+]);
+
 };
 
 // helper function to update nextJobCardBalance
@@ -200,7 +304,7 @@ const createJobcard = async (req, res) => {
 // main controllers
 const updateJobCard = async (req, res) => {
   const { goldSmithId, jobCardId } = req.params;
-  const { description, givenGold, itemDelivery, receiveSection, total,rawGoldStock } =req.body;
+  const { description, givenGold, itemDelivery, receiveSection, total, } =req.body;
   console.log("update controller", req.body);
   try {
     const goldsmithInfo = await prisma.goldsmith.findUnique({
@@ -264,94 +368,16 @@ const updateJobCard = async (req, res) => {
     });
 
     // update given gold information
-
     await reduceGold.reduceRawGold(givenGold,jobCardId,goldSmithId)
     
     // update itemDelivery information
-    if (itemDelivery.length >= 1) {
-      for (const item of itemDelivery) {
-        if (item?.id) {
-          //itemDelivery update if id is there or create
-
-          const updateItemDel = await prisma.itemDelivery.update({
-            where: {
-              id: item.id,
-            },
-            data: {
-              itemName: item?.itemName,
-              itemWeight: parseFloat(item?.itemWeight) || 0,
-              count:parseInt(item?.count)||0,
-              touch: parseFloat(item?.touch) || 0,
-              sealName: item?.sealName,
-              netWeight: parseFloat(item?.netWeight) || 0,
-              // wastageType: item?.wastageType,
-              wastageValue: parseFloat(item?.wastageValue) || 0,
-              wastagePure: parseFloat(item?.wastagePure) || 0,
-              finalPurity: parseFloat(item.finalPurity) || 0,
-            },
-          });
-
-          // if dedcution id is there update or create
-          if (item.deduction.length >= 1) {
-            for (const ded of item.deduction) {
-              const data = {
-                deliveryId: updateItemDel.id,
-                type: ded.type || null,
-                weight: parseFloat(ded.weight) || 0,
-                stoneWt: parseFloat(ded.stoneWt) || 0,
-              };
-              if (ded.id) {
-                await prisma.deduction.update({
-                  where: {
-                    id: ded.id,
-                  },
-                  data,
-                });
-              } else {
-                await prisma.deduction.create({ data });
-              }
-            }
-          }
-        } else {
-          // itemDelivery create
-          let deductionArr = [];
-
-          if (item.deduction && item.deduction.length >= 1) {
-            deductionArr = item.deduction.map((dely) => ({
-              weight: parseFloat(dely.weight) || 0,
-              type: dely.type || null,
-            }));
-          }
-
-          await prisma.itemDelivery.create({
-            data: {
-              goldsmithId: parseInt(goldSmithId),
-              jobcardId: parseInt(jobCardId),
-              itemName: item?.itemName,
-              count:parseInt(item?.count)||0,
-              itemWeight: parseFloat(item?.itemWeight) || 0,
-              touch: parseFloat(item?.touch) || 0,
-              sealName: item?.sealName,
-              netWeight: parseFloat(item?.netWeight) || 0,
-              // wastageType: item?.wastageType,
-              wastageValue: parseFloat(item?.wastageValue) || 0,
-              wastagePure: parseFloat(item?.wastagePure) || 0,
-              finalPurity: parseFloat(item.finalPurity) || 0,
-              ...(deductionArr.length > 0 && {
-                deduction: {
-                  create: deductionArr,
-                },
-              }),
-            },
-          });
-        }
-      }
-      await itemToStock(); // product stock
-    }
+    await moveToItemDelivery(itemDelivery,jobCardId,goldSmithId)
+  
     // receive section update and create
     await addRawGold.jobCardtoRawGoldStock(receiveSection, goldSmithId, jobCardId);
-
-    await updateNextJobBalance(totalOfJobcard.id, goldSmithId); // update nextJobCardNBalance
+   
+    // update nextJobCardNBalance
+    await updateNextJobBalance(totalOfJobcard.id, goldSmithId);
 
     if (
       totalOfJobcard.jobCardBalance === 0 ||
@@ -591,6 +617,17 @@ const jobCardFilter = async (req, res) => {
   }
 };
 
+const movetoStock=async(req,res)=>{
+    const {jobCardId,goldSmithId,itemDelivery}=req.body 
+     console.log('jobCardId:',jobCardId)
+     console.log('goldSmithId:',parseInt(goldSmithId))
+     console.log('itemDelivery',itemDelivery)
+
+    // // first we need to save itemDelivery
+    await moveToItemDelivery(jobCardId,goldSmithId,itemDelivery)
+    // // then we need to store stock
+    await itemToStock(jobCardId)    
+}
 
 
 module.exports = {
@@ -600,4 +637,5 @@ module.exports = {
   getJobCardById,
   getPreviousJobCardBal,
   jobCardFilter,
+  movetoStock
 };
