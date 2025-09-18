@@ -382,17 +382,17 @@ const currentPageTotal = paginatedData.reduce(
                   {jobCards.at(-1).total[0].jobCardBalance > 0 ? (
                     <p style={{ color: "green", fontWeight: "bolder" }}>
                       Gold Smith Should Given{" "}
-                       <span className="goldSmithBalance">{parseFloat(jobCards.at(-1).total[0].jobCardBalance).toFixed(3)}g</span>
+                       <span className="goldSmithBalance">{jobCards.at(-1).total[0].jobCardBalance}g</span>
                     </p>
                   ) : jobCards.at(-1).total[0].jobCardBalance < 0 ? (
                     <p style={{ color: "red", fontWeight: "bolder" }}>
                       Owner Should Given{" "}
-                      <span className="goldSmithBalance">  {parseFloat(jobCards.at(-1).total[0].jobCardBalance).toFixed(3)} g</span>
+                      <span className="goldSmithBalance">  {jobCards.at(-1).total[0].jobCardBalance} g</span>
                     </p>
                   ) : (
                     <p style={{ color: "black", fontWeight: "bolder" }}>
                       Balance Nill:{" "}
-                     <span className="goldSmithBalance"> {parseFloat(jobCards.at(-1).total[0].jobCardBalance).toFixed(3)} g</span>
+                     <span className="goldSmithBalance"> {jobCards.at(-1).total[0].jobCardBalance} g</span>
                     </p>
                   )}
                 </div>
