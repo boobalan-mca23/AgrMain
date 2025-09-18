@@ -524,8 +524,8 @@ const handleGoldRowChange = (i, field, val) => {
                     <tr key={index+1}className="jobCardTouchTableBody">
                       <td>{index+1}</td>
                       <td>{rawStock.touch}</td>
-                      <td>{(rawStock.weight).toFixed(3)}</td>
-                      <td style={{backgroundColor:rawStock.remainingWt<0?"red":""}}>{(rawStock.remainingWt).toFixed(3)}</td>
+                      <td>{rawStock.weight}</td>
+                      <td style={{backgroundColor:rawStock.remainingWt<0?"red":""}}>{rawStock.remainingWt}</td>
                     </tr>
                    ))}
                 </tbody>
