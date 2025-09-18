@@ -326,3 +326,18 @@ input[type=number] {
   transform: translateY(-1px);
   box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.15);
 }
+.jobCardSaveBtn,.jobCardPrintBtn{
+  padding: 5px !important;
+  border: none !important;
+  border-radius: 2px !important;
+  cursor: pointer !important;
+  font-size: medium !important;
+}
+.jobCardSaveBtn{
+  background-color: green !important;
+  color: white !important;
+}
+.jobCardPrintBtn{
+  background-color: rgb(212, 69, 69) !important;
+  color: white !important ;
+}

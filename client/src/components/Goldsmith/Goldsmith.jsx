@@ -155,7 +155,8 @@ const handleCloseJobcard = () => {
     
     const payLoad={
       "jobCardId":jobCardId, // job cardId
-      "itemDelivery":itemDelivery
+      "itemDelivery":itemDelivery,
+      "goldSmithId":selectedName.id
     }
     try{
       const response=await axios.post(`${BACKEND_SERVER_URL}/api/assignments/stock`,payLoad)

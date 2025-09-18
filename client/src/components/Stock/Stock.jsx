@@ -194,9 +194,9 @@ const calculatewastgePure=(stock)=>{
             <tr>
               <td colSpan={2}><strong>Total</strong></td>
               <td><strong>{(currentPageTotal.itemWt).toFixed(3)}</strong></td>
-              <td colSpan={4}></td>
+              <td colSpan={5}></td>
               <td><strong>{(currentPageTotal.finalWt).toFixed(3)}</strong></td>
-              <td></td>
+          
             </tr>
           </tfoot>
         </table>):(<p style={{textAlign:"center",color:"red",fontSize:"larger"}}>No Stock Information</p>)

@@ -73,7 +73,7 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
           await tx.rawGoldLogs.update({
             where: { id: receive.logId },
             data: {
-              weight: data.gold,
+              weight: data.type === "Cash" ? data.purity :data.gold,
               touch: data.touch,
               purity: data.purity,
             },
@@ -86,7 +86,7 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
         } else {
           // Find stock by touch
           const stock = await tx.rawgoldStock.findFirst({
-            where: { touch: data.type === "GoldRate" ? 100 : parseFloat(data.touch) || 0,  },
+            where: { touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0,  },
             select: { id: true },
           });
 
@@ -98,10 +98,8 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
           const rawGoldLog = await tx.rawGoldLogs.create({
             data: {
               rawGoldStockId: stock.id,
-              weight: data.type === "GoldRate"
-              ? (100 / parseFloat(data.purity)) * 100
-              : parseFloat(data.gold) || 0,
-              touch: data.type === "GoldRate" ? 100 : parseFloat(data.touch) || 0, 
+              weight: data.type === "Cash"?parseFloat(data.purity): parseFloat(data.gold) || 0,
+              touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0, 
               purity: data.purity,
             },
           });
@@ -145,9 +143,9 @@ const receiptMoveToRawGold = async (received,customerId) => {
           await tx.rawGoldLogs.update({
             where: { id: receive.logId },
             data: {
-              weight: data.gold,
-              touch: data.touch,
-              purity: data.purity,
+              weight:data.type==="Cash" ? data.purity:data.gold,
+              touch:data.touch,
+              purity:data.purity,
             },
           });
 
@@ -170,11 +168,9 @@ const receiptMoveToRawGold = async (received,customerId) => {
           const rawGoldLog = await tx.rawGoldLogs.create({
             data: {
               rawGoldStockId: stock.id,
-              weight: data.type === "Cash"
-              ? (100 / parseFloat(data.purity)) * 100
-              : parseFloat(data.gold) || 0,
-              touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0, 
-              purity: data.purity,
+              weight:data.type ==="Cash" ?parseFloat(data.purity) :parseFloat(data.gold),
+              touch:data.type ==="Cash" ? 100 : parseFloat(data.touch) || 0, 
+              purity: parseFloat(data.purity),
             },
           });
 
@@ -264,9 +260,7 @@ const transactionToRawGold=async(date, type, value, touch, purity, customerId, g
          const rawGoldLog = await prisma.rawGoldLogs.create({
             data: {
               rawGoldStockId: stock.id,
-              weight:type === "Cash"
-              ? (100 / parseFloat(purity)) * 100
-              : parseFloat(value) || 0,
+              weight:type==="Cash" ? parseFloat(purity) :parseFloat(value)|| 0,
               touch: type === "Cash" ? 100 : parseFloat(touch) || 0, 
               purity:purity||0,
             },
@@ -274,7 +268,6 @@ const transactionToRawGold=async(date, type, value, touch, purity, customerId, g
 
   const transaction= await prisma.transaction.create({
       data: {
-        
         date: new Date(date),
         type,
         value: parseFloat(value)||0,
@@ -313,8 +306,6 @@ module.exports={
   receiptMoveToRawGold,
   jobCardtoRawGoldStock,
   transactionToRawGold
-
-  
 }
 
 
