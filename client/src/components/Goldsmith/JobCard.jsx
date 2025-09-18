@@ -96,7 +96,7 @@ const currentPageTotal = paginatedData.reduce(
 
   const handleOpenJobcard = async () => {
     setOpen(true);
-
+    setEdit(false);
     try {
       const res = await axios.get(
         `${BACKEND_SERVER_URL}/api/assignments/${id}/lastBalance` // this id is GoldSmithId
@@ -151,11 +151,32 @@ const currentPageTotal = paginatedData.reduce(
     
     const payLoad={
       "jobCardId":jobCardId, // job cardId
-      "itemDelivery":itemDelivery
+      "itemDelivery":itemDelivery,
+      "goldSmithId":id
     }
     try{
       const response=await axios.post(`${BACKEND_SERVER_URL}/api/assignments/stock`,payLoad)
-
+      handleCloseJobcard();
+      setGivenGold([{ weight: "", touch: "", purity: "" }]);
+      setDescription("");
+      setItemDelivery([
+        {
+          itemName: "",
+          itemWeight: "",
+          count:"",
+          touch: "",
+          deduction: [{ type: "", weight: "" }],
+          netWeight: "",
+          wastageType: "",
+          wastageValue: "",
+          wastagePure:"",
+          finalPurity: "",
+        },
+      ]);
+      setReceivedMetalReturns([]);
+      setJobCards(response.data.allJobCards);
+      console.log('update response',response)
+      toast.success(response.data.message,{autoClose:2000})
     }catch(err){
        toast.error(err.response.data.error);
     }
@@ -338,19 +359,46 @@ const currentPageTotal = paginatedData.reduce(
 
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 2,
-              mb: 3,
+              display: "flex",
+              alignItems:"center",
+              justifyContent:"space-between"
             }}
           >
-            <div>
+    
               <Box sx={{ pl: 2 }}>
                 <Typography>
                   <b>Name:</b> {name}
                 </Typography>
               </Box>
-            </div>
+
+              <Box 
+                sx={{
+                 fontSize:"20px"
+                }}
+               >
+                {jobCards.length > 0 &&
+                  jobCards.at(-1)?.total?.length > 0 && (
+                <div>
+                  {jobCards.at(-1).total[0].jobCardBalance > 0 ? (
+                    <p style={{ color: "green", fontWeight: "bolder" }}>
+                      Gold Smith Should Given{" "}
+                       <span className="goldSmithBalance">{parseFloat(jobCards.at(-1).total[0].jobCardBalance).toFixed(3)}g</span>
+                    </p>
+                  ) : jobCards.at(-1).total[0].jobCardBalance < 0 ? (
+                    <p style={{ color: "red", fontWeight: "bolder" }}>
+                      Owner Should Given{" "}
+                      <span className="goldSmithBalance">  {parseFloat(jobCards.at(-1).total[0].jobCardBalance).toFixed(3)} g</span>
+                    </p>
+                  ) : (
+                    <p style={{ color: "black", fontWeight: "bolder" }}>
+                      Balance Nill:{" "}
+                     <span className="goldSmithBalance"> {parseFloat(jobCards.at(-1).total[0].jobCardBalance).toFixed(3)} g</span>
+                    </p>
+                  )}
+                </div>
+              )}
+              </Box>
+       
           </Box>
 
           <Divider sx={{ my: 2 }} />
@@ -375,6 +423,7 @@ const currentPageTotal = paginatedData.reduce(
               New Job Card
             </Button>
           </Box>
+            
           {paginatedData.length === 0 ? (
             <Paper elevation={0} sx={{ p: 4, textAlign: "center" }}>
               <Typography variant="h6" color="textSecondary">
@@ -457,7 +506,7 @@ const currentPageTotal = paginatedData.reduce(
                             </>
                           )}
 
-                          <td>
+                          <td >
                             {g?.createdAt
                               ? new Date(g?.createdAt).toLocaleDateString(
                                   "en-GB",

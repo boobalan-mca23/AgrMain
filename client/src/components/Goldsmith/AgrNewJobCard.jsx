@@ -524,8 +524,8 @@ const handleGoldRowChange = (i, field, val) => {
                     <tr key={index+1}className="jobCardTouchTableBody">
                       <td>{index+1}</td>
                       <td>{rawStock.touch}</td>
-                      <td>{rawStock.weight}</td>
-                      <td style={{backgroundColor:rawStock.remainingWt<0?"red":""}}>{rawStock.remainingWt}</td>
+                      <td>{(rawStock.weight).toFixed(3)}</td>
+                      <td style={{backgroundColor:rawStock.remainingWt<0?"red":""}}>{(rawStock.remainingWt).toFixed(3)}</td>
                     </tr>
                    ))}
                 </tbody>
@@ -620,6 +620,7 @@ const handleGoldRowChange = (i, field, val) => {
                           className="tableCell"
                         >
                           <select
+                            disabled={edit?false:true}
                             value={item?.itemName}
                             onChange={(e) =>
                               handleChangeDeliver(
@@ -698,6 +699,7 @@ const handleGoldRowChange = (i, field, val) => {
                           className="tableCell"
                         >
                           <select
+                            disabled={edit?false:true}
                             value={item?.touch}
                             onChange={(e) =>
                               handleChangeDeliver(
@@ -741,6 +743,7 @@ const handleGoldRowChange = (i, field, val) => {
                           <>
                             <TableCell className="tableCell">
                               <select
+                                disabled={edit?false:true}
                                 value={
                                   item?.deduction.length >= 1
                                     ? item?.deduction[0].type
@@ -869,6 +872,7 @@ const handleGoldRowChange = (i, field, val) => {
                           className="tableCell"
                         >
                           <select
+                            disabled={edit?false:true}
                             value={item?.wastageValue}
                             onChange={(e) =>
                               handleChangeDeliver(
@@ -949,6 +953,7 @@ const handleGoldRowChange = (i, field, val) => {
                             <TableRow key={i}>
                               <TableCell className="tableCell">
                                 <select
+                                  disabled={edit?false:true}
                                   value={s.type}
                                   onChange={(e) =>
                                     handleDeductionChange(
@@ -1078,6 +1083,7 @@ const handleGoldRowChange = (i, field, val) => {
                   <span className="operator">x</span>
                   <div>
                     <select
+                      disabled={edit?false:true}
                       value={row.touch}
                       onChange={(e) =>
                         handleReceivedRowChange(i, "touch", e.target.value)
@@ -1117,7 +1123,7 @@ const handleGoldRowChange = (i, field, val) => {
             </div>
             <button
               disabled={
-                edit? lastJobCardId===jobCardId ?false:true:false
+                edit? lastJobCardId===jobCardId ?false:true:true
               }
               onClick={() =>
                 setReceivedMetalReturns([
@@ -1161,7 +1167,7 @@ const handleGoldRowChange = (i, field, val) => {
               </p>
             )}
           </div>
-          <ToastContainer
+        <ToastContainer
         position="top-right"
         autoClose={2000}
         hideProgressBar={true}
@@ -1174,10 +1180,10 @@ const handleGoldRowChange = (i, field, val) => {
       />
         </DialogContent>
         <DialogActions className="actionButton">
-          <Button autoFocus onClick={handleSave} disabled={edit ? lastIsFinish==="true" ||isStock?true:false:false}>
+          <Button className="jobCardSaveBtn"autoFocus onClick={handleSave} disabled={edit ? lastIsFinish==="true" ||isStock?true:false:false}>
             {edit ? "Update" : "Save"}
           </Button>
-          <Button autoFocus onClick={handleCloseJobcard}>
+          <Button autoFocus onClick={handleCloseJobcard} className="jobCardPrintBtn">
             Print
           </Button>
         </DialogActions>

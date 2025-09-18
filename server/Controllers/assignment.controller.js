@@ -136,9 +136,6 @@ const itemToStock = async (jobcardId) => {
 
   let stockInformation = Object.values(grouped);
    console.log('stockInformation',Object.values(grouped))
-
-   await prisma.productStock.deleteMany({}) //
-
   for (const stockItem of stockInformation) {
     let exist = await prisma.productStock.findFirst({
       where: {
@@ -148,19 +145,19 @@ const itemToStock = async (jobcardId) => {
       },
       select: { id: true },
     });
-
+    console.log('exist',exist)
     if (exist) {
       await prisma.productStock.update({
         where: { id: exist.id },
         data: {
           itemName: stockItem.itemName,
-          itemWeight: stockItem.totalItemWeight,
-          count:stockItem.count,
-          touch: stockItem.touch,
+          itemWeight: {increment:stockItem.totalItemWeight},
+          count:{increment:stockItem.count},
+          touch:stockItem.touch,
+          stoneWeight:{increment:stockItem.totalStoneWeight},
           wastageValue:stockItem.wastageValue,
-          stoneWeight: stockItem.totalStoneWeight,
-          wastagePure:stockItem.totalWastagePure,
-          finalWeight: stockItem.totalFinalPurity ,
+          wastagePure:{increment:stockItem.totalWastagePure},
+          finalWeight:{increment:stockItem.totalFinalPurity},
         },
       });
     } else {
@@ -168,13 +165,13 @@ const itemToStock = async (jobcardId) => {
         data: {
           jobcardId: stockItem.jobcardId,
           itemName: stockItem.itemName,
-          itemWeight: stockItem.totalItemWeight,
+          itemWeight:stockItem.totalItemWeight,
           count:stockItem.count,
-          touch: stockItem.touch,
-          stoneWeight: stockItem.totalStoneWeight,
-          wastageValue: stockItem.wastageValue,
+          touch:stockItem.touch,
+          stoneWeight:stockItem.totalStoneWeight,
+          wastageValue:stockItem.wastageValue,
           wastagePure:stockItem.totalWastagePure,
-          finalWeight: stockItem.totalFinalPurity,
+          finalWeight:stockItem.totalFinalPurity,
         },
       });
     }
@@ -185,8 +182,8 @@ const itemToStock = async (jobcardId) => {
     data: { stockIsMove: true }
   }),
   prisma.total.update({
-    where: { jobcardId: parseInt(jobcardId) },
-    data: { isFinished: true }
+    where: { id: parseInt(jobcardId) },
+    data: { isFinished: "true" }
   })
 ]);
 
@@ -461,7 +458,7 @@ const getAllJobCardsByGoldsmithId = async (req, res) => {
       },
     });
     let jobCardLength = await prisma.jobcard.findMany();
-
+    console.log('len',jobCardLength.length+1)
     return res.status(200).json({
       goldsmith: {
         id: goldsmithInfo.id,
@@ -622,11 +619,34 @@ const movetoStock=async(req,res)=>{
      console.log('jobCardId:',jobCardId)
      console.log('goldSmithId:',parseInt(goldSmithId))
      console.log('itemDelivery',itemDelivery)
-
-    // // first we need to save itemDelivery
+     try{
+          // // first we need to save itemDelivery
     await moveToItemDelivery(jobCardId,goldSmithId,itemDelivery)
     // // then we need to store stock
     await itemToStock(jobCardId)    
+
+    const allJobCards = await prisma.jobcard.findMany({
+      where: {
+        goldsmithId: parseInt(goldSmithId),
+      },
+      include: {
+        givenGold: true,
+        deliveries: {
+          include: {
+            deduction: true,
+          },
+        },
+        received: true,
+        total: true,
+      },
+    });
+       res.status(200).json({ sucees: "true", message: "Stock Updated", allJobCards });
+     }catch(err){
+
+       console.log(err.message)
+       res.status(500).json({err:err.message})
+     }
+   
 }
 
 
