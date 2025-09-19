@@ -4,17 +4,17 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./Masteradditems.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
- 
+
 const MasterWastageVal = () => {
   const [wasteVal, setWasteVal] = useState("");
   const [wasteValList, setWasteValList] = useState([]);
   const [editId, setEditId] = useState(null);
   const [editValue, setEditValue] = useState("");
- 
+
   useEffect(() => {
     fetchWastageVal();
   }, []);
- 
+
   const fetchWastageVal = async () => {
     try {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`);
@@ -24,7 +24,7 @@ const MasterWastageVal = () => {
       console.error("Failed to fetch touch values", err);
     }
   };
- 
+
   const handleAddItem = async () => {
     if (!wasteVal) {
       toast.warn("Please enter a touch value.");
@@ -35,7 +35,7 @@ const MasterWastageVal = () => {
       await axios.post(`${BACKEND_SERVER_URL}/api/master-wastage/create`, {
         wastage: wasteVal,
       });
- 
+
       setWasteVal("");
       fetchWastageVal();
       toast.success("Touch value added successfully!");
@@ -44,7 +44,7 @@ const MasterWastageVal = () => {
       toast.error(err.response.data.msg,{autoClose:2000});
      }
   };
- 
+
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this touch value?")) {
       try {
@@ -57,41 +57,48 @@ const MasterWastageVal = () => {
       }
     }
   };
- 
+
   const handleEdit = (id, value) => {
     setEditId(id);
     setEditValue(value);
   };
- 
+
   const handleCancelEdit = () => {
     setEditId(null);
     setEditValue("");
   };
- 
-  const handleSaveEdit = async (id) => {
-    if (!editValue) {
-      toast.warn("Touch value cannot be empty.");
-      return;
-    }
-    try {
-      console.log("testing update", editValue)  
-      await axios.put(`${BACKEND_SERVER_URL}/api/master-wastage/${id}`, {
-        wastage: editValue,
-      });
-      toast.success("Touch value updated!");
-      setEditId(null);
-      setEditValue("");
-      fetchWastageVal();
-    } catch (err) {
-      console.error("Failed to update touch", err);
-      toast.error("Failed to update. Please try again.");
-    }
-  };
- 
+
+const handleSaveEdit = async (id) => {
+  if (!editValue) {
+    toast.warn("Wastage value cannot be empty.");
+    return;
+  }
+
+  const parsed = parseFloat(editValue);
+  if (isNaN(parsed)) {
+    toast.warn("Invalid wastage number.");
+    return;
+  }
+
+  try {
+    await axios.put(`${BACKEND_SERVER_URL}/api/master-wastage/${id}`, {
+      wastage: parsed,   //sending as number
+    });
+    toast.success("Wastage value updated!");
+    setEditId(null);
+    setEditValue("");
+    fetchWastageVal();
+  } catch (err) {
+    console.error("Failed to update wastage", err);
+    toast.error(err.response?.data?.msg || "Something went wrong");
+  }
+};
+
+
   return (
     <div className="master-container">
       <ToastContainer position="top-right" autoClose={2000} hideProgressBar />
- 
+
       <div className="add-item-form">
         <h2 style={{ textAlign: "center" }}>Add Wastage</h2>
         <label>Wastage:</label>
@@ -103,10 +110,10 @@ const MasterWastageVal = () => {
           onWheel={(e) => e.target.blur()}
           placeholder="Enter Wastage value"
         />
- 
+
         <button onClick={handleAddItem}>Add Wastage</button>
       </div>
- 
+
       <div className="item-list">
         <h2 style={{ textAlign: "center" }}>Wastage Entries</h2>
         {wasteValList.length > 0 ? (
@@ -209,5 +216,5 @@ const MasterWastageVal = () => {
     </div>
   );
 };
- 
+
 export default MasterWastageVal;
