@@ -34,12 +34,6 @@ const createTouch = async (req, res) => {
     });
       
     return res.status(201).json(newTouch);
-
-    
-    
-    
-
-  
 };
 
 const getTouch = async (req, res) => {
@@ -51,32 +45,35 @@ const getTouch = async (req, res) => {
   }
 };
 
-const updateTouch =  async (req, res) => {
+const updateTouch = async (req, res) => {
   const { id } = req.params;
-  const { touch } = req.body;
+  let { touch } = req.body;
+
   try {
+    const touchValue = parseFloat(touch);
+    if (isNaN(touchValue)) {
+      return res.status(400).json({ msg: "Invalid touch value" });
+    }
 
-
-
-      const ifExist=await prisma.masterTouch.findFirst({
-      where:{
-        touch
-        
-      }
-    })
-    if(ifExist){
-      return res.status(400).json({msg:"Touch Already Exist"})
+    const ifExist = await prisma.masterTouch.findFirst({
+      where: { touch: touchValue }
+    });
+    if (ifExist) {
+      return res.status(400).json({ msg: "Touch Already Exist" });
     }
 
     const updated = await prisma.masterTouch.update({
       where: { id: parseInt(id) },
-      data: { touch: parseFloat(touch) },
+      data: { touch: touchValue },
     });
+
     res.json(updated);
   } catch (err) {
+    console.error("Update failed:", err);
     res.status(500).json({ error: "Failed to update touch value" });
   }
-}
+};
+
 
 const deleteTouch =  async (req, res) => {
   const { id } = req.params;
