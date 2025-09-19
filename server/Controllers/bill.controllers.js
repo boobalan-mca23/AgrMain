@@ -15,6 +15,8 @@ const createBill = async (req, res) => {
     received,
     pureBalance,
     hallmarkBalance,
+    prevHallmark,
+    prevBalance,
   } = req.body;
   console.log("req  body in bill", req.body);
   try {
@@ -48,6 +50,8 @@ const createBill = async (req, res) => {
         customer_id: parseInt(customerId),
         billAmount: parseFloat(billTotal),
         hallMark: parseFloat(hallMark),
+        prevHallMark: parseFloat(prevHallmark),
+        PrevBalance: parseFloat(prevBalance),
         orders: { create: modifiyOrders },
       },
       include: {
