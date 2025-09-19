@@ -32,6 +32,9 @@ import {
   receiveRowValidation,
   checkAvailabilityStock
 } from "../jobcardvalidation/JobcardValidation";
+import "../PrintJobCard/PrintJobCard"
+import PrintJobCard from "../PrintJobCard/PrintJobCard";
+import ReactDOMServer from 'react-dom/server';
 function AgrNewJobCard({
   edit,
   handleCloseJobcard,
@@ -295,7 +298,50 @@ const handleGoldRowChange = (i, field, val) => {
     openingBalance
   );
 };
+  const handlePrint=()=>{
+     const printContent = (
+    <PrintJobCard
+      jobId={edit ? jobCardId : jobCardLength}
+      name={name}
+      date={today}
+      time={time}
+      description={description}
+      givenGold={givenGold}
+      totalGivenPure={totalInputPurityGiven} 
+      openingBalance={openingBalance}
+      totalGivenToGoldsmith={totalGivenToGoldsmith}
+      deliveries={itemDelivery}
+      received={receivedMetalReturns}
+      totalReceive={totalReceivedPurity}
+      jobCardBalance={jobCardBalance}
 
+    />
+  );
+
+  const printHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>JobCard Print</title>
+       
+      <body>
+        ${ReactDOMServer.renderToString(printContent)}
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              window.close();
+            }, 200);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+   const printWindow = window.open('', '_blank', 'width=1000,height=800');
+   printWindow.document.write(printHtml);
+   printWindow.document.close();
+
+  }
 
   useEffect(() => {
     const updateTime = () => {
@@ -1183,7 +1229,7 @@ const handleGoldRowChange = (i, field, val) => {
           <Button className="jobCardSaveBtn"autoFocus onClick={handleSave} disabled={edit ? lastIsFinish==="true" ||isStock?true:false:false}>
             {edit ? "Update" : "Save"}
           </Button>
-          <Button autoFocus onClick={handleCloseJobcard} className="jobCardPrintBtn">
+          <Button autoFocus onClick={handlePrint} className="jobCardPrintBtn">
             Print
           </Button>
         </DialogActions>
