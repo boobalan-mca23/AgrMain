@@ -59,7 +59,8 @@ function AgrNewJobCard({
   jobCardId,
   lastJobCardId,
   lastIsFinish,
-  isStock
+  isStock,
+  isFinished
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
@@ -255,14 +256,16 @@ const handleGoldRowChange = (i, field, val) => {
   );
 
   const handleStock=()=>{  
-    let isTrue=window.confirm("Do you want to move these items to stock? Once the items are moved, the job card will be closed.")  
+
+     let isTrue=window.confirm("Do you want to move these items to stock? Once the items are moved, the job card will be closed.")  
     if(isTrue){
       handleSaveStock()
     }
   }
-  const handleSave = () => {
+  const handleSave = (print = "noprint") => {
   const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
   const existStock = checkAvailabilityStock(rawGoldStock);
+
   if (edit) {
     const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
     const receivedIsTrue = receiveRowValidation(receivedMetalReturns, setReceivedErrors);
@@ -271,33 +274,49 @@ const handleGoldRowChange = (i, field, val) => {
       return toast.warn("Give Valid Information on Job Card");
     }
 
-     if (existStock.stock !== "ok") {
-       return toast.warn(`No Gold Stock in Touch ${existStock.touch}`);
-     }
+    if (existStock.stock !== "ok") {
+      return toast.warn(`No Gold Stock in Touch ${existStock.touch}`);
+    }
+    console.log('isFinished',isFinished)
+    if (print === "print") {
+      handlePrint();
+      if (isFinished === "false") {
+        handleUpdateJobCard(
+          totalInputPurityGiven,
+          totalFinishedPurity,
+          totalReceivedPurity,
+          jobCardBalance,
+          openingBalance
+        );
+      }
+    } else {
+      handleUpdateJobCard(
+        totalInputPurityGiven,
+        totalFinishedPurity,
+        totalReceivedPurity,
+        jobCardBalance,
+        openingBalance
+      );
+    }
+  } else {
+    //  this block will only run when adding a new job card
+    if (!goldIsTrue) {
+      return toast.warn("Give Valid Information on Job Card");
+    }
 
-    return handleUpdateJobCard(
-      totalInputPurityGiven,
-      totalFinishedPurity,
-      totalReceivedPurity,
-      jobCardBalance,
-      openingBalance
-    );
+    if (existStock.stock !== "ok") {
+      return toast.warn(`No Gold Stock Touch in ${existStock.touch}`);
+    }
+
+    if (print === "print") {
+      handlePrint();
+      handleSaveJobCard(totalInputPurityGiven, jobCardBalance, openingBalance);
+    } else {
+      handleSaveJobCard(totalInputPurityGiven, jobCardBalance, openingBalance);
+    }
   }
-
-  if (!goldIsTrue) {
-    return toast.warn("Give Valid Information on Job Card");
-  }
-
-  if (existStock.stock !== "ok") {
-    return toast.warn(`No Gold Stock Touch in ${existStock.touch}`);
-  }
-
-  handleSaveJobCard(
-    totalInputPurityGiven,
-    jobCardBalance,
-    openingBalance
-  );
 };
+
   const handlePrint=()=>{
      const printContent = (
     <PrintJobCard
@@ -311,6 +330,7 @@ const handleGoldRowChange = (i, field, val) => {
       openingBalance={openingBalance}
       totalGivenToGoldsmith={totalGivenToGoldsmith}
       deliveries={itemDelivery}
+      totalDelivery={totalFinishedPurity}
       received={receivedMetalReturns}
       totalReceive={totalReceivedPurity}
       jobCardBalance={jobCardBalance}
@@ -1078,7 +1098,7 @@ const handleGoldRowChange = (i, field, val) => {
                     itemName: "",
                     itemWeight: "",
                     touch: "",
-                    deduction: [{ type: "", weight: "" }],
+                    deduction: [],
                     netWeight: "",
                     wastageTyp: "",
                     wastageValue: "",
@@ -1225,11 +1245,11 @@ const handleGoldRowChange = (i, field, val) => {
         pauseOnHover
       />
         </DialogContent>
-        <DialogActions className="actionButton">
-          <Button className="jobCardSaveBtn"autoFocus onClick={handleSave} disabled={edit ? lastIsFinish==="true" ||isStock?true:false:false}>
+        <DialogActions className="actionButton"> 
+          <Button  className="jobCardSaveBtn"autoFocus onClick={()=>{handleSave()}} disabled={edit ? isFinished==="true" ||isStock?true:false:false}>
             {edit ? "Update" : "Save"}
           </Button>
-          <Button autoFocus onClick={handlePrint} className="jobCardPrintBtn">
+          <Button autoFocus onClick={()=>{handleSave("print")}} className="jobCardPrintBtn">
             Print
           </Button>
         </DialogActions>

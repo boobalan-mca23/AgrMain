@@ -12,6 +12,7 @@ const PrintJobCard = React.forwardRef((props, ref) => {
     openingBalance,
     totalGivenToGoldsmith,
     deliveries,
+    totalDelivery,
     received,
     totalReceive,
     jobCardBalance
@@ -32,12 +33,12 @@ const PrintJobCard = React.forwardRef((props, ref) => {
             <p>Date:{date}</p>
             <p>Time:{time}</p>
           </div>
-          <div style={styles.description}>
-            <span>Description:{description}</span>
+          <div>
+            <span><strong  style={styles.subTitle}>Description</strong>:{description}</span>
           </div>
 
           <div >
-            <span style={{ fontSize: "10px",borderBottom:"1px solid black" }}>Given Details:</span>
+            <span style={styles.subTitle}  ><strong>Given Details</strong>:</span>
             <div style={styles.goldSection}>
               {givenGold.map((item, index) => (
                 <div style={styles.goldFlex}>
@@ -58,17 +59,17 @@ const PrintJobCard = React.forwardRef((props, ref) => {
             </div>
           </div>
 
-          <div>
-            <span style={{ fontSize: "10px",borderBottom:"1px solid black" }}>
+          <div style={styles.balance}>
+            <span >
               <strong>Balance:</strong>
-              {openingBalance}{" "}
+              <strong> {openingBalance}{" "}</strong>
               {openingBalance >= 0 ? "(Open Bal)" : "(Excess Bal)"} +
-              {totalGivenPure}(totalGivenPure ) ={totalGivenToGoldsmith} (total)
+             <strong> {totalGivenPure}</strong>(totalGivenPure ) =<strong>{totalGivenToGoldsmith}</strong> (total)
             </span>
           </div>
           
         <div>
-          <span style={{ fontSize: "10px",borderBottom:"1px solid black" }}>Item Delivery:</span>
+          <span style={styles.subTitle}><strong>Item Delivery:</strong></span>
 
           <table style={styles.table}>
             <thead>
@@ -142,13 +143,17 @@ const PrintJobCard = React.forwardRef((props, ref) => {
               ))}
             </tbody>
           </table>
+            <div style={styles.totalpuritycontainer}>
+              <span style={styles.totalpuritylabel}>Total Purity:</span>
+              <span>{totalDelivery}</span>
+            </div>
         </div>
         <div>
 
         </div>
         
        <div >
-            <span style={{ fontSize: "10px",borderBottom:"1px solid black" }}>Received Details:</span>
+            <span style={styles.subTitle}><strong>Received Details:</strong></span>
             <div style={styles.goldSection}>
               {received.map((item, index) => (
                 <div style={styles.goldFlex}>
@@ -169,8 +174,6 @@ const PrintJobCard = React.forwardRef((props, ref) => {
             </div>
           </div>
        
-        </div>
-
         <div style={{ textAlign: "center" }}>
             {jobCardBalance < 0 ? (
               <p style={styles.balancetextowner}>
@@ -192,6 +195,8 @@ const PrintJobCard = React.forwardRef((props, ref) => {
             )}
           </div>
 
+        </div>
+
         {/* 
         
         
@@ -209,32 +214,31 @@ const styles = {
     border: "1px solid black",
     borderRadius: "5px",
     boxSizing: "border-box",
-    padding:"5px",
-    fontSize:"12px"
+    fontSize:"12px",
+    padding:"10px"
   },
   title: {
     textAlign: "center",
-    fontSize: "14px",
     fontWeight: "bold",
-    border: "1px solid black",
+    borderBottom: "1px solid black",
+    margin:0
   },
   jobheaderFlex: {
     display: "flex",
-    alignItems: "center",
+    alignItems: "start",
     justifyContent: "space-between",
     marginBottom:"2px",
-    borderBottom:"1px solid black"
+    borderBottom:"1px solid black",
+    flexWrap: "wrap",
+    margin:0
     
-  },
-  description: {
-    fontSize: "10px",
-    marginBottom:"2px"
   },
   goldFlex: {
     display: "flex",
     justifyContent: "start",
     alignItems: "center",
     gap: "3px",
+    margin:0
    
   },
   goldSection: {
@@ -242,34 +246,35 @@ const styles = {
     gridTemplateColumns: "1fr 1fr 1fr" /* 8 columns */,
     gap: "8px",
     alignItems: "center",
-    border: "1px solid black",
     padding:"5px",
-    marginBottom:"2px"
+    margin:0
+  
+
   },
   goldBox: {
     textAlign: "center",
-    width: "40px",
+    width: "60px",
     height: "15px",
     border: "1px solid black",
-    borderRadius: "3px",
+    borderRadius: "2px",
     boxSizing: "border-box",
-
+    margin:0
 
   },
   totalpuritycontainer: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "0px 10px",
-    marginTop: "4px",
+    textAlign:"end",
+    margin:0
   },
   totalpuritylabel: {
     fontWeight: "bold",
- 
   },
   balance: {
-    
+    margin:0,
+   borderTop: "1px solid black",
+   borderBottom: "1px solid black"
   },
   balanceBox: {
+    margin:0,
     width: "40px",
     height: "15px",
     border: "1px solid black",
@@ -277,6 +282,7 @@ const styles = {
   
   },
    table:{
+     margin:0,
      borderCollapse:"collapse",
      width:"100%",
      textAlign:"center",
@@ -287,7 +293,6 @@ const styles = {
     border:"1px solid black"
   },
   td:{
-   
     border:"1px solid black"
   },
   balancetextowner:{
@@ -300,7 +305,8 @@ const styles = {
     color:"blue"
   },
   balanceamount:{
-    color:"black"
+    color:"black",
+   fontWeight: "bold",
   }
 
   

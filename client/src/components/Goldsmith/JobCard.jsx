@@ -46,7 +46,7 @@ function JobCardDetails() {
       itemWeight: "",
       count:"",
       touch: "",
-      deduction: [{ type: "", weight: "" }],
+      deduction: [],
       netWeight: "",
       wastageType: "",
       wastageValue: "",
@@ -71,7 +71,7 @@ function JobCardDetails() {
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [isStock,setIsStock]=useState("")
-
+  const [isFinished,setIsFinished]=useState("")
   const paginatedData = jobCards.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -132,7 +132,7 @@ const currentPageTotal = paginatedData.reduce(
       itemWeight: "",
       count:"",
       touch: "",
-      deduction: [{ type: "", weight: "" }],
+      deduction: [],
       netWeight: "",
       wastageType: "",
       wastageValue: "",
@@ -154,6 +154,7 @@ const currentPageTotal = paginatedData.reduce(
       "itemDelivery":itemDelivery,
       "goldSmithId":id
     }
+   
     try{
       const response=await axios.post(`${BACKEND_SERVER_URL}/api/assignments/stock`,payLoad)
       handleCloseJobcard();
@@ -165,7 +166,7 @@ const currentPageTotal = paginatedData.reduce(
           itemWeight: "",
           count:"",
           touch: "",
-          deduction: [{ type: "", weight: "" }],
+          deduction: [],
           netWeight: "",
           wastageType: "",
           wastageValue: "",
@@ -178,7 +179,7 @@ const currentPageTotal = paginatedData.reduce(
       console.log('update response',response)
       toast.success(response.data.message,{autoClose:2000})
     }catch(err){
-       toast.error(err.response.data.error);
+       toast.error(err.response.data.message);
     }
 
   }
@@ -196,6 +197,7 @@ const currentPageTotal = paginatedData.reduce(
     setItemDelivery(deepClone(filteredJobcard[0]?.deliveries || []));
     setReceivedMetalReturns(deepClone(filteredJobcard[0]?.received || []));
     setOpeningBalance(deepClone(filteredJobcard[0]?.total[0]?.openingBalance || 0));
+    setIsFinished(deepClone(filteredJobcard[0]?.total[0]?.isFinished || 0))
     setOpen(true);
     setEdit(true);
   };
@@ -279,7 +281,7 @@ const currentPageTotal = paginatedData.reduce(
           itemWeight: "",
           count:"",
           touch: "",
-          deduction: [{ type: "", weight: "" }],
+          deduction: [],
           netWeight: "",
           wastageType: "",
           wastageValue: "",
@@ -655,6 +657,7 @@ const currentPageTotal = paginatedData.reduce(
         handleSaveStock={handleSaveStock}
         lastJobCardId={jobCards?.at(-1)?.total[0]?.jobcardId}
         lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
+        isFinished={isFinished}
         isStock={isStock}
       />
 

@@ -60,6 +60,7 @@ const Goldsmith = () => {
   const [jobCardId, setJobCardId] = useState(null);
   const [noJobCard, setNoJobCard] = useState({});
   const [isStock,setIsStock]=useState("")
+  const [isFinished,setIsFinished]=useState("")
   const [openingBalance, setOpeningBalance] = useState(0);
   const [rawGoldStock, setRawGoldStock]=useState([])
 
@@ -261,6 +262,7 @@ const handleCloseJobcard = () => {
               setOpeningBalance(data.jobcard[0].total[0].openingBalance);
               setLastJobCard(data.lastJobCard)
               setIsStock(data.jobcard[0].stockIsMove)
+              setIsFinished(data.jobcard[0].total[0].isFinished)
               setOpen(true);
               setEdit(true);
               setNoJobCard({});
@@ -427,11 +429,9 @@ const handleCloseJobcard = () => {
           lastJobCardId={lastJobCard.jobcardId}
           lastIsFinish={lastJobCard.isFinished}
           isStock={isStock}
+          isFinished={isFinished}
         />
-
-     
-
-
+        
       <ToastContainer position="top-right" autoClose={3000} />
    </div>
   );
