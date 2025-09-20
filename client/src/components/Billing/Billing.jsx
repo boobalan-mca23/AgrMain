@@ -64,6 +64,9 @@ const Billing = () => {
   );
   const [billTime,setBillTime]=useState("")
   const [weightAllocations, setWeightAllocations] = useState({});
+  const [stoneAllocations, setStoneAllocations] = useState({});
+  const [countAllocations, setCountAllocations] = useState({});
+
   const [selectedFilter, setSelectedFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -270,71 +273,140 @@ const Billing = () => {
           }
         }
         setWeightAllocations(newAllocations);
+
+        // stone allocations
+        const newStone = { ...stoneAllocations };
+        if (newStone[rowToDelete.productId]) {
+          delete newStone[rowToDelete.productId][rowToDelete.id];
+          if (Object.keys(newStone[rowToDelete.productId]).length === 0) {
+            delete newStone[rowToDelete.productId];
+          }
+        }
+        setStoneAllocations(newStone);
+
+        // count allocations
+        const newCount = { ...countAllocations };
+        if (newCount[rowToDelete.productId]) {
+          delete newCount[rowToDelete.productId][rowToDelete.id];
+          if (Object.keys(newCount[rowToDelete.productId]).length === 0) {
+            delete newCount[rowToDelete.productId];
+          }
+        }
+        setCountAllocations(newCount);
       }
       setBillDetailRows((prev) => prev.filter((_, i) => i !== index));
     } catch (err) {
       console.error("Error in Deleting Row", err);
     }
   };
-  const handleBillDetailChange = (index, field, value) => {
-    const validatedValue = validateInput(
-      value,
-      field,
-      index,
-      "billDetail",
-      field === "productName" ? "text" : "number"
-    );
 
-    const updated = [...billDetailRows];
-    const currentRow = updated[index];
-    updated[index][field] = validatedValue;
+const handleBillDetailChange = (index, field, value) => {
+  const validatedValue = validateInput(
+    value,
+    field,
+    index,
+    "billDetail",
+    field === "productName" ? "text" : "number"
+  );
 
-    const wt = toNumber(updated[index].wt);
-    const stWt = toNumber(updated[index].stWt);
-    const percent = toNumber(updated[index].percent);
-    const awt = wt - stWt;
-    updated[index].awt = awt ? toFixedStr(awt, 3) : "0.000";
-    updated[index].fwt = percent ? toFixedStr((awt * percent) / 100, 3) : "0.000";
+  const updated = [...billDetailRows];
+  const currentRow = { ...updated[index] };
+  currentRow[field] = validatedValue;
 
-    if (field === "wt" && currentRow.productId) {
-      const newAllocations = { ...weightAllocations };
-      if (!newAllocations[currentRow.productId])
-        newAllocations[currentRow.productId] = {};
-      newAllocations[currentRow.productId][currentRow.id] = toNumber(wt);
-      setWeightAllocations(newAllocations);
+  // Ensure numeric strings are normalized
+  const wt = toNumber(currentRow.wt);
+  const stWt = toNumber(currentRow.stWt);
+  const percent = toNumber(currentRow.percent);
+  // awt and fwt always re-calculated
+  const awt = wt - stWt;
+  currentRow.awt = awt ? toFixedStr(awt, 3) : "0.000";
+  currentRow.fwt = percent ? toFixedStr((awt * percent) / 100, 3) : "0.000";
+
+  updated[index] = currentRow;
+
+  // Update allocations when fields change and productId exists
+  const productId = currentRow.productId;
+
+  if (productId) {
+    // weight
+    if (field === "wt" || field === "productName") {
+      const newAlloc = { ...weightAllocations };
+      if (!newAlloc[productId]) newAlloc[productId] = {};
+      newAlloc[productId][currentRow.id] = toNumber(currentRow.wt);
+      setWeightAllocations(newAlloc);
     }
 
-    if (field === "productName") {
-      const newAllocations = { ...weightAllocations };
-      if (currentRow.productId) {
-        if (
-          newAllocations[currentRow.productId] &&
-          newAllocations[currentRow.productId][currentRow.id]
-        ) {
-          delete newAllocations[currentRow.productId][currentRow.id];
-          if (Object.keys(newAllocations[currentRow.productId]).length === 0) {
-            delete newAllocations[currentRow.productId];
-          }
-        }
-      }
-
-      const selectedItem = items.find((it) => it.itemName === value);
-      if (selectedItem) {
-        updated[index].productId = selectedItem._id || selectedItem.id || "";
-        if (toNumber(updated[index].wt) > 0) {
-          if (!newAllocations[updated[index].productId])
-            newAllocations[updated[index].productId] = {};
-          newAllocations[updated[index].productId][currentRow.id] = toNumber(
-            updated[index].wt
-          );
-        }
-      } else {
-        updated[index].productId = "";
-      }
-      setWeightAllocations(newAllocations);
+    // stone
+    if (field === "stWt" || field === "productName") {
+      const newStone = { ...stoneAllocations };
+      if (!newStone[productId]) newStone[productId] = {};
+      newStone[productId][currentRow.id] = toNumber(currentRow.stWt);
+      setStoneAllocations(newStone);
     }
-    setBillDetailRows(updated);
-  };
+
+    // count
+    if (field === "count" || field === "productName") {
+      const newCount = { ...countAllocations };
+      if (!newCount[productId]) newCount[productId] = {};
+      // default to 0 if empty
+      newCount[productId][currentRow.id] = toNumber(currentRow.count || 0);
+      setCountAllocations(newCount);
+    }
+
+    // If user changed productName (switched product), ensure we remove allocations of old productId handled earlier in productName branch below
+  }
+
+  // Special handling when user switches productName: update productId mapping
+  if (field === "productName") {
+    const selectedItem = items.find((it) => it.itemName === validatedValue);
+    const prevProductId = updated[index].productId;
+    // remove previous product allocations if switching
+    if (prevProductId && prevProductId !== (selectedItem?._id || selectedItem?.id)) {
+      const newW = { ...weightAllocations };
+      if (newW[prevProductId]) {
+        delete newW[prevProductId][currentRow.id];
+        if (Object.keys(newW[prevProductId]).length === 0) delete newW[prevProductId];
+        setWeightAllocations(newW);
+      }
+      const newS = { ...stoneAllocations };
+      if (newS[prevProductId]) {
+        delete newS[prevProductId][currentRow.id];
+        if (Object.keys(newS[prevProductId]).length === 0) delete newS[prevProductId];
+        setStoneAllocations(newS);
+      }
+      const newC = { ...countAllocations };
+      if (newC[prevProductId]) {
+        delete newC[prevProductId][currentRow.id];
+        if (Object.keys(newC[prevProductId]).length === 0) delete newC[prevProductId];
+        setCountAllocations(newC);
+      }
+    }
+
+    if (selectedItem) {
+      updated[index].productId = selectedItem._id || selectedItem.id || "";
+      // ensure allocations exist for new product
+      const newW = { ...weightAllocations };
+      if (!newW[updated[index].productId]) newW[updated[index].productId] = {};
+      newW[updated[index].productId][currentRow.id] = toNumber(currentRow.wt);
+      setWeightAllocations(newW);
+
+      const newS = { ...stoneAllocations };
+      if (!newS[updated[index].productId]) newS[updated[index].productId] = {};
+      newS[updated[index].productId][currentRow.id] = toNumber(currentRow.stWt);
+      setStoneAllocations(newS);
+
+      const newC = { ...countAllocations };
+      if (!newC[updated[index].productId]) newC[updated[index].productId] = {};
+      newC[updated[index].productId][currentRow.id] = toNumber(currentRow.count || 0);
+      setCountAllocations(newC);
+    } else {
+      updated[index].productId = "";
+    }
+  }
+
+  setBillDetailRows(updated);
+};
+
 
   const handleRowChange = (index, field, value) => {
     const updatedRows = [...rows];
@@ -388,30 +460,82 @@ const Billing = () => {
     return Math.max(0, originalWeight - totalAllocated);
   };
 
-  const handleProductClick = (product) => {
-    const productId = product.id || product._id;
-    const remainingWeight = getRemainingWeight(productId, product.itemWeight);
-    if (remainingWeight <= 0) {
-      alert(`No remaining weight available for ${product.itemName}`);
-      return;
-    }
-    const newRow = {
-      id: Date.now() + Math.random(),
-      productId: productId,
-      productName: product.itemName,
-      wt: remainingWeight.toString(),
-      stWt: "0",
-      awt: remainingWeight.toString(),
-      percent: product.touch,
-      fwt: remainingWeight.toString(),
-    };
-
-    const newAllocations = { ...weightAllocations };
-    if (!newAllocations[productId]) newAllocations[productId] = {};
-    newAllocations[productId][newRow.id] = remainingWeight;
-    setWeightAllocations(newAllocations);
-    setBillDetailRows((prev) => [...prev, newRow]);
+    const getRemainingStone = (productId, originalStone) => {
+    if (!stoneAllocations[productId]) return originalStone;
+    const totalAllocated = Object.values(stoneAllocations[productId]).reduce(
+      (sum, w) => sum + (toNumber(w) || 0), 0
+    );
+    return Math.max(0, originalStone - totalAllocated);
   };
+
+  const getRemainingCount = (productId, originalCount) => {
+    if (!countAllocations[productId]) return originalCount;
+    const totalAllocated = Object.values(countAllocations[productId]).reduce(
+      (sum, c) => sum + (toNumber(c) || 0), 0
+    );
+    return Math.max(0, originalCount - totalAllocated);
+  };
+
+
+const handleProductClick = (product) => {
+  const productId = product.id || product._id;
+  // remaining item weight (total remaining)
+  const remainingWeight = getRemainingWeight(productId, product.itemWeight);
+  if (remainingWeight <= 0) {
+    alert(`No remaining weight available for ${product.itemName}`);
+    return;
+  }
+
+  // remaining stone and count
+  const remainingStone = getRemainingStone(productId, product.stoneWeight);
+  const remainingCount = getRemainingCount(productId, product.count);
+
+  // default to selecting 1 item (count) — user can change later
+  const defaultCount = remainingCount > 0 ? 1 : 0;
+  // If itemWeight is per-unit weight unknown, fallback to allocating equal share:
+  // if product.count > 0 assume itemWeight is total and per-unit = itemWeight / count
+  let perUnitWeight = toNumber(product.itemWeight);
+  if (toNumber(product.count) > 0) perUnitWeight = toNumber(product.itemWeight) / Math.max(1, toNumber(product.count));
+  const initialWt = Math.min(remainingWeight, perUnitWeight * defaultCount) || remainingWeight;
+
+  const stWtValue = Math.min(remainingStone, toNumber(product.stoneWeight) || 0);
+  // percent default to wastageValue
+  const percentVal = product.wastageValue || 0;
+
+  // compute awt and fwt correctly
+  const awtVal = toNumber(initialWt) - toNumber(stWtValue);
+  const fwtVal = percentVal ? (awtVal * toNumber(percentVal)) / 100 : 0;
+
+  const newRow = {
+    id: Date.now() + Math.random(),
+    productId: productId,
+    productName: product.itemName,
+    count: defaultCount.toString(),
+    wt: toFixedStr(initialWt, 3),
+    stWt: toFixedStr(stWtValue, 3),
+    awt: toFixedStr(awtVal, 3),
+    percent: percentVal?.toString() || "0",
+    fwt: toFixedStr(fwtVal, 3),
+  };
+
+  // update allocations for weight / stone / count
+  const newWeightAlloc = { ...weightAllocations };
+  if (!newWeightAlloc[productId]) newWeightAlloc[productId] = {};
+  newWeightAlloc[productId][newRow.id] = toNumber(newRow.wt);
+  setWeightAllocations(newWeightAlloc);
+
+  const newStoneAlloc = { ...stoneAllocations };
+  if (!newStoneAlloc[productId]) newStoneAlloc[productId] = {};
+  newStoneAlloc[productId][newRow.id] = toNumber(newRow.stWt);
+  setStoneAllocations(newStoneAlloc);
+
+  const newCountAlloc = { ...countAllocations };
+  if (!newCountAlloc[productId]) newCountAlloc[productId] = {};
+  newCountAlloc[productId][newRow.id] = toNumber(newRow.count);
+  setCountAllocations(newCountAlloc);
+
+  setBillDetailRows((prev) => [...prev, newRow]);
+};
 
   const handleSave = async () => {
     if (!selectedCustomer) {
@@ -442,7 +566,10 @@ const Billing = () => {
         hallmarkBalance: toNumber(hallmarkBalance) + toNumber(prevHallmark),
         prevHallmark:prevHallmark,
         prevBalance:previousBalance,
-        
+        billDetailsprofit:billDetailsProfit,
+        Stoneprofit:stoneProfit,
+        Totalprofit:totalBillProfit,
+      
         orderItems: billDetailRows.map((row) => ({
           stockId: row.productId,
           productName: row.productName,
@@ -578,8 +705,74 @@ const Billing = () => {
   //   }
   // };
 
+
+
   // === derived values ===
   const FWT = useMemo( () =>billDetailRows.reduce( (total, row) => total + (toNumber(row.fwt) || 0), 0), [billDetailRows] );
+  const { billDetailsProfit, stoneProfit, totalBillProfit, billProfitPercentage } = useMemo(() => {
+    let detailsProfit = 0;
+    let stoneProfitCalc = 0;
+
+    console.log('=== PROFIT CALCULATION DEBUG ===');
+    console.log('billDetailRows:', billDetailRows);
+    console.log('items:', items);
+    console.log('availableProducts:', availableProducts);
+
+    billDetailRows.forEach((row, index) => {
+      console.log(`\n--- Row ${index + 1}: ${row.productName} ---`);
+       // Find the product stock for touch value
+      const productStock = availableProducts?.allStock?.find(product => (product.id || product._id) === row.productId);
+      if (!productStock) alert('no products available');
+      const awt = toNumber(row.awt);
+      const fwt = toNumber(row.fwt);
+      // const enteredStoneWt = toNumber(row.stWt);
+      const enteredPercentage = toNumber(row.percent);
+      // console.log('AWT:', awt, 'FWT:', fwt, 'Stone WT:', enteredStoneWt, 'Entered %:', enteredPercentage);
+      
+      if (productStock) {
+        console.log('Found product stock:', productStock);
+        
+        // Bill Details Profit: (awt × wastage%) - fwt
+        // Use the wastage from productStock (availableProducts), not items
+        const wastageValue = toNumber(productStock.wastageValue) || 0;
+        const purityFromWastage = (awt * wastageValue) / 100;
+        const rowBillProfit = purityFromWastage - fwt;
+        detailsProfit += rowBillProfit;
+        
+        console.log('Wastage Value:', wastageValue);
+        console.log('Purity from Wastage:', purityFromWastage);
+        console.log('Row Bill Profit:', rowBillProfit);
+        
+        // Stone Profit: stockremaing wieght × product.touch%
+        const remainingStone = getRemainingStone(row.productId, productStock.stoneWeight);
+        const touchValue = toNumber(productStock.touch) || 0;
+        // const rowStoneProfit = (enteredStoneWt * touchValue) / 100;
+        const rowStoneProfit = (toNumber(remainingStone) * touchValue) / 100;
+        stoneProfitCalc += rowStoneProfit;
+        
+        console.log('Touch Value:', touchValue);
+        console.log('Row Stone Profit:', rowStoneProfit);
+      } else {
+        console.log('Product stock not found for productId:', row.productId);
+      }
+    });
+
+    const totalProfit = detailsProfit + stoneProfitCalc;
+    const profitPercentage = FWT > 0 ? (totalProfit / FWT) * 100 : 0;
+
+    console.log('\n=== FINAL RESULTS ===');
+    console.log('Details Profit:', detailsProfit);
+    console.log('Stone Profit:', stoneProfitCalc);
+    console.log('Total Profit:', totalProfit);
+    console.log('Profit %:', profitPercentage);
+
+    return {
+      billDetailsProfit: toFixedStr(detailsProfit, 3),
+      stoneProfit: toFixedStr(stoneProfitCalc, 3),
+      totalBillProfit: toFixedStr(totalProfit, 3),
+      billProfitPercentage: toFixedStr(profitPercentage, 2),
+    };
+  }, [billDetailRows, items, availableProducts, FWT]);
   const totalReceivedPurity = useMemo(() => rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0),  [rows]  );
   const TotalFWT = FWT - previousBalance;
   const pureBalance = TotalFWT - totalReceivedPurity;
@@ -943,6 +1136,7 @@ const Billing = () => {
               <TableRow>
                 <TableCell className="th">S.No</TableCell>
                 <TableCell className="th">Product Name</TableCell>
+                <TableCell className="th">Count</TableCell>
                 <TableCell className="th">Wt</TableCell>
                 <TableCell className="th">St.WT</TableCell>
                 <TableCell className="th">AWT</TableCell>
@@ -967,6 +1161,20 @@ const Billing = () => {
                         helperText={fieldErrors[`billDetail_${index}_productName`] || ""}
                       />
                     </TableCell>
+
+                    <TableCell className="td">
+                      <TextField
+                        size="small"
+                        type="text"
+                        value={row.count}
+                        disabled={viewMode}
+                        onChange={(e) => handleNumericInput(e, (ev) => handleBillDetailChange(index, "count", ev.target.value))}
+                        inputProps={{ style: inputStyle }}
+                        error={!!fieldErrors[`billDetail_${index}_wt`]}
+                        helperText={fieldErrors[`billDetSeletail_${index}_wt`] || ""}
+                      />
+                    </TableCell>
+
                     <TableCell className="td">
                       <TextField
                         size="small"
@@ -1038,7 +1246,7 @@ const Billing = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="no-products-message">
+                  <TableCell colSpan={9} className="no-products-message">
                     No Bill details added
                   </TableCell>
                 </TableRow>
@@ -1110,7 +1318,7 @@ const Billing = () => {
 
           {/* Received Details */}
           <Box className="items-section" sx={{ marginTop: 2 }}>
-            <div style={{
+            {!viewMode && <div style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -1118,7 +1326,7 @@ const Billing = () => {
             >
               <h3>Received Details:</h3>
               <IconButton onClick={handleAddRow} className="no-print">  <AddCircleOutlineIcon /> </IconButton>
-            </div>
+            </div>}
 
             <Table
               className="table received-details-table"
@@ -1129,6 +1337,7 @@ const Billing = () => {
                 tableLayout: "fixed",
               }}
             >
+                
               <TableHead>
                 <TableRow style={{ textAlign: "center" }}>
                   <TableCell className="th">S.No</TableCell>
@@ -1296,13 +1505,33 @@ const Billing = () => {
               </TableBody>
             </Table>
           </Box>
+            <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: "10px",
+                padding: "8px 12px",
+                backgroundColor: "#f9f9f9",
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                color: "#333"
+              }}
+            >
+              <div>Bill Details Profit: <span style={{ color: "green" }}>{billDetailsProfit}</span></div>
+              <div>Stone Profit: <span style={{ color: "green" }}>{stoneProfit}</span></div>
+              <div>Total Profit: <span style={{ color: "#0a4c9a" }}>{totalBillProfit}</span></div>
+              {/* <div>Profit %: <span style={{ color: "#d9534f" }}>{billProfitPercentage}%</span></div> */}
+            </div>
 
           <Box className="closing-balance">
+            
             <div className="flex">
               <strong>Cash Balance: {cashBalance}</strong>
               <strong> Pure Balance: {toFixedStr(TotalFWT - totalReceivedPurity, 3)}</strong>
               <strong> Hallmark Balance:{" "} {toFixedStr(hallmarkBalance + prevHallmark, 3)} </strong>
             </div>
+            
           </Box>
           <Box style={{display:"flex",justifyContent:'center'}}>
             {/* {viewMode ? (
@@ -1387,7 +1616,9 @@ const Billing = () => {
              {/*  <TableCell className="th" style={{ textAlign: "center" }}>Original WT</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Remaining WT</TableCell> */}
                    <TableCell className="th" style={{ textAlign: "center" }}>Item WT</TableCell>
+                   <TableCell className="th" style={{ textAlign: "center" }}>Stone WT</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Count </TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Wastage</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
                 </TableRow>
               </TableHead>
@@ -1417,7 +1648,11 @@ const Billing = () => {
                         <TableCell className="td" style={{ textAlign: "center" }} > {prodata.itemName} </TableCell> 
                         {/* <TableCell className="td" style={{ textAlign: "center" }} > {prodata.itemWeight}  </TableCell> */}
                         <TableCell className="td" style={{ color: remainingWeight <= 0 ? "red" : "green", fontWeight: "bold",textAlign: "center",}}>{toNumber(remainingWeight).toFixed(3)}</TableCell> 
-                        <TableCell className="td" style={{ textAlign: "center" }} > {prodata.count} </TableCell>  
+                        <TableCell className="td" style={{ textAlign: "center" }} >
+                          {toNumber(getRemainingStone(productId, prodata.stoneWeight)).toFixed(3)}</TableCell>
+                        <TableCell className="td" style={{ textAlign: "center" }} >
+                          {toNumber(getRemainingCount(productId, prodata.count)).toString()}</TableCell>
+                        <TableCell className="td" style={{ textAlign: "center" }} > {prodata.wastageValue} </TableCell> 
                         <TableCell className="td" style={{ textAlign: "center" }} > {prodata.touch} </TableCell>
                       </TableRow>
                     );
