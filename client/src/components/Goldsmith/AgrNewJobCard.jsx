@@ -30,11 +30,11 @@ import {
   goldRowValidation,
   itemValidation,
   receiveRowValidation,
-  checkAvailabilityStock
+  checkAvailabilityStock,
 } from "../jobcardvalidation/JobcardValidation";
-import "../PrintJobCard/PrintJobCard"
+import "../PrintJobCard/PrintJobCard";
 import PrintJobCard from "../PrintJobCard/PrintJobCard";
-import ReactDOMServer from 'react-dom/server';
+import ReactDOMServer from "react-dom/server";
 function AgrNewJobCard({
   edit,
   handleCloseJobcard,
@@ -54,13 +54,12 @@ function AgrNewJobCard({
   jobCardLength,
   handleSaveJobCard,
   handleUpdateJobCard,
-  handleSaveStock,
   open,
   jobCardId,
   lastJobCardId,
   lastIsFinish,
   isStock,
-  isFinished
+  isFinished,
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
@@ -99,49 +98,50 @@ function AgrNewJobCard({
       ? ((parseFloat(w) * parseFloat(t)) / 100).toFixed(3)
       : "";
 
-const handleGoldRowChange = (i, field, val) => {
-  const copy = [...givenGold];
+  const handleGoldRowChange = (i, field, val) => {
+    const copy = [...givenGold];
 
-  // STEP 1: get old values BEFORE overwrite
-  const oldTouch = copy[i].touch;
-  const oldWeight = copy[i].weight;
+    // STEP 1: get old values BEFORE overwrite
+    const oldTouch = copy[i].touch;
+    const oldWeight = copy[i].weight;
 
-  // STEP 2: restore old stock first
-   let updateTouchStock = rawGoldStock.map(r => ({ ...r }));
-    updateTouchStock.forEach(touchItem => {
-    if (parseFloat(oldTouch) === touchItem.touch) {
-      if(oldWeight>=0) touchItem.remainingWt = parseFloat(touchItem.remainingWt) + parseFloat(oldWeight || 0);
-     
-    }
-  });
+    // STEP 2: restore old stock first
+    let updateTouchStock = rawGoldStock.map((r) => ({ ...r }));
+    updateTouchStock.forEach((touchItem) => {
+      if (parseFloat(oldTouch) === touchItem.touch) {
+        if (oldWeight >= 0)
+          touchItem.remainingWt =
+            parseFloat(touchItem.remainingWt) + parseFloat(oldWeight || 0);
+      }
+    });
 
-  // STEP 3: overwrite new value
-  copy[i][field] = val;
+    // STEP 3: overwrite new value
+    copy[i][field] = val;
 
-  // STEP 4: deduct new value from stock
-  const newTouch = copy[i].touch;
-  const newWeight = copy[i].weight;
+    // STEP 4: deduct new value from stock
+    const newTouch = copy[i].touch;
+    const newWeight = copy[i].weight;
 
-  updateTouchStock.forEach(touchItem => {
-    if (parseFloat(newTouch) === touchItem.touch) {
-      if(newWeight>=0) touchItem.remainingWt = parseFloat(touchItem.remainingWt) - parseFloat(newWeight || 0);
-    }
-  });
+    updateTouchStock.forEach((touchItem) => {
+      if (parseFloat(newTouch) === touchItem.touch) {
+        if (newWeight >= 0)
+          touchItem.remainingWt =
+            parseFloat(touchItem.remainingWt) - parseFloat(newWeight || 0);
+      }
+    });
 
-  // STEP 5: recalc purity
-  copy[i].purity = calculatePurity(
-    parseFloat(copy[i].weight),
-    parseFloat(copy[i].touch)
-  );
+    // STEP 5: recalc purity
+    copy[i].purity = calculatePurity(
+      parseFloat(copy[i].weight),
+      parseFloat(copy[i].touch)
+    );
 
-  // STEP 6: set state
-  setGivenGold(copy);
-  setRawGoldStock(updateTouchStock);
-  goldRowValidation(copy, setGivenGoldErrors);
-};
+    // STEP 6: set state
+    setGivenGold(copy);
+    setRawGoldStock(updateTouchStock);
+    goldRowValidation(copy, setGivenGoldErrors);
+  };
 
-
-  
   const totalInputPurityGiven = givenGold.reduce(
     (sum, row) => sum + parseFloat(row.purity || 0),
     0
@@ -161,10 +161,17 @@ const handleGoldRowChange = (i, field, val) => {
       copy[i]["netWeight"] =
         copy[i]["itemWeight"] - Number(totalDeduction(i, copy));
     }
-    if (field === "touch" || field === "itemWeight" || field==="wastageValue") {
-      copy[i].wastagePure = (((copy[i].netWeight* copy[i].wastageValue)/100)-(copy[i].netWeight* copy[i].touch/100)).toFixed(3)
+    if (
+      field === "touch" ||
+      field === "itemWeight" ||
+      field === "wastageValue"
+    ) {
+      copy[i].wastagePure = (
+        (copy[i].netWeight * copy[i].wastageValue) / 100 -
+        (copy[i].netWeight * copy[i].touch) / 100
+      ).toFixed(3);
     }
-    copy[i].finalPurity =  (copy[i].netWeight * copy[i].wastageValue) / 100
+    copy[i].finalPurity = (copy[i].netWeight * copy[i].wastageValue) / 100;
     setItemDelivery(copy);
     itemValidation(itemDelivery, setItemDeliveryErrors);
   };
@@ -183,11 +190,21 @@ const handleGoldRowChange = (i, field, val) => {
     const updated = [...itemDelivery];
     updated[itemIndex].deduction[deductionIndex][field] = val;
     if (field === "weight") {
-        updated[itemIndex]["netWeight"] =updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated));
-        updated[itemIndex]["wastagePure"] = (((updated[itemIndex]["netWeight"]* updated[itemIndex].wastageValue)/100)-(updated[itemIndex]["netWeight"]* updated[itemIndex]["touch"]/100)).toFixed(3)
+      updated[itemIndex]["netWeight"] =
+        updated[itemIndex]["itemWeight"] -
+        Number(totalDeduction(itemIndex, updated));
+      updated[itemIndex]["wastagePure"] = (
+        (updated[itemIndex]["netWeight"] * updated[itemIndex].wastageValue) /
+          100 -
+        (updated[itemIndex]["netWeight"] * updated[itemIndex]["touch"]) / 100
+      ).toFixed(3);
     }
-    updated[itemIndex]["netWeight"] =updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated));
-    updated[itemIndex].finalPurity = (updated[itemIndex]["netWeight"]*updated[itemIndex]["wastageValue"])/100
+    updated[itemIndex]["netWeight"] =
+      updated[itemIndex]["itemWeight"] -
+      Number(totalDeduction(itemIndex, updated));
+    updated[itemIndex].finalPurity =
+      (updated[itemIndex]["netWeight"] * updated[itemIndex]["wastageValue"]) /
+      100;
     setItemDelivery(updated);
   };
 
@@ -230,16 +247,18 @@ const handleGoldRowChange = (i, field, val) => {
   const handleRemoveGoldRow = (i) => {
     const isTrue = window.confirm("Are You Want To Remove This Row");
     if (isTrue) {
-       let touchValue=givenGold[i]['touch'] //  when deleting item we need to reset the gold value
-       let weight=givenGold[i]['weight']
-       
-       const updateTouchStock = rawGoldStock.map(r => ({ ...r })); 
-       updateTouchStock.forEach(touchItem => {
-       if(parseFloat(touchValue) === touchItem.touch){
-         touchItem.remainingWt = parseFloat(touchItem.remainingWt)+parseFloat(weight)
-       } });
-       console.log('updateStock in delete',updateTouchStock)
-       setRawGoldStock(updateTouchStock)
+      let touchValue = givenGold[i]["touch"]; //  when deleting item we need to reset the gold value
+      let weight = givenGold[i]["weight"];
+
+      const updateTouchStock = rawGoldStock.map((r) => ({ ...r }));
+      updateTouchStock.forEach((touchItem) => {
+        if (parseFloat(touchValue) === touchItem.touch) {
+          touchItem.remainingWt =
+            parseFloat(touchItem.remainingWt) + parseFloat(weight);
+        }
+      });
+      console.log("updateStock in delete", updateTouchStock);
+      setRawGoldStock(updateTouchStock);
       const filtergold = givenGold.filter((_, index) => i !== index);
       setGivenGold(filtergold);
     }
@@ -254,91 +273,105 @@ const handleGoldRowChange = (i, field, val) => {
     (sum, row) => sum + parseFloat(row.purity || 0),
     0
   );
+  const handleSave = (print = "noprint", stock =false) => {
+    const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
+    const existStock = checkAvailabilityStock(rawGoldStock);
 
-  const handleStock=()=>{  
-
-     let isTrue=window.confirm("Do you want to move these items to stock? Once the items are moved, the job card will be closed.")  
-    if(isTrue){
-      handleSaveStock()
-    }
-  }
-  const handleSave = (print = "noprint") => {
-  const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
-  const existStock = checkAvailabilityStock(rawGoldStock);
-
-  if (edit) {
-    const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
-    const receivedIsTrue = receiveRowValidation(receivedMetalReturns, setReceivedErrors);
-
-    if (!goldIsTrue || !itemIsTrue || !receivedIsTrue) {
-      return toast.warn("Give Valid Information on Job Card");
-    }
-
-    if (existStock.stock !== "ok") {
-      return toast.warn(`No Gold Stock in Touch ${existStock.touch}`);
-    }
-    console.log('isFinished',isFinished)
-    if (print === "print") {
-      handlePrint();
-      if (isFinished === "false") {
-        handleUpdateJobCard(
+    const doUpdate=()=>{
+       handleUpdateJobCard(
           totalInputPurityGiven,
           totalFinishedPurity,
           totalReceivedPurity,
           jobCardBalance,
+          openingBalance,
+          stock
+        );
+    }
+
+    const doSave=()=>{
+        handleSaveJobCard(
+          totalInputPurityGiven,
+          jobCardBalance,
           openingBalance
         );
+    }
+    if (edit) {
+      const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
+      const receivedIsTrue = receiveRowValidation(
+        receivedMetalReturns,
+        setReceivedErrors
+      );
+
+      if (!goldIsTrue || !itemIsTrue || !receivedIsTrue) {
+        return toast.warn("Give Valid Information on Job Card");
+      }
+
+      if (existStock.stock !== "ok") {
+        return toast.warn(`No Gold Stock in Touch ${existStock.touch}`);
+      }
+
+      if (print === "print") {
+           handlePrint();
+        if (isFinished === "false") {
+             doUpdate()
+        }
+      } else {
+         if (stock) {
+            let isTrue = window.confirm(
+              "Are you sure you want to move the delivery item? Once it is moved to stock, this job card will be closed"
+            );
+            if (isTrue) {
+                if(itemDelivery.length===0){
+                 toast.warn("0 Items in Delivery section")
+                }else{
+                 doUpdate()
+                }
+            }
+          } else {
+             doUpdate()
+          }
+       
       }
     } else {
-      handleUpdateJobCard(
-        totalInputPurityGiven,
-        totalFinishedPurity,
-        totalReceivedPurity,
-        jobCardBalance,
-        openingBalance
-      );
+      //  this block will only run when adding a new job card
+      if (!goldIsTrue) {
+        return toast.warn("Give Valid Information on Job Card");
+      }
+
+      if (existStock.stock !== "ok") {
+        return toast.warn(`No Gold Stock Touch in ${existStock.touch}`);
+      }
+
+      if (print === "print") {
+        handlePrint();
+        doSave()
+      } else {
+         doSave()
+      }
     }
-  } else {
-    //  this block will only run when adding a new job card
-    if (!goldIsTrue) {
-      return toast.warn("Give Valid Information on Job Card");
-    }
+  };
 
-    if (existStock.stock !== "ok") {
-      return toast.warn(`No Gold Stock Touch in ${existStock.touch}`);
-    }
+  const handlePrint = () => {
+    const printContent = (
+      <PrintJobCard
+        jobId={edit ? jobCardId : jobCardLength}
+        name={name}
+        date={today}
+        time={time}
+        description={description}
+        givenGold={givenGold}
+        totalGivenPure={totalInputPurityGiven}
+        openingBalance={openingBalance}
+        totalGivenToGoldsmith={totalGivenToGoldsmith}
+        deliveries={itemDelivery}
+        totalDelivery={totalFinishedPurity}
+        received={receivedMetalReturns}
+        totalReceive={totalReceivedPurity}
+        jobCardBalance={jobCardBalance}
+      />
+    );
 
-    if (print === "print") {
-      handlePrint();
-      handleSaveJobCard(totalInputPurityGiven, jobCardBalance, openingBalance);
-    } else {
-      handleSaveJobCard(totalInputPurityGiven, jobCardBalance, openingBalance);
-    }
-  }
-};
-
-  const handlePrint=()=>{
-     const printContent = (
-    <PrintJobCard
-      jobId={edit ? jobCardId : jobCardLength}
-      name={name}
-      date={today}
-      time={time}
-      description={description}
-      givenGold={givenGold}
-      totalGivenPure={totalInputPurityGiven} 
-      openingBalance={openingBalance}
-      totalGivenToGoldsmith={totalGivenToGoldsmith}
-      deliveries={itemDelivery}
-      totalDelivery={totalFinishedPurity}
-      received={receivedMetalReturns}
-      totalReceive={totalReceivedPurity}
-      jobCardBalance={jobCardBalance}
-
-    />
-  );
-
-  const printHtml = `
+    const printHtml = `
     <!DOCTYPE html>
     <html>
       <head>
@@ -357,11 +390,10 @@ const handleGoldRowChange = (i, field, val) => {
       </body>
     </html>
   `;
-   const printWindow = window.open('', '_blank', 'width=1000,height=800');
-   printWindow.document.write(printHtml);
-   printWindow.document.close();
-
-  }
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -381,7 +413,7 @@ const handleGoldRowChange = (i, field, val) => {
     return () => clearInterval(timer);
   }, []);
   const safeParse = (val) => (isNaN(parseFloat(val)) ? 0 : parseFloat(val));
-  
+
   useEffect(() => {
     const balance =
       safeParse(openingBalance) >= 0
@@ -433,9 +465,7 @@ const handleGoldRowChange = (i, field, val) => {
             <Typography>Time:{time}</Typography>
           </Box>
           <div className="jobCardFlex">
-
             <div className="givenGroup">
-
               <div className="description section">
                 <label htmlFor="description" className="label">
                   Description
@@ -458,7 +488,7 @@ const handleGoldRowChange = (i, field, val) => {
                       <strong>{i + 1})</strong>
                       <div>
                         <input
-                          disabled={row.id?true:false}
+                          disabled={row.id ? true : false}
                           type="number"
                           placeholder="Weight"
                           value={row.weight}
@@ -479,7 +509,7 @@ const handleGoldRowChange = (i, field, val) => {
 
                       <div>
                         <select
-                          disabled={row.id?true:false}
+                          disabled={row.id ? true : false}
                           value={row.touch}
                           onChange={(e) =>
                             handleGoldRowChange(i, "touch", e.target.value)
@@ -541,7 +571,7 @@ const handleGoldRowChange = (i, field, val) => {
               </div>
               {/* Balance */}
 
-               <div className="section">
+              <div className="section">
                 <h3 className="section-title">Balance</h3>
                 <div className="balance-block">
                   <div className="balance-display-row">
@@ -569,13 +599,11 @@ const handleGoldRowChange = (i, field, val) => {
                   </div>
                 </div>
               </div>
-              
             </div>
-
 
             <div className="touchGroup">
               <strong>Touch Information</strong>
-               <table className="jobCardTouchTable">
+              <table className="jobCardTouchTable">
                 <thead>
                   <tr className="jobCardTouchTableRow">
                     <th>S.No</th>
@@ -585,31 +613,45 @@ const handleGoldRowChange = (i, field, val) => {
                   </tr>
                 </thead>
                 <tbody>
-                  
-                   {rawGoldStock.map((rawStock,index)=>(
-                    <tr key={index+1}className="jobCardTouchTableBody">
-                      <td>{index+1}</td>
+                  {rawGoldStock.map((rawStock, index) => (
+                    <tr key={index + 1} className="jobCardTouchTableBody">
+                      <td>{index + 1}</td>
                       <td>{rawStock.touch}</td>
                       <td>{rawStock.weight}</td>
-                      <td style={{backgroundColor:rawStock.remainingWt<0?"red":""}}>{rawStock.remainingWt}</td>
+                      <td
+                        style={{
+                          backgroundColor:
+                            rawStock.remainingWt < 0 ? "red" : "",
+                        }}
+                      >
+                        {rawStock.remainingWt}
+                      </td>
                     </tr>
-                   ))}
+                  ))}
                 </tbody>
-               </table>
-                
+              </table>
             </div>
           </div>
 
           {/* Item Delivery Section */}
           <div className="section" style={{ opacity: edit ? 1 : 0.5 }}>
             <div className="itemTitleSection">
-            <div>
-              <h4 className="section-title">Item Delivery</h4>
-            </div>
-             {edit && 
-             <div >
-              <button className="itemTitlebtn" onClick={handleStock} disabled={isStock?true:false}>Move To Stock</button>
-            </div>}
+              <div>
+                <h4 className="section-title">Item Delivery</h4>
+              </div>
+              {edit && (
+                <div>
+                  <button
+                    className="itemTitlebtn"
+                    onClick={() => {
+                      handleSave("noprint", true);
+                    }}
+                    disabled={isStock ? true : false}
+                  >
+                    Move To Stock
+                  </button>
+                </div>
+              )}
             </div>
             <TableContainer component={Paper} className="jobCardContainer">
               <Table
@@ -686,7 +728,7 @@ const handleGoldRowChange = (i, field, val) => {
                           className="tableCell"
                         >
                           <select
-                            disabled={edit?false:true}
+                            disabled={edit ? false : true}
                             value={item?.itemName}
                             onChange={(e) =>
                               handleChangeDeliver(
@@ -765,7 +807,7 @@ const handleGoldRowChange = (i, field, val) => {
                           className="tableCell"
                         >
                           <select
-                            disabled={edit?false:true}
+                            disabled={edit ? false : true}
                             value={item?.touch}
                             onChange={(e) =>
                               handleChangeDeliver(
@@ -809,7 +851,7 @@ const handleGoldRowChange = (i, field, val) => {
                           <>
                             <TableCell className="tableCell">
                               <select
-                                disabled={edit?false:true}
+                                disabled={edit ? false : true}
                                 value={
                                   item?.deduction.length >= 1
                                     ? item?.deduction[0].type
@@ -938,7 +980,7 @@ const handleGoldRowChange = (i, field, val) => {
                           className="tableCell"
                         >
                           <select
-                            disabled={edit?false:true}
+                            disabled={edit ? false : true}
                             value={item?.wastageValue}
                             onChange={(e) =>
                               handleChangeDeliver(
@@ -948,7 +990,6 @@ const handleGoldRowChange = (i, field, val) => {
                               )
                             }
                             className="select-small"
-                           
                           >
                             <option value="">Select</option>
                             {dropDownItems.masterWastage.map((option) => (
@@ -957,7 +998,7 @@ const handleGoldRowChange = (i, field, val) => {
                               </option>
                             ))}
                           </select>
-                          
+
                           <br></br>
                           {itemDeliveryErrors[index]?.wastageValue && (
                             <span className="error">
@@ -1019,7 +1060,7 @@ const handleGoldRowChange = (i, field, val) => {
                             <TableRow key={i}>
                               <TableCell className="tableCell">
                                 <select
-                                  disabled={edit?false:true}
+                                  disabled={edit ? false : true}
                                   value={s.type}
                                   onChange={(e) =>
                                     handleDeductionChange(
@@ -1149,7 +1190,7 @@ const handleGoldRowChange = (i, field, val) => {
                   <span className="operator">x</span>
                   <div>
                     <select
-                      disabled={edit?false:true}
+                      disabled={edit ? false : true}
                       value={row.touch}
                       onChange={(e) =>
                         handleReceivedRowChange(i, "touch", e.target.value)
@@ -1189,7 +1230,7 @@ const handleGoldRowChange = (i, field, val) => {
             </div>
             <button
               disabled={
-                edit? lastJobCardId===jobCardId ?false:true:true
+                edit ? (lastJobCardId === jobCardId ? false : true) : true
               }
               onClick={() =>
                 setReceivedMetalReturns([
@@ -1233,28 +1274,42 @@ const handleGoldRowChange = (i, field, val) => {
               </p>
             )}
           </div>
-        <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={true}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+          <ToastContainer
+            position="top-right"
+            autoClose={2000}
+            hideProgressBar={true}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
         </DialogContent>
-        <DialogActions className="actionButton"> 
-          <Button  className="jobCardSaveBtn"autoFocus onClick={()=>{handleSave()}} disabled={edit ? isFinished==="true" ||isStock?true:false:false}>
+        <DialogActions className="actionButton">
+          <Button
+            className="jobCardSaveBtn"
+            autoFocus
+            onClick={() => {
+              handleSave("noprint",false);
+            }}
+            disabled={
+              edit ? (isFinished === "true" || isStock ? true : false) : false
+            }
+          >
             {edit ? "Update" : "Save"}
           </Button>
-          <Button autoFocus onClick={()=>{handleSave("print")}} className="jobCardPrintBtn">
+          <Button
+            autoFocus
+            onClick={() => {
+              handleSave("print",false);
+            }}
+            className="jobCardPrintBtn"
+          >
             Print
           </Button>
         </DialogActions>
       </Dialog>
-       
     </>
   );
 }

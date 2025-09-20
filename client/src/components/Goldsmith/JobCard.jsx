@@ -54,9 +54,7 @@ function JobCardDetails() {
       finalPurity: "",
     },
   ]);
-  const [receivedMetalReturns, setReceivedMetalReturns] = useState([
-    { weight: "", touch: "", purity: "" },
-  ]);
+  const [receivedMetalReturns, setReceivedMetalReturns] = useState([]);
   const [dropDownItems, setDropDownItems] = useState({
     masterItems: [],
     touchList: [],
@@ -85,6 +83,7 @@ const currentPageTotal = paginatedData.reduce(
     },
     { givenWt: 0, itemWt: 0,receive: 0 } // Initial accumulator
   );
+  console.log('currentPageTotal',currentPageTotal)
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -95,7 +94,7 @@ const currentPageTotal = paginatedData.reduce(
   };
 
   const handleOpenJobcard = async () => {
-    setOpen(true);
+    setOpen(true)
     setEdit(false);
     try {
       const res = await axios.get(
@@ -123,6 +122,7 @@ const currentPageTotal = paginatedData.reduce(
     };
 
   const handleCloseJobcard = () => {
+    setOpen(false);
     fetchRawGold();
     setDescription("");
     setGivenGold([{ weight: "", touch: "", purity: "" }]);
@@ -142,47 +142,9 @@ const currentPageTotal = paginatedData.reduce(
     ]);
     setReceivedMetalReturns([]);
     
-    setOpen(false);
-    setEdit(false);
+    
     console.log('rawGoldStock',rawGoldStock)
   };
-
-  const handleSaveStock=async()=>{
-    
-    const payLoad={
-      "jobCardId":jobCardId, // job cardId
-      "itemDelivery":itemDelivery,
-      "goldSmithId":id
-    }
-   
-    try{
-      const response=await axios.post(`${BACKEND_SERVER_URL}/api/assignments/stock`,payLoad)
-      handleCloseJobcard();
-      setGivenGold([{ weight: "", touch: "", purity: "" }]);
-      setDescription("");
-      setItemDelivery([
-        {
-          itemName: "",
-          itemWeight: "",
-          count:"",
-          touch: "",
-          deduction: [],
-          netWeight: "",
-          wastageType: "",
-          wastageValue: "",
-          wastagePure:"",
-          finalPurity: "",
-        },
-      ]);
-      setReceivedMetalReturns([]);
-      setJobCards(response.data.allJobCards);
-      console.log('update response',response)
-      toast.success(response.data.message,{autoClose:2000})
-    }catch(err){
-       toast.error(err.response.data.message);
-    }
-
-  }
 
   const handleFilterJobCard = (id, index) => {
     setJobCardId(id);
@@ -233,6 +195,8 @@ const currentPageTotal = paginatedData.reduce(
       setGivenGold([{ weight: "", touch: "", purity: "" }]);
       setDescription("");
       setJobCards(response.data.allJobCards);
+      console.log('response.data.jobCardLength',response.data.jobCardLength)
+      setJobCardLength(response.data.jobCardLength);
         alert('JobCard Created')
     } catch (err) {
        toast.error(err.response.data.error);
@@ -244,9 +208,11 @@ const currentPageTotal = paginatedData.reduce(
     deliveryTotal,
     receivedTotal,
     jobCardBalance,
-    openingBalance
+    openingBalance,
+    stock
   ) => {
     const payload = {
+      stock,
       description,
       givenGold,
       itemDelivery,
@@ -291,6 +257,7 @@ const currentPageTotal = paginatedData.reduce(
       ]);
       setReceivedMetalReturns([]);
       setJobCards(response.data.allJobCards);
+      setJobCardLength(response.data.jobCardLength);
       console.log('update response',response)
       alert('JobCard Updated')
     } catch (err) {
@@ -445,7 +412,8 @@ const currentPageTotal = paginatedData.reduce(
                     <td colSpan={3}>Received</td>
                     <td rowSpan={2}>Total</td>
                     <td rowSpan={2}>Balance</td>
-                    <td rowSpan={2}>isFinished</td>
+                    <td rowSpan={2}>IsStock</td>
+                    <td rowSpan={2}>IsFinished</td>
                     <td rowSpan={2}>Action</td>
                   </tr>
                   <tr>
@@ -568,7 +536,11 @@ const currentPageTotal = paginatedData.reduce(
                           )}
                           {i === 0 && (
                             <>
-                              
+                              <td rowSpan={maxRows}>
+                                {
+                                  job?.stockIsMove? "YES":"NO"
+                                }
+                              </td>
                               <td rowSpan={maxRows}>
                                 {total?.isFinished === "true" ? (
                                   <FaCheck />
@@ -654,7 +626,6 @@ const currentPageTotal = paginatedData.reduce(
         handleCloseJobcard={handleCloseJobcard}
         handleSaveJobCard={handleSaveJobCard}
         handleUpdateJobCard={handleUpdateJobCard}
-        handleSaveStock={handleSaveStock}
         lastJobCardId={jobCards?.at(-1)?.total[0]?.jobcardId}
         lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
         isFinished={isFinished}
