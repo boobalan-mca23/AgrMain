@@ -135,7 +135,9 @@ const itemToStock = async (jobcardId) => {
   }, {});
 
   let stockInformation = Object.values(grouped);
-   console.log('stockInformation',Object.values(grouped))
+  if(stockInformation.length<0){
+    return res.status(400).json({message:"No Delivery Items"})
+  }
   for (const stockItem of stockInformation) {
     let exist = await prisma.productStock.findFirst({
       where: {
@@ -176,6 +178,7 @@ const itemToStock = async (jobcardId) => {
       });
     }
   }
+  
     await prisma.$transaction([
   prisma.jobcard.update({
     where: { id: parseInt(jobcardId) },
