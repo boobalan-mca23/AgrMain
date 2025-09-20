@@ -5,7 +5,6 @@ const {
   jobCardFilter,movetoStock} = require("../Controllers/assignment.controller");
 
 router.post("/create", createJobcard);
-router.post("/stock",movetoStock);
 router.put("/:goldSmithId/:jobCardId",updateJobCard)
 router.get('/:id',getAllJobCardsByGoldsmithId);
 router.get('/:id/jobcard',getJobCardById);

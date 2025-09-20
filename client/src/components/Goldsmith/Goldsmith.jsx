@@ -152,29 +152,17 @@ const handleCloseJobcard = () => {
     },])
     setReceivedMetalReturns([])
   };
-  const handleSaveStock=async()=>{
-    
-    const payLoad={
-      "jobCardId":jobCardId, // job cardId
-      "itemDelivery":itemDelivery,
-      "goldSmithId":selectedName.id
-    }
-    try{
-      const response=await axios.post(`${BACKEND_SERVER_URL}/api/assignments/stock`,payLoad)
-      
-    }catch(err){
-       toast.error(err.response.data.error);
-    }
 
-  }
   const handleUpdateJobCard = async (
     givenTotal,
     deliveryTotal,
     receivedTotal,
     jobCardBalance,
-    openingBalance
+    openingBalance,
+    stock
   ) => {
     const payload = {
+      stock,
       description,
       givenGold,
       itemDelivery,
@@ -425,7 +413,6 @@ const handleCloseJobcard = () => {
           open={open}
           handleCloseJobcard={handleCloseJobcard}
           handleUpdateJobCard={handleUpdateJobCard}
-          handleSaveStock={handleSaveStock}
           lastJobCardId={lastJobCard.jobcardId}
           lastIsFinish={lastJobCard.isFinished}
           isStock={isStock}
