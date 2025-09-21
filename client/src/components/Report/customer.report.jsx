@@ -281,6 +281,7 @@ const CustReport = () => {
                           <table className="orderTable">
                             <thead className="orderTableTr">
                               <tr>
+                                <th>Entry Type</th>
                                 <th>Date</th>
                                 <th>ProductName</th>
                                 <th>ItemWt</th>
@@ -293,6 +294,7 @@ const CustReport = () => {
                             <tbody className="orderTableTbody">
                               {bill.info.orders.map((item, index) => (
                                 <tr key={index + 1}>
+                                  <td>{bill.type||""}</td>
                                   <td>
                                     {new Date(
                                       item.createdAt
@@ -315,6 +317,7 @@ const CustReport = () => {
                         <table className="receiveTable">
                           <thead className="receiveTableTr">
                             <tr>
+                              <th>Entry Type</th>
                               <th>Date</th>
                               <th>goldRate</th>
                               <th>gold</th>
@@ -325,7 +328,8 @@ const CustReport = () => {
                             </tr>
                           </thead>
                           <tbody className="receiveTableBody">
-                            <tr>
+                            <tr key={index+1}>
+                              <td>{bill.type||""}</td>
                               <td>
                                 {new Date(
                                   bill.info.createdAt
@@ -336,7 +340,7 @@ const CustReport = () => {
                               <td>{bill.info.touch}</td>
                               <td>{bill.info.purity}</td>
                               <td>{bill.info.amount}</td>
-                              <td>{bill.info.receiveHallMark}</td>
+                              <td>{bill.info.receiveHallMark||0}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -362,11 +366,11 @@ const CustReport = () => {
 
                   <td className="customerTotal">
                     <strong>
-                      Total bill Receive Total:{(currentPageTotal.billReceive).toFixed(3)}
+                      Total bill Receive Total:{(currentPageTotal.billReceive).toFixed(3)} gr
                     </strong>{" "}
                   </td>
                   <td className="customerTotal">
-                    <strong> Total bill Amount:{(currentPageTotal.billAmount).toFixed(3)}</strong>
+                    <strong> Total bill Amount:{(currentPageTotal.billAmount).toFixed(3)} gr</strong>
                   </td>
                 </tr>
                
@@ -400,11 +404,11 @@ const CustReport = () => {
       </div>
         <div className="overAllBalance">
            <div className="balanceCard balance-negative">
-                 Excess Balance: {overAllBalance<0 ?(overAllBalance).toFixed(3):0.000}
+                 Excess Balance: {overAllBalance<0 ?(overAllBalance).toFixed(3):0.000} gr
            </div>
 
            <div className="balanceCard balance-positive">
-               Balance : {overAllBalance>=0 ?(overAllBalance).toFixed(3):0.000}
+               Balance : {overAllBalance>=0 ?(overAllBalance).toFixed(3):0.000} gr
            </div>
           </div>
 

@@ -246,7 +246,7 @@ const jobCardtoRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => 
   }
   await setTotalRawGold();
 };
-const transactionToRawGold=async(date, type, value, touch, purity, customerId, goldRate )=>{
+const transactionToRawGold=async( date, type,amount,gold, touch, purity, customerId, goldRate )=>{
       
     await createhundredPercentTouch();
 
@@ -260,7 +260,7 @@ const transactionToRawGold=async(date, type, value, touch, purity, customerId, g
          const rawGoldLog = await prisma.rawGoldLogs.create({
             data: {
               rawGoldStockId: stock.id,
-              weight:type==="Cash" ? parseFloat(purity) :parseFloat(value)|| 0,
+              weight:type==="Cash" ? parseFloat(purity) :parseFloat(gold)|| 0,
               touch: type === "Cash" ? 100 : parseFloat(touch) || 0, 
               purity:purity||0,
             },
@@ -270,8 +270,9 @@ const transactionToRawGold=async(date, type, value, touch, purity, customerId, g
       data: {
         date: new Date(date),
         type,
-        value: parseFloat(value)||0,
-        goldRate: type === "Cash" ? parseFloat(goldRate) : 0,
+        amount: parseFloat(amount)||0,
+        goldRate: parseFloat(goldRate)|| 0,
+        gold: parseFloat(gold)||0,
         purity: parseFloat(purity)||0,
         touch: type === "Gold" ? parseFloat(touch) : 0,
         customer: {

@@ -217,6 +217,7 @@ const customerReport = async (req, res) => {
     const billWhere = {};
     const billReceiveWhere = {};
     const receiptWhere = {};
+    const transactionWhere={};
 
     // If date range is provided
     if (fromDate && toDate) {
@@ -236,6 +237,10 @@ const customerReport = async (req, res) => {
         gte: from,
         lte: to,
       };
+       transactionWhere.createdAt = {
+        gte: from,
+        lte: to,
+      };
     }
 
     // If customer_id is provided
@@ -243,6 +248,7 @@ const customerReport = async (req, res) => {
       billWhere.customer_id = parseInt(customerId);
       billReceiveWhere.cutomer_id = parseInt(customerId);
       receiptWhere.customer_id = parseInt(customerId);
+      transactionWhere.customerId=parseInt(customerId)
     }
 
     let combinedData = [];
@@ -257,15 +263,15 @@ const customerReport = async (req, res) => {
       const billReceived = await prisma.billReceived.findMany({
         where: billWhere,
       });
-      console.log("customer bill ", customerId, allBill);
-      console.log("customer receive", customerId, billReceived);
+      const allTransaction=await prisma.transaction.findMany({
+        where:transactionWhere
+      })
       const receipt = await prisma.receiptVoucher.findMany({
         where: receiptWhere,
       });
 
       const allReceive = [...billReceived, ...receipt];
-      console.log("All bill report", allBill);
-      console.log("All Receive", allReceive);
+    
 
       combinedData = [
         ...allBill.map((bill) => ({
@@ -276,11 +282,16 @@ const customerReport = async (req, res) => {
           type: receive.billId ? "billReceive" : "ReceiptVoucher",
           info: receive,
         })),
+        ...allTransaction.map((tran)=>({
+          type:"transaction",
+          info:tran
+        }))
+      
       ];
 
       // get overAll balance
       const overallBal = await getCustomerBal.getCustomerBalance(customerId);
-
+   
       res.status(200).json({ data: combinedData, overallBal: overallBal });
     } else {
       res.status(200).json(combinedData);

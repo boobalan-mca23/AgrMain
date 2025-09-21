@@ -59,13 +59,13 @@ model JewelStock {
   purityValue Float
   createdAt   DateTime @default(now())
 }
-
 model Transaction {
   id          Int      @id @default(autoincrement())
   date        DateTime
   type        String
   logId       Int?
-  value       Float?
+  gold        Float?
+  amount      Float?
   goldRate    Float?
   purity      Float?
   touch       Float?

@@ -78,10 +78,9 @@
 }
 
 #customerReportHead tr th {
-  border: 1px solid #0b0a0a;
   padding: 6px;
   text-align:center; 
-  background-image: linear-gradient(60deg, #29323c 0%, #485563 100%);
+  background-color: black;
   color: white;
 }
 
@@ -157,7 +156,7 @@
 .custRepTfoot {
   position: sticky;
   bottom: 0;
-  background: rgb(235, 166, 136);   /* so it doesn’t overlap rows */
+  background: rgb(249, 248, 247);   /* so it doesn’t overlap rows */
   z-index: 2;          /* positive z-index to stay above */
 }
 

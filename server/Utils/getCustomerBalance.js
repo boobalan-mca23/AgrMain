@@ -23,6 +23,12 @@ exports.getCustomerBalance=async(customerId)=>{
             customer_id:parseInt(customerId)
         }
        })
-       return billTotal._sum.billAmount-(billReceiveTotal._sum.purity+receiptVoucherTotal._sum.purity)
+         const custTranTotal=await prisma.transaction.aggregate({
+        _sum:{purity:true},
+        where:{
+            customerId:parseInt(customerId)
+        }
+       })
+       return billTotal._sum.billAmount-(billReceiveTotal._sum.purity+receiptVoucherTotal._sum.purity+custTranTotal._sum.purity)
 } 
 

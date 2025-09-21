@@ -6,6 +6,9 @@ const PrintReceipt = React.forwardRef((props, ref) => {
   return (
     <>
       {/* Header Section */}
+      <div>
+        <h3 style={{textAlign:"center"}}>AGR Receipt Voucher</h3>
+      </div>
       <div style={styles.header}>
         <h3 style={styles.h3}>Receipt Entries</h3>
         <h3 style={styles.h3}>Customer Name: {customerName}</h3>
@@ -36,7 +39,7 @@ const PrintReceipt = React.forwardRef((props, ref) => {
                 style={index % 2 === 0 ? styles.row : styles.rowAlt}
               >
                 <td style={styles.td}>{index + 1}</td>
-                <td style={styles.td}>{item?.date || "-"}</td>
+                <td style={styles.td}>{new Date(item?.date).toLocaleDateString("en-GB") || "-"}</td>
                 <td style={styles.td}>{item?.type || "-"}</td>
                 <td style={styles.td}>{item?.goldRate || "-"}</td>
                 <td style={styles.td}>{item?.gold || "-"}</td>
@@ -54,14 +57,14 @@ const PrintReceipt = React.forwardRef((props, ref) => {
 
       {/* Balance Section */}
       <div style={styles.balance}>
-        <p style={styles.balanceItem}>Cash Balance: {cashBalance.toLocaleString("en-IN", {
+        <strong style={styles.balanceItem}>Cash Balance:₹ {cashBalance.toLocaleString("en-IN", {
                   minimumFractionDigits: 2,
-                })}</p>
-        <p style={styles.balanceItem}>
+                })}</strong>
+        <strong style={styles.balanceItem}>
           {pureBalance < 0 ? "Excess Balance: " : "Pure Balance: "}
           {(pureBalance).toFixed(3)}g
-        </p>
-        <p style={styles.balanceItem}>HallMark Balance: {(hallMark).toFixed(3)}g</p>
+        </strong>
+        <strong style={styles.balanceItem}>HallMark Balance: {(hallMark).toFixed(3)}g</strong>
       </div>
     </>
   );
@@ -129,8 +132,7 @@ const styles = {
   },
   balanceItem: {
     margin: 0,
-    fontWeight: "500",
-    color: "#444",
+
   },
 };
 
