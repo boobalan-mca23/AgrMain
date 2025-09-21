@@ -136,9 +136,10 @@ td {
 
 .total-row {
   display: flex;
-  justify-content: space-between;
+  justify-content:flex-start;
   margin-bottom: 5px;
   font-weight: bold;
+  gap:10px
 }
 .form-actions{
   display: flex;

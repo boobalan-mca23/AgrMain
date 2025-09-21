@@ -11,6 +11,9 @@ const Masteradditems = () => {
   const [editItemId, setEditItemId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
+   // Regex: only letters, numbers, spaces allowed
+  const validName = /^[a-zA-Z0-9\s]+$/;
+
   useEffect(() => {
     fetchItems();
   }, []);
@@ -26,8 +29,8 @@ const Masteradditems = () => {
 
   const handleAddItem = async () => {
     if (itemName.trim()) {
-      // Regex: only letters, numbers, spaces allowed
-      const validName = /^[a-zA-Z0-9\s]+$/;
+     
+     
 
       if (!validName.test(itemName.trim())) {
         toast.warn("Special characters are not allowed.", { autoClose: 2000 });
@@ -80,6 +83,10 @@ const Masteradditems = () => {
       toast.warn("Item name cannot be empty.");
       return;
     }
+     if (!validName.test(editValue.trim())) {
+        toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+        return;
+      }
     try {
       await axios.put(`${BACKEND_SERVER_URL}/api/master-items/${id}`, {
         itemName: editValue.trim(),

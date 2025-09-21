@@ -74,7 +74,7 @@ const updateTouch =  async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: "Failed to update touch value" });
+    res.status(500).json({ error: "Touch Already Exist" });
   }
 }
 

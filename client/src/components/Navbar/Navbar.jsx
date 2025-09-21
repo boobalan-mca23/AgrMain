@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiLogOut, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import NotificationBell from "../Notification/Notification";
-
+import logo from "../../Assets/agrLogo.png"; 
 const Navbar = () => {
   const navigate = useNavigate();
   const [showReports, setShowReports] = useState(false);
@@ -62,10 +62,11 @@ const Navbar = () => {
     <div style={navContainer}>
       <div style={navLeft}>
         <div style={logoContainer}>
+          <img  style={logoImg} src={logo} alt="Agrlogo" ></img>
           <span style={logoText}>AGR</span>
         </div>
 
-        {["Master", "Customer", "Goldsmith","ProductStock","RawGoldStock","Bill","ReceiptVoucher","Bullion","Repair"].map(
+        {["Master", "Customer", "Goldsmith","Product Stock","Raw Gold Stock","Bill","Receipt Voucher","Bullion","Repair"].map(
           (label) => {
             const path = `/${label.replace(/\s+/g, "").toLowerCase()}`;
             return (
@@ -192,9 +193,16 @@ const navContainer = {
 };
 
 const logoContainer = {
-  marginRight: "32px",
+  marginRight: "20px",
   display: "flex",
   alignItems: "center",
+  justifyContent:"start",
+  gap:"10px"
+};
+const logoImg={
+  width:"100%",
+  height:"30px",
+  borderRadius:"5px"
 };
 
 const logoText = {

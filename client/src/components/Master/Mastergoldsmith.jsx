@@ -33,7 +33,7 @@ function Mastergoldsmith() {
   const [errors, setErrors] = useState({ name: "", phone: "" });
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [submitted, setSubmitted] = useState(false);
-
+  const validName = /^[a-zA-Z0-9\s]+$/;
   // refs
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
@@ -103,6 +103,11 @@ function Mastergoldsmith() {
   };
 
   const handleEditSubmit = async () => {
+    
+      if (!validName.test(formData.name.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
     try {
       const response = await fetch(
         `${BACKEND_SERVER_URL}/api/goldsmith/${selectedGoldsmith.id}`,
@@ -144,6 +149,12 @@ function Mastergoldsmith() {
       } else if (!phoneOk) {
         phoneRef.current?.focus();
       }
+      return;
+    }
+  
+
+    if (!validName.test(goldsmithName.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
 
