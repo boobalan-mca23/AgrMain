@@ -27,7 +27,7 @@ function MasterCustomer() {
   const [errors, setErrors] = useState({ name: "", phone: "" });
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [submitted, setSubmitted] = useState(false);
- const [editCustomer, setEditCustomer] = useState(null);
+  const [editCustomer, setEditCustomer] = useState(null);
   const [editedData, setEditedData] = useState({
     name: "",
     phone: "",
@@ -36,6 +36,7 @@ function MasterCustomer() {
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
+   const validName = /^[a-zA-Z0-9\s]+$/;
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -110,6 +111,12 @@ function MasterCustomer() {
       }
       return;
     }
+   
+
+    if (!validName.test(customerName.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
 
     const customerData = {
       name: customerName.trim(),
@@ -118,11 +125,14 @@ function MasterCustomer() {
     };
 
     try {
-      const response = await fetch(`${BACKEND_SERVER_URL}/api/customers/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(customerData),
-      });
+      const response = await fetch(
+        `${BACKEND_SERVER_URL}/api/customers/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(customerData),
+        }
+      );
 
       if (response.ok) {
         const newCustomer = await response.json();
@@ -134,11 +144,10 @@ function MasterCustomer() {
         toast.error(err.message);
       }
     } catch (error) {
-       console.error("Error saving customer:", error);
-       toast.error(error.response.data.message,{autoClose:1000});
+      console.error("Error saving customer:", error);
+      toast.error(error.response.data.message, { autoClose: 1000 });
     }
   };
-
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this customer?")) {
@@ -175,6 +184,12 @@ function MasterCustomer() {
   };
 
   const handleUpdate = async () => {
+  
+    if (!validName.test(editedData.name.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
+    
     try {
       const response = await fetch(
         `${BACKEND_SERVER_URL}/api/customers/${editCustomer.id}`,
@@ -234,7 +249,8 @@ function MasterCustomer() {
               value={customerName}
               onChange={(e) => {
                 setCustomerName(e.target.value);
-                if (touched.name || submitted) validateField("name", e.target.value);
+                if (touched.name || submitted)
+                  validateField("name", e.target.value);
               }}
               onBlur={(e) => handleBlur("name", e.target.value)}
               onKeyDown={(e) => {
@@ -244,7 +260,7 @@ function MasterCustomer() {
                 }
               }}
               error={(touched.name || submitted) && !!errors.name}
-              helperText={(touched.name || submitted) ? errors.name : ""}
+              helperText={touched.name || submitted ? errors.name : ""}
             />
 
             {/* Phone Number */}
@@ -258,7 +274,8 @@ function MasterCustomer() {
               value={phoneNumber}
               onChange={(e) => {
                 setPhoneNumber(e.target.value);
-                if (touched.phone || submitted) validateField("phone", e.target.value);
+                if (touched.phone || submitted)
+                  validateField("phone", e.target.value);
               }}
               onBlur={(e) => handleBlur("phone", e.target.value)}
               onKeyDown={(e) => {
@@ -268,7 +285,7 @@ function MasterCustomer() {
                 }
               }}
               error={(touched.phone || submitted) && !!errors.phone}
-              helperText={(touched.phone || submitted) ? errors.phone : ""}
+              helperText={touched.phone || submitted ? errors.phone : ""}
             />
 
             {/* Address (optional) */}
@@ -302,12 +319,12 @@ function MasterCustomer() {
         </Dialog>
 
         {customers.length > 0 && (
-          <Paper >
-            <table  width="100%" className="customer-table">
+          <Paper>
+            <table width="100%" className="customer-table">
               <thead>
                 <tr className="customer-tablehead">
                   <th>S.no</th>
-                  <th >Customer Name</th>
+                  <th>Customer Name</th>
                   <th>Phone Number</th>
                   <th>Address</th>
                   <th>Action</th>
@@ -316,12 +333,12 @@ function MasterCustomer() {
               <tbody className="customer-tablebody">
                 {customers.map((customer, index) => (
                   <tr key={index}>
-                    <td>{index+1}</td>
+                    <td>{index + 1}</td>
                     <td>{customer.name}</td>
                     <td>{customer.phone}</td>
                     <td>{customer.address || "-"}</td>
                     <td>
-                         <Tooltip title="Edit Customer">
+                      <Tooltip title="Edit Customer">
                         <IconButton onClick={() => handleEdit(customer)}>
                           <EditIcon color="secondary" />
                         </IconButton>
@@ -341,7 +358,7 @@ function MasterCustomer() {
         )}
       </div>
 
-       <Dialog open={!!editCustomer} onClose={() => setEditCustomer(null)}>
+      <Dialog open={!!editCustomer} onClose={() => setEditCustomer(null)}>
         <DialogTitle>Edit Customer</DialogTitle>
         <DialogContent>
           <TextField

@@ -82,7 +82,7 @@ const Masteradditems = () => {
       fetchTouch();
     } catch (err) {
       console.error("Failed to update touch", err);
-      toast.error("Failed to update. Please try again.");
+      toast.error(err.response.data.msg,{autoClose:2000});
     }
   };
 
