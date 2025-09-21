@@ -2,6 +2,13 @@
   text-align: center;
 }
 
+body {
+  margin: 0;
+  font-family: 'Google Sans', 'Roboto', 'Arial', sans-serif;
+  background-color: #f9f9f9;
+  color: #202124
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;

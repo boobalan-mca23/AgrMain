@@ -1,0 +1,102 @@
+/* ---- Form Container ---- */
+.newExpenseForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.formGrid{
+  border: 1px solid black;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  padding: 10px;
+}
+.description{
+    height: 100px;
+    
+}
+.newExpenseForm input,
+.newExpenseForm select {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.newExpenseForm input:focus,
+.newExpenseForm select:focus,
+.newExpenseForm textarea:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 5px rgba(25, 118, 210, 0.3);
+}
+
+/* ---- Purity Readonly Input ---- */
+.newExpenseForm input[readonly] {
+  background-color: #f5f5f5;
+  color: #555;
+  cursor: not-allowed;
+}
+
+/* ---- Touch Table ---- */
+.touchGroup {
+  overflow-x: auto;
+  padding: 10px;
+}
+
+.jobCardTouchTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 0.95rem;
+  
+}
+
+.jobCardTouchTable th,
+.jobCardTouchTable td {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.jobCardTouchTable thead tr {
+  background: linear-gradient(90deg, #1976d2, #42a5f5);
+  color: #fff;
+}
+
+.jobCardTouchTable tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.jobCardTouchTable tbody tr:hover {
+  background-color: #e3f2fd;
+}
+
+.jobCardTouchTable td:nth-child(4)[style*="red"] {
+  background-color: #f8d7da !important;
+  color: #842029 !important;
+  font-weight: bold;
+}
+
+/* ---- Save Button ---- */
+.actionButton button {
+  background-color: #1976d2;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.actionButton button:hover {
+  background-color: #115293;
+  transform: translateY(-2px);
+}
+
+/* ---- Dialog Title ---- */
+.MuiDialogTitle-root {
+  font-size: 1.5rem;
+  font-weight: 600;
+}

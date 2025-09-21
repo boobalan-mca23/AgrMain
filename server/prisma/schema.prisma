@@ -272,6 +272,18 @@ model RawGoldLogs{
     billReceive      billReceived[]
     receiptVoucher   receiptVoucher[]
     transactions     Transaction[] 
+    expenseTracker   ExpenseTracker[]
+}
+model ExpenseTracker{
+  id              Int          @id @default(autoincrement())
+  logId           Int?
+  gold            Float?
+  touch           Float?
+  purity          Float?
+  description     String?
+  rawGoldLogs     RawGoldLogs?  @relation(fields: [logId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now())
 }
 model Balances {
   id                  Int         @id @default(autoincrement())

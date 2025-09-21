@@ -300,13 +300,14 @@ const transactionToRawGold=async( date, type,amount,gold, touch, purity, custome
     await setTotalRawGold(); // we need to add rawGold 
 
     return  transaction;
-
 }
+
 module.exports={
   moveToRawGoldStock,
   receiptMoveToRawGold,
   jobCardtoRawGoldStock,
-  transactionToRawGold
+  transactionToRawGold,
+  
 }
 
 

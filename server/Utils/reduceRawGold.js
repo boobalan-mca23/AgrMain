@@ -84,10 +84,44 @@ const reduceRawGold  = async (givenGold,jobCardId,goldSmithId) => {
   }
   await setTotalRawGold();
 };
+const expenseGoldReduce=async(gold,touch,purity,description)=>{
+     let data={
+       description,
+       gold,
+       touch,
+       purity,
+       
+     }
+   const stock = await prisma.rawgoldStock.findFirst({
+          where: {
+            touch: touch||0, // match the touch value
+          },
+          select: {
+            id: true, // only return the id
+          },
+        });
+         if (!stock) {
+            throw new Error(`No stock found for touch: ${data.touch}`);
+          }
+        const rawGoldLog = await prisma.rawGoldLogs.create({
+          data: {
+            rawGoldStockId: stock.id,
+            weight: -data.gold||0,
+            touch: data.touch||0,
+            purity: data.purity||0,
+          },
+        });
+        data = {
+          ...data,
+          logId: rawGoldLog.id,
+        };
+        await prisma.expenseTracker.create({ data });
 
+       await setTotalRawGold();
+}
 
 
 module.exports = {
   reduceRawGold,
-   
+  expenseGoldReduce
 };
