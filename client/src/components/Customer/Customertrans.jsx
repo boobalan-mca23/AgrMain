@@ -24,10 +24,10 @@ const Customertrans = () => {
   const [masterTouch,setMasterTouch]=useState([])
   const [newTransaction, setNewTransaction] = useState({
     date: formattedToday ,
-    value: "",
+    gold: "",
     type: "Select",
-    cashValue: "",
-    goldValue: "",
+    amount: "",
+    goldRate: "",
     touch: "",
     purity: "",
   });
@@ -64,7 +64,7 @@ const Customertrans = () => {
     const { name, value } = e.target;
     const updatedTransaction = { ...newTransaction, [name]: value };
 
-    if (name === "cashValue" && updatedTransaction.type === "Cash") {
+    if (name === "amount" && updatedTransaction.type === "Cash") {
       updatedTransaction.value = value;
       if (goldRate) {
         const cash = parseFloat(value);
@@ -73,7 +73,7 @@ const Customertrans = () => {
           updatedTransaction.purity = (cash / rate).toFixed(3);
         }
       }
-    } else if (name === "goldValue" && updatedTransaction.type === "Gold") {
+    } else if (name === "gold" && updatedTransaction.type === "Gold") {
       updatedTransaction.value = value;
       const touch = parseFloat(updatedTransaction.touch);
       const gold = parseFloat(value);
@@ -81,7 +81,7 @@ const Customertrans = () => {
         updatedTransaction.purity = ((gold * touch) / 100).toFixed(3);
       }
     } else if (name === "touch" && updatedTransaction.type === "Gold") {
-      const gold = parseFloat(updatedTransaction.goldValue);
+      const gold = parseFloat(updatedTransaction.gold);
       const touch = parseFloat(value);
       if (!isNaN(gold) && !isNaN(touch)) {
         updatedTransaction.purity = ((gold * touch) / 100).toFixed(3);
@@ -100,13 +100,13 @@ const Customertrans = () => {
         throw new Error("Date and transaction type are required");
       }
       if(newTransaction.type==="Cash"){
-        if(!newTransaction.cashValue || !goldRate){
+        if(!newTransaction.amount || !goldRate){
           throw new Error("Cash value and goldRate are required");
         }
       }
 
        if(newTransaction.type==="Gold"){
-        if(!newTransaction.goldValue || !newTransaction.touch){
+        if(!newTransaction.gold || !newTransaction.touch){
           throw new Error("gold value and touch are required");
         }
       }
@@ -118,19 +118,17 @@ const Customertrans = () => {
       const transactionData = {
         date: newTransaction.date,
         type: newTransaction.type,
-        value:
-          newTransaction.type === "Cash"
-            ? parseFloat(newTransaction.cashValue)
-            : parseFloat(newTransaction.goldValue),
+        amount:parseFloat(newTransaction.amount)||0,
+        gold: parseFloat(newTransaction.gold)||0,
         purity: parseFloat(newTransaction.purity),
         customerId: parseInt(customerId),
-        goldRate: newTransaction.type === "Cash" ? parseFloat(goldRate) : null,
+        goldRate: newTransaction.type === "Cash" ? parseFloat(goldRate) : 0,
         touch:
           newTransaction.type === "Gold"
             ? parseFloat(newTransaction.touch)
-            : null,
+            : 0,
       };
-
+      console.log('customer transacation payload',transactionData)
       const response = await axios.post(
         `${BACKEND_SERVER_URL}/api/transactions`,
         transactionData
@@ -148,13 +146,13 @@ const Customertrans = () => {
 
   const resetForm = () => {
     setNewTransaction({
-      date: formattedToday,
-      value: "",
-      type: "Select",
-      cashValue: "",
-      goldValue: "",
-      touch: "",
-      purity: "",
+      date: formattedToday ,
+    gold: "",
+    type: "Select",
+    amount: "",
+    goldRate: "",
+    touch: "",
+    purity: "",
     });
     setError("");
     setGoldRate("");
@@ -255,8 +253,8 @@ const Customertrans = () => {
                     Cash Amount (₹):
                     <input
                       type="number"
-                      name="cashValue"
-                      value={newTransaction.cashValue}
+                      name="amount"
+                      value={newTransaction.amount}
                       onChange={handleChange}
                       step="0.01"
                       required
@@ -269,8 +267,8 @@ const Customertrans = () => {
                       value={goldRate}
                       onChange={(e) => {
                         setGoldRate(e.target.value);
-                        if (newTransaction.cashValue) {
-                          const cash = parseFloat(newTransaction.cashValue);
+                        if (newTransaction.amount) {
+                          const cash = parseFloat(newTransaction.amount);
                           const rate = parseFloat(e.target.value);
                           if (!isNaN(cash) && !isNaN(rate) && rate > 0) {
                             const updatedTransaction = { ...newTransaction };
@@ -303,8 +301,8 @@ const Customertrans = () => {
                     Gold Value (grams):
                     <input
                       type="number"
-                      name="goldValue"
-                      value={newTransaction.goldValue}
+                      name="gold"
+                      value={newTransaction.gold}
                       onChange={handleChange}
                       step="0.001"
                       required
@@ -312,21 +310,6 @@ const Customertrans = () => {
                   </label>
                   <label>
                     Touch (%):
-                      {/* <select
-                      value={row.touch}
-                      onChange={(e) =>
-                        handleReceivedRowChange(i, "touch", e.target.value)
-                      }
-                      className="input-small"
-                      // disabled={isLoading || !isItemDeliveryEnabled}
-                    >
-                      <option value="">Select</option>
-                      {dropDownItems.touchList.map((option) => (
-                        <option key={option.id} value={option.touch}>
-                          {option.touch}
-                        </option>
-                      ))}
-                    </select> */}
                     <select
                       value={newTransaction.touch}
                       onChange={handleChange}
@@ -340,16 +323,6 @@ const Customertrans = () => {
                         </option>
                       ))}
                     </select>
-                    {/* <input
-                      type="number"
-                      name="touch"
-                      value={newTransaction.touch}
-                      onChange={handleChange}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      required
-                    /> */}
                   </label>
                   <label>
                     Purity (grams):
@@ -388,14 +361,15 @@ const Customertrans = () => {
           <tr>
             <th>Date</th>
             <th>Type</th>
-            <th>Value</th>
             <th>Gold Rate</th>
+            <th>Gold</th>
             <th>Purity (grams)</th>
+            <th>Amount</th>
             <th>Touch</th>
           </tr>
         </thead>
         <tbody>
-          {filteredTransactions.map((transaction) => (
+          {/* {filteredTransactions.map((transaction) => (
             <tr key={transaction.id}>
               <td>{new Date(transaction.date).toLocaleDateString("en-GB")}</td>
               <td>{transaction.type}</td>
@@ -414,11 +388,11 @@ const Customertrans = () => {
                 {transaction.type === "Gold" ? `${transaction.touch}%` : "-"}
               </td>
             </tr>
-          ))}
+          ))} */}
         </tbody>
       </table>
 
-      {totals.totalPurity > 0 && (
+      {/* {totals.totalPurity > 0 && (
         <div className="transaction-totals">
           <h3>Transaction Totals</h3>
           <div className="total-row">
@@ -426,7 +400,7 @@ const Customertrans = () => {
             <span>{totals.totalPurity.toFixed(3)} g</span>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

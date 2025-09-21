@@ -4,13 +4,13 @@ const prisma = new PrismaClient();
 const transToRawGold=require('../Utils/addRawGoldStock')
 const createTransaction = async (req, res) => {
   try {
-    const { date, type, value, touch, purity, customerId, goldRate } = req.body;
+    const { date, type,amount,gold, touch, purity, customerId, goldRate } = req.body;
 
-    if (!date || !type || !value || !customerId) {
+    if (!date || !type || !customerId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
    
-      const transaction=await transToRawGold.transactionToRawGold(date, type, value, touch, purity, customerId, goldRate )
+      const transaction=await transToRawGold.transactionToRawGold(date, type,amount,gold, touch, purity, customerId, goldRate )
      console.log('transaction form return function',transaction)
 
     res.status(201).json(transaction);

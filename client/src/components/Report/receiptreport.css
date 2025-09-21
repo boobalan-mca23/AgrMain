@@ -61,6 +61,7 @@
 .receiptreportTable{
   width: 100%;
   border-collapse: collapse;
+  padding: 10px;
 
 }
 #receiptreportHead{

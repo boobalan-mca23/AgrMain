@@ -1,9 +1,8 @@
-
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiLogOut, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import NotificationBell from "../Notification/Notification";
-import logo from "../../Assets/agrLogo.png"; 
+import logo from "../../Assets/agrLogo.png";
 const Navbar = () => {
   const navigate = useNavigate();
   const [showReports, setShowReports] = useState(false);
@@ -11,6 +10,8 @@ const Navbar = () => {
   const [activeReport, setActiveReport] = useState("");
   const [hoveredItem, setHoveredItem] = useState(null);
   const reportsRef = useRef(null);
+  const [showStock, setShowStock] = useState(false);
+  const [activeStock, setActiveStock] = useState("");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -30,6 +31,17 @@ const Navbar = () => {
   const toggleReports = (e) => {
     e.stopPropagation();
     setShowReports(!showReports);
+  };
+
+  const toggleStock = (e) => {
+    e.stopPropagation();
+    setShowStock(!showStock);
+  };
+
+  const handleStockClick = (path) => {
+    setActiveStock(path);
+    handleLinkClick(path);
+    navigate(path);
   };
 
   const getNavLinkStyle = (path) => ({
@@ -62,27 +74,90 @@ const Navbar = () => {
     <div style={navContainer}>
       <div style={navLeft}>
         <div style={logoContainer}>
-          <img  style={logoImg} src={logo} alt="Agrlogo" ></img>
+          <img style={logoImg} src={logo} alt="Agrlogo"></img>
           <span style={logoText}>AGR</span>
         </div>
 
-        {["Master", "Customer", "Goldsmith","Product Stock","Raw Gold Stock","Bill","Receipt Voucher","Bullion","Repair"].map(
-          (label) => {
-            const path = `/${label.replace(/\s+/g, "").toLowerCase()}`;
-            return (
-              <a
-                key={label}
-                href={path}
-                style={getNavLinkStyle(path)}
-                onClick={() => handleLinkClick(path)}
-                onMouseEnter={() => setHoveredItem(path)}
-                onMouseLeave={() => setHoveredItem(null)}
-              >
-                {label}
-              </a>
-            );
-          }
-        )}
+        {[
+          "Master",
+          "Customer",
+          "Goldsmith",
+          "Bill",
+          "Receipt Voucher",
+          "Bullion",
+          "Repair",
+        ].map((label) => {
+          const path = `/${label.replace(/\s+/g, "").toLowerCase()}`;
+          return (
+            <a
+              key={label}
+              href={path}
+              style={getNavLinkStyle(path)}
+              onClick={() => handleLinkClick(path)}
+              onMouseEnter={() => setHoveredItem(path)}
+              onMouseLeave={() => setHoveredItem(null)}
+            >
+              {label}
+            </a>
+          );
+        })}
+        <div
+          style={{
+            ...navLink,
+            backgroundColor:
+              hoveredItem === "stock"
+                ? "rgba(255, 255, 255, 0.1)"
+                : "transparent",
+            color: "rgba(255, 255, 255, 0.8)",
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            position: "relative",
+            cursor: "pointer",
+          }}
+          onClick={toggleStock}
+          onMouseEnter={() => {
+            setHoveredItem("stock");
+            setShowStock(true);
+          }}
+          onMouseLeave={() => {
+            setHoveredItem(null);
+            setTimeout(() => setShowStock(false), 300);
+          }}
+        >
+          Stock{" "}
+          {showStock ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          {showStock && (
+            <div
+              style={dropdownMenu}
+              onMouseEnter={() => setShowStock(true)}
+              onMouseLeave={() => setShowStock(false)}
+            >
+              {[
+                ["Product Stock", "/productstock"],
+                ["Raw Gold Stock", "/rawgoldstock"],
+              ].map(([name, path]) => (
+                <a
+                  key={path}
+                  href={path}
+                  style={getReportItemStyle(path)} // reuse styles
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleStockClick(path);
+                  }}
+                  onMouseEnter={() => setHoveredItem(path)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  {name}
+                  {activeStock === path && (
+                    <span style={selectedIndicator}>✓</span>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div
           ref={reportsRef}
@@ -128,10 +203,9 @@ const Navbar = () => {
                 // ["Overall Report", "/overallreport"],
                 ["Jobcard Report", "/jobcardReport"],
                 // ["Receipt Report", "/receiptreport"],
-                ["Order Report","/orderreport"],
-                ["Jewelstock Report","/jewelstockreport"],
-                ["Receipt Report","/receiptreport"]
-
+                ["Order Report", "/orderreport"],
+                ["Jewelstock Report", "/jewelstockreport"],
+                ["Receipt Report", "/receiptreport"],
               ].map(([name, path]) => (
                 <a
                   key={path}
@@ -189,20 +263,19 @@ const navContainer = {
   position: "relative",
   height: "64px",
   boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
- 
 };
 
 const logoContainer = {
   marginRight: "20px",
   display: "flex",
   alignItems: "center",
-  justifyContent:"start",
-  gap:"10px"
+  justifyContent: "start",
+  gap: "10px",
 };
-const logoImg={
-  width:"100%",
-  height:"30px",
-  borderRadius:"5px"
+const logoImg = {
+  width: "100%",
+  height: "30px",
+  borderRadius: "5px",
 };
 
 const logoText = {
@@ -225,7 +298,7 @@ const navLeft = {
 const navLink = {
   cursor: "pointer",
   fontSize: "1.15rem",
-  fontWeight:"600",
+  fontWeight: "600",
   textDecoration: "none",
   padding: "8px 16px",
   borderRadius: "6px",
@@ -275,7 +348,7 @@ const dropdownItem = {
   textDecoration: "none",
   color: "#495057",
   fontSize: "1rem",
-  fontWeight:"500",
+  fontWeight: "500",
   transition: "all 0.2s ease",
 };
 
