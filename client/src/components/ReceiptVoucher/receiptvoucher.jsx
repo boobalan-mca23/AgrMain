@@ -30,7 +30,9 @@ import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
 import "./receiptvoucher.css";
 import { MdDeleteForever } from "react-icons/md";
-import {receiptValidation} from "../receiptValidation/receiptValidation"
+import { receiptValidation } from "../receiptValidation/receiptValidation";
+import PrintReceipt from "../PrintReceipt/PrintReceipt";
+import ReactDOMServer from "react-dom/server";
 const Receipt = () => {
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [customers, setCustomers] = useState([]);
@@ -38,8 +40,8 @@ const Receipt = () => {
     oldbalance: 0,
     hallMark: 0,
   });
-  const selectedType = ["Cash","Gold"];
-  const [masterTouch,setMasterTouch]=useState([])
+  const selectedType = ["Cash", "Gold"];
+  const [masterTouch, setMasterTouch] = useState([]);
   const [receipt, setReceipt] = useState([
     {
       date: "",
@@ -52,7 +54,7 @@ const Receipt = () => {
       hallMark: "",
     },
   ]);
-  const [receiptErrors,setReceiptErrors]=useState([])
+  const [receiptErrors, setReceiptErrors] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [allReceipts, setAllReceipts] = useState([]);
   const inputRefs = useRef({});
@@ -68,11 +70,11 @@ const Receipt = () => {
         console.error("Error fetching customers:", error);
       }
     };
-   const fetchTouch = async () => {
+    const fetchTouch = async () => {
       try {
         const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
-        setMasterTouch(res.data)
-        console.log('res touch',res.data)
+        setMasterTouch(res.data);
+        console.log("res touch", res.data);
       } catch (err) {
         console.error("Failed to fetch touch values", err);
       }
@@ -81,7 +83,6 @@ const Receipt = () => {
     fetchTouch();
   }, []);
 
- 
   const handleAddRow = () => {
     const newRow = {
       date: "",
@@ -105,14 +106,13 @@ const Receipt = () => {
   };
   const handleChangeReceipt = (index, field, value) => {
     const updatedRows = [...receipt];
-    if(field==="type"){
+    if (field === "type") {
       // if one row only have one type if we change another type before we set all values are empty
-    updatedRows[index].gold=""
-    updatedRows[index].touch=""
-    updatedRows[index].amount=""
-    updatedRows[index].goldRate=""
-    updatedRows[index].purity=""
-       
+      updatedRows[index].gold = "";
+      updatedRows[index].touch = "";
+      updatedRows[index].amount = "";
+      updatedRows[index].goldRate = "";
+      updatedRows[index].purity = "";
     }
     updatedRows[index][field] = value;
     const goldRate = parseFloat(updatedRows[index].goldRate) || 0;
@@ -131,7 +131,7 @@ const Receipt = () => {
     updatedRows[index].purity = calculatedPurity.toFixed(3);
 
     setReceipt(updatedRows);
-    receiptValidation(receipt,setReceiptErrors)
+    receiptValidation(receipt, setReceiptErrors);
   };
 
   const handleCustomerChange = (event) => {
@@ -177,17 +177,59 @@ const Receipt = () => {
 
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
 
+  const handlePrint = (receipt, selectedCustomer) => {
+    const customerName = customers.find(
+      (item) => String(item.id) === String(selectedCustomer)
+    );
+
+    const printContent = (
+      <PrintReceipt 
+       receipt={receipt}
+       customerName={customerName.name}
+       oldbalance={receiptBalances?.oldbalance}
+       oldHallMark={receiptBalances?.hallMark}
+       cashBalance={cashBalance}
+       pureBalance={pureBalance}
+       hallMark={hallmarkBalance}
+        />
+    );
+
+    const printHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Receipt Print</title>
+       
+      <body>
+        ${ReactDOMServer.renderToString(printContent)}
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              window.close();
+            }, 200);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  };
+
   const handleSaveReeceipt = () => {
     const payLoad = {
-      customerId :selectedCustomer,
+      customerId: selectedCustomer,
       received: receipt,
       pureBalance: pureBalance,
       hallmarkBalance: hallmarkBalance,
     };
     console.log("payLoad", payLoad);
+
     const saveReceipt = async () => {
+      handlePrint(receipt, selectedCustomer);
       try {
-      
         const response = await axios.post(
           `${BACKEND_SERVER_URL}/api/receipt`,
           payLoad
@@ -210,16 +252,14 @@ const Receipt = () => {
           setReceiptBalances({ oldbalance: 0, hallMark: 0 });
         }
       } catch (err) {
-         console.log(err)
-         toast.error(err.response.data.error,{autoClose:2000});
-       
+        console.log(err);
+        toast.error(err.response.data.error, { autoClose: 2000 });
       }
     };
     if (!selectedCustomer) return toast.warn("Select Customer");
-  receiptValidation(receipt, setReceiptErrors)
-  ? saveReceipt()
-  : toast.warn("Give Correct Information");
-
+    receiptValidation(receipt, setReceiptErrors)
+      ? saveReceipt()
+      : toast.warn("Give Correct Information");
   };
   return (
     <>
@@ -270,20 +310,19 @@ const Receipt = () => {
                 Add Row
               </button>
               <button
-                disabled={receipt.length<=0}
+                disabled={receipt.length <= 0}
                 onClick={() => {
                   handleSaveReeceipt();
                 }}
               >
                 Save
               </button>
-              
             </div>
           </div>
 
           <div className="tableWrapper">
             <table className="receiptTable">
-              <thead className="receipthead"> 
+              <thead className="receipthead">
                 <tr className="receiptRow">
                   <th>S.no</th>
                   <th>Date</th>
@@ -310,10 +349,12 @@ const Receipt = () => {
                           handleChangeReceipt(index, "date", e.target.value)
                         }
                       />
-                       <br></br>
-                    {receiptErrors[index]?.date && (
-                      <span className="error">{receiptErrors[index]?.date}</span>
-                    )}
+                      <br></br>
+                      {receiptErrors[index]?.date && (
+                        <span className="error">
+                          {receiptErrors[index]?.date}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <select
@@ -324,48 +365,54 @@ const Receipt = () => {
                         className="receiptSelect"
                       >
                         <option value="">Select Type</option>
-                        {selectedType.map((option,) => (
+                        {selectedType.map((option) => (
                           <option key={option} value={option}>
                             {option}
                           </option>
                         ))}
                       </select>
-                         <br></br>
-                    {receiptErrors[index]?.type && (
-                      <span className="error">{receiptErrors[index]?.type}</span>
-                    )}
+                      <br></br>
+                      {receiptErrors[index]?.type && (
+                        <span className="error">
+                          {receiptErrors[index]?.type}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <input
-                        disabled={item.type==="Cash"?false:true}
+                        disabled={item.type === "Cash" ? false : true}
                         className="receiptTableInput"
                         value={item.goldRate}
                         onChange={(e) =>
                           handleChangeReceipt(index, "goldRate", e.target.value)
                         }
                       />
-                       <br></br>
-                    {receiptErrors[index]?.goldRate && (
-                      <span className="error">{receiptErrors[index]?.goldRate}</span>
-                    )}
+                      <br></br>
+                      {receiptErrors[index]?.goldRate && (
+                        <span className="error">
+                          {receiptErrors[index]?.goldRate}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <input
-                        disabled={item.type==="Gold"?false:true}
+                        disabled={item.type === "Gold" ? false : true}
                         className="receiptTableInput"
                         value={item.gold}
                         onChange={(e) =>
                           handleChangeReceipt(index, "gold", e.target.value)
                         }
                       />
-                        <br></br>
-                    {receiptErrors[index]?.gold && (
-                      <span className="error">{receiptErrors[index]?.gold}</span>
-                    )}
+                      <br></br>
+                      {receiptErrors[index]?.gold && (
+                        <span className="error">
+                          {receiptErrors[index]?.gold}
+                        </span>
+                      )}
                     </td>
                     <td>
-                     <select
-                        disabled={item.type==="Gold"?false:true}
+                      <select
+                        disabled={item.type === "Gold" ? false : true}
                         value={item.touch}
                         onChange={(e) => {
                           handleChangeReceipt(index, "touch", e.target.value);
@@ -373,17 +420,19 @@ const Receipt = () => {
                         className="receiptTableInput"
                       >
                         <option value="">touch</option>
-                        {masterTouch.map((option,) => (
+                        {masterTouch.map((option) => (
                           <option key={option.id} value={option.touch}>
                             {option.touch}
                           </option>
                         ))}
                       </select>
-                    
-                         <br></br>
-                    {receiptErrors[index]?.touch && (
-                      <span className="error">{receiptErrors[index]?.touch}</span>
-                    )}
+
+                      <br></br>
+                      {receiptErrors[index]?.touch && (
+                        <span className="error">
+                          {receiptErrors[index]?.touch}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <input
@@ -394,17 +443,19 @@ const Receipt = () => {
                     </td>
                     <td>
                       <input
-                        disabled={item.type==="Cash"?false:true}
+                        disabled={item.type === "Cash" ? false : true}
                         className="receiptTableInput"
                         value={item.amount}
                         onChange={(e) =>
                           handleChangeReceipt(index, "amount", e.target.value)
                         }
                       />
-                        <br></br>
-                    {receiptErrors[index]?.amount && (
-                      <span className="error">{receiptErrors[index]?.amount}</span>
-                    )}
+                      <br></br>
+                      {receiptErrors[index]?.amount && (
+                        <span className="error">
+                          {receiptErrors[index]?.amount}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <input
@@ -414,10 +465,12 @@ const Receipt = () => {
                           handleChangeReceipt(index, "hallMark", e.target.value)
                         }
                       />
-                        <br></br>
-                    {receiptErrors[index]?.hallMark && (
-                      <span className="error">{receiptErrors[index]?.hallMark}</span>
-                    )}
+                      <br></br>
+                      {receiptErrors[index]?.hallMark && (
+                        <span className="error">
+                          {receiptErrors[index]?.hallMark}
+                        </span>
+                      )}
                     </td>
                     <td className="delIcon">
                       <MdDeleteForever
@@ -433,10 +486,15 @@ const Receipt = () => {
           </div>
           <div className="receiptBalances">
             <div>
-              <p>CashBalance ₹{cashBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
+              <p>
+                CashBalance ₹
+                {cashBalance.toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                })}
+              </p>
             </div>
             <div>
-              <p>old Balance {pureBalance.toFixed(3)}gr</p>
+              <p>{pureBalance<0? "ExcessBalance":"PureBalance"} {pureBalance.toFixed(3)}gr</p>
             </div>
             <div>
               <p>Hall Mark Balance {hallmarkBalance.toFixed(3)}gr</p>
