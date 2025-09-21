@@ -369,30 +369,27 @@ const Customertrans = () => {
           </tr>
         </thead>
         <tbody>
-          {/* {filteredTransactions.map((transaction) => (
+          {filteredTransactions.map((transaction) => (
             <tr key={transaction.id}>
               <td>{new Date(transaction.date).toLocaleDateString("en-GB")}</td>
               <td>{transaction.type}</td>
               <td>
-                {transaction.type === "Cash"
-                  ? `₹${(transaction.value).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
-                  : `${transaction.value.toFixed(3)}g`}
+                {transaction.goldRate.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </td>
               <td>
-                {transaction.type === "Cash"
-                  ? transaction.goldRate?.toFixed(2)
-                  : "-"}
+                {transaction.gold}gr
               </td>
               <td>{transaction.purity.toFixed(3)}</td>
+              <td> {transaction.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
               <td>
                 {transaction.type === "Gold" ? `${transaction.touch}%` : "-"}
               </td>
             </tr>
-          ))} */}
+          ))}
         </tbody>
       </table>
 
-      {/* {totals.totalPurity > 0 && (
+      {totals.totalPurity > 0 && (
         <div className="transaction-totals">
           <h3>Transaction Totals</h3>
           <div className="total-row">
@@ -400,7 +397,7 @@ const Customertrans = () => {
             <span>{totals.totalPurity.toFixed(3)} g</span>
           </div>
         </div>
-      )} */}
+      )}
     </div>
   );
 };

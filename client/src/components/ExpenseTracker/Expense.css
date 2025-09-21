@@ -1,0 +1,74 @@
+.expenseHeader {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #f9f8fa, #fefefe); 
+    color: black; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+    border-radius: 10px;
+    padding:20px; 
+    font-weight: 500;
+    
+}
+.expensebtn{
+
+    border: none;
+    background-color: blue;
+    color: white;
+    padding: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 9px;
+    font-size: smaller;
+   
+
+}
+.expensebtn:hover{
+    background-color: rgb(22, 159, 10);
+    color: white
+}
+
+.expensetable {
+  width: 100%;
+  border-collapse: collapse; /* collapse borders */
+  margin-top: 15px;
+  font-family: Arial, sans-serif;
+}
+
+.expensetable th, td {
+  border: 1px solid #ddd; /* thin border */
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.expensetable thead th {
+  background-color: #000; /* black header */
+  color: #fff; /* white text */
+  font-weight: bold;
+}
+
+
+
+.expensetable tbody tr:hover {
+  background-color: #f1f1f1; /* hover effect */
+  cursor: pointer;
+}
+
+.expensefilters  {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.expensefilters  label {
+  font-weight: bold;
+}
+
+.expensefilters input {
+  margin-left: 8px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}

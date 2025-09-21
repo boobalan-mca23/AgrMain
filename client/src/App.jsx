@@ -21,6 +21,7 @@ import Customerorders from "./components/Customer/Customerorders";
 import Orderreport from "./components/Report/orderreport";
 import Newjobcard from "./components/Goldsmith/Newjobcard";
 // import Goldsmithcard from "./components/Goldsmith/goldsmithcard"
+import ExpenseTracker from "./components/ExpenseTracker/ExpenseTracker";
 import JobCardDetails from "./components/Goldsmith/JobCard"
 import MasterBullion from "./components/Master/Masterbullion";
 import Bullion from "./components/Bullion/Bullion";
@@ -57,7 +58,14 @@ function App() {
             </PageWithNavbar>
           }
         />
-
+          <Route
+          path="/expenseTracker"
+          element={
+            <PageWithNavbar>
+             <ExpenseTracker/>
+            </PageWithNavbar>
+          }
+        />
         <Route
           path="/bill"
           element={

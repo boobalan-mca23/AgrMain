@@ -24,7 +24,8 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.3.0",
     "react-toastify": "^11.0.5",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "zod": "^4.1.11"
   },
   "scripts": {
     "dev": "vite",
