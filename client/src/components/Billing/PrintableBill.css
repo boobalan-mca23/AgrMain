@@ -1,0 +1,70 @@
+.printable-bill {
+  width: 100%;
+  font-family: Arial, sans-serif;
+}
+
+.printable-bill .container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.printable-bill .heading {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.printable-bill .billInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+
+.printable-bill .billInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.printable-bill .customerDetails {
+  margin-bottom: 20px;
+}
+
+.printable-bill table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+}
+
+.printable-bill th, .printable-bill td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.printable-bill th {
+  background-color: #f2f2f2;
+}
+
+.printable-bill .bill-summary, .printable-bill .balance-details {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.printable-bill .summary-row, .printable-bill .balance-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+}
+
+.printable-bill .summary-row.total {
+  font-weight: bold;
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+  margin-top: 10px;
+}

@@ -170,6 +170,7 @@ const calculatewastgePure=(stock)=>{
               <th>Count</th>
               <th>Tocuh </th>
               <th>StoneWt (g)</th>
+              <th>NetWeight (g)</th>
               <th>WastageValue (g)</th>
               <th>WastagePure (g)</th>
               <th>Final Purity</th>
@@ -184,6 +185,7 @@ const calculatewastgePure=(stock)=>{
                 <td>{item.count||0}</td>
                 <td>{item.touch}</td>
                 <td>{item.stoneWeight.toFixed(3)}</td>
+                <td>{item.netWeight.toFixed(3)}</td>
                 <td>{item.wastageValue.toFixed(3)}</td>
                 <td>{item.wastagePure.toFixed(3)}</td>
                 <td>{item.finalWeight.toFixed(3)}</td>
@@ -194,7 +196,7 @@ const calculatewastgePure=(stock)=>{
             <tr>
               <td colSpan={2}><strong>Total</strong></td>
               <td><strong>{(currentPageTotal.itemWt).toFixed(3)}</strong></td>
-              <td colSpan={5}></td>
+              <td colSpan={6}></td>
               <td><strong>{(currentPageTotal.finalWt).toFixed(3)}</strong></td>
           
             </tr>

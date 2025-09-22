@@ -231,32 +231,32 @@ const Receipt = () => {
 
     const saveReceipt = async () => {
       handlePrint(receipt, selectedCustomer);
-      // try {
-      //   const response = await axios.post(
-      //     `${BACKEND_SERVER_URL}/api/receipt`,
-      //     payLoad
-      //   );
-      //   if (response.status === 201) {
-      //     toast.success(response.data.message, { autoClose: 2000 });
-      //     setSelectedCustomer("");
-      //     setReceipt([
-      //       {
-      //         date:formattedToday,
-      //         type: "",
-      //         goldRate: "",
-      //         gold: "",
-      //         touch: "",
-      //         purity: "",
-      //         amount: "",
-      //         hallMark: "",
-      //       },
-      //     ]);
-      //     setReceiptBalances({ oldbalance: 0, hallMark: 0 });
-      //   }
-      // } catch (err) {
-      //   console.log(err);
-      //   toast.error(err.response.data.error, { autoClose: 2000 });
-      // }
+      try {
+        const response = await axios.post(
+          `${BACKEND_SERVER_URL}/api/receipt`,
+          payLoad
+        );
+        if (response.status === 201) {
+          toast.success(response.data.message, { autoClose: 2000 });
+          setSelectedCustomer("");
+          setReceipt([
+            {
+              date:formattedToday,
+              type: "",
+              goldRate: "",
+              gold: "",
+              touch: "",
+              purity: "",
+              amount: "",
+              hallMark: "",
+            },
+          ]);
+          setReceiptBalances({ oldbalance: 0, hallMark: 0 });
+        }
+      } catch (err) {
+        console.log(err);
+        toast.error(err.response.data.error, { autoClose: 2000 });
+      }
     };
     if (!selectedCustomer) return toast.warn("Select Customer");
     receiptValidation(receipt, setReceiptErrors)
