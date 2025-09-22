@@ -3,6 +3,9 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./Masteradditems.css";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+
 import { BACKEND_SERVER_URL } from "../../Config/Config";
  
 const MasterWastageVal = () => {
@@ -137,68 +140,50 @@ const MasterWastageVal = () => {
                     )}
                   </td>
                   <td>
-                    {editId === item.id ? (
-                      <>
-                        <button
-                          style={{
-                            marginRight: "5px",
-                            background: "#4CAF50",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => handleSaveEdit(item.id)}
-                        >
-                          Save
-                        </button>
-                        <button
-                          style={{
-                            background: "#f44336",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                          onClick={handleCancelEdit}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (                        
-                      <>
-                        <button
-                          style={{
-                            background: "#1DA3A3",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            marginRight: "5px",
-                          }}
-                          onClick={() => handleEdit(item.id, item.wastage)}
-                        >
-                          Edit
-                        </button>
-                        {/* <button
-                          style={{
-                            background: "#e63946",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          Delete
-                        </button> */}
-                      </>
-                    )}
-                  </td>
+                  {editId === item.id ? (
+                    <>
+                      <button
+                        style={{
+                          marginRight: "5px",
+                          background: "#4CAF50",
+                          color: "#fff",
+                          padding: "4px 8px",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => handleSaveEdit(item.id)}
+                      >
+                        Save
+                      </button>
+                      <button
+                        style={{
+                          background: "#f44336",
+                          color: "#fff",
+                          padding: "4px 8px",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                        onClick={handleCancelEdit}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <EditIcon
+                        style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
+                        onClick={() => handleEdit(item.id, item.wastage)}
+                      />
+                      <DeleteIcon
+                        style={{ cursor: "pointer", color: "#d32f2f" }}
+                        onClick={() => handleDelete(item.id)}
+                      />
+                    </>
+                  )}
+                </td>
+
                 </tr>
               ))}
             </tbody>
