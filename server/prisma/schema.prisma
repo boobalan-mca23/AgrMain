@@ -331,6 +331,7 @@ model ProductStock{
   touch        Float
   stoneWeight  Float
   wastageValue Float
+  netWeight    Float?
   wastagePure  Float?
   finalWeight  Float
   createdAt     DateTime   @default(now())
@@ -342,24 +343,30 @@ model ProductStock{
   customer_id  Int
   billAmount   Float
   hallMark     Float?
+  prevHallMark Float?
+  PrevBalance  Float?
+  billDetailsprofit Float?
+  Stoneprofit  Float?
+  Totalprofit  Float?
+  cashBalance  Float?
   customers    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   orders       OrderItems[] 
   billReceive  billReceived[]
-  
- }
- model OrderItems{
+}
+model OrderItems{
    id          Int @id @default(autoincrement())
    billId      Int
    bill        Bill @relation(fields:[billId],references:[id], onDelete: Cascade)
    productName String
+   count       Int?
    weight      Float?
    stoneWeight Float?
    afterWeight Float?
    percentage  Float?
    finalWeight Float?
    createdAt   DateTime @default(now())
- }
+}
 
  model billReceived{
    id              Int @id @default(autoincrement())

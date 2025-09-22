@@ -3,7 +3,6 @@ const prisma = new PrismaClient();
 const addRawGold = require("../Utils/addRawGoldStock");
 const getCustomerBal = require("../Utils/getCustomerBalance");
 // createBill
-
 const createBill = async (req, res) => {
   const {
     date,
@@ -15,6 +14,13 @@ const createBill = async (req, res) => {
     received,
     pureBalance,
     hallmarkBalance,
+    prevHallmark,
+    prevBalance,
+    billDetailsprofit,
+    Stoneprofit,
+    Totalprofit,
+    cashBalance,
+ 
   } = req.body;
   console.log("req  body in bill", req.body);
   try {
@@ -24,30 +30,37 @@ const createBill = async (req, res) => {
     if (!customerExist) {
       return res.status(400).json({ msg: "Invalid Customer Id" });
     }
-
-    // validate order items
+ 
     if (!orderItems || orderItems.length < 1) {
       return res
         .status(400)
         .json({ msg: "At least one order item is required" });
     }
-
-    const modifiyOrders = orderItems.map((item, _) => ({
+ 
+    const modifiyOrders = orderItems.map((item) => ({
       productName: item.productName,
-      weight: parseInt(item.weight),
-      stoneWeight: parseFloat(item.stoneWeight),
-      afterWeight: parseFloat(item.afterWeight),
-      percentage: parseFloat(item.percentage),
-      finalWeight: parseFloat(item.finalWeight),
+      count: item.count ? parseInt(item.count) : undefined,
+      weight: item.weight ? parseFloat(item.weight) : undefined,
+      stoneWeight: item.stoneWeight ? parseFloat(item.stoneWeight) : undefined,
+      afterWeight: item.afterWeight ? parseFloat(item.afterWeight) : undefined,
+      percentage: item.percentage ? parseFloat(item.percentage) : undefined,
+      finalWeight: item.finalWeight ? parseFloat(item.finalWeight) : undefined,
     }));
-
+ 
+ 
     const newBill = await prisma.bill.create({
       data: {
         date: new Date(date),
         time: time,
+        cashBalance: parseFloat(cashBalance),
         customer_id: parseInt(customerId),
         billAmount: parseFloat(billTotal),
         hallMark: parseFloat(hallMark),
+        prevHallMark: parseFloat(prevHallmark),
+        PrevBalance: parseFloat(prevBalance),
+        billDetailsprofit : parseFloat(billDetailsprofit),
+        Stoneprofit: parseFloat(Stoneprofit),
+        Totalprofit :parseFloat(Totalprofit),
         orders: { create: modifiyOrders },
       },
       include: {
@@ -57,20 +70,57 @@ const createBill = async (req, res) => {
     });
     // newbill time we need to move rawgold stock
     await addRawGold.moveToRawGoldStock(received, newBill.id, customerId);
-
+ 
+    // for (const item of orderItems) {
+    //   if (item.stockId) {
+    //     await prisma.productStock.update({
+    //       where: { id: parseInt(item.stockId) },
+    //       data: {
+    //         itemWeight: {
+    //           decrement: parseFloat(item.finalWeight), // reduce stock
+    //         },
+    //       },
+    //     });
+    //   }
+    // }
+ 
     for (const item of orderItems) {
       if (item.stockId) {
+        // parse safely
+
+        const stock=await prisma.productStock.findMany({where:{
+          id:item.stockId
+        },
+          select:{
+           itemWeight:true,
+           touch:true,
+           wastageValue:true
+          }},)
+
+         const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
+         const decStoneWeight = isNaN(parseFloat(item.stoneWeight)) ? 0 : parseFloat(item.stoneWeight);
+         const decCount = item.count ? (isNaN(parseInt(item.count)) ? 0 : parseInt(item.count)) : 0;
+         const remainWt=decProductWt-stock[0].itemWeight
+         const wastagePure=((remainWt*stock[0].touch)/100) - ((remainWt*stock[0].wastageValue)/100)
+         const finalPurity=(remainWt*stock[0].wastageValue)/100 
+        
         await prisma.productStock.update({
           where: { id: parseInt(item.stockId) },
           data: {
-            itemWeight: {
-              decrement: parseFloat(item.finalWeight), // reduce stock
-            },
+            itemWeight:remainWt||0,
+            // decrement stoneWeight if present
+            stoneWeight: decStoneWeight ? { decrement: decStoneWeight } : undefined,
+            // decrement count if present
+            count: decCount ? { decrement: decCount } : undefined,
+            wastagePure:wastagePure||0,
+            // if you also store finalWeight total on stock, adjust this too
+            finalWeight:finalPurity||0
           },
         });
       }
     }
-
+ 
+ 
     await prisma.customerBillBalance.upsert({
       where: { customer_id: parseInt(customerId) },
       update: {
@@ -90,7 +140,7 @@ const createBill = async (req, res) => {
     console.error(err.message);
     return res.status(500).json({ err: err.message });
   }
-};
+}
 // update Bill
 
 const updateBill = async (req, res) => {
@@ -197,10 +247,13 @@ const geAllBill = async (req, res) => {
           }
         },
       },
+     orderBy:{
+       id:"desc"
+     }
     });
-    const billId=allBills.length===0 ? 1:allBills[allBills.length-1].id
-
-    return res.status(200).json({ data:allBills,billId:billId+1 });
+    const billId=allBills.length+1
+    console.log('billid',billId)
+    return res.status(200).json({ data:allBills,billId:billId});
 
   } catch (err) {
     console.error(err.message);

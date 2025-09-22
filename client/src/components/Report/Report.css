@@ -1,69 +1,675 @@
-.report-container {
-  padding: 24px;
+/* DailySalesReport.css - Complete Responsive Modal Layout */
+
+/* ============================ MAIN CONTAINER STYLES ============================ */
+
+.daily-sales-report-container {
+  padding: 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
 }
 
-.report-title {
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 20px;
+.daily-sales-report-container .report-title {
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  margin-bottom: 1.25rem !important;
+  text-align: center !important;
+  font-size: clamp(1.5rem, 4vw, 2rem) !important;
 }
 
-.table-container {
-  border-radius: 8px;
-  overflow: hidden;
+.daily-sales-report-container .filter-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
 }
 
-.table-header {
+.daily-sales-report-container .table-container {
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+  box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1) !important;
+}
+
+.daily-sales-report-container .table-header {
   font-weight: 600 !important;
   background-color: #f5f7fa !important;
   color: #2c3e50 !important;
-  padding: 12px 16px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: clamp(0.8rem, 2vw, 0.95rem) !important;
+  border-bottom: 2px solid #e0e0e0 !important;
 }
 
-.table-cell {
-  padding: 10px 16px !important;
-  color: #34495e;
+.daily-sales-report-container .table-cell {
+  padding: 0.75rem 1rem !important;
+  color: #34495e !important;
   border-bottom: 1px solid #e0e0e0 !important;
+  font-size: clamp(0.75rem, 2vw, 0.9rem) !important;
 }
 
-.totals-row {
-  background-color: #f8f9fa;
+.daily-sales-report-container .totals-row {
+  background-color: #f8f9fa !important;
 }
 
-.totals-cell {
+.daily-sales-report-container .totals-cell {
   font-weight: 600 !important;
   color: #2c3e50 !important;
-  padding: 12px 16px !important;
+  padding: 0.875rem 1rem !important;
   border-top: 2px solid #e0e0e0 !important;
+  font-size: clamp(0.8rem, 2vw, 0.95rem) !important;
+  background-color: #f8f9fa !important;
 }
 
-/* Hover effect */
-.MuiTableRow-root:hover .table-cell {
-  background-color: #f0f4f8;
+/* Summary cards styling */
+.daily-sales-report-container .summary-cards {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+  gap: 1rem !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  padding: 1.25rem !important;
+  border-radius: 0.75rem !important;
+  margin-bottom: 1.25rem !important;
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.05) !important;
 }
 
-/* Filter controls */
-.filter-controls {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
+.daily-sales-report-container .summary-item {
+  font-size: clamp(0.85rem, 2vw, 0.95rem) !important;
+  color: #34495e !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+  padding: 0.5rem !important;
 }
 
-/* Responsive adjustments */
-@media (max-width: 900px) {
-  .report-container {
-    padding: 16px;
+/* ============================ MODAL STYLES - FULLY RESPONSIVE ============================ */
+
+/* Dialog Container - Base Setup */
+.daily-sales-modal-dialog {
+  z-index: 1300 !important;
+}
+
+.daily-sales-modal-dialog .MuiDialog-container {
+  padding: 1rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.daily-sales-modal-dialog .MuiBackdrop-root {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* Modal Paper - Responsive Width System */
+.daily-sales-modal-paper {
+  /* Desktop First - Large Screens */
+  width: min(85vw, 1200px) !important;
+  max-width: 85vw !important;
+  height: min(90vh, 800px) !important;
+  max-height: 90vh !important;
+  
+  border-radius: 1rem !important;
+  overflow: hidden !important;
+  position: relative !important;
+  margin: 0 !important;
+  box-shadow: 0 1.25rem 3.75rem rgba(0,0,0,0.15) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Force override MUI constraints */
+.daily-sales-modal-dialog .MuiDialog-paper {
+  width: min(85vw, 1200px) !important;
+  max-width: 85vw !important;
+  height: min(90vh, 800px) !important;
+  max-height: 90vh !important;
+  margin: 0 !important;
+}
+
+/* Modal Title - Responsive */
+.daily-sales-modal-paper .modal-title {
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+  padding: clamp(1rem, 3vw, 1.5rem) !important;
+  font-size: clamp(1.1rem, 3vw, 1.4rem) !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1 !important;
+  flex-shrink: 0 !important;
+  text-align: center !important;
+}
+
+/* Modal Content - Responsive Scrollable Area */
+.daily-sales-modal-paper .modal-content {
+  padding: clamp(1rem, 3vw, 1.5rem) !important;
+  font-size: clamp(0.85rem, 2vw, 1rem) !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Custom Scrollbar */
+.daily-sales-modal-paper .modal-content::-webkit-scrollbar {
+  width: 0.5rem !important;
+}
+
+.daily-sales-modal-paper .modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 0.25rem !important;
+}
+
+.daily-sales-modal-paper .modal-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 0.25rem !important;
+}
+
+.daily-sales-modal-paper .modal-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8 !important;
+}
+
+/* Section Title - Responsive */
+.daily-sales-modal-paper .section-title {
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  margin-top: clamp(1rem, 3vw, 1.5rem) !important;
+  margin-bottom: 0.75rem !important;
+  font-size: clamp(1rem, 2.5vw, 1.2rem) !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 1px solid #dee2e6 !important;
+}
+
+/* Bill Header - Responsive Layout */
+.daily-sales-modal-paper .bill-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
+  padding: clamp(1rem, 3vw, 1.5rem) !important;
+  border-radius: 0.75rem !important;
+  margin-bottom: 1.5rem !important;
+  border: 1px solid #90caf9 !important;
+  flex-wrap: wrap !important;
+  gap: 0.75rem !important;
+}
+
+.daily-sales-modal-paper .bill-number {
+  font-size: clamp(1.1rem, 3vw, 1.3rem) !important;
+  font-weight: 700 !important;
+  color: #1565c0 !important;
+}
+
+.daily-sales-modal-paper .bill-info {
+  color: #1565c0 !important;
+  font-weight: 500 !important;
+  font-size: clamp(0.85rem, 2vw, 0.95rem) !important;
+  text-align: right !important;
+}
+
+/* Customer Section - Responsive */
+.daily-sales-modal-paper .customer-section {
+  background-color: #f8f9fa !important;
+  padding: clamp(1rem, 3vw, 1.25rem) !important;
+  border-radius: 0.5rem !important;
+  margin-bottom: 1.5rem !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+.daily-sales-modal-paper .customer-name {
+  font-size: clamp(1rem, 2.5vw, 1.2rem) !important;
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+}
+
+/* Modal Tables - Fully Responsive */
+.daily-sales-modal-paper .modal-table-container {
+  border-radius: 0.5rem !important;
+  overflow: auto !important;
+  margin-bottom: 1.5rem !important;
+  box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.08) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.daily-sales-modal-paper .modal-table {
+  min-width: 100% !important;
+  table-layout: auto !important;
+  width: 100% !important;
+}
+
+.daily-sales-modal-paper .modal-table-header {
+  background-color: #f5f7fa !important;
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  padding: clamp(0.5rem, 2vw, 0.75rem) !important;
+  font-size: clamp(0.75rem, 2vw, 0.9rem) !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+  white-space: nowrap !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+.daily-sales-modal-paper .modal-table-cell {
+  padding: clamp(0.5rem, 2vw, 0.75rem) !important;
+  color: #34495e !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  font-size: clamp(0.7rem, 2vw, 0.85rem) !important;
+  white-space: nowrap !important;
+}
+
+.daily-sales-modal-paper .modal-table-row:hover .modal-table-cell {
+  background-color: #f0f4f8 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+/* Info Grid - Responsive Grid */
+.daily-sales-modal-paper .info-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  gap: 1rem !important;
+  margin-bottom: 1.5rem !important;
+  padding: 1.25rem !important;
+  background-color: #f8f9fa !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #e9ecef !important;
+}
+
+.daily-sales-modal-paper .info-item {
+  margin-bottom: 0.625rem !important;
+  color: #34495e !important;
+  font-size: clamp(0.85rem, 2vw, 1rem) !important;
+  line-height: 1.5 !important;
+}
+
+/* Profit Section - Responsive Flex */
+.daily-sales-modal-paper .profit-section {
+  display: flex !important;
+  justify-content: space-between !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  padding: 1rem 1.25rem !important;
+  border-radius: 0.5rem !important;
+  margin: 1.25rem 0 !important;
+  border: 1px solid #dee2e6 !important;
+  flex-wrap: wrap !important;
+  gap: 1rem !important;
+}
+
+.daily-sales-modal-paper .profit-item {
+  text-align: center !important;
+  flex: 1 !important;
+  min-width: 120px !important;
+}
+
+.daily-sales-modal-paper .profit-label {
+  font-size: clamp(0.8rem, 2vw, 0.9rem) !important;
+  color: #6c757d !important;
+  font-weight: 500 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.daily-sales-modal-paper .profit-value {
+  font-size: clamp(0.95rem, 2.5vw, 1.1rem) !important;
+  font-weight: 600 !important;
+  color: #28a745 !important;
+}
+
+/* Balance Section - Responsive Flex */
+.daily-sales-modal-paper .balance-section {
+  display: flex !important;
+  justify-content: space-around !important;
+  background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%) !important;
+  padding: 1.25rem !important;
+  border-radius: 0.75rem !important;
+  margin-top: 1.5rem !important;
+  border: 2px solid #c3e6cb !important;
+  flex-wrap: wrap !important;
+  gap: 1rem !important;
+}
+
+.daily-sales-modal-paper .balance-item {
+  text-align: center !important;
+  flex: 1 !important;
+  min-width: 150px !important;
+}
+
+.daily-sales-modal-paper .balance-label {
+  font-size: clamp(0.85rem, 2vw, 1rem) !important;
+  color: #495057 !important;
+  font-weight: 500 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.daily-sales-modal-paper .balance-value {
+  font-size: clamp(1.1rem, 3vw, 1.3rem) !important;
+  font-weight: 700 !important;
+  color: #155724 !important;
+}
+
+/* Modal Actions - Responsive */
+.daily-sales-modal-paper .modal-actions {
+  padding: clamp(1rem, 3vw, 1.5rem) !important;
+  border-top: 2px solid #e0e0e0 !important;
+  background-color: #fafbfc !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 1 !important;
+  flex-shrink: 0 !important;
+  justify-content: center !important;
+}
+
+.daily-sales-modal-paper .close-button {
+  background-color: #2c3e50 !important;
+  color: white !important;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem) !important;
+  font-size: clamp(0.9rem, 2vw, 1rem) !important;
+  font-weight: 500 !important;
+  border-radius: 0.5rem !important;
+  text-transform: none !important;
+  min-width: 120px !important;
+}
+
+.daily-sales-modal-paper .close-button:hover {
+  background-color: #34495e !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 0.25rem 0.75rem rgba(44, 62, 80, 0.3) !important;
+}
+
+/* ============================ RESPONSIVE BREAKPOINTS ============================ */
+
+/* Large Desktop (1200px and up) */
+@media (min-width: 1200px) {
+  .daily-sales-modal-paper {
+    width: min(80vw, 1200px) !important;
+    max-width: 80vw !important;
   }
   
-  .table-header, .table-cell, .totals-cell {
-    padding: 8px 12px !important;
-    font-size: 0.875rem;
+  .daily-sales-modal-dialog .MuiDialog-paper {
+    width: min(80vw, 1200px) !important;
+    max-width: 80vw !important;
+  }
+}
+
+/* Medium Desktop (992px to 1199px) */
+@media (max-width: 1199px) and (min-width: 992px) {
+  .daily-sales-modal-paper {
+    width: 85vw !important;
+    max-width: 85vw !important;
   }
   
-  .filter-controls {
-    flex-direction: column;
-    gap: 12px;
+  .daily-sales-modal-dialog .MuiDialog-paper {
+    width: 85vw !important;
+    max-width: 85vw !important;
   }
+}
+
+/* Tablet Landscape (768px to 991px) */
+@media (max-width: 991px) and (min-width: 768px) {
+  .daily-sales-modal-paper {
+    width: 90vw !important;
+    max-width: 90vw !important;
+    height: 85vh !important;
+    max-height: 85vh !important;
+  }
+  
+  .daily-sales-modal-dialog .MuiDialog-paper {
+    width: 90vw !important;
+    max-width: 90vw !important;
+    height: 85vh !important;
+    max-height: 85vh !important;
+  }
+  
+  .daily-sales-modal-dialog .MuiDialog-container {
+    padding: 0.5rem !important;
+  }
+  
+  .daily-sales-modal-paper .bill-header {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  
+  .daily-sales-modal-paper .bill-info {
+    text-align: center !important;
+  }
+  
+  .daily-sales-modal-paper .profit-section {
+    justify-content: center !important;
+  }
+  
+  .daily-sales-modal-paper .balance-section {
+    justify-content: center !important;
+  }
+}
+
+/* Mobile Landscape and Portrait (576px to 767px) */
+@media (max-width: 767px) and (min-width: 576px) {
+  .daily-sales-report-container {
+    padding: 1rem !important;
+  }
+  
+  .daily-sales-modal-paper {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    height: 90vh !important;
+    max-height: 90vh !important;
+    border-radius: 0.75rem !important;
+  }
+  
+  .daily-sales-modal-dialog .MuiDialog-paper {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    height: 90vh !important;
+    max-height: 90vh !important;
+  }
+  
+  .daily-sales-modal-dialog .MuiDialog-container {
+    padding: 0.25rem !important;
+  }
+  
+  .daily-sales-report-container .filter-controls {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+  
+  .daily-sales-report-container .summary-cards {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem !important;
+  }
+  
+  .daily-sales-modal-paper .bill-header {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 0.5rem !important;
+  }
+  
+  .daily-sales-modal-paper .bill-info {
+    text-align: center !important;
+  }
+  
+  .daily-sales-modal-paper .profit-section {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1rem !important;
+  }
+  
+  .daily-sales-modal-paper .balance-section {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1rem !important;
+  }
+  
+  .daily-sales-modal-paper .info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  
+  /* Horizontal scroll for tables on mobile */
+  .daily-sales-modal-paper .modal-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .daily-sales-modal-paper .modal-table {
+    min-width: 600px !important;
+  }
+}
+
+/* Small Mobile (up to 575px) */
+@media (max-width: 575px) {
+  .daily-sales-report-container {
+    padding: 0.75rem !important;
+  }
+  
+  .daily-sales-modal-paper {
+    width: 98vw !important;
+    max-width: 98vw !important;
+    height: 95vh !important;
+    max-height: 95vh !important;
+    border-radius: 0.5rem !important;
+  }
+  
+  .daily-sales-modal-dialog .MuiDialog-paper {
+    width: 98vw !important;
+    max-width: 98vw !important;
+    height: 95vh !important;
+    max-height: 95vh !important;
+  }
+  
+  .daily-sales-modal-dialog .MuiDialog-container {
+    padding: 0.125rem !important;
+  }
+  
+  .daily-sales-report-container .summary-cards {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+    padding: 1rem !important;
+  }
+  
+  .daily-sales-modal-paper .modal-title {
+    text-align: center !important;
+    font-size: 1.1rem !important;
+  }
+  
+  .daily-sales-modal-paper .section-title {
+    text-align: center !important;
+  }
+  
+  .daily-sales-modal-paper .bill-header {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 0.5rem !important;
+    padding: 1rem !important;
+  }
+  
+  .daily-sales-modal-paper .bill-info {
+    text-align: center !important;
+  }
+  
+  .daily-sales-modal-paper .profit-section {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    padding: 1rem !important;
+  }
+  
+  .daily-sales-modal-paper .balance-section {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    padding: 1rem !important;
+  }
+  
+  .daily-sales-modal-paper .info-grid {
+    padding: 1rem !important;
+  }
+  
+  /* Enhanced table scrolling for very small screens */
+  .daily-sales-modal-paper .modal-table {
+    min-width: 700px !important;
+  }
+  
+  .daily-sales-modal-paper .modal-table-container::-webkit-scrollbar {
+    height: 0.375rem !important;
+  }
+  
+  .daily-sales-modal-paper .modal-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+  }
+  
+  .daily-sales-modal-paper .modal-table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1 !important;
+    border-radius: 0.25rem !important;
+  }
+}
+
+/* ============================ ACCESSIBILITY & UX ENHANCEMENTS ============================ */
+
+/* Focus states for better accessibility */
+.daily-sales-modal-paper .close-button:focus {
+  outline: 2px solid #007bff !important;
+  outline-offset: 2px !important;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .daily-sales-modal-paper .modal-title {
+    background: #ffffff !important;
+    border-bottom: 3px solid #000000 !important;
+    color: #000000 !important;
+  }
+  
+  .daily-sales-modal-paper .modal-table-header {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+  }
+}
+
+/* Reduced motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .daily-sales-modal-paper .close-button:hover {
+    transform: none !important;
+  }
+  
+  .daily-sales-modal-paper .modal-table-row:hover .modal-table-cell {
+    transition: none !important;
+  }
+}
+
+/* Print styles for modal content */
+@media print {
+  .daily-sales-modal-dialog .MuiBackdrop-root {
+    display: none !important;
+  }
+  
+  .daily-sales-modal-paper {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: 1px solid #000000 !important;
+  }
+  
+  .daily-sales-modal-paper .modal-actions {
+    display: none !important;
+  }
+}
+
+/* ============================ PERFORMANCE OPTIMIZATIONS ============================ */
+
+/* GPU acceleration for smooth animations */
+.daily-sales-modal-paper {
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
+
+/* Optimize table rendering */
+.daily-sales-modal-paper .modal-table {
+  contain: layout style paint !important;
+}
+
+/* Optimize scrolling performance */
+.daily-sales-modal-paper .modal-content {
+  contain: layout !important;
+  -webkit-overflow-scrolling: touch !important;
 }

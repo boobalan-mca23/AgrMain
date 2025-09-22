@@ -8,7 +8,6 @@ const addRawGold = require("../Utils/addRawGoldStock");
 const moveToItemDelivery = async (itemDelivery, jobCardId, goldSmithId) => {
 
   if (itemDelivery.length >= 1) {
-    console.log("checkItem", itemDelivery);
     for (const item of itemDelivery) {
       if (item?.id) {
         //itemDelivery update if id is there or create
@@ -112,6 +111,7 @@ const itemToStock = async (jobcardId) => {
         totalItemWeight: 0,
         totalWastagePure: 0,
         totalFinalPurity: 0,
+        totalNetWeight:0,
         totalStoneWeight: 0,
         count: 0,
       };
@@ -120,6 +120,7 @@ const itemToStock = async (jobcardId) => {
     acc[key].totalItemWeight += parseFloat(item.itemWeight) || 0;
     acc[key].totalFinalPurity += parseFloat(item.finalPurity) || 0;
     acc[key].totalWastagePure += parseFloat(item.wastagePure) || 0;
+    acc[key].totalNetWeight+= parseFloat(item?.netWeight) || 0;
     acc[key].count += parseInt(item.count) || 0;
     acc[key].totalStoneWeight += item.deduction.reduce(
       (sum, d) => sum + (parseFloat(d.weight) || 0),
@@ -149,6 +150,7 @@ const itemToStock = async (jobcardId) => {
           count: { increment: stockItem.count },
           touch: stockItem.touch,
           stoneWeight: { increment: stockItem.totalStoneWeight },
+          netWeight :{increment:stockItem.totalNetWeight},
           wastageValue: stockItem.wastageValue,
           wastagePure: { increment: stockItem.totalWastagePure },
           finalWeight: { increment: stockItem.totalFinalPurity },
@@ -163,6 +165,7 @@ const itemToStock = async (jobcardId) => {
           count: stockItem.count,
           touch: stockItem.touch,
           stoneWeight: stockItem.totalStoneWeight,
+          netWeight:stockItem.totalNetWeight,
           wastageValue: stockItem.wastageValue,
           wastagePure: stockItem.totalWastagePure,
           finalWeight: stockItem.totalFinalPurity,
