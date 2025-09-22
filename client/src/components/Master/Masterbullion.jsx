@@ -12,6 +12,9 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+
 import './MasterBullion.css'
 function MasterBullion() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +22,10 @@ function MasterBullion() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [bullions, setBullions] = useState([]);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedBullion, setSelectedBullion] = useState(null);
+  const [formData, setFormData] = useState({ name: "", phone: "", address: "" });
+
 
   // Validation states
   const [errors, setErrors] = useState({ name: "", phone: "" });
@@ -133,6 +140,61 @@ function MasterBullion() {
     }
   };
 
+  const handleEditClick = (bullion) => {
+    setSelectedBullion(bullion);
+    setFormData({
+      name: bullion.name,
+      phone: bullion.phone,
+      address: bullion.address || "",
+    });
+    setOpenEditDialog(true);
+  };
+
+  const handleEditSubmit = async () => {
+    try {
+      const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/${selectedBullion.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success("Bullion updated successfully");
+        setBullions((prev) =>
+          prev.map((b) =>
+            b.id === selectedBullion.id ? { ...b, ...formData } : b
+          )
+        );
+        setOpenEditDialog(false);
+      } else {
+        toast.error("Failed to update bullion");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Error updating bullion");
+    }
+  };
+
+  const handleDeleteClick = async (id) => {
+    if (window.confirm("Are you sure you want to delete this bullion?")) {
+      try {
+        const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/${id}`, {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          toast.success("Bullion deleted successfully");
+          setBullions((prev) => prev.filter((b) => b.id !== id));
+        } else {
+          toast.error("Failed to delete bullion");
+        }
+      } catch (error) {
+        console.error("Delete error:", error);
+        toast.error("Error deleting bullion");
+      }
+    }
+  };
+
+
   return (
     <>
       <ToastContainer position="top-right" autoClose={2000} hideProgressBar />
@@ -242,6 +304,7 @@ function MasterBullion() {
                   <th>Bullion Name</th>
                   <th>Phone Number</th>
                   <th>Address</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody className="bullion-tablebody">
@@ -251,12 +314,56 @@ function MasterBullion() {
                     <td>{b.name}</td>
                     <td>{b.phone}</td>
                     <td>{b.address || "-"}</td>
+                    <td>
+                      <EditIcon
+                        style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
+                        onClick={() => handleEditClick(b)}
+                      />
+                      <DeleteIcon
+                        style={{ cursor: "pointer", color: "#d32f2f" }}
+                        onClick={() => handleDeleteClick(b.id)}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </Paper>
         )}
+
+        <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} fullWidth maxWidth="sm">
+  <DialogTitle>Edit Bullion</DialogTitle>
+  <DialogContent>
+    <TextField
+      label="Name"
+      fullWidth
+      margin="normal"
+      value={formData.name}
+      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+    />
+    <TextField
+      label="Phone"
+      fullWidth
+      margin="normal"
+      value={formData.phone}
+      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+    />
+    <TextField
+      label="Address"
+      fullWidth
+      margin="normal"
+      value={formData.address}
+      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+    />
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+    <Button onClick={handleEditSubmit} variant="contained" color="primary">
+      Save
+    </Button>
+  </DialogActions>
+</Dialog>
+
       </div>
     </>
   );
