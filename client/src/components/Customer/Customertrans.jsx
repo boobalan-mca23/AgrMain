@@ -374,13 +374,13 @@ const Customertrans = () => {
               <td>{new Date(transaction.date).toLocaleDateString("en-GB")}</td>
               <td>{transaction.type}</td>
               <td>
-                {transaction.goldRate.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                {transaction.goldRate}
               </td>
               <td>
                 {transaction.gold}gr
               </td>
               <td>{transaction.purity.toFixed(3)}</td>
-              <td> {transaction.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+              <td> {transaction.amount}</td>
               <td>
                 {transaction.type === "Gold" ? `${transaction.touch}%` : "-"}
               </td>
