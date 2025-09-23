@@ -85,7 +85,7 @@ const Billing = () => {
   const [BillDetailsProfit,setBillDetailsProfit] =useState([]);
   const [StoneProfit,setStoneProfit] =useState([]);
   const [TotalBillProfit,setTotalBillProfit] =useState([]);
-
+  const [totalFWT,setTotalFWT] =useState(0);
   // keep track how many bill rows were added for each productId for css
   const [selectedProductCounts, setSelectedProductCounts] = useState({});
 
@@ -144,7 +144,7 @@ const Billing = () => {
 
   const validateAllFields = () => {
     let isValid = true;
-    const newErrors = {};
+    const newErrors = {};   
 
     if (billDetailRows.length === 0) {
       alert( "Please add at least one Bill Detail or Received Detail before saving.");
@@ -347,8 +347,9 @@ const handleBillDetailChange = (index, field, value) => {
         + toNumber(weightAllocations[currentRow.productId]?.[currentRow.id] || 0); 
       // allow current row’s existing allocation
       if (toNumber(value) > remaining) {
+        toast.error(`Entered weight (${value}) exceeds remaining weight (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
         alert(`Entered weight (${value}) exceeds remaining weight (${remaining.toFixed(3)}) for ${currentRow.productName}`);
-        return; // abort update
+        return;
       }
     }
   }
@@ -358,15 +359,34 @@ const handleBillDetailChange = (index, field, value) => {
       p => (p.id || p._id) === currentRow.productId
     );
     if (productStock) {
-      const remaining = getRemainingWeight(currentRow.productId, productStock.itemWeight)
-        + toNumber(weightAllocations[currentRow.productId]?.[currentRow.id] || 0); 
+      const remaining = getRemainingStone(currentRow.productId, productStock.stoneWeight)
+        + toNumber(stoneAllocations[currentRow.productId]?.[currentRow.id] || 0); 
       // allow current row’s existing allocation
       if (toNumber(value) > remaining) {
+        toast.error(`Entered weight (${value}) exceeds remaining stone weight (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
         alert(`Entered weight (${value}) exceeds remaining stone weight (${remaining.toFixed(3)}) for ${currentRow.productName}`);
         return; // abort update
       }
     }
   }
+
+  const count = toNumber(currentRow.count);
+    if (field === 'count' && currentRow.productId) {
+    const productStock = availableProducts?.allStock?.find(
+      p => (p.id || p._id) === currentRow.productId
+    );
+    if (productStock) {
+      const remaining = getRemainingCount(currentRow.productId, productStock.count)
+        + toNumber(countAllocations[currentRow.productId]?.[currentRow.id] || 0); 
+      // allow current row’s existing allocation
+      if (toNumber(value) > remaining) {
+        toast.error(`Entered count (${value}) exceeds remaining count (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
+        alert(`Entered count (${value}) exceeds remaining count (${remaining}) for ${currentRow.productName}`);
+        return; // abort update
+      }
+    }
+  }
+
   const percent = toNumber(currentRow.percent);
   // awt and fwt always re-calculated
   const awt = wt - stWt;
@@ -601,6 +621,7 @@ const handleBillDetailChange = (index, field, value) => {
   const handleSave = async () => {
     if (!selectedCustomer) {
       alert("Please select a customer before saving.");
+      toast.error("Please select a customer before saving.");
       return;
     }
 
@@ -613,8 +634,8 @@ const handleBillDetailChange = (index, field, value) => {
     try {
       const FWT = billDetailRows.reduce((total, row) => total + (toNumber(row.fwt) || 0),0 );
       const totalReceivedPurity = rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0);
-      const TotalFWT = toNumber(FWT) - toNumber(previousBalance);
-      const pureBalance = TotalFWT - totalReceivedPurity;
+      // const TotalFWT = toNumber(FWT) - toNumber(previousBalance);
+      // const pureBalance = TotalFWT - totalReceivedPurity;
       const now = new Date();
 
       const billData = {
@@ -783,10 +804,10 @@ const handleBillDetailChange = (index, field, value) => {
     let detailsProfit = 0;
     let stoneProfitCalc = 0;
 
-    console.log('=== PROFIT CALCULATION DEBUG ===');
-    console.log('billDetailRows:', billDetailRows);
-    console.log('items:', items);
-    console.log('availableProducts:', availableProducts);
+    // console.log('=== PROFIT CALCULATION DEBUG ===');
+    // console.log('billDetailRows:', billDetailRows);
+    // console.log('items:', items);
+    // console.log('availableProducts:', availableProducts);
 
     billDetailRows.forEach((row, index) => {
       console.log(`\n--- Row ${index + 1}: ${row.productName} ---`);
@@ -830,11 +851,11 @@ const handleBillDetailChange = (index, field, value) => {
     const totalProfit = detailsProfit + stoneProfitCalc;
     const profitPercentage = FWT > 0 ? (totalProfit / FWT) * 100 : 0;
 
-    console.log('\n=== FINAL RESULTS ===');
-    console.log('Details Profit:', detailsProfit);
-    console.log('Stone Profit:', stoneProfitCalc);
-    console.log('Total Profit:', totalProfit);
-    console.log('Profit %:', profitPercentage);
+    // console.log('\n=== FINAL RESULTS ===');
+    // console.log('Details Profit:', detailsProfit);
+    // console.log('Stone Profit:', stoneProfitCalc);
+    // console.log('Total Profit:', totalProfit);
+    // console.log('Profit %:', profitPercentage);
 
     return {
       billDetailsProfit: toFixedStr(detailsProfit, 3),
@@ -844,7 +865,15 @@ const handleBillDetailChange = (index, field, value) => {
     };
   }, [billDetailRows, items, availableProducts, FWT]);
   const totalReceivedPurity = useMemo(() => rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0),  [rows]  );
-  const TotalFWT = FWT - previousBalance;
+  // const TotalFWT = FWT - previousBalance;
+  const TotalFWT =
+    previousBalance > 0
+      ? toNumber(FWT) + toNumber(previousBalance)
+      : previousBalance < 0
+      ? toNumber(FWT) - Math.abs(toNumber(previousBalance))
+      : toNumber(FWT);
+
+
   const pureBalance = TotalFWT - totalReceivedPurity;
   // Replace the existing cashBalance calculation with:
   useMemo(() => {
@@ -1494,7 +1523,7 @@ useEffect(() => {
                           Opening Balance: {toFixedStr(previousBalance, 3)}
                         </div>
                         <div>FWT: {toFixedStr(FWT, 3)}</div>
-                        <div>Total FWT: {toFixedStr(toNumber(FWT) + toNumber(previousBalance), 3)}</div>
+                        <div>Total FWT: {toFixedStr(TotalFWT,3)}</div>
                       </>
                     ) : previousBalance < 0 ? (
                       <>
@@ -1502,13 +1531,13 @@ useEffect(() => {
                           Excess Balance: {toFixedStr(Math.abs(previousBalance), 3)}
                         </div>
                         <div>FWT: {toFixedStr(FWT, 3)}</div>
-                        <div>Total FWT: {toFixedStr(toNumber(FWT) + toNumber(previousBalance), 3)}</div>
+                        <div>Total FWT: {toFixedStr(TotalFWT,3)}</div>
                       </>
                     ) : (
                       <>
                         <div className="neutral">Balance: 0.000</div>
                         <div>FWT: {toFixedStr(FWT, 3)}</div>
-                        <div>Total FWT: {toFixedStr(toNumber(FWT), 3)}</div>
+                        <div>Total FWT: {toFixedStr(TotalFWT,3)}</div>
                       </>
                     )}
             </Box>
@@ -1730,7 +1759,13 @@ useEffect(() => {
             
             <div className="flex">
               <strong>Cash Balance: ₹{Number(cashBalance ?? 0).toLocaleString("en-IN", {/*{ minimumFractionDigits: 3,// maximumFractionDigits: 3,}*/} )}</strong>
-              <strong> Pure Balance: {toFixedStr(TotalFWT - totalReceivedPurity, 3)}</strong>
+
+              <strong>
+                      {pureBalance >= 0
+                        ? `Pure Balance: ${toFixedStr(pureBalance, 3)}`
+                        : `Excess Balance: ${toFixedStr(pureBalance, 3)}`}
+                      </strong>
+
               <strong> Hallmark Balance:{" "} {toFixedStr(hallmarkBalance + prevHallmark, 3)} </strong>
             </div>
             
