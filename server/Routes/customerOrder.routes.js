@@ -4,6 +4,7 @@ const {
   createCustomerOrder,
   updateCustomerOrder,
   deleteCustomerOrder,
+  deleteOrderById,
   addExtraItemToOrderGroup,
   deleteImageById,
   getAllCustomerOrders,
@@ -21,6 +22,7 @@ router.post(
   addExtraItemToOrderGroup
 );
 router.put("/update/:id", upload.any(), updateCustomerOrder);
+router.delete("/:customer_id/:orderId",deleteOrderById);
 router.delete("/delete/:orderId", deleteCustomerOrder);
 router.delete("/image/:imageId", deleteImageById);
 router.get("/all-customer-orders", getAllCustomerOrders);

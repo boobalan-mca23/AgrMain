@@ -40,22 +40,21 @@ const JobCardReport = () => {
     page * rowsPerPage + rowsPerPage
   );
 
-  const [isPrinting, setIsPrinting] = useState(true);
+  
 
   const reportRef = useRef();
 
   // Calculate totals for current page
 
   const handleDownloadPdf = async () => {
-    setIsPrinting(false); // show all rows
 
-    const clearBtn = document.getElementById("clear");
-    const printBtn = document.getElementById("print");
+
     const thead = document.getElementById("reportHead");
     const tfoot = document.getElementById("reportFoot");
-
-    clearBtn.style.visibility = "hidden";
-    printBtn.style.visibility = "hidden";
+    if(paginatedData.length===0){
+       return alert("No Job Card Information")
+    }
+    
     thead.style.position = "static"; // fix for print
     tfoot.style.position = "static"; // fix for print
 
@@ -107,9 +106,7 @@ const JobCardReport = () => {
       pdf.save("JobCard_Report.pdf");
 
       // Restore UI
-      setIsPrinting(true);
-      clearBtn.style.visibility = "visible";
-      printBtn.style.visibility = "visible";
+  
       thead.style.position = "sticky";
       tfoot.style.position = "sticky";
     }, 1000); // allow DOM to update
@@ -179,7 +176,7 @@ const JobCardReport = () => {
       <div>
         <div className="reportHeader">
           <h3>GoldSmith Report</h3>
-          <div className={`report ${!isPrinting ? "print-mode" : ""}`}>
+          <div className="report">
             <label>From Date</label>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DemoContainer components={["DatePicker"]}>
@@ -214,7 +211,7 @@ const JobCardReport = () => {
               )}
             />
 
-            {isPrinting && (
+            
               <Button
                 id="clear"
                 className="clr noprint reportBtn"
@@ -222,8 +219,8 @@ const JobCardReport = () => {
               >
                 Clear
               </Button>
-            )}
-            {isPrinting && (
+          
+     
               <div className="noprint">
                 <Button
                   id="print"
@@ -235,7 +232,7 @@ const JobCardReport = () => {
                   Print
                 </Button>
               </div>
-            )}
+          
 
             {jobCard.length > 0 && jobCard.at(-1)?.total?.length > 0 ? (
               <div className="jobInfo">

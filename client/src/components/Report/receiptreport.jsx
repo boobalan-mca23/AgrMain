@@ -38,28 +38,24 @@ const ReceiptReport = () => {
   const paginatedData = receipt.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
-  );
-
-
-  const [isPrinting, setIsPrinting] = useState(true);
-  
+  );  
 
   const reportRef = useRef();
 
   // Calculate totals for current page
  
   const handleDownloadPdf = async () => {
-  setIsPrinting(false); // show all rows
+ 
 
-  const clearBtn = document.getElementById("clear");
-  const printBtn = document.getElementById("print");
-  const thead = document.getElementById("reportHead");
-  const tfoot = document.getElementById("reportFoot");
+  const thead = document.getElementById("receiptreportHead");
+  
 
-  clearBtn.style.visibility = "hidden";
-  printBtn.style.visibility = "hidden";
+   if(paginatedData.length===0){
+     return alert("No Receipt Entries Information")
+    }
+    
   thead.style.position = "static"; // fix for print
-  tfoot.style.position = "static"; // fix for print
+
 
   setTimeout(async () => {
     const element = reportRef.current;
@@ -109,11 +105,9 @@ const ReceiptReport = () => {
     pdf.save("Receipt_Report.pdf");
 
     // Restore UI
-    setIsPrinting(true);
-    clearBtn.style.visibility = "visible";
-    printBtn.style.visibility = "visible";
+   
     thead.style.position = "sticky";
-    tfoot.style.position = "sticky";
+  
   }, 1000); // allow DOM to update
 };
 
@@ -189,7 +183,7 @@ const ReceiptReport = () => {
       <div >
         <div className="receiptreportHeader">
           <h3>Receipt Report</h3>
-          <div className={`receipt ${!isPrinting ? "print-mode" : ""}`}>
+          <div className="receipt">
             <label>From Date</label>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DemoContainer components={["DatePicker"]}>
@@ -224,7 +218,7 @@ const ReceiptReport = () => {
               )}
             />
 
-            {isPrinting && (
+     
               <Button
                 id="clear"
                 className="clr noprint receiptreportBtn"
@@ -232,8 +226,8 @@ const ReceiptReport = () => {
               >
                 Clear
               </Button>
-            )}
-            {isPrinting && (
+     
+
               <div className="noprint">
                 <Button
                   id="print"
@@ -245,7 +239,7 @@ const ReceiptReport = () => {
                   Print
                 </Button>
               </div>
-            )}
+            
           </div>
         </div>
 
