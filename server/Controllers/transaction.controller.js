@@ -22,7 +22,7 @@ const createTransaction = async (req, res) => {
 const getAllTransactions = async (req, res) => {
   try {
     const { customerId } = req.params;
-
+      console.log('customerid',customerId)
     if (!customerId) {
       return res.status(400).json({ error: "Customer ID is required" });
     }
@@ -31,6 +31,7 @@ const getAllTransactions = async (req, res) => {
       where: { customerId: parseInt(customerId) },
       orderBy: { date: "desc" },
     });
+     console.log(transactions)
 
     res.status(200).json(transactions);
   } catch (error) {

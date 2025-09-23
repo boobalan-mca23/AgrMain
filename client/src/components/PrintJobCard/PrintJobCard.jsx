@@ -73,7 +73,7 @@ const PrintJobCard = React.forwardRef((props, ref) => {
               
             <div style={styles.totalpuritycontainer}>
               <span style={styles.totalpuritylabel}>Total Purity:</span>
-              <span>{totalDelivery}</span>
+              <span>{(totalDelivery).toFixed(3)}</span>
             </div>
         </div>
         <div>
