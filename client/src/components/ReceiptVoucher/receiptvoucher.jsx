@@ -46,7 +46,7 @@ const Receipt = () => {
   const [masterTouch, setMasterTouch] = useState([]);
   const [receipt, setReceipt] = useState([
     {
-      date:formattedToday,
+      date: formattedToday,
       type: "",
       goldRate: "",
       gold: "",
@@ -87,7 +87,7 @@ const Receipt = () => {
 
   const handleAddRow = () => {
     const newRow = {
-      date:formattedToday,
+      date: formattedToday,
       type: "",
       goldRate: "",
       gold: "",
@@ -185,15 +185,15 @@ const Receipt = () => {
     );
 
     const printContent = (
-      <PrintReceipt 
-       receipt={receipt}
-       customerName={customerName.name}
-       oldbalance={receiptBalances?.oldbalance}
-       oldHallMark={receiptBalances?.hallMark}
-       cashBalance={cashBalance}
-       pureBalance={pureBalance}
-       hallMark={hallmarkBalance}
-        />
+      <PrintReceipt
+        receipt={receipt}
+        customerName={customerName.name}
+        oldbalance={receiptBalances?.oldbalance}
+        oldHallMark={receiptBalances?.hallMark}
+        cashBalance={cashBalance}
+        pureBalance={pureBalance}
+        hallMark={hallmarkBalance}
+      />
     );
 
     const printHtml = `
@@ -241,7 +241,7 @@ const Receipt = () => {
           setSelectedCustomer("");
           setReceipt([
             {
-              date:formattedToday,
+              date: formattedToday,
               type: "",
               goldRate: "",
               gold: "",
@@ -303,7 +303,7 @@ const Receipt = () => {
                 value={(receiptBalances?.hallMark).toFixed(3) || 0}
               />
             </div>
-            <div className="receiptbtn">
+            <div className="receiptcommanbtn receiptbtn">
               <button
                 onClick={() => {
                   handleAddRow();
@@ -311,14 +311,7 @@ const Receipt = () => {
               >
                 Add Row
               </button>
-              <button
-                disabled={receipt.length <= 0}
-                onClick={() => {
-                  handleSaveReeceipt();
-                }}
-              >
-                Save
-              </button>
+             
             </div>
           </div>
 
@@ -351,7 +344,7 @@ const Receipt = () => {
                           handleChangeReceipt(index, "date", e.target.value)
                         }
                       />
-                
+
                       <br></br>
                       {receiptErrors[index]?.date && (
                         <span className="error">
@@ -487,17 +480,31 @@ const Receipt = () => {
               </tbody>
             </table>
           </div>
+          <div className="receiptcommanbtn saveReceiptbtn">
+             <button
+                disabled={receipt.length <= 0}
+                onClick={() => {
+                  handleSaveReeceipt();
+                }}
+              >
+                Save
+              </button>
+          </div>
           <div className="receiptBalances">
             <div>
               <p>
                 CashBalance ₹
-                {cashBalance.toLocaleString("en-IN", {
-                  minimumFractionDigits: 2,
+                {Number(cashBalance).toLocaleString("en-IN", {
+                  // minimumFractionDigits: 2,
+                  // maximumFractionDigits: 2,
                 })}
               </p>
             </div>
             <div>
-              <p>{pureBalance<0? "ExcessBalance":"PureBalance"} {pureBalance.toFixed(3)}gr</p>
+              <p>
+                {pureBalance < 0 ? "ExcessBalance" : "PureBalance"}{" "}
+                {pureBalance.toFixed(3)}gr
+              </p>
             </div>
             <div>
               <p>Hall Mark Balance {hallmarkBalance.toFixed(3)}gr</p>

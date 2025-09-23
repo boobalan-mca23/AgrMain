@@ -38,27 +38,32 @@
     font-size: x-large;
     cursor: pointer;
   }
+  .receiptcommanbtn button{
+    background-color: #2b7d23;
+    border: 1px solid black;
+    color: white;
+     padding: 10px 16px;
+     text-align: center;
+    text-decoration: none;
+    display: inline-block;
+     font-size: 15px;
+     margin: 4px 2px;
+    cursor: pointer;
+  }
 .receiptbtn{
     display: flex;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
     gap: 2px;
+  }
 
-}
-.receiptbtn button{
-  background-color: #2b7d23;
-  border: 1px solid black;
-  color: white;
-  padding: 10px 16px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 15px;
-  margin: 4px 2px;
-  cursor: pointer;
-}
 
+.saveReceiptbtn {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
 .receiptTableInput,.receiptTableDate{
     padding: 5px;
     font-size: 1rem;

@@ -257,6 +257,60 @@ const deleteCustomerOrder = async (req, res) => {
   }
 };
 
+const deleteOrderById=async(req,res)=>{
+  try{
+    const {customer_id,orderId}=req.params
+      const ifExist= await prisma.customer_order.findUnique({
+        where:{
+          id:parseInt(orderId)
+        }
+      })
+
+      if(!ifExist){
+        return res.status(400).json({err:`this order id ${orderId} not exist for this customer`})
+      }
+     await prisma.customer_order.delete({
+      where:{
+         id:parseInt(orderId)
+      }
+     })
+
+    const orders = await prisma.customer_order.findMany({
+      where: { customer_id: parseInt(customer_id) },
+      select: {
+        id: true,
+        item_name: true,
+        description: true,
+        weight: true,
+        due_date: true,
+        status: true,
+        worker_name: true,
+        order_group_id: true,
+        productImages: { select: { filename: true } },
+      },
+      orderBy: { order_group_id: "asc" },
+    });
+
+    const grouped = {};
+
+    for (const order of orders) {
+      const groupId = order.order_group_id;
+      if (!grouped[groupId]) grouped[groupId] = [];
+
+      grouped[groupId].push(order);
+    }
+
+    return res.status(200).json({
+      message: "Grouped orders fetched",
+      data: grouped,
+    });
+    
+
+  }catch(err){
+    return res.status(500).json({err:err.message})
+  }
+}
+
 const deleteImageById = async (req, res) => {
   try {
     const imageId = parseInt(req.params.imageId);
@@ -407,6 +461,7 @@ module.exports = {
   createCustomerOrder,
   updateCustomerOrder,
   deleteCustomerOrder,
+  deleteOrderById,
   addExtraItemToOrderGroup,
   deleteImageById,
   getAllCustomerOrders,
