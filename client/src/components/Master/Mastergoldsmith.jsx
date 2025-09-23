@@ -37,6 +37,7 @@ function Mastergoldsmith() {
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
+  
 
   useEffect(() => {
     fetchGoldsmiths();
@@ -74,8 +75,13 @@ function Mastergoldsmith() {
     }
     if (field === "phone") {
       const v = value.trim();
-      if (v && !/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
+      if (!v) {
+        error = "Phone number is required.";
+      } else if (!/^\d{10}$/.test(v)) {
+        error = "Phone number must be 10 digits.";
+      }
     }
+
     setErrors((prev) => ({ ...prev, [field]: error }));
     return error === "";
   };
@@ -84,6 +90,21 @@ function Mastergoldsmith() {
     setTouched((prev) => ({ ...prev, [field]: true }));
     validateField(field, value);
   };
+
+  // handle Enter key navigation
+const handleKeyDown = (e, field) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (field === "name") {
+      phoneRef.current?.focus();
+    } else if (field === "phone") {
+      addressRef.current?.focus();
+    } else if (field === "address") {
+      handleSaveGoldsmith(); // final save on Enter
+    }
+  }
+};
+
 
   const validateForm = () => {
     const nameValid = validateField("name", goldsmithName);
@@ -209,7 +230,9 @@ function Mastergoldsmith() {
             onBlur={(e) => handleBlur("name", e.target.value)}
             error={(touched.name || submitted) && !!errors.name}
             helperText={(touched.name || submitted) ? errors.name : ""}
+            onKeyDown={(e) => handleKeyDown(e, "name")}
           />
+
           <TextField
             inputRef={phoneRef}
             margin="dense"
@@ -220,12 +243,14 @@ function Mastergoldsmith() {
             value={phoneNumber}
             onChange={(e) => {
               setPhoneNumber(e.target.value);
-              if (touched.phone) validateField("phone", e.target.value);
+              if (touched.phone || submitted) validateField("phone", e.target.value);
             }}
             onBlur={(e) => handleBlur("phone", e.target.value)}
             error={(touched.phone || submitted) && !!errors.phone}
             helperText={(touched.phone || submitted) ? errors.phone : ""}
+            onKeyDown={(e) => handleKeyDown(e, "phone")}
           />
+
           <TextField
             inputRef={addressRef}
             margin="dense"
@@ -237,7 +262,9 @@ function Mastergoldsmith() {
             autoComplete="off"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, "address")}
           />
+
         </DialogContent>
         <DialogActions>
           <Button onClick={closeModal} color="secondary">
