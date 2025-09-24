@@ -31,8 +31,8 @@ const PrintJobCard = React.forwardRef((props, ref) => {
             <p>Date:{date}</p>
             <p>Time:{time}</p>
           </div>
-          <div>
-            <span><strong  style={styles.subTitle}>Description</strong>:{description}</span>
+          <div style={styles.description}>
+            <span><strong  >Description</strong>:{description}</span>
           </div>
 
           <div >
@@ -160,6 +160,11 @@ const styles = {
     flexWrap: "wrap",
     margin:0
     
+  },
+  description:{
+    border:"1px solid black",
+    margin:"2px",
+    padding:"5px"
   },
   goldFlex: {
     display: "flex",

@@ -66,7 +66,7 @@ const ExpenseTracker = () => {
       );
     
       setAllExpense(response.data.allExpense)
-      toast.success(response.data.message,{autoClose:1000})
+      alert(response.data.message)
       fetchRawGold()
     } catch (err) {
       console.log(err.message);
@@ -108,6 +108,7 @@ const ExpenseTracker = () => {
   }, []);
   return (
     <>
+   
       <div>
         <h3 style={{ textAlign: "center" }}>
           {" "}
@@ -185,6 +186,7 @@ const ExpenseTracker = () => {
             <p style={{textAlign:"center",color:"red",fontWeight:"bold"}}>No Expense!</p>
           )}
         </div>
+      
         <TablePagination
           component="div"
           count={allExpense.length}
@@ -207,6 +209,8 @@ const ExpenseTracker = () => {
           handleClosePop={handleClosePop}
         />
       )}
+   
+
     </>
   );
 };

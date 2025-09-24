@@ -29,7 +29,7 @@ const getCustomerOrder = async (req, res) => {
 
       grouped[groupId].push(order);
     }
-
+    console.log('All Orders', grouped)
     return res.status(200).json({
       message: "Grouped orders fetched",
       data: grouped,
