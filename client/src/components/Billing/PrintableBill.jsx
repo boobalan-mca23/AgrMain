@@ -79,7 +79,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
         </div>
 
         {/* Bill Details */}
-        <h4>Bill Details:</h4>
+        <h4 style={{ margin: "5px 0" }}>Bill Details:</h4> {/* tightened spacing */}
         <table style={styles.table}>
           <thead>
             <tr>
@@ -170,8 +170,8 @@ const PrintableBill = React.forwardRef((props, ref) => {
         )}
 
         {/* Balances */}
-          <div style={{ marginTop: "15px"}}>
-            <h4>Balances:</h4>
+          <div style={{ marginTop: "8px", marginBottom: "8px"}}>
+           <h4 style={{ margin: "0px 0" }}>Balances:</h4>
             <div style={styles.flex}>
             <p style={styles.flexChild}>
               Previous Balance:{" "}
@@ -222,9 +222,9 @@ const PrintableBill = React.forwardRef((props, ref) => {
       
         {/* </div>  */}
         
-        <br/><br/>
+        {/* <br/><br/> */}
         {/* Balance Summary */}
-        <div style={styles.flex}>
+        <div style={{...styles.flex, marginTop: "8px"}}>
           <p style={styles.flexChild}>
             <b>Cash Balance: ₹{formatToFixed3Strict(cashBalance)} </b>
           </p>
