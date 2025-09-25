@@ -100,7 +100,7 @@ const createBill = async (req, res) => {
          const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
          const decStoneWeight = isNaN(parseFloat(item.stoneWeight)) ? 0 : parseFloat(item.stoneWeight);
          const decCount = item.count ? (isNaN(parseInt(item.count)) ? 0 : parseInt(item.count)) : 0;
-         const remainWt=decProductWt-stock[0].itemWeight
+         const remainWt=stock[0].itemWeight-decProductWt
          const wastagePure=((remainWt*stock[0].touch)/100) - ((remainWt*stock[0].wastageValue)/100)
          const finalPurity=(remainWt*stock[0].wastageValue)/100 
         
