@@ -25,7 +25,11 @@ exports.createExpense=async(req,res)=>{
 exports.getAllExpense=async(req,res)=>{
    
     try{
-        const allExpense=await prisma.expenseTracker.findMany()
+        const allExpense=await prisma.expenseTracker.findMany({
+         orderBy:{
+            id:"desc"
+         }
+        })
         res.status(200).json({allExpense})
     }catch(err){
        console.log('err',err.message)

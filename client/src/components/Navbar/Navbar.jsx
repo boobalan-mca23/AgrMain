@@ -86,7 +86,7 @@ const Navbar = () => {
           "Receipt Voucher",
           "Expense Tracker",
           "Bullion",
-          // "Repair",
+          "Repair",
         ].map((label) => {
           const path = `/${label.replace(/\s+/g, "").toLowerCase()}`;
           return (

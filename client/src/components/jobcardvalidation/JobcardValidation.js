@@ -38,7 +38,7 @@ const itemValidation = (itemDelivery,setItemDeliveryErrors) => {
     if (!/^\d*\.?\d*$/.test(row.touch)) {
       rowErrors.touch = "valid touch";
     }
-      // if (!row.wastageType) rowErrors.wastageType = "wastage Type";
+      if (!row.wastageType) rowErrors.wastageType = "wastage Type";
       if (!row.wastageValue) rowErrors.wastageValue = "weight";
       if (row.wastageValue < 0) rowErrors.wastageValue = "negative value";
 

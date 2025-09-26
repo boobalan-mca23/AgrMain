@@ -9,6 +9,17 @@ const moveToItemDelivery = async (itemDelivery, jobCardId, goldSmithId) => {
 
   if (itemDelivery.length >= 1) {
     for (const item of itemDelivery) {
+      let data={
+            itemName: item?.itemName,
+            itemWeight: parseFloat(item?.itemWeight) || 0,
+            count: parseInt(item?.count) || 0,
+            touch: parseFloat(item?.touch) || 0,
+            netWeight: parseFloat(item?.netWeight) || 0,
+            wastageType: item?.wastageType,
+            wastageValue: parseFloat(item?.wastageValue) || 0,
+            wastagePure: parseFloat(item?.wastagePure) || 0,
+            finalPurity: parseFloat(item.finalPurity) || 0,
+        }
       if (item?.id) {
         //itemDelivery update if id is there or create
 
@@ -16,18 +27,16 @@ const moveToItemDelivery = async (itemDelivery, jobCardId, goldSmithId) => {
           where: {
             id: item.id,
           },
-          data: {
-            itemName: item?.itemName,
-            itemWeight: parseFloat(item?.itemWeight) || 0,
-            count: parseInt(item?.count) || 0,
-            touch: parseFloat(item?.touch) || 0,
-            sealName: item?.sealName,
-            netWeight: parseFloat(item?.netWeight) || 0,
-            // wastageType: item?.wastageType,
-            wastageValue: parseFloat(item?.wastageValue) || 0,
-            wastagePure: parseFloat(item?.wastagePure) || 0,
-            finalPurity: parseFloat(item.finalPurity) || 0,
-          },
+          data:{
+            ...data,
+          productStock:{
+            update:{
+              ...data,
+              stoneWeight: item.deduction.reduce((acc,stone)=>acc+parseFloat(stone.weight),0),
+              
+            }
+          }
+          }
         });
 
         // if dedcution id is there update or create
@@ -62,27 +71,26 @@ const moveToItemDelivery = async (itemDelivery, jobCardId, goldSmithId) => {
           }));
         }
 
-        await prisma.itemDelivery.create({
+       await prisma.itemDelivery.create({
           data: {
-            goldsmithId: parseInt(goldSmithId),
-            jobcardId: parseInt(jobCardId),
-            itemName: item?.itemName,
-            count: parseInt(item?.count) || 0,
-            itemWeight: parseFloat(item?.itemWeight) || 0,
-            touch: parseFloat(item?.touch) || 0,
-            sealName: item?.sealName,
-            netWeight: parseFloat(item?.netWeight) || 0,
-            // wastageType: item?.wastageType,
-            wastageValue: parseFloat(item?.wastageValue) || 0,
-            wastagePure: parseFloat(item?.wastagePure) || 0,
-            finalPurity: parseFloat(item.finalPurity) || 0,
+           ...data,
+             goldsmith: { connect: { id: parseInt(goldSmithId) } },
+             jobcard: { connect: { id: parseInt(jobCardId) } },
             ...(deductionArr.length > 0 && {
               deduction: {
                 create: deductionArr,
               },
             }),
+            productStock:{
+              create:{
+                ...data,
+                stoneWeight:deductionArr.reduce((acc,item)=>acc+item.weight,0),
+              
+              }
+            }            
           },
         });
+        
       }
     }
   }
