@@ -400,7 +400,7 @@ const handleSave = async () => {
                 fullWidth
               />
               <TextField
-                label="Grams (Calculated)"
+                label="Purity (Calculated)"
                 type="number"
                 value={newGivenGramsCalculated.toFixed(2)}
                 onWheel={(e) => e.target.blur()}
@@ -416,7 +416,7 @@ const handleSave = async () => {
                 fullWidth
               />
               <TextField
-                label="Purity (Calculated)"
+                label="Grams (Calculated)"
                 type="number"
                 value={newGivenPurityCalculated.toFixed(2)}
                 onWheel={(e) => e.target.blur()}

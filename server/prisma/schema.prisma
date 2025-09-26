@@ -205,6 +205,7 @@ model itemDelivery {
   jobcardId        Int?
   jobcard          Jobcard?   @relation(fields: [jobcardId], references: [id])
   deduction        deduction[]
+  productStock     ProductStock[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @default(now())
 }
@@ -325,15 +326,18 @@ model ProductStock{
   id           Int   @id @default(autoincrement())
   jobcardId    Int
   jobcard      Jobcard?      @relation(fields: [jobcardId], references: [id])
-  itemName     String
-  itemWeight   Float
+  deliveryId   Int
+  itemDelivery itemDelivery  @relation(fields: [deliveryId ], references: [id])
+  itemName     String?
+  itemWeight   Float?
   count        Int
-  touch        Float
-  stoneWeight  Float
-  wastageValue Float
+  touch        Float?
+  stoneWeight  Float?
+  wastageValue Float?
   netWeight    Float?
   wastagePure  Float?
-  finalWeight  Float
+  wastageType  String?
+  finalPurity  Float?
   createdAt     DateTime   @default(now())
   }
  model Bill{

@@ -110,10 +110,10 @@ const ExpenseTracker = () => {
     <>
    
       <div>
-        <h3 style={{ textAlign: "center" }}>
+        <h1 style={{ textAlign: "center" }}>
           {" "}
           <FaWallet /> Expense Tracker
-        </h3>
+        </h1>
 
         <div className="expenseHeader">
           <div>

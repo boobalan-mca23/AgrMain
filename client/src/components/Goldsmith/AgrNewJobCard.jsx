@@ -68,7 +68,7 @@ function AgrNewJobCard({
   const [deductionErrors, setDeductionErrors] = useState([]);
   const [receivedErrors, setReceivedErrors] = useState([]);
   const stoneOptions = ["Stone", "Enamel", "Beads"];
-  const symbolOptions = ["Touch"];
+  const symbolOptions = ["Touch","%", "+"];
   const [jobCardBalance, setJobCardBalance] = useState(0);
 
   const recalculateFinalPurity = (item) => {
@@ -171,7 +171,7 @@ function AgrNewJobCard({
         (copy[i].netWeight * copy[i].touch) / 100
       ).toFixed(3);
     }
-    copy[i].finalPurity = (copy[i].netWeight * copy[i].wastageValue) / 100;
+    copy[i].finalPurity = recalculateFinalPurity(copy[i])
     setItemDelivery(copy);
     itemValidation(itemDelivery, setItemDeliveryErrors);
   };
@@ -199,12 +199,8 @@ function AgrNewJobCard({
         (updated[itemIndex]["netWeight"] * updated[itemIndex]["touch"]) / 100
       ).toFixed(3);
     }
-    updated[itemIndex]["netWeight"] =
-      updated[itemIndex]["itemWeight"] -
-      Number(totalDeduction(itemIndex, updated));
-    updated[itemIndex].finalPurity =
-      (updated[itemIndex]["netWeight"] * updated[itemIndex]["wastageValue"]) /
-      100;
+    updated[itemIndex]["netWeight"] =updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated));
+    updated[itemIndex].finalPurity =recalculateFinalPurity(updated[itemIndex])
     setItemDelivery(updated);
   };
 
@@ -618,14 +614,14 @@ function AgrNewJobCard({
                     <tr key={index + 1} className="jobCardTouchTableBody">
                       <td>{index + 1}</td>
                       <td>{rawStock.touch}</td>
-                      <td>{rawStock.weight}</td>
+                      <td>{(rawStock.weight).toFixed(3)}</td>
                       <td
                         style={{
                           backgroundColor:
                             rawStock.remainingWt < 0 ? "red" : "",
                         }}
                       >
-                        {rawStock.remainingWt}
+                        {(rawStock.remainingWt).toFixed(3)}
                       </td>
                     </tr>
                   ))}
@@ -692,9 +688,9 @@ function AgrNewJobCard({
                     <TableCell rowSpan={2} className="tableCell">
                       Net Weight
                     </TableCell>
-                    {/* <TableCell rowSpan={2} className="tableCell">
+                    <TableCell rowSpan={2} className="tableCell">
                       Wastage Type
-                    </TableCell> */}
+                    </TableCell>
                     <TableCell rowSpan={2} className="tableCell">
                       Wastage Value
                     </TableCell>
@@ -949,7 +945,7 @@ function AgrNewJobCard({
                             onWheel={(e) => e.target.blur()}
                           />
                         </TableCell>
-                        {/* <TableCell
+                        <TableCell
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
                         >
@@ -978,7 +974,7 @@ function AgrNewJobCard({
                               {itemDeliveryErrors[index]?.wastageType}
                             </span>
                           )}
-                        </TableCell> */}
+                        </TableCell>
                         <TableCell
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
