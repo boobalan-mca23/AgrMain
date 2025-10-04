@@ -72,18 +72,27 @@ function MasterCustomer() {
   const validateField = (field, value) => {
     let error = "";
     if (field === "name") {
-      if (!value.trim()) error = "Customer name is required.";
-    }
-    if (field === "phone") {
       if (!value.trim()) {
-        error = "Phone number is required.";
-      } else if (!/^\d{10}$/.test(value)) {
+        error = "Customer name is required.";
+      } else if (!validName.test(value.trim())) {
+        error = "Special characters are not allowed.";
+      } else if (
+        customers.some(
+          (c) => c.name.toLowerCase() === value.trim().toLowerCase()
+        )
+      ) {
+        error = "Customer name already exists.";
+      }
+    }
+    if (field === "phone" && value.trim()) {
+      if (!/^\d{10}$/.test(value)) {
         error = "Phone number must be 10 digits.";
       }
     }
     setErrors((prev) => ({ ...prev, [field]: error }));
     return error === "";
   };
+
 
   const handleBlur = (field, value) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -102,6 +111,16 @@ function MasterCustomer() {
     // compute validity synchronously for focusing logic
     const nameOk = customerName.trim().length > 0;
     const phoneOk = /^\d{10}$/.test(phoneNumber.trim());
+
+    if (
+      customers.some(
+        (c) => c.name.toLowerCase() === customerName.trim().toLowerCase()
+      )
+    ) {
+      toast.error("Customer name already exists!");
+      return;
+    }
+
 
     if (!validateForm()) {
       if (!nameOk) {
@@ -190,6 +209,18 @@ function MasterCustomer() {
       return;
     }
     
+    if (
+        customers.some(
+          (c) =>
+            c.id !== editCustomer.id &&
+            c.name.toLowerCase() === editedData.name.trim().toLowerCase()
+        )
+      ) {
+        toast.error("Another customer with this name already exists!");
+        return;
+      }
+
+
     try {
       const response = await fetch(
         `${BACKEND_SERVER_URL}/api/customers/${editCustomer.id}`,
@@ -335,7 +366,7 @@ function MasterCustomer() {
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td>{customer.name}</td>
-                    <td>{customer.phone}</td>
+                    <td>{customer.phone || "-"}</td>
                     <td>{customer.address || "-"}</td>
                     <td>
                       <Tooltip title="Edit Customer">
