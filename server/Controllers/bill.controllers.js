@@ -20,6 +20,7 @@ const createBill = async (req, res) => {
     Stoneprofit,
     Totalprofit,
     cashBalance,
+    hallmarkQty,
  
   } = req.body;
   console.log("req  body in bill", req.body);
@@ -52,6 +53,7 @@ const createBill = async (req, res) => {
       data: {
         date: new Date(date),
         time: time,
+        hallmarkQty:parseFloat(hallmarkQty)||0,
         cashBalance: parseFloat(cashBalance),
         customer_id: parseInt(customerId),
         billAmount: parseFloat(billTotal),
@@ -87,7 +89,6 @@ const createBill = async (req, res) => {
     for (const item of orderItems) {
       if (item.stockId) {
         // parse safely
-
         const stock=await prisma.productStock.findMany({where:{
           id:item.stockId
         },
