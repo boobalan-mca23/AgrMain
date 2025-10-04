@@ -2,28 +2,33 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 exports.createGoldsmith = async (req, res) => {
-  const { name, phonenumber, address } = req.body;
+  let { name, phonenumber, address } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Goldsmith name is required." });
   }
 
-   const ifExist=await prisma.goldsmith.findFirst({
-    where:{
-      phone:phonenumber
-    }
-  })
+  // normalize values
+  phonenumber = phonenumber && phonenumber.trim() !== "" ? phonenumber.trim() : null;
+  address = address && address.trim() !== "" ? address.trim() : null;
 
-  if(ifExist){
-    return res.status(400).json({message:"Phone number already exist"})
+  // check only if phone is not null
+  if (phonenumber) {
+    const ifExist = await prisma.goldsmith.findFirst({
+      where: { phone: phonenumber }
+    });
+
+    if (ifExist) {
+      return res.status(400).json({ message: "Phone number already exists" });
+    }
   }
 
   try {
     const newGoldsmith = await prisma.goldsmith.create({
       data: {
-        name,
-        phone: phonenumber || null,
-        address: address || null,
+        name: name.trim(),
+        phone: phonenumber,
+        address,
       },
     });
     res.status(201).json(newGoldsmith);
@@ -31,6 +36,7 @@ exports.createGoldsmith = async (req, res) => {
     res.status(500).json({ message: "Error creating goldsmith", error });
   }
 };
+
 
 exports.getAllGoldsmith = async (req, res) => {
   try {
@@ -58,13 +64,30 @@ exports.getGoldsmithById = async (req, res) => {
 
 exports.updateGoldsmith = async (req, res) => {
   const { id } = req.params;
-  const { name, phone, address } = req.body;
-  console.log(req.body);
+  let { name, phone, address } = req.body;
+
+  phone = phone && phone.trim() !== "" ? phone.trim() : null;
+  address = address && address.trim() !== "" ? address.trim() : null;
+
+  // check duplicate phone if not null
+  if (phone) {
+    const ifExist = await prisma.goldsmith.findFirst({
+      where: {
+        phone,
+        NOT: { id: parseInt(id) }, // exclude self
+      },
+    });
+
+    if (ifExist) {
+      return res.status(400).json({ message: "Phone number already exists" });
+    }
+  }
+
   try {
     const updatedGoldsmith = await prisma.goldsmith.update({
       where: { id: parseInt(id) },
       data: {
-        name,
+        name: name.trim(),
         phone,
         address,
       },
@@ -74,6 +97,7 @@ exports.updateGoldsmith = async (req, res) => {
     res.status(500).json({ message: "Error updating goldsmith", error });
   }
 };
+
 
 exports.deleteGoldsmith = async (req, res) => {
   const { id } = req.params;
