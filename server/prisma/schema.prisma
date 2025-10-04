@@ -322,12 +322,12 @@ model Repair {
   createdAt     DateTime   @default(now())
 }
 
-model ProductStock{
-  id           Int   @id @default(autoincrement())
+model ProductStock {
+  id           Int @id @default(autoincrement())
   jobcardId    Int
-  jobcard      Jobcard?      @relation(fields: [jobcardId], references: [id])
+  jobcard      Jobcard? @relation(fields: [jobcardId], references: [id])
   deliveryId   Int
-  itemDelivery itemDelivery  @relation(fields: [deliveryId ], references: [id])
+  itemDelivery itemDelivery @relation(fields: [deliveryId], references: [id])
   itemName     String?
   itemWeight   Float?
   count        Int
@@ -338,8 +338,9 @@ model ProductStock{
   wastagePure  Float?
   wastageType  String?
   finalPurity  Float?
-  createdAt     DateTime   @default(now())
-  }
+  createdAt    DateTime @default(now())
+}
+
  model Bill{
   id           Int @id @default(autoincrement())
   date         DateTime ?
@@ -349,6 +350,7 @@ model ProductStock{
   hallMark     Float?
   prevHallMark Float?
   PrevBalance  Float?
+  hallmarkQty  Float?
   billDetailsprofit Float?
   Stoneprofit  Float?
   Totalprofit  Float?
