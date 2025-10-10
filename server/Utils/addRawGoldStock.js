@@ -61,7 +61,7 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
           gold:parseInt(receive.gold) || 0,
           touch:parseFloat(receive.touch)||0,
           purity: parseFloat(receive.purity) || 0,
-          receiveHallMark: parseFloat(receive.hallMark) || 0,
+          receiveHallMark: parseFloat(receive.receiveHallMark) || 0,
           amount: parseFloat(receive.amount) || 0,
         };
 
@@ -345,6 +345,7 @@ module.exports={
   entryToRawGold,
   
 }
+
 
 
 

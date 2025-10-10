@@ -37,7 +37,6 @@ function Mastergoldsmith() {
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
-  
 
   useEffect(() => {
     fetchGoldsmiths();
@@ -66,18 +65,25 @@ function Mastergoldsmith() {
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setSubmitted(false);
   };
 
+  // Generic add-field validation (used by Add modal)
   const validateField = (field, value) => {
     let error = "";
     if (field === "name") {
-      if (!value.trim()) error = "Goldsmith name is required.";
+      if (!value.trim()) {
+        error = "Goldsmith name is required.";
+      } else if (!validName.test(value.trim())) {
+        error = "Special characters are not allowed.";
+      } else if (
+        goldsmith.some((g) => g.name.toLowerCase() === value.trim().toLowerCase())
+      ) {
+        error = "Goldsmith name already exists.";
+      }
     }
-    if (field === "phone") {
-      const v = value.trim();
-      if (!v) {
-        error = "Phone number is required.";
-      } else if (!/^\d{10}$/.test(v)) {
+    if (field === "phone" && value.trim()) {
+      if (!/^\d{10}$/.test(value)) {
         error = "Phone number must be 10 digits.";
       }
     }
@@ -91,33 +97,71 @@ function Mastergoldsmith() {
     validateField(field, value);
   };
 
-  // handle Enter key navigation
-const handleKeyDown = (e, field) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    if (field === "name") {
-      phoneRef.current?.focus();
-    } else if (field === "phone") {
-      addressRef.current?.focus();
-    } else if (field === "address") {
-      handleSaveGoldsmith(); // final save on Enter
+  // Unified keydown which accepts a submit callback (so Add vs Edit behave correctly)
+  const handleKeyDown = (e, field, submitFn) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (field === "name") {
+        phoneRef.current?.focus();
+      } else if (field === "phone") {
+        addressRef.current?.focus();
+      } else if (field === "address") {
+        if (typeof submitFn === "function") submitFn();
+      }
     }
-  }
-};
+  };
 
-
-  const validateForm = () => {
+  // Add: validate add form (uses add-state variables)
+  const validateFormForAdd = () => {
     const nameValid = validateField("name", goldsmithName);
-    const phoneValid = validateField("phone", phoneNumber);
+    const phoneValid = validateField("phone", phoneNumber || "");
     return nameValid && phoneValid;
+  };
+
+  // Edit: validate edit form (uses formData, excludes the selected record from duplicate-check)
+  const validateFormForEdit = () => {
+    let nameError = "";
+    const nameVal = formData.name || "";
+
+    if (!nameVal.trim()) {
+      nameError = "Goldsmith name is required.";
+    } else if (!validName.test(nameVal.trim())) {
+      nameError = "Special characters are not allowed.";
+    } else if (
+      goldsmith.some(
+        (g) =>
+          selectedGoldsmith &&
+          g.id !== selectedGoldsmith.id &&
+          g.name.toLowerCase() === nameVal.trim().toLowerCase()
+      )
+    ) {
+      nameError = "Goldsmith name already exists.";
+    }
+
+    let phoneError = "";
+    const phoneVal = formData.phone || "";
+    if (phoneVal.trim() && !/^\d{10}$/.test(phoneVal.trim())) {
+      phoneError = "Phone number must be 10 digits.";
+    }
+
+    setErrors((prev) => ({ ...prev, name: nameError, phone: phoneError }));
+    return nameError === "" && phoneError === "";
   };
 
   // Add Goldsmith
   const handleSaveGoldsmith = async () => {
     setSubmitted(true);
 
-    if (!validateForm()) {
+    if (!validateFormForAdd()) {
       nameRef.current?.focus();
+      return;
+    }
+
+    // extra duplicate guard (case-insensitive)
+    if (
+      goldsmith.some((g) => g.name.toLowerCase() === goldsmithName.trim().toLowerCase())
+    ) {
+      toast.error("Goldsmith name already exists!", { autoClose: 2000 });
       return;
     }
 
@@ -128,7 +172,7 @@ const handleKeyDown = (e, field) => {
 
     const newGoldsmith = {
       name: goldsmithName.trim(),
-      phonenumber: phoneNumber.trim() || null,
+      phonenumber: phoneNumber.trim() ? phoneNumber.trim() : null,
       address: address.trim() || null,
     };
 
@@ -142,30 +186,52 @@ const handleKeyDown = (e, field) => {
       closeModal();
     } catch (error) {
       console.error("Error creating goldsmith:", error);
-      toast.error(error.response?.data?.message || "Failed to add goldsmith", { autoClose: 2000 });
+      toast.error(error.response?.data?.message || "Failed to add goldsmith", {
+        autoClose: 2000,
+      });
     }
   };
 
   // Edit Goldsmith
-  const handleEditClick = (goldsmith) => {
-    setSelectedGoldsmith(goldsmith);
+  const handleEditClick = (item) => {
+    setSelectedGoldsmith(item);
     setFormData({
-      name: goldsmith.name,
-      phone: goldsmith.phone,
-      address: goldsmith.address,
+      name: item.name || "",
+      phone: item.phone || "",
+      address: item.address || "",
     });
+    setErrors({ name: "", phone: "" });
+    setTouched({ name: false, phone: false });
+    setSubmitted(false);
     setOpenEditDialog(true);
+    // focus the name input after dialog opens
+    requestAnimationFrame(() => nameRef.current?.focus());
   };
 
   const handleEditSubmit = async () => {
-    if (!validName.test(formData.name.trim())) {
+    setSubmitted(true);
+
+    if (!validateFormForEdit()) {
+      nameRef.current?.focus();
+      return;
+    }
+
+    if (!validName.test((formData.name || "").trim())) {
       toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
+
+    // prepare payload (normalize phone -> null if empty)
+    const payload = {
+      name: formData.name.trim(),
+      phone: formData.phone ? formData.phone.trim() : null,
+      address: formData.address ? formData.address.trim() : null,
+    };
+
     try {
       const response = await axios.put(
         `${BACKEND_SERVER_URL}/api/goldsmith/${selectedGoldsmith.id}`,
-        formData
+        payload
       );
 
       setGoldsmith((prev) =>
@@ -174,7 +240,9 @@ const handleKeyDown = (e, field) => {
 
       toast.success("Goldsmith updated successfully");
       setOpenEditDialog(false);
+      setSubmitted(false);
     } catch (error) {
+      console.error("Error updating goldsmith:", error);
       toast.error(error.response?.data?.message || "Failed to update goldsmith");
     }
   };
@@ -230,7 +298,7 @@ const handleKeyDown = (e, field) => {
             onBlur={(e) => handleBlur("name", e.target.value)}
             error={(touched.name || submitted) && !!errors.name}
             helperText={(touched.name || submitted) ? errors.name : ""}
-            onKeyDown={(e) => handleKeyDown(e, "name")}
+            onKeyDown={(e) => handleKeyDown(e, "name", handleSaveGoldsmith)}
           />
 
           <TextField
@@ -248,7 +316,7 @@ const handleKeyDown = (e, field) => {
             onBlur={(e) => handleBlur("phone", e.target.value)}
             error={(touched.phone || submitted) && !!errors.phone}
             helperText={(touched.phone || submitted) ? errors.phone : ""}
-            onKeyDown={(e) => handleKeyDown(e, "phone")}
+            onKeyDown={(e) => handleKeyDown(e, "phone", handleSaveGoldsmith)}
           />
 
           <TextField
@@ -262,9 +330,8 @@ const handleKeyDown = (e, field) => {
             autoComplete="off"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, "address")}
+            onKeyDown={(e) => handleKeyDown(e, "address", handleSaveGoldsmith)}
           />
-
         </DialogContent>
         <DialogActions>
           <Button onClick={closeModal} color="secondary">
@@ -323,25 +390,49 @@ const handleKeyDown = (e, field) => {
         <DialogTitle>Edit Goldsmith</DialogTitle>
         <DialogContent>
           <TextField
+            inputRef={nameRef}
             label="Name"
             value={formData.name}
             fullWidth
             margin="normal"
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, name: e.target.value });
+              if (submitted || touched.name) validateFormForEdit();
+            }}
+            onBlur={() => {
+              setTouched((p) => ({ ...p, name: true }));
+              validateFormForEdit();
+            }}
+            error={(touched.name || submitted) && !!errors.name}
+            helperText={(touched.name || submitted) ? errors.name : ""}
+            /* removed onKeyDown for Edit per your request */
           />
           <TextField
+            inputRef={phoneRef}
             label="Phone"
             value={formData.phone}
             fullWidth
             margin="normal"
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, phone: e.target.value });
+              if (submitted || touched.phone) validateFormForEdit();
+            }}
+            onBlur={() => {
+              setTouched((p) => ({ ...p, phone: true }));
+              validateFormForEdit();
+            }}
+            error={(touched.phone || submitted) && !!errors.phone}
+            helperText={(touched.phone || submitted) ? errors.phone : ""}
+            /* removed onKeyDown for Edit per your request */
           />
           <TextField
+            inputRef={addressRef}
             label="Address"
             value={formData.address}
             fullWidth
             margin="normal"
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            /* removed onKeyDown for Edit per your request */
           />
         </DialogContent>
         <DialogActions>

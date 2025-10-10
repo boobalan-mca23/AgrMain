@@ -1,5 +1,3 @@
-
-
 import { useState,useEffect } from "react";
 import axios from 'axios'
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -46,11 +44,6 @@ const currentPageTotal = paginatedData.reduce(
        fetchProductStock()
       
    },[])
-
-
-
-
-
 
   // const stockSummary = [
   //   { label: "Total Items", value:stockData.length },

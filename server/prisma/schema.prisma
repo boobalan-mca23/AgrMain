@@ -324,6 +324,7 @@ model Repair {
   createdAt     DateTime   @default(now())
 }
 
+
 model ProductStock{
   id            Int   @id @default(autoincrement())
   jobcardId     Int?
@@ -344,6 +345,7 @@ model ProductStock{
   isActive      Boolean @default(false)
   createdAt     DateTime   @default(now())
   }
+
  model Bill{
   id           Int @id @default(autoincrement())
   date         DateTime ?
@@ -353,6 +355,7 @@ model ProductStock{
   hallMark     Float?
   prevHallMark Float?
   PrevBalance  Float?
+  hallmarkQty  Float?
   billDetailsprofit Float?
   Stoneprofit  Float?
   Totalprofit  Float?
