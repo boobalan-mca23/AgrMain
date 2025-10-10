@@ -4,13 +4,13 @@ import axios from "axios";
 import "./Cashgold.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 
 function Cashgold() {
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [entries, setEntries] = useState([]);
   const [goldRate, setGoldRate] = useState(0);
+  const [masterTouch,setMasterTouch]=useState([])
   const [formData, setFormData] = useState({
     date: "",
     type: "Select",
@@ -112,6 +112,7 @@ function Cashgold() {
 
   useEffect(() => {
     fetchEntries();
+     fetchTouch();
   }, []);
 
   const fetchEntries = async () => {
@@ -122,6 +123,16 @@ function Cashgold() {
       console.error("Error fetching entries:", error);
     }
   };
+  const fetchTouch = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+        console.log('masterTouch',res.data)
+        setMasterTouch(res.data);
+      } catch (err) {
+        console.error("Failed to fetch touch values", err);
+      }
+    };
+   
 
   return (
     <div className="cashgold-container">
@@ -217,15 +228,25 @@ function Cashgold() {
                   </div>
                   <div className="form-group">
                     <label>Touch (%):</label>
-                    <input
-                      type="number"
+                    <select
                       name="touch"
                       value={formData.touch}
                       onChange={handleChange}
                       required
                       step="0.01"
                       max="100"
-                    />
+                    >
+                      <option value={""}>SelectTouch</option>
+                      {
+                        masterTouch.map((item,index)=>(
+                          <option value={item.touch} key={index+1}>{item.touch}</option>
+                        ))
+                      }
+                    </select>
+                    {/* <input
+                      type="number"
+                     
+                    /> */}
                   </div>
                   <div className="form-group">
                     <label>Purity (g):</label>

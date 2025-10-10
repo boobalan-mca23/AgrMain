@@ -14,6 +14,9 @@ const JobCardRepTable=forwardRef((props,ref)=>{
     },
     { givenWt: 0, itemWt: 0,receive: 0 } // Initial accumulator
   );
+    const totalStoneWt = (deduction) => {
+    return deduction.reduce((acc, val) => val.weight + acc, 0);
+  };
 return(
 
    <>
@@ -24,12 +27,12 @@ return(
                       <th >Date</th>
                       <th >Id</th>
                       <th colSpan="4">Given Wt</th>
-                      <th colSpan="10">Item Delivery</th>
+                      <th colSpan="11">Item Delivery</th>
                       <th colSpan="3">Receive</th>
                       <th>Total</th>
                       <th >Balance</th>
                       {/* <th colSpan="3">ReceiveAmt</th> */}
-                      <th>Is Stock</th>
+                
                       <th>Is Finished</th>
                     </tr>
                     <tr className="reportThead">
@@ -45,7 +48,7 @@ return(
                       <th>tch</th>
                       <th>stoneWt</th>
                       <th>NetWt</th>
-                    {/* <td>wastageTyp</td> */}
+                      <th>wastageTyp</th>
                       <th>w.Value</th>
                       <th>w.Pure</th>
                       <th>FinalPurity</th>
@@ -116,10 +119,10 @@ return(
                           <td>{d?.touch || "0"}</td>
 
                           <td>
-                            {d?.deduction && totalStoneWt(d?.deduction)}
+                            {d?.deduction && totalStoneWt(d?.deduction)|| "0"}
                           </td>
                           <td>{d?.netWeight || "0"}</td>
-                         
+                          <td>{d?.wastageType || "-"}</td>
                           <td>{d?.wastageValue || "0"}</td>
                           <td>{d?.wastagePure||"0"}</td>
                           <td>{d?.finalPurity || "0"}</td>
@@ -134,44 +137,12 @@ return(
                                   {total?.receivedTotal || "-"}
                                 </td>
                               <td rowSpan={maxRows}>{total?.jobCardBalance|| "-"}</td>
-                            </>
-                            )}
-                        
-                            {/* <td>
-                              {d?.createdAt
-                                ? new Date(d.createdAt).toLocaleDateString(
-                                    "en-GB"
-                                  )
-                                : "-"}
-                            </td> */}
-                            {/* <td>{d?.itemName || "-"}</td>
-                            <td>{d?.sealName || "-"}</td>
-                            <td>{d?.weight || "-"}</td> */}
-                            {/* {i === 0 && (
-                              <>
-                                <td rowSpan={maxRows}>
-                                  {total?.stoneWt?.toFixed(3) ?? "-"}
-                                </td>
-                                <td rowSpan={maxRows}>
-                                  {total?.wastage?.toFixed(3) ?? "-"}
-                                </td>
-                                <td rowSpan={maxRows}>
-                                  {total?.balance?.toFixed(3) ?? "-"}
-                                </td>
-                              </>
-                            )} */}
-                            {/* <td>{r?.weight || "-"}</td>
-                            <td>{r?.touch || "-"}</td> */}
-                            {i === 0 && (
-                              <>
-                                <td rowSpan={maxRows}>
-                                    {job.stockIsMove?"YES":"NO"}
-                                </td>
-                                <td rowSpan={maxRows}>
+                               <td rowSpan={maxRows}>
                                   {total?.isFinished === "true" ? <FaCheck /> :<GrFormSubtract size={30}/>}
                                 </td>
-                              </>
+                            </>
                             )}
+                           
                           </tr>
                         );
                       });
@@ -186,7 +157,7 @@ return(
                       <td>
                         <b>{currentPageTotal.givenWt.toFixed(3)}</b>
                       </td>
-                      <td colSpan="9"></td>
+                      <td colSpan="10"></td>
                       <td>
                         <b>{currentPageTotal.itemWt.toFixed(3)}</b>
                       </td>

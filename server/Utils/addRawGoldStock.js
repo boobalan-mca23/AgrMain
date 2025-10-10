@@ -41,11 +41,8 @@ const createhundredPercentTouch=async()=>{
             weight:0,
             remainingWt:0,
             touch:100
-          }
-        }
-        
+          } }
       },
-      
     });
       }
 }
@@ -301,12 +298,51 @@ const transactionToRawGold=async( date, type,amount,gold, touch, purity, custome
 
     return  transaction;
 }
+const entryToRawGold=async(date, type,amount,gold, touch, purity,goldRate)=>{
+      await createhundredPercentTouch();
+
+      const stock = await prisma.rawgoldStock.findFirst({
+             where: { touch: type === "Cash" ? 100 : parseFloat(touch) || 0,  },
+             select: { id: true },
+          });
+         if (!stock) {
+            throw new Error(`No stock found for touch: ${touch}`);
+          }
+         const rawGoldLog = await prisma.rawGoldLogs.create({
+            data: {
+              rawGoldStockId: stock.id,
+              weight:type==="Cash" ? parseFloat(purity) :parseFloat(gold)|| 0,
+              touch: type === "Cash" ? 100 : parseFloat(touch) || 0, 
+              purity:purity||0,
+            },
+          });
+
+   const entry= await prisma.entry.create({
+      data: {
+        date: new Date(date),
+        type,
+        cashAmount: parseFloat(amount)||0,
+        goldRate: parseFloat(goldRate)|| 0,
+        goldValue: parseFloat(gold)||0,
+        purity: parseFloat(purity)||0,
+        touch: type === "Gold" ? parseFloat(touch) : 0,
+         rawGoldLogs: {
+         connect: { id: rawGoldLog.id }  
+       }
+      },
+    });
+
+    await setTotalRawGold(); // we need to add rawGold 
+
+    return  entry;
+}
 
 module.exports={
   moveToRawGoldStock,
   receiptMoveToRawGold,
   jobCardtoRawGoldStock,
   transactionToRawGold,
+  entryToRawGold,
   
 }
 

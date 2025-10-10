@@ -30,7 +30,7 @@ import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
 import "./receiptvoucher.css";
 import { MdDeleteForever } from "react-icons/md";
-import { receiptValidation } from "../receiptValidation/receiptValidation";
+import { receiptValidation,receiptVoucherHallMark} from "../receiptValidation/receiptValidation";
 import PrintReceipt from "../PrintReceipt/PrintReceipt";
 import ReactDOMServer from "react-dom/server";
 const Receipt = () => {
@@ -57,6 +57,7 @@ const Receipt = () => {
     },
   ]);
   const [receiptErrors, setReceiptErrors] = useState([]);
+  const [hallMarkErrors,setHallMarkErrors]=useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [allReceipts, setAllReceipts] = useState([]);
   const inputRefs = useRef({});
@@ -259,13 +260,11 @@ const Receipt = () => {
       }
     };
     if (!selectedCustomer) return toast.warn("Select Customer");
-    receiptValidation(receipt, setReceiptErrors)
-      ? saveReceipt()
-      : toast.warn("Give Correct Information");
+     receiptValidation(receipt, setReceiptErrors)? receiptVoucherHallMark(receipt,setHallMarkErrors) ? saveReceipt(): toast.warn("Give Correct Information in HallMarks"):toast.warn("Give Correct Information In GoldRows");
   };
   return (
     <>
-      <div>
+      <div> 
         <div className="receiptTitle">
           <h2>Receipt Voucher</h2>
         </div>
@@ -462,9 +461,9 @@ const Receipt = () => {
                         }
                       />
                       <br></br>
-                      {receiptErrors[index]?.hallMark && (
+                      {hallMarkErrors[index]?.hallMark && (
                         <span className="error">
-                          {receiptErrors[index]?.hallMark}
+                          {hallMarkErrors[index]?.hallMark}
                         </span>
                       )}
                     </td>
