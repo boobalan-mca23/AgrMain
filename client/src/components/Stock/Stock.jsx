@@ -78,6 +78,11 @@ const calculatewastgePure=(stock)=>{
   return totalWastage.toFixed(3)
 }
 
+  const safeFixed = (num, decimals = 3) => {
+      const n = parseFloat(num);
+      return isNaN(n) ? "0.000" : n.toFixed(decimals);
+    };
+
   return (
     <div className="stock-container">
       <h2 className="stock-heading">Stock Dashboard</h2>
