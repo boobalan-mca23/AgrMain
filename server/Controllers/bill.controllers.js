@@ -8,6 +8,7 @@ const createBill = async (req, res) => {
     date,
     time,
     customerId,
+    customername,
     billTotal,
     hallMark,
     orderItems,
@@ -21,6 +22,7 @@ const createBill = async (req, res) => {
     Totalprofit,
     cashBalance,
     hallmarkQty,
+
  
   } = req.body;
   console.log("req  body in bill", req.body);
@@ -53,6 +55,7 @@ const createBill = async (req, res) => {
       data: {
         date: new Date(date),
         time: time,
+        customername: customername,
         hallmarkQty:parseFloat(hallmarkQty)||0,
         cashBalance: parseFloat(cashBalance),
         customer_id: parseInt(customerId),
@@ -227,7 +230,9 @@ const getBillById = async (req, res) => {
         billReceive: true,
       },
     });
+     console.log("allBills", allBills);
     return res.status(200).json({ allBills });
+   
   } catch (err) {
     console.error(err.message);
     return res.status(500).json({ err: err.message });
