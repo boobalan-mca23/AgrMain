@@ -351,6 +351,7 @@ model ProductStock{
   date         DateTime ?
   time         DateTime?
   customer_id  Int
+  customername String?
   billAmount   Float
   hallMark     Float?
   prevHallMark Float?
@@ -377,7 +378,7 @@ model OrderItems{
    percentage  Float?
    finalWeight Float?
    createdAt   DateTime @default(now())
-}
+}  
 
  model billReceived{
    id              Int @id @default(autoincrement())
