@@ -3,27 +3,18 @@ import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import dayjs from "dayjs";
-
 import "./customerReport.css";
 import {
   Autocomplete,
   Button,
   TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TablePagination,
-  Paper,
 } from "@mui/material";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import axios from "axios";
-
+import CustomerReportPrint from "./Customer_Report_Print/CustomerReportPrint";
+import ReactDOMServer from "react-dom/server";
 const CustReport = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
@@ -41,71 +32,46 @@ const CustReport = () => {
 
   
 
-  const reportRef = useRef();
+
 
   // Calculate totals for current page
 
-  const handleDownloadPdf = async () => {
-  
-    const thead = document.getElementById("customerReportHead");
+  const handlePrint =  () => {
+   const printContent = (
+      < CustomerReportPrint
+        fromDate={fromDate ? fromDate.format("DD/MM/YYYY") : ""}
+        toDate={toDate ? toDate.format("DD/MM/YYYY") : ""}
+        customerName={selectedCustomer?.name || ""}
+        billInfo={paginatedData}
+        billReceive={currentPageTotal.billReceive}
+        billAmount={currentPageTotal.billAmount}
+        overAllBalance={overAllBalance}
+      />
+    );
+
+    const printHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Customer Report Print</title>
+       
+      <body>
+        ${ReactDOMServer.renderToString(printContent)}
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              window.close();
+            }, 200);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
     
-      if(billInfo.length===0 ){
-      return alert("No Bill Informations")
-    }
-  
-    thead.style.position = "static"; // fix for print
-   
-    setTimeout(async () => {
-      const element = reportRef.current;
-      const canvas = await html2canvas(element, { scale: 2 });
-
-      const imgData = canvas.toDataURL("image/png");
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      // Define margins
-      const margin = 10; // mm
-      const usableWidth = pdfWidth - margin * 2;
-      const imgHeight = (canvas.height * usableWidth) / canvas.width;
-
-      let position = margin;
-      let remainingHeight = imgHeight;
-      let imgPosition = 0;
-
-      if (imgHeight <= pdfHeight - margin * 2) {
-        // fits in one page
-        pdf.addImage(imgData, "PNG", margin, margin, usableWidth, imgHeight);
-      } else {
-        while (remainingHeight > 0) {
-          pdf.addImage(
-            imgData,
-            "PNG",
-            margin,
-            position,
-            usableWidth,
-            imgHeight,
-            undefined,
-            "FAST"
-          );
-
-          remainingHeight -= pdfHeight - margin * 2;
-          imgPosition -= pdfHeight - margin * 2;
-
-          if (remainingHeight > 0) {
-            pdf.addPage();
-            position = margin;
-          }
-        }
-      }
-
-      pdf.save("Customer_Report.pdf");
-
-      // Restore UI
-     
-      thead.style.position = "sticky";
-    }, 1000); // allow DOM to update
   };
 
 
@@ -233,7 +199,7 @@ const CustReport = () => {
                 <Button
                   id="print"
                   onClick={() => {
-                    handleDownloadPdf();
+                    handlePrint();
                   }}
                   className="customerReportBtn"
                 >
@@ -246,11 +212,11 @@ const CustReport = () => {
 
         <div className="customerReportContainer">
           {paginatedData.length >= 1 ? (
-            <table ref={reportRef} className="customerReportTable">
+            <table  className="customerReportTable">
               <thead id="customerReportHead">
                 <tr>
                   <th>S.no</th>
-                  <th>BillId</th>
+                  <th>Bill Id</th>
                   <th>Date</th>
                   <th>Bill&Receive</th>
                   <th>ReceiveAmount</th>
@@ -359,7 +325,7 @@ const CustReport = () => {
 
                   <td className="customerTotal">
                     <strong>
-                      Total bill Receive Total:{(currentPageTotal.billReceive).toFixed(3)} gr
+                      Total bill Receive :{(currentPageTotal.billReceive).toFixed(3)} gr
                     </strong>{" "}
                   </td>
                   <td className="customerTotal">

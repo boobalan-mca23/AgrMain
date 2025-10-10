@@ -76,15 +76,17 @@ model Transaction {
 }
 
 model Entry {
-  id         Int      @id @default(autoincrement())
-  date       DateTime
-  type       String
-  cashAmount Float?
-  goldValue  Float?
-  touch      Float?
-  purity     Float?
-  goldRate   Float?
-  createdAt  DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  logId       Int?
+  date        DateTime
+  type        String
+  cashAmount  Float?
+  goldValue   Float?
+  touch       Float?
+  purity      Float?
+  goldRate    Float?
+  rawGoldLogs RawGoldLogs?  @relation(fields: [logId], references: [id])
+  createdAt   DateTime @default(now())
 }
 
 model customer_order {
@@ -164,7 +166,6 @@ model Jobcard {
   goldsmithId   Int
   goldsmith     Goldsmith    @relation(fields: [goldsmithId], references: [id])
   description   String?
-  stockIsMove   Boolean?   @default(false)
   givenGold     givenGold[]
   deliveries    itemDelivery[]  
   received      Receivedsection[]
@@ -274,6 +275,7 @@ model RawGoldLogs{
     receiptVoucher   receiptVoucher[]
     transactions     Transaction[] 
     expenseTracker   ExpenseTracker[]
+    entry            Entry[]
 }
 model ExpenseTracker{
   id              Int          @id @default(autoincrement())
@@ -323,21 +325,23 @@ model Repair {
 }
 
 model ProductStock{
-  id           Int   @id @default(autoincrement())
-  jobcardId    Int
-  jobcard      Jobcard?      @relation(fields: [jobcardId], references: [id])
-  deliveryId   Int
-  itemDelivery itemDelivery  @relation(fields: [deliveryId ], references: [id])
-  itemName     String?
-  itemWeight   Float?
-  count        Int
-  touch        Float?
-  stoneWeight  Float?
-  wastageValue Float?
-  netWeight    Float?
-  wastagePure  Float?
-  wastageType  String?
-  finalPurity  Float?
+  id            Int   @id @default(autoincrement())
+  jobcardId     Int?
+  jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
+  deliveryId    Int
+  itemDelivery  itemDelivery  @relation(fields: [deliveryId ], references: [id])
+  itemName      String?
+  itemWeight    Float?
+  count         Int
+  touch         Float?
+  stoneWeight   Float?
+  wastageValue  Float?
+  netWeight     Float?
+  wastagePure   Float?
+  wastageType   String?
+  finalPurity   Float?
+  isBillProduct Boolean @default(false)
+  isActive      Boolean @default(false)
   createdAt     DateTime   @default(now())
   }
  model Bill{

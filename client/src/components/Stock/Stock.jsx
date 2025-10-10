@@ -22,7 +22,7 @@ const Stock = () => {
 const currentPageTotal = paginatedData.reduce(
     (acc, item) => {
       acc.itemWt += item.itemWeight;
-      acc.finalWt += item.finalWeight;
+      acc.finalWt += item.finalPurity;
       return acc;
     },
     {itemWt: 0,finalWt: 0 } // Initial accumulator
@@ -188,7 +188,7 @@ const calculatewastgePure=(stock)=>{
                 <td>{item.netWeight.toFixed(3)}</td>
                 <td>{item.wastageValue.toFixed(3)}</td>
                 <td>{item.wastagePure.toFixed(3)}</td>
-                <td>{item.finalWeight.toFixed(3)}</td>
+                <td>{item.finalPurity.toFixed(3)}</td>
               </tr>
                ))}
           </tbody>

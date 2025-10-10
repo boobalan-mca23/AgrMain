@@ -35,7 +35,7 @@ const Goldsmith = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [description, setDescription] = useState("");
   const [givenGold, setGivenGold] = useState([
-    { weight: "", touch: "", purity: "" },
+    { weight: "", touch: "", purity: "",isEdit:false },
   ]);
 
   const [itemDelivery, setItemDelivery] = useState([
@@ -48,18 +48,16 @@ const Goldsmith = () => {
       wastageType: "",
       wastageValue: "",
       finalPurity: "",
+      isEdit:false
     },
   ]);
 
   const [selectedName, setSelectedName] = useState({});
-  const [receivedMetalReturns, setReceivedMetalReturns] = useState([
-    { weight: "", touch: "", purity: "" },
-  ]);
+  const [receivedMetalReturns, setReceivedMetalReturns] = useState([]);
   const [dropDownItems,setDropDownItems]=useState({masterItems:[],touchList:[],masterWastage:[]})
   const [jobCardError, setJobCardError] = useState({});
   const [jobCardId, setJobCardId] = useState(null);
   const [noJobCard, setNoJobCard] = useState({});
-  const [isStock,setIsStock]=useState("")
   const [isFinished,setIsFinished]=useState("")
   const [openingBalance, setOpeningBalance] = useState(0);
   const [rawGoldStock, setRawGoldStock]=useState([])
@@ -139,17 +137,18 @@ const handleCloseJobcard = () => {
     setOpen(false);
     setEdit(false)
     setDescription("")
-    setGivenGold([{ weight: "", touch: "", purity: "" }])
+    setGivenGold([{ weight: "", touch: "", purity: "",isEdit:false }])
     setItemDelivery([{
       itemName: "",
-      ItemWeight: "",
-      Touch: "",
-      deduction: [{ type: "", weight: "" }], 
-      netwt: "",
+      itemWeight: "",
+      touch: "",
+      deduction: [{ type: "", weight: "" }],
+      netWeight: "",
       wastageType: "",
       wastageValue: "",
       finalPurity: "",
-    },])
+      isEdit:false
+    },,])
     setReceivedMetalReturns([])
   };
 
@@ -159,14 +158,13 @@ const handleCloseJobcard = () => {
     receivedTotal,
     jobCardBalance,
     openingBalance,
-    stock
+  
   ) => {
     const payload = {
-      stock,
       description,
-      givenGold,
-      itemDelivery,
-      receiveSection:receivedMetalReturns,
+      givenGold:givenGold.filter((item,_)=>item.isEdit===true),
+      itemDelivery:itemDelivery.filter((item,_)=>item.isEdit===true),
+      receiveSection: receivedMetalReturns.filter((item,_)=>item.isEdit===true),
       total: {
         id:jobCardId,
         givenTotal,
@@ -189,7 +187,7 @@ const handleCloseJobcard = () => {
         }
       );
       handleCloseJobcard();
-      setGivenGold([{ weight: "", touch: "", purity: "" }])
+      setGivenGold([{ weight: "", touch: "", purity: "",isEdit:false }])
       setDescription("")
       setItemDelivery( [{
       itemName: "",
@@ -200,7 +198,8 @@ const handleCloseJobcard = () => {
       wastageType: "",
       wastageValue: "",
       finalPurity: "",
-    }])
+      isEdit:false
+    },])
       setReceivedMetalReturns([])
      
       toast.success(response.data.message,{autoClose:2000});
@@ -249,7 +248,6 @@ const handleCloseJobcard = () => {
               setSelectedName(data.jobcard[0].goldsmith);
               setOpeningBalance(data.jobcard[0].total[0].openingBalance);
               setLastJobCard(data.lastJobCard)
-              setIsStock(data.jobcard[0].stockIsMove)
               setIsFinished(data.jobcard[0].total[0].isFinished)
               setOpen(true);
               setEdit(true);
@@ -415,7 +413,6 @@ const handleCloseJobcard = () => {
           handleUpdateJobCard={handleUpdateJobCard}
           lastJobCardId={lastJobCard.jobcardId}
           lastIsFinish={lastJobCard.isFinished}
-          isStock={isStock}
           isFinished={isFinished}
         />
         
