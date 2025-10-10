@@ -5,8 +5,8 @@ const addRawGold = require("../Utils/addRawGoldStock");
 
 // helper function itemDelivery in jobCard
 
-const moveToItemDelivery = async (itemDelivery, jobCardId, goldSmithId) => {
-
+const moveToItemDelivery = async (itemDelivery,jobcardId,goldSmithId) => {
+  
   if (itemDelivery.length >= 1) {
     for (const item of itemDelivery) {
       let data={
@@ -22,23 +22,27 @@ const moveToItemDelivery = async (itemDelivery, jobCardId, goldSmithId) => {
         }
       if (item?.id) {
         //itemDelivery update if id is there or create
-
+    
         const updateItemDel = await prisma.itemDelivery.update({
           where: {
             id: item.id,
           },
-          data:{
-            ...data,
-          productStock:{
-            update:{
-              ...data,
-              stoneWeight: item.deduction.reduce((acc,stone)=>acc+parseFloat(stone.weight),0),
-              
-            }
-          }
-          }
+          data,
         });
 
+        if(item.productStock[0].id){
+          if(!(item.productStock[0].isActive)){
+            await prisma.productStock.update({where:{id:item.productStock[0].id},data:data})
+          }
+        }
+        else{
+          await prisma.productStock.create({
+            data:{
+              ...data,
+              itemDelivery:{connect:{id:updateItemDel}}
+            }
+          })
+        }
         // if dedcution id is there update or create
         if (item.deduction.length >= 1) {
           for (const ded of item.deduction) {
@@ -70,12 +74,12 @@ const moveToItemDelivery = async (itemDelivery, jobCardId, goldSmithId) => {
             type: dely.type || null,
           }));
         }
-
+        
        await prisma.itemDelivery.create({
           data: {
            ...data,
              goldsmith: { connect: { id: parseInt(goldSmithId) } },
-             jobcard: { connect: { id: parseInt(jobCardId) } },
+             jobcard: { connect: { id: parseInt(jobcardId) } },
             ...(deductionArr.length > 0 && {
               deduction: {
                 create: deductionArr,
@@ -84,114 +88,15 @@ const moveToItemDelivery = async (itemDelivery, jobCardId, goldSmithId) => {
             productStock:{
               create:{
                 ...data,
+              jobcard: { connect: { id: parseInt(jobcardId) } },
                 stoneWeight:deductionArr.reduce((acc,item)=>acc+item.weight,0),
-              
               }
             }            
           },
         });
-        
       }
     }
   }
-};
-
-const itemToStock = async (jobcardId) => {
-  const itemDelivery = await prisma.itemDelivery.findMany({
-    where: {
-      jobcardId: parseInt(jobcardId),
-    },
-    include: {
-      deduction: true,
-    },
-  });
-
-  // group by itemName + touch
-  const grouped = itemDelivery.reduce((acc, item) => {
-    const key = `${item.itemName}-${item.touch}-${item.wastageValue}`;
-
-    if (!acc[key]) {
-      acc[key] = {
-        jobcardId: item.jobcardId,
-        itemName: item.itemName,
-        wastageValue: item.wastageValue,
-        touch: item.touch,
-        totalItemWeight: 0,
-        totalWastagePure: 0,
-        totalFinalPurity: 0,
-        totalNetWeight:0,
-        totalStoneWeight: 0,
-        count: 0,
-      };
-    }
-
-    acc[key].totalItemWeight += parseFloat(item.itemWeight) || 0;
-    acc[key].totalFinalPurity += parseFloat(item.finalPurity) || 0;
-    acc[key].totalWastagePure += parseFloat(item.wastagePure) || 0;
-    acc[key].totalNetWeight+= parseFloat(item?.netWeight) || 0;
-    acc[key].count += parseInt(item.count) || 0;
-    acc[key].totalStoneWeight += item.deduction.reduce(
-      (sum, d) => sum + (parseFloat(d.weight) || 0),
-      0
-    );
-
-    return acc;
-  }, {});
-
-  let stockInformation = Object.values(grouped);
-  for (const stockItem of stockInformation) {
-    let exist = await prisma.productStock.findFirst({
-      where: {
-        itemName: stockItem.itemName,
-        touch: stockItem.touch,
-        wastageValue: stockItem.wastageValue,
-      },
-      select: { id: true },
-    });
-    console.log("exist", exist);
-    if (exist) {
-      await prisma.productStock.update({
-        where: { id: exist.id },
-        data: {
-          itemName: stockItem.itemName,
-          itemWeight: { increment: stockItem.totalItemWeight },
-          count: { increment: stockItem.count },
-          touch: stockItem.touch,
-          stoneWeight: { increment: stockItem.totalStoneWeight },
-          netWeight :{increment:stockItem.totalNetWeight},
-          wastageValue: stockItem.wastageValue,
-          wastagePure: { increment: stockItem.totalWastagePure },
-          finalWeight: { increment: stockItem.totalFinalPurity },
-        },
-      });
-    } else {
-      await prisma.productStock.create({
-        data: {
-          jobcardId: stockItem.jobcardId,
-          itemName: stockItem.itemName,
-          itemWeight: stockItem.totalItemWeight,
-          count: stockItem.count,
-          touch: stockItem.touch,
-          stoneWeight: stockItem.totalStoneWeight,
-          netWeight:stockItem.totalNetWeight,
-          wastageValue: stockItem.wastageValue,
-          wastagePure: stockItem.totalWastagePure,
-          finalWeight: stockItem.totalFinalPurity,
-        },
-      });
-    }
-  }
-
-  await prisma.$transaction([
-    prisma.jobcard.update({
-      where: { id: parseInt(jobcardId) },
-      data: { stockIsMove: true },
-    }),
-    prisma.total.update({
-      where: { id: parseInt(jobcardId) },
-      data: { isFinished: "true" },
-    }),
-  ]);
 };
 
 // helper function to update nextJobCardBalance
@@ -277,6 +182,7 @@ const createJobcard = async (req, res) => {
         deliveries: {
           include: {
             deduction: true,
+            productStock:true,
           },
         },
         received: true,
@@ -316,11 +222,11 @@ const updateJobCard = async (req, res) => {
       return res.status(404).json({ error: "Goldsmith not found" });
     }
 
-    if (givenGold.length < 1) {
-      return res
-        .status(400)
-        .json({ error: "GoldSmith information is required" });
-    }
+    // if (givenGold.length < 1) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "GoldSmith information is required" });
+    // }
     if (!total) {
       return res.status(400).json({ error: "Total information is required" });
     }
@@ -370,13 +276,10 @@ const updateJobCard = async (req, res) => {
 
     // update given gold information
     await reduceGold.reduceRawGold(givenGold, jobCardId, goldSmithId);
-
+   
     // update itemDelivery information
     await moveToItemDelivery(itemDelivery, jobCardId, goldSmithId);
 
-     if(stock===true){ // stock is true then we need to move stock 
-      await itemToStock(jobCardId)
-     }
     // receive section update and create
     await addRawGold.jobCardtoRawGoldStock(
       receiveSection,
@@ -418,6 +321,7 @@ const updateJobCard = async (req, res) => {
         deliveries: {
           include: {
             deduction: true,
+            productStock:true,
           },
         },
         received: true,
@@ -467,6 +371,7 @@ const getAllJobCardsByGoldsmithId = async (req, res) => {
         deliveries: {
           include: {
             deduction: true,
+            productStock:true,
           },
         },
         received: true,
@@ -515,6 +420,7 @@ const getJobCardById = async (req, res) => {
         deliveries: {
           include: {
             deduction: true,
+            productStock:true,
           },
         },
         received: true,

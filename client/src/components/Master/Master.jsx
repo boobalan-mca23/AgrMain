@@ -100,12 +100,12 @@ const Master = () => {
             Jewel Stock
           </button> */}
  
-       {/* <button
+        <button
             onClick={() => handleTabChange("cashgold")}
             style={getNavButtonStyle("cashgold")}
           >
             Cash / Gold
-          </button> */}
+          </button> 
           <button
             onClick={() => handleTabChange("wastagevalue")}
             style={getNavButtonStyle("wastagevalue")}

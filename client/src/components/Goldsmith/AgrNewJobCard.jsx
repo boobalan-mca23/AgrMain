@@ -58,7 +58,6 @@ function AgrNewJobCard({
   jobCardId,
   lastJobCardId,
   lastIsFinish,
-  isStock,
   isFinished,
 }) {
   const today = new Date().toLocaleDateString("en-IN");
@@ -117,6 +116,7 @@ function AgrNewJobCard({
 
     // STEP 3: overwrite new value
     copy[i][field] = val;
+    copy[i]["isEdit"]=true
 
     // STEP 4: deduct new value from stock
     const newTouch = copy[i].touch;
@@ -147,15 +147,17 @@ function AgrNewJobCard({
     0
   );
   const totalDeduction = (i, copy) => {
-    return copy[i].deduction.reduce(
+   const total= copy[i]?.deduction.reduce(
       (acc, val) => acc + Number(val.weight || 0), // convert to number
       0
     );
+    return total
   };
 
   const handleChangeDeliver = (val, field, i) => {
     const copy = [...itemDelivery];
     copy[i][field] = val;
+    copy[i]["isEdit"]=true
 
     if (field === "itemWeight") {
       copy[i]["netWeight"] =
@@ -177,7 +179,9 @@ function AgrNewJobCard({
   };
   const handleReceivedRowChange = (i, field, val) => {
     const copy = [...receivedMetalReturns];
-    copy[i][field] = val;
+    copy[i][field] = val; 
+    copy[i]["isEdit"]=true
+
     copy[i].purity = calculatePurity(
       parseFloat(copy[i].weight),
       parseFloat(copy[i].touch)
@@ -226,8 +230,7 @@ function AgrNewJobCard({
     if (!isTrue) return;
     const copy = [...itemDelivery];
     copy[itemIndex].deduction.splice(stoneIndex, 1);
-    copy[itemIndex]["netWeight"] =
-      copy[itemIndex]["ItemWeight"] - Number(totalDeduction(itemIndex, copy));
+    copy[itemIndex]["netWeight"] =copy[itemIndex]["ItemWeight"] - Number(totalDeduction(itemIndex, copy)||0);
     setItemDelivery(copy);
   };
 
@@ -269,7 +272,7 @@ function AgrNewJobCard({
     (sum, row) => sum + parseFloat(row.purity || 0),
     0
   );
-  const handleSave = (print = "noprint", stock =false) => {
+  const handleSave = (print = "noprint") => {
     const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
     const existStock = checkAvailabilityStock(rawGoldStock);
 
@@ -280,7 +283,7 @@ function AgrNewJobCard({
           totalReceivedPurity,
           jobCardBalance,
           openingBalance,
-          stock
+       
         );
     }
 
@@ -312,21 +315,7 @@ function AgrNewJobCard({
              doUpdate()
         }
       } else {
-         if (stock) {
-            let isTrue = window.confirm(
-              "Are you sure you want to move the delivery item? Once it is moved to stock, this job card will be closed"
-            );
-            if (isTrue) {
-                if(itemDelivery.length===0){
-                 toast.warn("0 Items in Delivery section")
-                }else{
-                 doUpdate()
-                }
-            }
-          } else {
-             doUpdate()
-          }
-       
+         doUpdate()
       }
     } else {
       //  this block will only run when adding a new job card
@@ -552,7 +541,7 @@ function AgrNewJobCard({
                   onClick={() =>
                     setGivenGold([
                       ...givenGold,
-                      { weight: "", touch: "", purity: "" },
+                      { weight: "", touch: "", purity: "",isEdit:false },
                     ])
                   }
                   className="circle-button"
@@ -636,19 +625,6 @@ function AgrNewJobCard({
               <div>
                 <h4 className="section-title">Item Delivery</h4>
               </div>
-              {edit && (
-                <div>
-                  <button
-                    className="itemTitlebtn"
-                    onClick={() => {
-                      handleSave("noprint", true);
-                    }}
-                    disabled={isStock ? true : false}
-                  >
-                    Move To Stock
-                  </button>
-                </div>
-              )}
             </div>
             <TableContainer component={Paper} className="jobCardContainer">
               <Table
@@ -908,13 +884,10 @@ function AgrNewJobCard({
                                 </span>
                               )}
                             </TableCell>
-                            {item.deduction[0].id ? (
-                              <TableCell></TableCell>
-                            ) : (
-                              <TableCell className="tableCell">
+                         <TableCell className="tableCell">
                                 <button
                                   type="button"
-                                  disabled={edit ?isFinished==="true"?true:false: true}
+                                  disabled={edit ?item.deduction[0].id?true:false: true}
                                   onClick={() =>
                                     handleRemoveDeduction(index, 0)
                                   } // stone remove
@@ -926,7 +899,6 @@ function AgrNewJobCard({
                                   />
                                 </button>
                               </TableCell>
-                            )}
                           </>
                         ) : (
                           <TableCell colSpan={3} rowSpan={1}>
@@ -1035,22 +1007,19 @@ function AgrNewJobCard({
                             onWheel={(e) => e.target.blur()}
                           />
                         </TableCell>
-                        {item.id ? (
-                          <TableCell></TableCell>
-                        ) : (
                           <TableCell
                             rowSpan={item?.deduction.length || 1}
                             className="tableCell"
                           >
                             <button
-                              disabled={edit ?isFinished==="true"?true:false: true}
+                              disabled={edit ?item?.id ?true:false: true}
                               onClick={() => handleRemovedelivery(index)}
                               className="icon-button"
                             >
                               <MdDeleteForever size={25} className="delIcon" />
                             </button>
                           </TableCell>
-                        )}
+                        
                       </TableRow>
 
                       {/* Remaining stone rows */}
@@ -1111,7 +1080,12 @@ function AgrNewJobCard({
                                 )}
                               </TableCell>
                               {s.id ? (
-                                <TableCell></TableCell>
+                                <TableCell>
+                                  <MdDeleteForever
+                                    className="delIcon"
+                                    size={25}
+                                  />
+                                </TableCell>
                               ) : (
                                 <TableCell className="tableCell">
                                   <MdDeleteForever
@@ -1145,6 +1119,7 @@ function AgrNewJobCard({
                     wastageTyp: "",
                     wastageValue: "",
                     finalPurity: "",
+                    isFinished:false
                   },
                 ])
               }
@@ -1236,7 +1211,7 @@ function AgrNewJobCard({
               onClick={() =>
                 setReceivedMetalReturns([
                   ...receivedMetalReturns,
-                  { weight: "", touch: "", purity: "" },
+                  { weight: "", touch: "", purity: "",isEdit:true},
                 ])
               }
               className="circle-button"
@@ -1292,10 +1267,10 @@ function AgrNewJobCard({
             className="jobCardSaveBtn"
             autoFocus
             onClick={() => {
-              handleSave("noprint",false);
+              handleSave();
             }}
             disabled={
-              edit ? (isFinished === "true" || isStock ? true : false) : false
+              edit ? (isFinished === "true"? true : false) : false
             }
           >
             {edit ? "Update" : "Save"}
@@ -1303,7 +1278,7 @@ function AgrNewJobCard({
           <Button
             autoFocus
             onClick={() => {
-              handleSave("print",false);
+              handleSave("print");
             }}
             className="jobCardPrintBtn"
           >

@@ -3,11 +3,9 @@ import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import dayjs from "dayjs";
-import { FaCheck } from "react-icons/fa";
-import { GrFormSubtract } from "react-icons/gr";
+import ReceiptPrintReport from "./Receipt_Voucher_Print/ReceiptPrint";
+import ReactDOMServer from "react-dom/server";
 import './receiptreport.css'
 import {
   Autocomplete,
@@ -44,82 +42,42 @@ const ReceiptReport = () => {
 
   // Calculate totals for current page
  
-  const handleDownloadPdf = async () => {
- 
+  const handlePrint =  () => {
 
-  const thead = document.getElementById("receiptreportHead");
-  
+    const printContent = (
+      < ReceiptPrintReport
+        fromDate={fromDate ? fromDate.format("DD/MM/YYYY") : ""}
+        toDate={toDate ? toDate.format("DD/MM/YYYY") : ""}
+        customerName={selectedCustomer?.name || ""}
+        receipt={receipt}
 
-   if(paginatedData.length===0){
-     return alert("No Receipt Entries Information")
-    }
-    
-  thead.style.position = "static"; // fix for print
+      />
+    );
 
+    const printHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Receipt Print</title>
+       
+      <body>
+        ${ReactDOMServer.renderToString(printContent)}
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              window.close();
+            }, 200);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
 
-  setTimeout(async () => {
-    const element = reportRef.current;
-    const canvas = await html2canvas(element, { scale: 2 });
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    // Define margins
-    const margin = 10; // mm
-    const usableWidth = pdfWidth - margin * 2;
-    const imgHeight = (canvas.height * usableWidth) / canvas.width;
-
-    let position = margin;
-    let remainingHeight = imgHeight;
-    let imgPosition = 0;
-
-    if (imgHeight <= pdfHeight - margin * 2) {
-      // fits in one page
-      pdf.addImage(imgData, "PNG", margin, margin, usableWidth, imgHeight);
-    } else {
-      while (remainingHeight > 0) {
-        pdf.addImage(
-          imgData,
-          "PNG",
-          margin,
-          position,
-          usableWidth,
-          imgHeight,
-          undefined,
-          'FAST'
-        );
-
-        remainingHeight -= (pdfHeight - margin * 2);
-        imgPosition -= (pdfHeight - margin * 2);
-
-        if (remainingHeight > 0) {
-          pdf.addPage();
-          position = margin;
-        }
-      }
-    }
-
-    pdf.save("Receipt_Report.pdf");
-
-    // Restore UI
-   
-    thead.style.position = "sticky";
-  
-  }, 1000); // allow DOM to update
 };
-
-// const currentPageTotal = paginatedData.reduce(
-//     (acc, job) => {
-//       acc.givenWt += job.total[0]?.givenTotal;
-//       acc.itemWt += job.total[0]?.deliveryTotal;
-//       acc.receive += job.total[0]?.receivedTotal;
-//       return acc;
-//     },
-//     { givenWt: 0, itemWt: 0,receive: 0 } // Initial accumulator
-//   );
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -232,7 +190,7 @@ const ReceiptReport = () => {
                 <Button
                   id="print"
                   onClick={() => {
-                    handleDownloadPdf();
+                    handlePrint();
                   }}
                   className="receiptreportBtn"
                 >
@@ -264,7 +222,7 @@ const ReceiptReport = () => {
                   </thead>
                   <tbody className="receiptreportTbody">
                     {
-                      receipt.map((item,index)=>(
+                      paginatedData.map((item,index)=>(
                         <tr key={index+1}>
                           <td>{index+1}</td>
                           <td>{item.date}</td>
