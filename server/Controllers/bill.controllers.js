@@ -98,7 +98,7 @@ const createBill = async (req, res) => {
           select:{
            itemWeight:true,
            touch:true,
-           wastageValue:true
+           wastageValue:true,
           }},)
 
          const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
@@ -118,7 +118,8 @@ const createBill = async (req, res) => {
             count: decCount ? { decrement: decCount } : undefined,
             wastagePure:wastagePure||0,
             // if you also store finalWeight total on stock, adjust this too
-            finalWeight:finalPurity||0
+            finalPurity:finalPurity||0,
+            isBillProduct:true,
           },
         });
       }
