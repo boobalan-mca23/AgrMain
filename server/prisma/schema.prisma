@@ -329,8 +329,8 @@ model ProductStock{
   id            Int   @id @default(autoincrement())
   jobcardId     Int?
   jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
-  deliveryId    Int
-  itemDelivery  itemDelivery  @relation(fields: [deliveryId ], references: [id])
+  deliveryId    Int?
+  itemDelivery  itemDelivery?  @relation(fields: [deliveryId ], references: [id])
   itemName      String?
   itemWeight    Float?
   count         Int
@@ -342,7 +342,7 @@ model ProductStock{
   wastageType   String?
   finalPurity   Float?
   isBillProduct Boolean @default(false)
-  isActive      Boolean @default(false)
+  isActive      Boolean @default(true)
   createdAt     DateTime   @default(now())
   }
 
@@ -351,6 +351,7 @@ model ProductStock{
   date         DateTime ?
   time         DateTime?
   customer_id  Int
+  customername String?
   billAmount   Float
   hallMark     Float?
   prevHallMark Float?
@@ -377,7 +378,7 @@ model OrderItems{
    percentage  Float?
    finalWeight Float?
    createdAt   DateTime @default(now())
-}
+}  
 
  model billReceived{
    id              Int @id @default(autoincrement())

@@ -3,8 +3,11 @@ import axios from 'axios'
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import {
   TablePagination,
+  Button,
 } from "@mui/material";
- 
+import {
+  AddCircleOutline,
+} from "@mui/icons-material";
 import "./Stock.css";
  
 const Stock = () => {
@@ -37,13 +40,13 @@ const Stock = () => {
   };
  
   useEffect(() => {
-    const fetchProductStock = async () => {
-      const res = await axios.get(`${BACKEND_SERVER_URL}/api/productStock`);
-      console.log('res from productStock', res.data.allStock);
-      setStockData(res.data.allStock);
-    };
     fetchProductStock();
   }, []);
+    const fetchProductStock = async () => {
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/productStock`);
+      const activeOnly = res.data.allStock.filter(item => item.isActive);
+      setStockData(activeOnly);
+    };
  
   // const stockSummary = [
   //   { label: "Total Items", value:stockData.length },
@@ -77,12 +80,37 @@ const Stock = () => {
     }, 0);
     return totalWastage.toFixed(3);
   };
- 
-  // ✅ Helper function to safely format numbers (prevents .toFixed() errors)
+
     const safeFixed = (num, decimals = 3) => {
       const n = parseFloat(num);
       return isNaN(n) ? "0.000" : n.toFixed(decimals);
     };
+
+  const handleItemSold = async (id)=> {
+    if(window.confirm('Do you want to make this item be "Sold"')){
+    stockData.forEach(item => {
+      if(item.id === id){
+        console.log("Found item:", item);
+        const updateItem = async () => {
+          try {
+            const res = await axios.put(`${BACKEND_SERVER_URL}/api/productStock/${id}`, {
+              isBillProduct: false,
+              isActive: false,
+            });
+            console.log('Update response:', res.data);
+            setStockData(prevData => prevData.map(it => it.id === id ? { ...it, isBillProduct: false } : it));
+            await fetchProductStock();
+          } catch (error) {
+            console.error('Error updating item:', error);
+          }
+        };
+        updateItem();
+       
+      }
+    });}else{
+      console.log('cancelled')
+    }
+  }  
  
   return (
     <div className="stock-container">
@@ -179,6 +207,7 @@ const Stock = () => {
                 <th>WastageValue (g)</th>
                 <th>WastagePure (g)</th>
                 <th>Final Purity</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -186,7 +215,7 @@ const Stock = () => {
                 <tr key={item.id}>
                   <td>{index + 1}</td>
                   <td>{item.itemName}</td>
-                  <td>{safeFixed(item.itemWeight)}</td>
+                  <td>{item.itemWeight < 0.050 ? handleItemSold(item.id):safeFixed(item.itemWeight)}</td>
                   <td>{item.count || 0}</td>
                   <td>{item.touch ?? 0}</td>
                   <td>{safeFixed(item.stoneWeight)}</td>
@@ -194,6 +223,21 @@ const Stock = () => {
                   <td>{safeFixed(item.wastageValue)}</td>
                   <td>{safeFixed(item.wastagePure)}</td>
                   <td>{safeFixed(item.finalWeight)}</td>
+                  <td>{item.isBillProduct && <Button
+                        variant="contained"
+                        startIcon={<AddCircleOutline />}
+                        onClick={()=>handleItemSold(item.id)}
+                        sx={{
+                          bgcolor: "primary.main",
+                          "&:hover": { bgcolor: "primary.dark" },
+                          px: 3,
+                          py: 1.5,
+                          borderRadius: "8px",
+                          textTransform: "none",
+                        }}
+                      >
+                      Sold
+                    </Button>||"-"}</td>
                 </tr>
               ))}
             </tbody>

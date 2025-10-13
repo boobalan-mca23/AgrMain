@@ -21,6 +21,8 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import "./Report.css"; // Import the CSS file
+import BillView from "../Billing/BillView";
+import { useNavigate } from "react-router-dom";
 
 const DailySalesReport = () => {
   const [bills, setBills] = useState([]);
@@ -30,6 +32,7 @@ const DailySalesReport = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openModal, setOpenModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchBills = async () => {
@@ -292,7 +295,8 @@ const DailySalesReport = () => {
                       {(bill.Totalprofit || 0).toFixed(3)} g
                     </TableCell>
                     <TableCell className="table-cell">
-                      <IconButton color="primary" onClick={() => handleViewBill(bill)}>
+                      <IconButton color="primary" onClick={() => navigate(`/bill-view/${bill.id}`)
+                        }>
                         <VisibilityIcon />
                       </IconButton>
                     </TableCell>

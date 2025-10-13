@@ -27,6 +27,7 @@ import MasterBullion from "./components/Master/Masterbullion";
 import Bullion from "./components/Bullion/Bullion";
 import Repair from "./components/Repair/Repair";
 import Jewelstockreport from "./components/Report/jewelstockreport";
+import BillView from "./components/Billing/BillView";
 
 function App() {
   return (
@@ -74,7 +75,14 @@ function App() {
             </PageWithNavbar>
           }
         />
-      
+      <Route
+          path="/bill-view/:billId"
+          element={
+            <PageWithNavbar>
+              <BillView />
+            </PageWithNavbar>
+          }
+        />
         <Route
           path="/report"
           element={

@@ -72,7 +72,7 @@ const Billing = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [viewMode, setViewMode] = useState(false);
-
+  
   const [rows, setRows] = useState([]); // Received details
   const [billDetailRows, setBillDetailRows] = useState([]); // Bill items
   const [billHallmark, setBillHallmark] = useState("");
@@ -85,7 +85,11 @@ const Billing = () => {
   const [BillDetailsProfit,setBillDetailsProfit] =useState([]);
   const [StoneProfit,setStoneProfit] =useState([]);
   const [TotalBillProfit,setTotalBillProfit] =useState([]);
-  const [totalFWT,setTotalFWT] =useState(0);
+  // const [totalFWT,setTotalFWT] =useState(0);
+
+  //for hallmark rate and qty
+  const [hallmarkQty, setHallmarkQty] = useState(0);
+
   // keep track how many bill rows were added for each productId for css
   const [selectedProductCounts, setSelectedProductCounts] = useState({});
 
@@ -323,161 +327,161 @@ const Billing = () => {
     }
   };
 
-const handleBillDetailChange = (index, field, value) => {
-  const validatedValue = validateInput(
-    value,
-    field,
-    index,
-    "billDetail",
-    field === "productName" ? "text" : "number"
-  );
-
-  const updated = [...billDetailRows];
-  const currentRow = { ...updated[index] };
-  currentRow[field] = validatedValue;
-
-  // Ensure numeric strings are normalized
-  const wt = toNumber(currentRow.wt);
-    if (field === 'wt' && currentRow.productId) {
-    const productStock = availableProducts?.allStock?.find(
-      p => (p.id || p._id) === currentRow.productId
+  const handleBillDetailChange = (index, field, value) => {
+    const validatedValue = validateInput(
+      value,
+      field,
+      index,
+      "billDetail",
+      field === "productName" ? "text" : "number"
     );
-    if (productStock) {
-      const remaining = getRemainingWeight(currentRow.productId, productStock.itemWeight)
-        + toNumber(weightAllocations[currentRow.productId]?.[currentRow.id] || 0); 
-      // allow current row’s existing allocation
-      if (toNumber(value) > remaining) {
-        toast.error(`Entered weight (${value}) exceeds remaining weight (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
-        alert(`Entered weight (${value}) exceeds remaining weight (${remaining.toFixed(3)}) for ${currentRow.productName}`);
-        return;
+
+    const updated = [...billDetailRows];
+    const currentRow = { ...updated[index] };
+    currentRow[field] = validatedValue;
+
+    // Ensure numeric strings are normalized
+    const wt = toNumber(currentRow.wt);
+      if (field === 'wt' && currentRow.productId) {
+      const productStock = availableProducts?.allStock?.find(
+        p => (p.id || p._id) === currentRow.productId
+      );
+      if (productStock) {
+        const remaining = getRemainingWeight(currentRow.productId, productStock.itemWeight)
+          + toNumber(weightAllocations[currentRow.productId]?.[currentRow.id] || 0); 
+        // allow current row’s existing allocation
+        // if (toNumber(value) > remaining) {
+        //   toast.error(`Entered weight (${value}) exceeds remaining weight (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
+        //   alert(`Entered weight (${value}) exceeds remaining weight (${remaining.toFixed(3)}) for ${currentRow.productName}`);
+        //   return;
+        // }
       }
     }
-  }
-  const stWt = toNumber(currentRow.stWt);
-    if (field === 'stWt' && currentRow.productId) {
-    const productStock = availableProducts?.allStock?.find(
-      p => (p.id || p._id) === currentRow.productId
-    );
-    if (productStock) {
-      const remaining = getRemainingStone(currentRow.productId, productStock.stoneWeight)
-        + toNumber(stoneAllocations[currentRow.productId]?.[currentRow.id] || 0); 
-      // allow current row’s existing allocation
-      if (toNumber(value) > remaining) {
-        toast.error(`Entered weight (${value}) exceeds remaining stone weight (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
-        alert(`Entered weight (${value}) exceeds remaining stone weight (${remaining.toFixed(3)}) for ${currentRow.productName}`);
-        return; // abort update
+    const stWt = toNumber(currentRow.stWt);
+      if (field === 'stWt' && currentRow.productId) {
+      const productStock = availableProducts?.allStock?.find(
+        p => (p.id || p._id) === currentRow.productId
+      );
+      if (productStock) {
+        const remaining = getRemainingStone(currentRow.productId, productStock.stoneWeight)
+          + toNumber(stoneAllocations[currentRow.productId]?.[currentRow.id] || 0); 
+        // allow current row’s existing allocation
+        if (toNumber(value) > remaining) {
+          toast.error(`Entered weight (${value}) exceeds remaining stone weight (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
+          alert(`Entered weight (${value}) exceeds remaining stone weight (${remaining.toFixed(3)}) for ${currentRow.productName}`);
+          return; // abort update
+        }
       }
     }
-  }
 
-  const count = toNumber(currentRow.count);
-    if (field === 'count' && currentRow.productId) {
-    const productStock = availableProducts?.allStock?.find(
-      p => (p.id || p._id) === currentRow.productId
-    );
-    if (productStock) {
-      const remaining = getRemainingCount(currentRow.productId, productStock.count)
-        + toNumber(countAllocations[currentRow.productId]?.[currentRow.id] || 0); 
-      // allow current row’s existing allocation
-      if (toNumber(value) > remaining) {
-        toast.error(`Entered count (${value}) exceeds remaining count (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
-        alert(`Entered count (${value}) exceeds remaining count (${remaining}) for ${currentRow.productName}`);
-        return; // abort update
+    const count = toNumber(currentRow.count);
+      if (field === 'count' && currentRow.productId) {
+      const productStock = availableProducts?.allStock?.find(
+        p => (p.id || p._id) === currentRow.productId
+      );
+      if (productStock) {
+        const remaining = getRemainingCount(currentRow.productId, productStock.count)
+          + toNumber(countAllocations[currentRow.productId]?.[currentRow.id] || 0); 
+        // allow current row’s existing allocation
+        if (toNumber(value) > remaining) {
+          toast.error(`Entered count (${value}) exceeds remaining count (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
+          alert(`Entered count (${value}) exceeds remaining count (${remaining}) for ${currentRow.productName}`);
+          return; // abort update
+        }
       }
     }
-  }
 
-  const percent = toNumber(currentRow.percent);
-  // awt and fwt always re-calculated
-  const awt = wt - stWt;
-  currentRow.awt = awt ? toFixedStr(awt, 3) : "0.000";
-  currentRow.fwt = percent ? toFixedStr((awt * percent) / 100, 3) : "0.000";
+    const percent = toNumber(currentRow.percent);
+    // awt and fwt always re-calculated
+    const awt = wt - stWt;
+    currentRow.awt = awt ? toFixedStr(awt, 3) : "0.000";
+    currentRow.fwt = percent ? toFixedStr((awt * percent) / 100, 3) : "0.000";
 
-  updated[index] = currentRow;
+    updated[index] = currentRow;
 
-  // Update allocations when fields change and productId exists
-  const productId = currentRow.productId;
+    // Update allocations when fields change and productId exists
+    const productId = currentRow.productId;
 
-  if (productId) {
-    // weight
-    if (field === "wt" || field === "productName") {
-      const newAlloc = { ...weightAllocations };
-      if (!newAlloc[productId]) newAlloc[productId] = {};
-      newAlloc[productId][currentRow.id] = toNumber(currentRow.wt);
-      setWeightAllocations(newAlloc);
+    if (productId) {
+      // weight
+      if (field === "wt" || field === "productName") {
+        const newAlloc = { ...weightAllocations };
+        if (!newAlloc[productId]) newAlloc[productId] = {};
+        newAlloc[productId][currentRow.id] = toNumber(currentRow.wt);
+        setWeightAllocations(newAlloc);
+      }
+
+      // stone
+      if (field === "stWt" || field === "productName") {
+        const newStone = { ...stoneAllocations };
+        if (!newStone[productId]) newStone[productId] = {};
+        newStone[productId][currentRow.id] = toNumber(currentRow.stWt);
+        setStoneAllocations(newStone);
+      }
+
+      // count
+      if (field === "count" || field === "productName") {
+        const newCount = { ...countAllocations };
+        if (!newCount[productId]) newCount[productId] = {};
+        // default to 0 if empty
+        newCount[productId][currentRow.id] = toNumber(currentRow.count || 0);
+        setCountAllocations(newCount);
+      }
+
+      // If user changed productName (switched product), ensure we remove allocations of old productId handled earlier in productName branch below
     }
 
-    // stone
-    if (field === "stWt" || field === "productName") {
-      const newStone = { ...stoneAllocations };
-      if (!newStone[productId]) newStone[productId] = {};
-      newStone[productId][currentRow.id] = toNumber(currentRow.stWt);
-      setStoneAllocations(newStone);
-    }
+    // Special handling when user switches productName: update productId mapping
+    if (field === "productName") {
+      const selectedItem = items.find((it) => it.itemName === validatedValue);
+      const prevProductId = updated[index].productId;
+      // remove previous product allocations if switching
+      if (prevProductId && prevProductId !== (selectedItem?._id || selectedItem?.id)) {
+        const newW = { ...weightAllocations };
+        if (newW[prevProductId]) {
+          delete newW[prevProductId][currentRow.id];
+          if (Object.keys(newW[prevProductId]).length === 0) delete newW[prevProductId];
+          setWeightAllocations(newW);
+        }
+        const newS = { ...stoneAllocations };
+        if (newS[prevProductId]) {
+          delete newS[prevProductId][currentRow.id];
+          if (Object.keys(newS[prevProductId]).length === 0) delete newS[prevProductId];
+          setStoneAllocations(newS);
+        }
+        const newC = { ...countAllocations };
+        if (newC[prevProductId]) {
+          delete newC[prevProductId][currentRow.id];
+          if (Object.keys(newC[prevProductId]).length === 0) delete newC[prevProductId];
+          setCountAllocations(newC);
+        }
+      }
 
-    // count
-    if (field === "count" || field === "productName") {
-      const newCount = { ...countAllocations };
-      if (!newCount[productId]) newCount[productId] = {};
-      // default to 0 if empty
-      newCount[productId][currentRow.id] = toNumber(currentRow.count || 0);
-      setCountAllocations(newCount);
-    }
-
-    // If user changed productName (switched product), ensure we remove allocations of old productId handled earlier in productName branch below
-  }
-
-  // Special handling when user switches productName: update productId mapping
-  if (field === "productName") {
-    const selectedItem = items.find((it) => it.itemName === validatedValue);
-    const prevProductId = updated[index].productId;
-    // remove previous product allocations if switching
-    if (prevProductId && prevProductId !== (selectedItem?._id || selectedItem?.id)) {
-      const newW = { ...weightAllocations };
-      if (newW[prevProductId]) {
-        delete newW[prevProductId][currentRow.id];
-        if (Object.keys(newW[prevProductId]).length === 0) delete newW[prevProductId];
+      if (selectedItem) {
+        updated[index].productId = selectedItem._id || selectedItem.id || "";
+        // ensure allocations exist for new product
+        const newW = { ...weightAllocations };
+        if (!newW[updated[index].productId]) newW[updated[index].productId] = {};
+        newW[updated[index].productId][currentRow.id] = toNumber(currentRow.wt);
         setWeightAllocations(newW);
-      }
-      const newS = { ...stoneAllocations };
-      if (newS[prevProductId]) {
-        delete newS[prevProductId][currentRow.id];
-        if (Object.keys(newS[prevProductId]).length === 0) delete newS[prevProductId];
+
+        const newS = { ...stoneAllocations };
+        if (!newS[updated[index].productId]) newS[updated[index].productId] = {};
+        newS[updated[index].productId][currentRow.id] = toNumber(currentRow.stWt);
         setStoneAllocations(newS);
-      }
-      const newC = { ...countAllocations };
-      if (newC[prevProductId]) {
-        delete newC[prevProductId][currentRow.id];
-        if (Object.keys(newC[prevProductId]).length === 0) delete newC[prevProductId];
+
+        const newC = { ...countAllocations };
+        if (!newC[updated[index].productId]) newC[updated[index].productId] = {};
+        newC[updated[index].productId][currentRow.id] = toNumber(currentRow.count || 0);
         setCountAllocations(newC);
+      } else {
+        updated[index].productId = "";
       }
     }
 
-    if (selectedItem) {
-      updated[index].productId = selectedItem._id || selectedItem.id || "";
-      // ensure allocations exist for new product
-      const newW = { ...weightAllocations };
-      if (!newW[updated[index].productId]) newW[updated[index].productId] = {};
-      newW[updated[index].productId][currentRow.id] = toNumber(currentRow.wt);
-      setWeightAllocations(newW);
-
-      const newS = { ...stoneAllocations };
-      if (!newS[updated[index].productId]) newS[updated[index].productId] = {};
-      newS[updated[index].productId][currentRow.id] = toNumber(currentRow.stWt);
-      setStoneAllocations(newS);
-
-      const newC = { ...countAllocations };
-      if (!newC[updated[index].productId]) newC[updated[index].productId] = {};
-      newC[updated[index].productId][currentRow.id] = toNumber(currentRow.count || 0);
-      setCountAllocations(newC);
-    } else {
-      updated[index].productId = "";
-    }
-  }
-
-  setBillDetailRows(updated);
-  console.log(updated)
-};
+    setBillDetailRows(updated);
+    // console.log(updated)
+  };
 
 
   const handleRowChange = (index, field, value) => {
@@ -550,73 +554,75 @@ const handleBillDetailChange = (index, field, value) => {
 
 
   const handleProductClick = (product) => {
-  const productId = product.id || product._id;
-  // remaining item weight (total remaining)
-  const remainingWeight = getRemainingWeight(productId, product.itemWeight);
-  if (remainingWeight <= 0) {
-    alert(`No remaining weight availaeble for ${product.itemName}`);
-    return;
-  }
+    const productId = product.id || product._id;
 
-  // remaining stone and count
-  const remainingStone = getRemainingStone(productId, product.stoneWeight);
-  const remainingCount = getRemainingCount(productId, product.count);
+    // remaining weight check
+    const remainingWeight = getRemainingWeight(productId, product.itemWeight);
+    if (remainingWeight <= 0) {
+      alert(`No remaining weight available for ${product.itemName}`);
+      return;
+    }
 
-  // default to selecting 1 item (count) — user can change later
-  const defaultCount = remainingCount > 0 ? 1 : 0;
-  // If itemWeight is per-unit weight unknown, fallback to allocating equal share:
-  // if product.count > 0 assume itemWeight is total and per-unit = itemWeight / count
-  let perUnitWeight = toNumber(product.itemWeight);
-  if (toNumber(product.count) > 0) perUnitWeight = toNumber(product.itemWeight) / Math.max(1, toNumber(product.count));
-  const initialWt = Math.min(remainingWeight, perUnitWeight * defaultCount) || remainingWeight;
+    const alreadyAdded = billDetailRows.some((row) => row.productId === productId);
+    if (alreadyAdded) {
+      alert(`${product.itemName} already added!`);
+      return;
+    }
 
-  const stWtValue = Math.min(remainingStone, toNumber(product.stoneWeight) || 0);
-  // percent default to wastageValue
-  const percentVal = product.wastageValue || 0;
+    // remaining stone and count
+    const remainingStone = getRemainingStone(productId, product.stoneWeight);
+    const remainingCount = getRemainingCount(productId, product.count);
 
-  // compute awt and fwt correctly
-  const awtVal = toNumber(initialWt) - toNumber(stWtValue);
-  const fwtVal = percentVal ? (awtVal * toNumber(percentVal)) / 100 : 0;
+    const defaultCount = remainingCount > 0 ? 1 : 0;
 
-  const newRow = {
-    id: Date.now() + Math.random(),
-    productId: productId,
-    productName: product.itemName,
-    // count: defaultCount.toString(),
-    count: product.count.toString(),
-    // wt: toFixedStr(initialWt, 3),
-    wt: toFixedStr(product.itemWeight, 3), 
-    stWt: toFixedStr(stWtValue, 3),
-    awt: toFixedStr(awtVal, 3),
-    // percent: percentVal?.toString() || "0",
-    percent:'',
-    fwt: toFixedStr(fwtVal, 3),
+    let perUnitWeight = toNumber(product.itemWeight);
+    if (toNumber(product.count) > 0) {
+      perUnitWeight = toNumber(product.itemWeight) / Math.max(1, toNumber(product.count));
+    }
+    const initialWt = Math.min(remainingWeight, perUnitWeight * defaultCount) || remainingWeight;
+
+    const stWtValue = Math.min(remainingStone, toNumber(product.stoneWeight) || 0);
+    const percentVal = product.wastageValue || 0;
+
+    const awtVal = toNumber(initialWt) - toNumber(stWtValue);
+    const fwtVal = percentVal ? (awtVal * toNumber(percentVal)) / 100 : 0;
+
+    const newRow = {
+      id: Date.now() + Math.random(),
+      productId: productId,
+      productName: product.itemName,
+      count: product.count.toString(),
+      wt: toFixedStr(product.itemWeight, 3),
+      stWt: toFixedStr(stWtValue, 3),
+      awt: toFixedStr(awtVal, 3),
+      percent: '',
+      fwt: toFixedStr(fwtVal, 3),
+    };
+
+    // update allocations
+    setWeightAllocations((prev) => ({
+      ...prev,
+      [productId]: { ...(prev[productId] || {}), [newRow.id]: toNumber(newRow.wt) },
+    }));
+
+    setStoneAllocations((prev) => ({
+      ...prev,
+      [productId]: { ...(prev[productId] || {}), [newRow.id]: toNumber(newRow.stWt) },
+    }));
+
+    setCountAllocations((prev) => ({
+      ...prev,
+      [productId]: { ...(prev[productId] || {}), [newRow.id]: toNumber(newRow.count) },
+    }));
+
+    setBillDetailRows((prev) => [...prev, newRow]);
+
+    setSelectedProductCounts((prev) => ({
+      ...prev,
+      [productId]: (prev[productId] || 0) + 1,
+    }));
   };
 
-  // update allocations for weight / stone / count
-  const newWeightAlloc = { ...weightAllocations };
-  if (!newWeightAlloc[productId]) newWeightAlloc[productId] = {};
-  newWeightAlloc[productId][newRow.id] = toNumber(newRow.wt);
-  setWeightAllocations(newWeightAlloc);
-
-  const newStoneAlloc = { ...stoneAllocations };
-  if (!newStoneAlloc[productId]) newStoneAlloc[productId] = {};
-  newStoneAlloc[productId][newRow.id] = toNumber(newRow.stWt);
-  setStoneAllocations(newStoneAlloc);
-
-  const newCountAlloc = { ...countAllocations };
-  if (!newCountAlloc[productId]) newCountAlloc[productId] = {};
-  newCountAlloc[productId][newRow.id] = toNumber(newRow.count);
-  setCountAllocations(newCountAlloc);
-
-  setBillDetailRows((prev) => [...prev, newRow]);
-  //for css higlit the selected ones
-    setSelectedProductCounts((prev) => {
-    const copy = { ...prev };
-    copy[productId] = (copy[productId] || 0) + 1;
-    return copy;
-  });
-  };
 
   const handleSave = async () => {
     if (!selectedCustomer) {
@@ -642,6 +648,7 @@ const handleBillDetailChange = (index, field, value) => {
         date: now.toISOString(),
         time: now.toISOString(),
         customerId: selectedCustomer.id || selectedCustomer._id,
+        customername: selectedCustomer.name,
         billTotal: FWT,
         hallMark: toNumber(billHallmark) || 0,
         pureBalance: toFixedStr(pureBalance, 3),
@@ -652,7 +659,8 @@ const handleBillDetailChange = (index, field, value) => {
         Stoneprofit:stoneProfit,
         Totalprofit:totalBillProfit,
         cashBalance: cashBalance,
-      
+        hallmarkQty:hallmarkQty,
+
         orderItems: billDetailRows.map((row) => ({
           stockId: row.productId,
           productName: row.productName,
@@ -666,6 +674,8 @@ const handleBillDetailChange = (index, field, value) => {
         received: rows.map((row) => ({
           date: row.date,
           cash: toNumber(row.cash),
+          type: row.type,
+          goldRate: toNumber(row.goldRate),
           gold: toNumber(row.givenGold),
           touch: toNumber(row.touch),
           purity: toNumber(row.purityWeight),
@@ -702,6 +712,8 @@ const handleBillDetailChange = (index, field, value) => {
       setPrevHallmark(0);
       setPreviousBalance(0);
       setCashBalance("0.00");
+      setHallmarkQty(0)
+      fetchProductStock();
     } catch (error) {
       console.error("Error saving bill:", error);
       alert(`Error saving bill: ${error.message}`);
@@ -798,6 +810,7 @@ const handleBillDetailChange = (index, field, value) => {
 
 
 
+
   // === derived values ===
   const FWT = useMemo( () =>billDetailRows.reduce( (total, row) => total + (toNumber(row.fwt) || 0), 0), [billDetailRows] );
   const { billDetailsProfit, stoneProfit, totalBillProfit, billProfitPercentage } = useMemo(() => {
@@ -810,7 +823,7 @@ const handleBillDetailChange = (index, field, value) => {
     // console.log('availableProducts:', availableProducts);
 
     billDetailRows.forEach((row, index) => {
-      console.log(`\n--- Row ${index + 1}: ${row.productName} ---`);
+      // console.log(`\n--- Row ${index + 1}: ${row.productName} ---`);
        // Find the product stock for touch value
       const productStock = availableProducts?.allStock?.find(product => (product.id || product._id) === row.productId);
       // if (!productStock) alert('no products available');
@@ -821,7 +834,7 @@ const handleBillDetailChange = (index, field, value) => {
       // console.log('AWT:', awt, 'FWT:', fwt, 'Stone WT:', enteredStoneWt, 'Entered %:', enteredPercentage);
       
       if (productStock) {
-        console.log('Found product stock:', productStock);
+        // console.log('Found product stock:', productStock);
         
         // Bill Details Profit: (awt × wastage%) - fwt
         // Use the wastage from productStock (availableProducts), not items
@@ -830,9 +843,9 @@ const handleBillDetailChange = (index, field, value) => {
         const rowBillProfit =  fwt - purityFromWastage;
         detailsProfit += rowBillProfit;
         
-        console.log('Wastage Value:', wastageValue);
-        console.log('Purity from Wastage:', purityFromWastage);
-        console.log('Row Bill Profit:', rowBillProfit);
+        // console.log('Wastage Value:', wastageValue);
+        // console.log('Purity from Wastage:', purityFromWastage);
+        // console.log('Row Bill Profit:', rowBillProfit);
         
         // Stone Profit: stockremaing wieght × product.touch%
         const remainingStone = getRemainingStone(row.productId, productStock.stoneWeight);
@@ -841,8 +854,8 @@ const handleBillDetailChange = (index, field, value) => {
         const rowStoneProfit = (toNumber(remainingStone) * touchValue) / 100;
         stoneProfitCalc += rowStoneProfit;
         
-        console.log('Touch Value:', touchValue);
-        console.log('Row Stone Profit:', rowStoneProfit);
+        // console.log('Touch Value:', touchValue);
+        // console.log('Row Stone Profit:', rowStoneProfit);
       } else {
         console.log('Product stock not found for productId:', row.productId);
       }
@@ -876,6 +889,10 @@ const handleBillDetailChange = (index, field, value) => {
 
   const pureBalance = TotalFWT - totalReceivedPurity;
   // Replace the existing cashBalance calculation with:
+
+  const hallmarkAmount = useMemo(() => toNumber(hallmarkQty) * toNumber(billHallmark), [hallmarkQty, billHallmark]);
+  const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
+
   useMemo(() => {
 
     if (viewMode) return;
@@ -884,7 +901,7 @@ const handleBillDetailChange = (index, field, value) => {
     const calculatedBalance = lastGoldRate ? (toNumber(lastGoldRate) * pureBalance).toFixed(2) : "0.00";
     setCashBalance(calculatedBalance);
   }, [rows, pureBalance]);
-  const totalBillHallmark = toNumber(billHallmark);
+  const totalBillHallmark = toNumber(totalHallmark);
   const totalReceivedHallmark = rows.reduce((total, row) => total + (toNumber(row.hallmark) || 0),  0);
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
 
@@ -917,35 +934,34 @@ const handleBillDetailChange = (index, field, value) => {
     return uniqueNames.sort();
   };
 
-    const handleReset = () => {
-      setBillDetailRows([]);
-      setRows([]);
-      setSelectedCustomer(null);
-      setBillHallmark("");
-      // clear allocations and selection trackers
-      setWeightAllocations({});
-      setStoneAllocations({});
-      setCountAllocations({});
-      setCashBalance("0.00");
-      // if you implemented the "selected product" badge, clear it too
-      if (typeof setSelectedProductCounts === "function") {
-        setSelectedProductCounts({});
-      }
+  const handleReset = () => {
+    setBillDetailRows([]);
+    setRows([]);
+    setSelectedCustomer(null);
+    setBillHallmark("");
+    // clear allocations and selection trackers
+    setWeightAllocations({});
+    setStoneAllocations({});
+    setCountAllocations({});
+    setCashBalance("0.00");
+    // if you implemented the "selected product" badge, clear it too
+    if (typeof setSelectedProductCounts === "function") {
+      setSelectedProductCounts({});
+    }
 
-      // clear validation and balances
-      setFieldErrors({});
-      setPrevHallmark(0);
-      setPreviousBalance(0);
+    // clear validation and balances
+    setFieldErrors({});
+    setPrevHallmark(0);
+    setPreviousBalance(0);
+    setHallmarkQty(0);
+    // restore availableProducts from the original snapshot (undo any client-side changes)
+    if (originalProducts) {
+      setAvailableProducts(originalProducts);
+    }
 
-      // restore availableProducts from the original snapshot (undo any client-side changes)
-      if (originalProducts) {
-        setAvailableProducts(originalProducts);
-      }
-
-      console.log("Bill Reset Successfully");
-      toast.success("Bill Reset Successfully", { autoClose: 1000 });
-    };
-
+    console.log("Bill Reset Successfully");
+    toast.success("Bill Reset Successfully", { autoClose: 1000 });
+  };
 
   const handleExit = () => {
     fetchAllBills();
@@ -959,6 +975,7 @@ const handleBillDetailChange = (index, field, value) => {
     setPrevHallmark(0);
     setPreviousBalance(0);
     setCashBalance("0.00");
+    setHallmarkQty(0);
     toast.info("Exited view mode", { autoClose: 1000 });
   };
 
@@ -975,7 +992,7 @@ const handleBillDetailChange = (index, field, value) => {
         id: item.id,
         productId: item.stockId,
         productName: item.productName,
-        count: item.count?.toString() || "",
+        count: item.count?.toString() || 0,
         wt: item.weight?.toString() || "",
         stWt: item.stoneWeight?.toString() || "",
         awt: item.afterWeight?.toString() || "",
@@ -983,12 +1000,14 @@ const handleBillDetailChange = (index, field, value) => {
         fwt: item.finalWeight?.toString() || "",
       }))
     );
+    
     console.log('billReceive',bill.billReceive)
     setRows(
       (bill.billReceive || []).map((item) => ({
         id: item.id,
         date: item.date ,
-        type: toNumber(item.cash) > 0 ? "Cash" : "Gold",
+        // type: toNumber(item.cash) > 0 ? "Cash" : "Gold",
+        type: item.type,
         goldRate: item.goldRate?.toString() || "",
         givenGold: item.gold?.toString() || "",
         touch: item.touch?.toString() || "",
@@ -1004,7 +1023,9 @@ const handleBillDetailChange = (index, field, value) => {
     setBillHallmark(bill.hallMark || "");
     setPreviousBalance(bill.PrevBalance || 0);
     setPrevHallmark(bill.prevHallMark || "");
-     setCashBalance(bill.cashBalance || "0.00");
+    setCashBalance(bill.cashBalance || "0.00");
+    setHallmarkQty(bill.hallmarkQty || 0);
+
     setViewMode(true);
     setIsModal(false);
   };
@@ -1046,7 +1067,7 @@ const handleBillDetailChange = (index, field, value) => {
     width:80,
   };
 
-   const fetchAllBills = async () => {
+  const fetchAllBills = async () => {
       try {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`);
         if (!response.ok)
@@ -1058,7 +1079,20 @@ const handleBillDetailChange = (index, field, value) => {
       } catch (error) {
         console.error("Error fetching bills:", error);
       }
-    };
+  };
+
+  const fetchProductStock = async () => {
+    try {
+      const response = await fetch(`${BACKEND_SERVER_URL}/api/productStock`);
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setAvailableProducts(data);
+      setOriginalProducts(data);
+    } catch (error) {
+      console.error("Error fetching Available Products:", error);
+    }
+  };  
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -1082,19 +1116,6 @@ const handleBillDetailChange = (index, field, value) => {
         setItems(data);
       } catch (error) {
         console.error("Error fetching items:", error);
-      }
-    };
-
-    const fetchProductStock = async () => {
-      try {
-        const response = await fetch(`${BACKEND_SERVER_URL}/api/productStock`);
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        setAvailableProducts(data);
-        setOriginalProducts(data);
-      } catch (error) {
-        console.error("Error fetching Available Products:", error);
       }
     };
 
@@ -1122,105 +1143,113 @@ const handleBillDetailChange = (index, field, value) => {
   const showGoldRateColumn = rows.length === 0  ? true : rows.some((r) => r.type === "" || r.type === "Cash");
   const showGivenGoldColumn = rows.length === 0  ? true  : rows.some((r) => r.type === "" || r.type === "Gold");
   const showTouchColumn = showGivenGoldColumn;
-  const showAmountColumn =  rows.length === 0  ? true  : rows.some((r) => r.type === "" || r.type === "Cash");
+  const showAmountColumn = rows.length === 0  ? true  : rows.some((r) => r.type === "" || r.type === "Cash");
 
   const visibleReceivedCols = 1/*S.No*/+ 1/*Date*/+ 1/*Type*/+(showGoldRateColumn ? 1 : 0) + (showGivenGoldColumn ? 1 : 0) + (showTouchColumn ? 1 : 0) + 1/*Purity*/+ (showAmountColumn ? 1 : 0) + 1/*Hallmark*/+1;/*Action*/
 
-const handlePrint = () => {
-  const billData = {
-    billNo: billId,
-    date,
-    time,
-    selectedCustomer,
+  const handlePrint = () => {
+    const billData = {
+      billNo: billId,
+      date:currentBill?.date  ? new Date(currentBill.date).toLocaleDateString("en-IN")  : date,
+      time: currentBill?.time  ? new Date(currentBill.time).toLocaleTimeString("en-IN", {  hour: "2-digit",  minute: "2-digit",  hour12: true,  })  : time,
+      selectedCustomer,
 
-    // bill details
-    billItems: billDetailRows.map((row) => ({
-      productName: row.productName,
-      count: row.count,
-      weight: row.wt,
-      stoneWeight: row.stWt,
-      afterWeight: row.awt,
-      percentage: row.percent,
-      finalWeight: row.fwt,
-    })),
+      // bill details
+      billItems: billDetailRows.map((row) => ({
+        productName: row.productName,
+        count: row.count,
+        weight: row.wt,
+        stoneWeight: row.stWt,
+        afterWeight: row.awt,
+        percentage: row.percent,
+        finalWeight: row.fwt,
+      })),
 
-    // received details
-    rows: rows.map((row) => ({
-      date: row.date,
-      gold: row.givenGold,
-      cash: row.cash,
-      goldRate: row.goldRate,
-      touch: row.touch,
-      purity: row.purityWeight,
-      amount: row.amount,
-      receiveHallMark: row.hallmark,
-    })),
+      // received details
+      rows: rows.map((row) => ({
+        date: row.date,
+        gold: row.givenGold,
+        cash: row.cash,
+        goldRate: row.goldRate,
+        touch: row.touch,
+        purity: row.purityWeight,
+        amount: row.amount,
+        receiveHallMark: row.hallmark,
+      })),
 
-    // balances
-    pureBalance,
-    hallmarkBalance,
-    cashBalance,
-    prevHallmark,
-    prevBalance: previousBalance, 
-    hallMark: toNumber(billHallmark) || 0,
+      // balances
+      pureBalance,
+      hallmarkBalance,
+      cashBalance,
+      prevHallmark,
+      //
+      hallmarkAmount,
+      totalHallmark,
+      FWT,
+      TotalFWT,
+      //
+      prevBalance: previousBalance, 
+      hallMark: toNumber(billHallmark) || 0,
+      hallmarkQty,
+      totalBillHallmark,
+      // profits
+      billDetailsprofit: billDetailsProfit, 
+      Stoneprofit: stoneProfit,        
+      Totalprofit: totalBillProfit,
+      hallmarkQty:hallmarkQty,
+    };
 
-    // profits
-    billDetailsprofit: billDetailsProfit, 
-    Stoneprofit: stoneProfit,        
-    Totalprofit: totalBillProfit,
+    console.log("Printing bill data:", billData);
+    const printContent = (
+      <PrintableBill
+        {...billData}
+        viewMode={viewMode}
+        selectedBill={billData}
+      />
+    );
+
+    const printHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Bill Print</title>
+          <link rel="stylesheet" href="./PrintableBill.css">
+        </head>
+        <body>
+          ${ReactDOMServer.renderToString(printContent)}
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 200);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
   };
 
-  console.log("Printing bill data:", billData);
-  const printContent = (
-    <PrintableBill
-      {...billData}
-      viewMode={viewMode}
-      selectedBill={billData}
-    />
-  );
+  useEffect(() => {
+    const handleKeyDown = async (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "p") {
+        event.preventDefault();
+        
+        // Wait for any pending state updates
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Now call handlePrint
+        handlePrint();
+      }
+    };
 
-  const printHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Bill Print</title>
-        <link rel="stylesheet" href="./PrintableBill.css">
-      </head>
-      <body>
-        ${ReactDOMServer.renderToString(printContent)}
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-              window.close();
-            }, 200);
-          };
-        </script>
-      </body>
-    </html>
-  `;
-
-  const printWindow = window.open("", "_blank", "width=1000,height=800");
-  printWindow.document.write(printHtml);
-  printWindow.document.close();
-};
-
-useEffect(() => {
-  const handleKeyDown = async (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key === "p") {
-      event.preventDefault();
-      
-      // Wait for any pending state updates
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      // Now call handlePrint
-      handlePrint();
-    }
-  };
-
-  window.addEventListener('keydown', handleKeyDown);
-  return () => window.removeEventListener('keydown', handleKeyDown);
-}, [handlePrint]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePrint]);
 
 
   return (
@@ -1499,7 +1528,24 @@ useEffect(() => {
                 <strong>Hallmark Balance:</strong>{" "}
                 {prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}
               </Box>
-              <TextField
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <TextField
+                size="small"
+                type="text"
+                label="Qty"
+                value={hallmarkQty}
+                disabled={viewMode}
+                onChange={(e) =>
+                  handleNumericInput(e, (ev) => { const validatedValue = validateInput( ev.target.value,"billHallmark",0,"hallmark","number");
+                    setHallmarkQty(validatedValue);
+                    })
+                  }
+                  sx={{ width: 60 }}
+                  error={!!fieldErrors["hallmark_0_billHallmark"]}
+                  helperText={fieldErrors["hallmark_0_billHallmark"] || ""}
+                  />
+                  <p>X</p>
+                <TextField
                 size="small"
                 type="text"
                 label="Current Hallmark"
@@ -1514,6 +1560,24 @@ useEffect(() => {
                   error={!!fieldErrors["hallmark_0_billHallmark"]}
                   helperText={fieldErrors["hallmark_0_billHallmark"] || ""}
                   />
+                <p>=</p>
+                <TextField
+                  size="small"
+                  type="text"
+                  label="Total"
+                  value={hallmarkAmount.toFixed(3)}
+                  disabled
+                  sx={{ width: 130 }}
+                />
+              </div>
+              <TextField
+                  size="small"
+                  type="text"
+                  label="Total Hallmark"
+                  value={totalHallmark.toFixed(3)}
+                  disabled
+                  sx={{ width: 130 }}
+                />
                 </Box>
 
                 <Box className="balance-info">
@@ -1524,7 +1588,7 @@ useEffect(() => {
                         </div>
                         <div>FWT: {toFixedStr(FWT, 3)}</div>
                         <div>Total FWT: {toFixedStr(TotalFWT,3)}</div>
-                      </>
+                      </> 
                     ) : previousBalance < 0 ? (
                       <>
                         <div className="positive">
@@ -1766,7 +1830,7 @@ useEffect(() => {
                         : `Excess Balance: ${toFixedStr(pureBalance, 3)}`}
                       </strong>
 
-              <strong> Hallmark Balance:{" "} {toFixedStr(hallmarkBalance + prevHallmark, 3)} </strong>
+              <strong> Hallmark Balance:{" "} {toFixedStr(hallmarkBalance, 3)} </strong>
             </div>
             
           </Box>
