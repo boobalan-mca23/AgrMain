@@ -329,8 +329,8 @@ model ProductStock{
   id            Int   @id @default(autoincrement())
   jobcardId     Int?
   jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
-  deliveryId    Int
-  itemDelivery  itemDelivery  @relation(fields: [deliveryId ], references: [id])
+  deliveryId    Int?
+  itemDelivery  itemDelivery?  @relation(fields: [deliveryId ], references: [id])
   itemName      String?
   itemWeight    Float?
   count         Int
@@ -342,7 +342,7 @@ model ProductStock{
   wastageType   String?
   finalPurity   Float?
   isBillProduct Boolean @default(false)
-  isActive      Boolean @default(false)
+  isActive      Boolean @default(true)
   createdAt     DateTime   @default(now())
   }
 
