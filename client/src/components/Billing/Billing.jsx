@@ -659,7 +659,7 @@ const Billing = () => {
         Stoneprofit:stoneProfit,
         Totalprofit:totalBillProfit,
         cashBalance: cashBalance,
-        hallmarkQty:hallmarkQty,
+        hallmarkQty,
 
         orderItems: billDetailRows.map((row) => ({
           stockId: row.productId,
