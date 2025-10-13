@@ -56,6 +56,7 @@ const ExpenseTracker = () => {
     setOpen(false);
    
     setNewExpense({ description: "", gold: "", touch: "", purity: "" });
+    fetchRawGold()
   };
   const handleSaveExpense = async (payload) => {
   
@@ -112,7 +113,7 @@ const ExpenseTracker = () => {
       <div>
         <h1 style={{ textAlign: "center" }}>
           {" "}
-          <FaWallet /> Expense Tracker
+          <FaWallet /> Expense Voucher
         </h1>
 
         <div className="expenseHeader">

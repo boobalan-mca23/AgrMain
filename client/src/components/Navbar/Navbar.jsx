@@ -84,7 +84,7 @@ const Navbar = () => {
           "Goldsmith",
           "Bill",
           "Receipt Voucher",
-          "Expense Tracker",
+          "Expense Voucher",
           "Bullion",
           "Repair",
         ].map((label) => {

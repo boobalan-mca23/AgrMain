@@ -468,6 +468,7 @@ const getPreviousJobCardBal = async (req, res) => {
   }
 };
 
+
 // main controllers
 const formatDate = (dateString) => {
   const [day, month, year] = dateString.split("/");

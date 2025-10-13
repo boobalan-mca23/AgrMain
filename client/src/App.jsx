@@ -60,7 +60,7 @@ function App() {
           }
         />
           <Route
-          path="/expenseTracker"
+          path="/expenseVoucher"
           element={
             <PageWithNavbar>
              <ExpenseTracker/>
