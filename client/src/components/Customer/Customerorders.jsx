@@ -278,17 +278,24 @@ const CustomerOrders = () => {
   };
 
   const handleImageChange = (index, e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
 
-    const previews = files.map((file) => URL.createObjectURL(file));
-    const updatedItems = [...items];
+      const previews = files.map((file) => URL.createObjectURL(file));
 
-    updatedItems[index].images.push(...files);
-    updatedItems[index].imagePreviews.push(...previews);
+      setItems((prev) =>
+        prev.map((it, idx) =>
+          idx !== index
+            ? it
+            : {
+                ...it,
+                images: [...(it.images || []), ...files],
+                imagePreviews: [...(it.imagePreviews || []), ...previews],
+              }
+        )
+      );
+    };
 
-    setItems(updatedItems);
-  };
 
   const handleAddItem = () => {
     setItems([
@@ -394,11 +401,8 @@ const CustomerOrders = () => {
 
   const handleSave = async () => {
     try {
-      // 1) Single item edit
       if (editingOrder?.isEditingSingle) {
         const item = items[0];
-
-        // delete removed images first
         const removedImageIds = item.deletedImageIds || [];
         if (removedImageIds.length > 0) {
           await Promise.all(
@@ -502,6 +506,7 @@ const CustomerOrders = () => {
           formData.append("weight", item.weight);
           formData.append("due_date", item.dueDate);
           formData.append("worker_name", item.workerName);
+          formData.append("image", item.images);
 
           if (item.images?.length > 0) {
             item.images.forEach((file) => {
@@ -637,16 +642,15 @@ const CustomerOrders = () => {
                   }`}
                   variant="outlined"
                   color="primary"
+                  style={{position:"relative",top:5}}
                 />
 
                 {/* Edit order button commented out as requested */}
-                {/*
- <Tooltip title="Edit Order">
- <IconButton color="info" onClick={() => handleEditOrder(order)}>
- <Edit />
- </IconButton>
- </Tooltip>
- */}
+                {/* <Tooltip title="Edit Order">
+                      <IconButton color="info" onClick={() => handleEditOrder(order)}>
+                      <Edit />
+                      </IconButton>
+                      </Tooltip> */}
 
                 <Tooltip title="Add Item to this Group">
                   <IconButton
@@ -657,14 +661,20 @@ const CustomerOrders = () => {
                   </IconButton>
                 </Tooltip>
 
-                {/* <Tooltip title="Delete entire order group">
-                  <IconButton
-                    color="error"
-                    onClick={() => handleDeleteOrderGroup(order.groupId)}
-                  >
-                    <Delete />
-                  </IconButton>
-                </Tooltip> */}
+                <Tooltip title="Delete entire order group">
+                    <Button
+                        variant="contained"
+                        startIcon={<Delete />}
+                        color="error" 
+                        onClick={() => handleDeleteOrderGroup(order.groupId)}
+                        sx={{ textTransform: "none", px:2, py:1.2,padding:0, minWidth:130 }}
+                        >        
+                        Delete Order
+                   </Button>
+               {/* <IconButton color="error" onClick={() => handleDeleteOrderGroup(order.groupId)}>
+               <p style={{fontSize:15,padding:5}}>Delete Order</p><Delete />
+              </IconButton> */}
+                </Tooltip>
               </Box>
             </Box>
 
@@ -694,7 +704,7 @@ const CustomerOrders = () => {
                 </TableHead>
                 <TableBody>
                   {order.items.map((item, iIdx) => (
-                    <StyledTableRow key={iIdx}>
+                    <StyledTableRow key={item.id ?? `${order.groupId}-${iIdx}`}>
                       <TableCell>
                         <Box
                           sx={{
@@ -713,18 +723,11 @@ const CustomerOrders = () => {
                               }}
                             >
                               {item.imagePreviews.map((preview, pIdx) => (
-                                <Box key={pIdx} sx={{ position: "relative" }}>
-                                  <ImagePreview
-                                    onClick={() =>
-                                      handleOpenImageModal(preview)
-                                    }
-                                  >
-                                    <img
-                                      src={preview}
-                                      alt={`preview-${pIdx}`}
-                                    />
-                                  </ImagePreview>
-                                </Box>
+                                <Box key={`${item.id ?? order.groupId}-${pIdx}`} sx={{ position: "relative" }}>
+                                <ImagePreview onClick={() => handleOpenImageModal(preview)}>
+                                  <img src={preview} alt={`preview-${pIdx}`} />
+                                </ImagePreview>
+                              </Box>
                               ))}
                             </Box>
                           )}
@@ -783,280 +786,240 @@ const CustomerOrders = () => {
         ))
       )}
 
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle
-          sx={{
-            bgcolor: "primary.main",
-            color: "white",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+       <Dialog
+          open={open}
+          onClose={handleClose}
+          fullWidth
+          maxWidth={false} // Disable the built-in width limit
+          PaperProps={{
+            sx: {
+             width:
+                items.length === 1
+                  ? "30vw !important"
+                  : items.length === 2
+                  ? "40vw!important"
+                  : "60vw!important",
+              maxWidth: "1600px",
+              borderRadius: 3,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              backgroundColor: "#fafafa",
+              transition: "width 0.3s ease-in-out", // smooth resize
+            },
           }}
         >
-          <Typography variant="h6">
-            {editingOrder ? "Edit Order" : "Create New Order"}
-          </Typography>
-          <IconButton onClick={handleClose} sx={{ color: "white" }}>
-            <Close />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent dividers sx={{ py: 3 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-            Order Items
-          </Typography>
-          {items.map((item, index) => (
-            <Box
-              key={index}
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: 2,
-                mb: 3,
-              }}
-            >
-              <TextField
-                label="Item Name"
-                value={item.itemName}
-                onChange={(e) =>
-                  handleChange(index, "itemName", e.target.value)
-                }
-                size="small"
-                fullWidth
-                required
-              />
-              <TextField
-                label="Description"
-                value={item.description}
-                onChange={(e) =>
-                  handleChange(index, "description", e.target.value)
-                }
-                size="small"
-                fullWidth
-                required
-                multiline
-                rows={3}
-              />
-              <TextField
-                label="Weight (grams)"
-                type="text"
-                value={item.weight}
-                onChange={(e) => handleChange(index, "weight", e.target.value)}
-                onWheel={(e) => e.target.blur()}
-                size="small"
-                fullWidth
-                required
-              />
-              <TextField
-                label="Due Date"
-                type="date"
-                value={item.dueDate || new Date().toISOString().split("T")[0]}
-                onChange={(e) => handleChange(index, "dueDate", e.target.value)}
-                size="small"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="Worker Name"
-                value={item.workerName}
-                onChange={(e) =>
-                  handleChange(index, "workerName", e.target.value)
-                }
-                size="small"
-                fullWidth
-                required
-              />
-              <TextField
-                select
-                label="Status"
-                value={item.status}
-                onChange={(e) => handleChange(index, "status", e.target.value)}
-                size="small"
-                fullWidth
-                required
-              >
-                <MenuItem value="Pending">Pending</MenuItem>
-                <MenuItem value="Delivered">Delivered</MenuItem>
-              </TextField>
-
-              <Box>
-                <input
-                  accept="image/*"
-                  multiple
-                  style={{ display: "none" }}
-                  id={`image-upload-${index}`}
-                  type="file"
-                  onChange={(e) => handleImageChange(index, e)}
-                />
-                <label htmlFor={`image-upload-${index}`}>
-                  <Button
-                    variant="outlined"
-                    component="span"
-                    startIcon={<ImageIcon />}
-                    fullWidth
-                    sx={{ height: "40px" }}
-                  >
-                    Upload Image
-                  </Button>
-                </label>
-
-                {(item.existingImages?.length || item.imagePreviews?.length) >
-                  0 && (
-                  <Box
-                    sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1 }}
-                  >
-                    {item.existingImages?.map((img, pIdx) => (
-                      <Box
-                        key={`existing-${pIdx}`}
-                        sx={{ position: "relative" }}
-                      >
-                        <ImagePreview
-                          onClick={() => handleOpenImageModal(img.url)}
-                        >
-                          <img src={img.url} alt={`existing-${pIdx}`} />
-                        </ImagePreview>
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            const updatedItems = [...items];
-                            // capture removed image id before splicing
-                            const removed = updatedItems[
-                              index
-                            ].existingImages.splice(pIdx, 1)[0];
-                            // remove the preview url
-                            updatedItems[index].imagePreviews = updatedItems[
-                              index
-                            ].imagePreviews.filter((url) => url !== img.url);
-                            // record the id to be deleted on server
-                            updatedItems[index].deletedImageIds = [
-                              ...(updatedItems[index].deletedImageIds || []),
-                              removed?.id,
-                            ];
-                            setItems(updatedItems);
-                          }}
-                          sx={{
-                            position: "absolute",
-                            top: -6,
-                            right: -6,
-                            backgroundColor: "#fff",
-                            border: "1px solid #ccc",
-                            p: 0.2,
-                          }}
-                        >
-                          <Close fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    ))}
-
-                    {item.imagePreviews
-                      ?.slice(item.existingImages?.length)
-                      .map((preview, pIdx) => (
-                        <Box key={`new-${pIdx}`} sx={{ position: "relative" }}>
-                          <ImagePreview
-                            onClick={() => handleOpenImageModal(preview)}
-                          >
-                            <img src={preview} alt={`new-${pIdx}`} />
-                          </ImagePreview>
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              const updatedItems = [...items];
-                              const relativeIdx =
-                                pIdx +
-                                (updatedItems[index].existingImages?.length ||
-                                  0);
-
-                              // revoke the blob URL to free memory
-                              const previewUrl =
-                                updatedItems[index].imagePreviews[relativeIdx];
-                              if (
-                                previewUrl &&
-                                previewUrl.startsWith("blob:")
-                              ) {
-                                try {
-                                  URL.revokeObjectURL(previewUrl);
-                                } catch (e) {
-                                  /* ignore */
-                                }
-                              }
-
-                              // remove preview and remove the corresponding file from images
-                              updatedItems[index].imagePreviews.splice(
-                                relativeIdx,
-                                1
-                              );
-                              // images[] is aligned with the new previews slice order, so use pIdx
-                              updatedItems[index].images.splice(pIdx, 1);
-                              setItems(updatedItems);
-                            }}
-                            sx={{
-                              position: "absolute",
-                              top: -6,
-                              right: -6,
-                              backgroundColor: "#fff",
-                              border: "1px solid #ccc",
-                              p: 0.2,
-                            }}
-                          >
-                            <Close fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      ))}
-                  </Box>
-                )}
-              </Box>
-
-              {items.length > 1 && (
-                <Tooltip title="Remove item">
-                  <IconButton
-                    onClick={() => handleRemoveItem(index)}
-                    color="error"
-                    sx={{ alignSelf: "center" }}
-                  >
-                    <Close fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
-          ))}
-          <Button
-            variant="outlined"
-            startIcon={<Add />}
-            onClick={handleAddItem}
-            sx={{ mt: 1 }}
-          >
-            Add Another Item
-          </Button>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={handleClose} sx={{ color: "text.secondary" }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={
-              !items.every(
-                (item) =>
-                  item.itemName &&
-                  item.description &&
-                  item.weight &&
-                  item.dueDate &&
-                  item.workerName
-              )
-            }
+          <DialogTitle
             sx={{
               bgcolor: "primary.main",
-              "&:hover": { bgcolor: "primary.dark" },
+              color: "white",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              py: 2,
               px: 3,
-              textTransform: "none",
             }}
           >
-            {editingOrder ? "Save Changes" : "Save Order"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {editingOrder ? "Edit Order" : "Create New Order"}
+            </Typography>
+            <IconButton onClick={handleClose} sx={{ color: "white" }}>
+              <Close />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent
+            dividers
+            sx={{
+              py: 3,
+              px: 4,
+              maxHeight: "75vh",
+              overflowY: "auto",
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3 }}>
+              Order Items
+            </Typography>
+
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns:`repeat(${Math.min(items.length, 3)}, 1fr)`,
+                gap: 2,
+              }}
+            >
+              {items.map((item, index) => (
+                <Box
+                  key={item.id ?? index}
+                  sx={{
+                    border: "1px solid #e0e0e0",
+                    borderRadius: 2,
+                    p: 2,
+                    backgroundColor: "white",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                    position: "relative",
+                  }}
+                >
+                  {items.length > 1 && (
+                    <Tooltip title="Remove item">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveItem(index)}
+                        color="error"
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                        }}
+                      >
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+
+                  <TextField
+                    label="Item Name"
+                    value={item.itemName}
+                    onChange={(e) => handleChange(index, "itemName", e.target.value)}
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label="Description"
+                    value={item.description}
+                    onChange={(e) => handleChange(index, "description", e.target.value)}
+                    size="small"
+                    fullWidth
+                    multiline
+                    rows={2}
+                  />
+                  <TextField
+                    label="Weight (grams)"
+                    type="text"
+                    value={item.weight}
+                    onChange={(e) => handleChange(index, "weight", e.target.value)}
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label="Due Date"
+                    type="date"
+                    value={item.dueDate || new Date().toISOString().split("T")[0]}
+                    onChange={(e) => handleChange(index, "dueDate", e.target.value)}
+                    size="small"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <TextField
+                    label="Worker Name"
+                    value={item.workerName}
+                    onChange={(e) => handleChange(index, "workerName", e.target.value)}
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    select
+                    label="Status"
+                    value={item.status}
+                    onChange={(e) => handleChange(index, "status", e.target.value)}
+                    size="small"
+                    fullWidth
+                    required
+                  >
+                    <MenuItem value="Pending">Pending</MenuItem>
+                    <MenuItem value="Delivered">Delivered</MenuItem>
+                  </TextField>
+
+                  <Box>
+                    <input
+                      accept="image/*"
+                      multiple
+                      style={{ display: "none" }}
+                      id={`image-upload-${index}`}
+                      type="file"
+                      onChange={(e) => handleImageChange(index, e)}
+                    />
+                    <label htmlFor={`image-upload-${index}`}>
+                      <Button
+                        variant="outlined"
+                        component="span"
+                        startIcon={<ImageIcon />}
+                        fullWidth
+                        sx={{ height: "40px" }}
+                      >
+                        Upload Image
+                      </Button>
+                    </label>
+
+                    {(item.existingImages?.length || item.imagePreviews?.length) > 0 && (
+                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1 }}>
+                        {item.imagePreviews.map((preview, pIdx) => (
+                          <ImagePreview
+                            key={pIdx}
+                            onClick={() => handleOpenImageModal(preview)}
+                          >
+                            <img src={preview} alt={`preview-${pIdx}`} />
+                          </ImagePreview>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+
+            {/* <Button
+              variant="outlined"
+              startIcon={<Add />}
+              onClick={handleAddItem}
+              sx={{ mt: 3 }}
+            >
+              Add Another Item
+            </Button> */}
+          </DialogContent>
+
+          <DialogActions sx={{ px: 4, py: 2 }}>
+             <Button
+              variant="outlined"
+              startIcon={<Add />}
+              onClick={handleAddItem}
+              sx={{ display:"flex",flexDirection:"row", alignItems:"center", justifyContent:"center" }}
+            >
+              Add Another Item
+            </Button>
+            <Button onClick={handleClose} sx={{ color: "text.secondary" }}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              disabled={
+                !items.every(
+                  (item) =>
+                    item.itemName &&
+                    item.description &&
+                    item.weight &&
+                    item.dueDate &&
+                    item.workerName
+                )
+              }
+              sx={{
+                bgcolor: "primary.main",
+                "&:hover": { bgcolor: "primary.dark" },
+                px: 3,
+                textTransform: "none",
+              }}
+            >
+              {editingOrder ? "Save Changes" : "Save Order"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+
 
       <FullSizeImageModal open={openImageModal} onClose={handleCloseImageModal}>
         <Box>
