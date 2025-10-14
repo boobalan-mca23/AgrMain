@@ -203,23 +203,29 @@ function MasterCustomer() {
   };
 
   const handleUpdate = async () => {
-  
+    const phoneTrimmed = editedData.phone.trim();
+    if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
+      toast.error("Phone number must be 10 digits.");
+      return;
+    }
+   
     if (!validName.test(editedData.name.trim())) {
       toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
-    
-    if (
-        customers.some(
-          (c) =>
-            c.id !== editCustomer.id &&
-            c.name.toLowerCase() === editedData.name.trim().toLowerCase()
-        )
-      ) {
-        toast.error("Another customer with this name already exists!");
-        return;
-      }
 
+    if (
+      phoneTrimmed &&
+      customers.some(
+        (c) =>
+          c.id !== editCustomer.id &&
+          c.phone &&
+          c.phone.trim() === phoneTrimmed
+      )
+    ) {
+      toast.error("Another customer with this phone number exists!");
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -237,7 +243,6 @@ function MasterCustomer() {
         setEditCustomer(null);
         toast.success("Customer updated successfully!");
       } else {
-        console.error("Failed to update customer");
         toast.error("Failed to update customer.");
       }
     } catch (error) {
@@ -245,6 +250,7 @@ function MasterCustomer() {
       toast.error("Error updating customer.");
     }
   };
+  
 
   return (
     <>
@@ -395,6 +401,7 @@ function MasterCustomer() {
           <TextField
             label="Name"
             value={editedData.name}
+            disabled
             onChange={(e) =>
               setEditedData({ ...editedData, name: e.target.value })
             }
