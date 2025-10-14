@@ -31,6 +31,9 @@ function MasterBullion() {
   const [errors, setErrors] = useState({ name: "", phone: "" });
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const validName = /^[a-zA-Z0-9\s]+$/;
 
   // Refs for focus control
   const nameRef = useRef(null);
@@ -96,17 +99,12 @@ function MasterBullion() {
   };
 
   const handleSaveBullion = async () => {
+    if (saving) return; // prevent multiple clicks
     setSubmitted(true);
 
-    const nameOk = bullionName.trim() && /^[a-zA-Z\s]+$/.test(bullionName);
-    const phoneOk = /^\d{10}$/.test(phoneNumber.trim());
-
     if (!validateForm()) {
-      if (!nameOk) {
-        nameRef.current?.focus();
-      } else if (!phoneOk) {
-        phoneRef.current?.focus();
-      }
+      if (!bullionName.trim() || !/^[a-zA-Z\s]+$/.test(bullionName)) nameRef.current?.focus();
+      else if (!/^\d{10}$/.test(phoneNumber.trim())) phoneRef.current?.focus();
       return;
     }
 
@@ -117,14 +115,12 @@ function MasterBullion() {
     };
 
     try {
-      const response = await fetch(
-        `${BACKEND_SERVER_URL}/api/master-bullion/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bullionData),
-        }
-      );
+      setSaving(true); // start saving
+      const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bullionData),
+      });
 
       if (response.ok) {
         const newBullion = await response.json();
@@ -138,8 +134,11 @@ function MasterBullion() {
     } catch (error) {
       console.error("Error saving bullion:", error);
       toast.error("Something went wrong.");
+    } finally {
+      setSaving(false); // done saving
     }
   };
+
 
   const handleEditClick = (bullion) => {
     setSelectedBullion(bullion);
@@ -151,30 +150,45 @@ function MasterBullion() {
     setOpenEditDialog(true);
   };
 
-  const handleEditSubmit = async () => {
-    try {
-      const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/${selectedBullion.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+const handleEditSubmit = async () => {
+  if (saving) return; // prevent multiple clicks
 
-      if (response.ok) {
-        toast.success("Bullion updated successfully");
-        setBullions((prev) =>
-          prev.map((b) =>
-            b.id === selectedBullion.id ? { ...b, ...formData } : b
-          )
-        );
-        setOpenEditDialog(false);
-      } else {
-        toast.error("Failed to update bullion");
-      }
-    } catch (error) {
-      console.error("Update error:", error);
-      toast.error("Error updating bullion");
+  const phoneTrimmed = formData.phone.trim();
+  if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
+    toast.error("Phone number must be 10 digits.");
+    return;
+  }
+
+  if (!validName.test(formData.name.trim())) {
+    toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+    return;
+  }
+
+  try {
+    setSaving(true); // start saving
+    const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/${selectedBullion.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+
+    if (response.ok) {
+      toast.success("Bullion updated successfully");
+      setBullions((prev) =>
+        prev.map((b) => (b.id === selectedBullion.id ? { ...b, ...formData } : b))
+      );
+      setOpenEditDialog(false);
+    } else {
+      toast.error("Failed to update bullion");
     }
-  };
+  } catch (error) {
+    console.error("Update error:", error);
+    toast.error("Error updating bullion");
+  } finally {
+    setSaving(false); // done saving
+  }
+};
+
 
   const handleDeleteClick = async (id) => {
     if (window.confirm("Are you sure you want to delete this bullion?")) {
@@ -290,8 +304,8 @@ function MasterBullion() {
             <Button onClick={closeModal} color="secondary">
               Cancel
             </Button>
-            <Button onClick={handleSaveBullion} color="primary">
-              Save
+            <Button onClick={handleSaveBullion} color="primary" disabled={saving}>
+              {saving ? "Saving..." : "Save"}
             </Button>
           </DialogActions>
         </Dialog>
@@ -340,6 +354,7 @@ function MasterBullion() {
       fullWidth
       margin="normal"
       value={formData.name}
+      disabled
       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
     />
     <TextField
@@ -359,11 +374,11 @@ function MasterBullion() {
   </DialogContent>
   <DialogActions>
     <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
-    <Button onClick={handleEditSubmit} variant="contained" color="primary">
-      Save
+    <Button onClick={handleEditSubmit} variant="contained" color="primary" disabled={saving}>
+      {saving ? "Saving..." : "Save"}
     </Button>
-  </DialogActions>
-</Dialog>
+    </DialogActions>
+  </Dialog>
 
       </div>
     </>
