@@ -371,7 +371,6 @@ const getAllJobCardsByGoldsmithId = async (req, res) => {
         deliveries: {
           include: {
             deduction: true,
-            productStock:true,
           },
         },
         received: true,
