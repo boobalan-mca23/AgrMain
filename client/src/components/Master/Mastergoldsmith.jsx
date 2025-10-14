@@ -127,16 +127,18 @@ function Mastergoldsmith() {
       nameError = "Goldsmith name is required.";
     } else if (!validName.test(nameVal.trim())) {
       nameError = "Special characters are not allowed.";
-    } else if (
-      goldsmith.some(
-        (g) =>
-          selectedGoldsmith &&
-          g.id !== selectedGoldsmith.id &&
-          g.name.toLowerCase() === nameVal.trim().toLowerCase()
-      )
-    ) {
-      nameError = "Goldsmith name already exists.";
-    }
+    } 
+    // else if (
+    //   goldsmith.some(
+    //     (g) =>
+    //       selectedGoldsmith &&
+    //       g.id !== selectedGoldsmith.id &&
+    //       g.name.toLowerCase() === nameVal.trim().toLowerCase()
+    //   )
+    // // ) 
+    // {
+    //   nameError = "Goldsmith name already exists.";
+    // }
 
     let phoneError = "";
     const phoneVal = formData.phone || "";
@@ -395,6 +397,7 @@ function Mastergoldsmith() {
             value={formData.name}
             fullWidth
             margin="normal"
+            disabled
             onChange={(e) => {
               setFormData({ ...formData, name: e.target.value });
               if (submitted || touched.name) validateFormForEdit();
