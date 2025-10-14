@@ -31,6 +31,7 @@ function MasterBullion() {
   const [errors, setErrors] = useState({ name: "", phone: "" });
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [submitted, setSubmitted] = useState(false);
+  const validName = /^[a-zA-Z0-9\s]+$/;
 
   // Refs for focus control
   const nameRef = useRef(null);
@@ -152,6 +153,31 @@ function MasterBullion() {
   };
 
   const handleEditSubmit = async () => {
+    console.log(formData)
+    const phoneTrimmed = formData.phone.trim();
+    if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
+      toast.error("Phone number must be 10 digits.");
+      return;
+    }
+   
+    if (!validName.test(formData.name.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
+
+    if (
+      phoneTrimmed &&
+      bullions.some(
+        (c) =>
+          c.id !== selectedBullion.id &&
+          c.phone &&
+          c.phone.trim() === phoneTrimmed
+      )
+    ) {
+      toast.error("Another Bullion with this phone number exists!");
+      return;
+    }
+    
     try {
       const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/${selectedBullion.id}`, {
         method: "PUT",
@@ -340,6 +366,7 @@ function MasterBullion() {
       fullWidth
       margin="normal"
       value={formData.name}
+      disabled
       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
     />
     <TextField
