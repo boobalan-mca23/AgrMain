@@ -278,23 +278,26 @@ const CustomerOrders = () => {
   };
 
   const handleImageChange = (index, e) => {
-      const files = Array.from(e.target.files || []);
-      if (!files.length) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-      const previews = files.map((file) => URL.createObjectURL(file));
+    const previews = files.map((file) => URL.createObjectURL(file));
 
-      setItems((prev) =>
-        prev.map((it, idx) =>
-          idx !== index
-            ? it
-            : {
-                ...it,
-                images: [...(it.images || []), ...files],
-                imagePreviews: [...(it.imagePreviews || []), ...previews],
-              }
-        )
-      );
-    };
+    setItems((prev) =>
+      prev.map((it, idx) => 
+        idx !== index
+          ? it
+          : {
+              ...it,
+              images: [...(it.images || []), ...files],
+              imagePreviews: [...(it.imagePreviews || []), ...previews],
+            }
+      )
+    );
+
+    e.target.value = null;
+  };
+
 
 
   const handleAddItem = () => {
@@ -570,6 +573,18 @@ const CustomerOrders = () => {
     }
   };
 
+  const isValidWeight = (value) => {
+    if (value === "") return true;
+    return /^\d*\.?\d*$/.test(value);
+  };
+
+  const showWeightError = (value) => {
+    if (value && !/^\d*\.?\d+$/.test(value)) {
+      toast.error("Please enter a valid number (digits and optional decimal)");
+    }
+  };
+
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <ToastContainer
@@ -693,8 +708,8 @@ const CustomerOrders = () => {
                   }}
                 >
                   <TableRow>
-                    <TableCell>Item</TableCell>
-                    <TableCell>Description</TableCell>
+                    <TableCell align="center">Item</TableCell>
+                    <TableCell align="center">Description</TableCell>
                     <TableCell align="center">Weight</TableCell>
                     <TableCell align="center">Due Date</TableCell>
                     <TableCell align="center">Worker Name</TableCell>
@@ -705,11 +720,13 @@ const CustomerOrders = () => {
                 <TableBody>
                   {order.items.map((item, iIdx) => (
                     <StyledTableRow key={item.id ?? `${order.groupId}-${iIdx}`}>
-                      <TableCell>
+                      <TableCell align="center">
                         <Box
                           sx={{
                             display: "flex",
                             flexDirection: "column",
+                             alignItems: "center",
+                             justifyContent: "center",
                             gap: 1,
                           }}
                         >
@@ -720,6 +737,7 @@ const CustomerOrders = () => {
                                 display: "flex",
                                 gap: 1,
                                 flexWrap: "wrap",
+                                  justifyContent: "center",
                               }}
                             >
                               {item.imagePreviews.map((preview, pIdx) => (
@@ -736,7 +754,7 @@ const CustomerOrders = () => {
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="center">
                         <Typography
                           variant="body2"
                           sx={{ whiteSpace: "pre-line" }}
@@ -818,9 +836,9 @@ const CustomerOrders = () => {
               px: 3,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+           
               {editingOrder ? "Edit Order" : "Create New Order"}
-            </Typography>
+           
             <IconButton onClick={handleClose} sx={{ color: "white" }}>
               <Close />
             </IconButton>
@@ -895,15 +913,23 @@ const CustomerOrders = () => {
                     multiline
                     rows={2}
                   />
-                  <TextField
+                 <TextField
                     label="Weight (grams)"
                     type="text"
                     value={item.weight}
-                    onChange={(e) => handleChange(index, "weight", e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (isValidWeight(value)) {
+                        handleChange(index, "weight", value);
+                      }
+                    }}
+                    onBlur={() => showWeightError(item.weight)}
                     size="small"
                     fullWidth
                     required
                   />
+
+
                   <TextField
                     label="Due Date"
                     type="date"
@@ -955,31 +981,43 @@ const CustomerOrders = () => {
                       </Button>
                     </label>
 
-                    {(item.existingImages?.length || item.imagePreviews?.length) > 0 && (
-                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1 }}>
-                        {item.imagePreviews.map((preview, pIdx) => (
-                          <ImagePreview
-                            key={pIdx}
-                            onClick={() => handleOpenImageModal(preview)}
-                          >
-                            <img src={preview} alt={`preview-${pIdx}`} />
-                          </ImagePreview>
-                        ))}
-                      </Box>
-                    )}
+               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 ,maxWidth: "100%",}}>
+                  {item.imagePreviews.map((preview, pIdx) => (
+                    <Box key={pIdx} sx={{ position: "relative" }}>
+                      <ImagePreview onClick={() => handleOpenImageModal(preview)}>
+                        <img src={preview} alt={`preview-${pIdx}`} />
+                      </ImagePreview>
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: "absolute",
+                          top: -5,
+                          right: -5,
+                          bgcolor: "rgba(245, 55, 55, 0.6)",
+                          color: "white",
+                          "&:hover": { bgcolor: "rgba(255, 0, 0, 0.8)" },
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const updatedImages = [...item.images];
+                          updatedImages.splice(pIdx, 1);
+
+                          const updatedPreviews = [...item.imagePreviews];
+                          updatedPreviews.splice(pIdx, 1);
+
+                          handleChange(index, "images", updatedImages);
+                          handleChange(index, "imagePreviews", updatedPreviews);
+                        }}
+                      >
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
                   </Box>
                 </Box>
               ))}
             </Box>
-
-            {/* <Button
-              variant="outlined"
-              startIcon={<Add />}
-              onClick={handleAddItem}
-              sx={{ mt: 3 }}
-            >
-              Add Another Item
-            </Button> */}
           </DialogContent>
 
           <DialogActions sx={{ px: 4, py: 2 }}>

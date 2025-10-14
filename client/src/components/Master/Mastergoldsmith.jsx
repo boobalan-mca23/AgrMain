@@ -33,6 +33,7 @@ function Mastergoldsmith() {
   const [errors, setErrors] = useState({ name: "", phone: "" });
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
   const validName = /^[a-zA-Z0-9\s]+$/;
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
@@ -127,16 +128,18 @@ function Mastergoldsmith() {
       nameError = "Goldsmith name is required.";
     } else if (!validName.test(nameVal.trim())) {
       nameError = "Special characters are not allowed.";
-    } else if (
-      goldsmith.some(
-        (g) =>
-          selectedGoldsmith &&
-          g.id !== selectedGoldsmith.id &&
-          g.name.toLowerCase() === nameVal.trim().toLowerCase()
-      )
-    ) {
-      nameError = "Goldsmith name already exists.";
-    }
+    } 
+    // else if (
+    //   goldsmith.some(
+    //     (g) =>
+    //       selectedGoldsmith &&
+    //       g.id !== selectedGoldsmith.id &&
+    //       g.name.toLowerCase() === nameVal.trim().toLowerCase()
+    //   )
+    // // ) 
+    // {
+    //   nameError = "Goldsmith name already exists.";
+    // }
 
     let phoneError = "";
     const phoneVal = formData.phone || "";
@@ -150,6 +153,7 @@ function Mastergoldsmith() {
 
   // Add Goldsmith
   const handleSaveGoldsmith = async () => {
+    if (saving) return;
     setSubmitted(true);
 
     if (!validateFormForAdd()) {
@@ -157,10 +161,7 @@ function Mastergoldsmith() {
       return;
     }
 
-    // extra duplicate guard (case-insensitive)
-    if (
-      goldsmith.some((g) => g.name.toLowerCase() === goldsmithName.trim().toLowerCase())
-    ) {
+    if (goldsmith.some((g) => g.name.toLowerCase() === goldsmithName.trim().toLowerCase())) {
       toast.error("Goldsmith name already exists!", { autoClose: 2000 });
       return;
     }
@@ -177,6 +178,7 @@ function Mastergoldsmith() {
     };
 
     try {
+      setSaving(true); // disable Save button
       const { data } = await axios.post(
         `${BACKEND_SERVER_URL}/api/goldsmith`,
         newGoldsmith
@@ -189,8 +191,11 @@ function Mastergoldsmith() {
       toast.error(error.response?.data?.message || "Failed to add goldsmith", {
         autoClose: 2000,
       });
+    } finally {
+      setSaving(false); // re-enable Save button
     }
   };
+
 
   // Edit Goldsmith
   const handleEditClick = (item) => {
@@ -209,6 +214,7 @@ function Mastergoldsmith() {
   };
 
   const handleEditSubmit = async () => {
+    if (saving) return; // prevent multiple clicks
     setSubmitted(true);
 
     if (!validateFormForEdit()) {
@@ -221,7 +227,6 @@ function Mastergoldsmith() {
       return;
     }
 
-    // prepare payload (normalize phone -> null if empty)
     const payload = {
       name: formData.name.trim(),
       phone: formData.phone ? formData.phone.trim() : null,
@@ -229,6 +234,7 @@ function Mastergoldsmith() {
     };
 
     try {
+      setSaving(true); // disable button
       const response = await axios.put(
         `${BACKEND_SERVER_URL}/api/goldsmith/${selectedGoldsmith.id}`,
         payload
@@ -244,8 +250,11 @@ function Mastergoldsmith() {
     } catch (error) {
       console.error("Error updating goldsmith:", error);
       toast.error(error.response?.data?.message || "Failed to update goldsmith");
+    } finally {
+      setSaving(false); // re-enable button
     }
   };
+
 
   // Delete Goldsmith
   const handleDelete = async (id) => {
@@ -337,8 +346,8 @@ function Mastergoldsmith() {
           <Button onClick={closeModal} color="secondary">
             Cancel
           </Button>
-          <Button onClick={handleSaveGoldsmith} color="primary">
-            Save
+          <Button onClick={handleSaveGoldsmith} color="primary" disabled={saving}>
+            {saving ? "Saving..." : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -395,6 +404,7 @@ function Mastergoldsmith() {
             value={formData.name}
             fullWidth
             margin="normal"
+            disabled
             onChange={(e) => {
               setFormData({ ...formData, name: e.target.value });
               if (submitted || touched.name) validateFormForEdit();
@@ -437,9 +447,10 @@ function Mastergoldsmith() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
-          <Button onClick={handleEditSubmit} variant="contained" color="primary">
-            Save
+          <Button onClick={handleEditSubmit} variant="contained" color="primary" disabled={saving}>
+            {saving ? "Saving..." : "Save"}
           </Button>
+
         </DialogActions>
       </Dialog>
     </div>
