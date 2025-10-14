@@ -66,6 +66,7 @@ const BillView = () => {
     fontSize: "13px",
     height: "32px",
     boxSizing: "border-box",
+    textAlign:'center'
   };
 
   const modalStyle = {
@@ -192,7 +193,8 @@ const BillView = () => {
   const showTouchColumn = hasGold;
   const showAmountColumn = hasCash;
 
-  const visibleReceivedCols = 1/*S.No*/+ 1/*Date*/+ 1/*Type*/+(showGoldRateColumn ? 1 : 0) + (showGivenGoldColumn ? 1 : 0) + (showTouchColumn ? 1 : 0) + 1/*Purity*/+ (showAmountColumn ? 1 : 0) + 1/*Hallmark*/+1;/*Action*/
+  const visibleReceivedCols = 1/*S.No*/+ 1/*Date*/+ 1/*Type*/+(showGoldRateColumn ? 1 : 0) + (showGivenGoldColumn ? 1 : 0) /*Purity*/+ (showAmountColumn ? 1 : 0) + 1/*Hallmark*/+1;/*Action*/
+  // const visibleReceivedCols = 1/*S.No*/+ 1/*Date*/+ 1/*Type*/+(showGoldRateColumn ? 1 : 0) + (showGivenGoldColumn ? 1 : 0) + (showTouchColumn ? 1 : 0) + 1/*Purity*/ /*Hallmark*/+1;/*Action*/
 
     const handlePrint = () => {
       const billData = {
@@ -374,14 +376,14 @@ const BillView = () => {
           >
             <TableHead>
               <TableRow>
-                <TableCell className="th">S.No</TableCell>
-                <TableCell className="th">Product Name</TableCell>
-                <TableCell className="th">Count</TableCell>
-                <TableCell className="th">Wt</TableCell>
-                <TableCell className="th">St.WT</TableCell>
-                <TableCell className="th">AWT</TableCell>
-                <TableCell className="th">%</TableCell>
-                <TableCell className="th">FWT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>S.No</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Product Name</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Count</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Wt</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>St.WT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>AWT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>%</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>FWT</TableCell>
                 {/* <TableCell className="th no-print">Action</TableCell> */}
               </TableRow>
             </TableHead>
@@ -573,15 +575,15 @@ const BillView = () => {
             >
               <TableHead>
                 <TableRow style={{ textAlign: "center" }}>
-                  <TableCell className="th">S.No</TableCell>
-                  <TableCell className="th">Date</TableCell>
-                  <TableCell className="th">Type</TableCell>
-                  {showGoldRateColumn &&(<TableCell className="th">Gold Rate</TableCell>)}
-                  {showGivenGoldColumn &&(<TableCell className="th">Gold</TableCell>)}
-                  {showTouchColumn &&(<TableCell className="th">Touch</TableCell>)}
-                  <TableCell className="th">Purity WT</TableCell>
-                  {showAmountColumn &&(<TableCell className="th">Amount</TableCell>)}
-                  <TableCell className="th">Hallmark Bal</TableCell>
+                  <TableCell className="th" style={{textAlign:'center'}}>S.No</TableCell>
+                  <TableCell className="th" style={{textAlign:'center'}}>Date</TableCell>
+                  <TableCell className="th" style={{textAlign:'center'}}>Type</TableCell>
+                  {showGoldRateColumn &&(<TableCell className="th"style={{textAlign:'center'}}>Gold Rate</TableCell>)}
+                  {showGivenGoldColumn &&(<TableCell className="th"style={{textAlign:'center'}}>Gold</TableCell>)}
+                  {showTouchColumn &&(<TableCell className="th"style={{textAlign:'center'}}>Touch</TableCell>)}
+                  <TableCell className="th"style={{textAlign:'center'}}>Purity WT</TableCell>
+                  {showAmountColumn &&(<TableCell className="th"style={{textAlign:'center'}}>Amount</TableCell>)}
+                  <TableCell className="th"style={{textAlign:'center'}}>Hallmark Bal</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
