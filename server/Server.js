@@ -32,7 +32,7 @@ var morgan = require("morgan");
 const PORT = process.env.PORT || 5002;
 app.use(morgan("dev"));
 app.use(cors({
-  origin: ["http://localhost:3000"],  // your frontend dev URL
+  origin: ["https://agrmain.onrender.com"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
