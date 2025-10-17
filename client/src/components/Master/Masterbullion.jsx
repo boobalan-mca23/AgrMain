@@ -76,13 +76,16 @@ function MasterBullion() {
     if (field === "name") {
       if (!value.trim()) error = "Bullion name is required.";
       else if (!/^[a-zA-Z\s]+$/.test(value)) error = "Name should contain only letters.";
+      else if (bullions.some((b) => b.name.toLowerCase() === value.trim().toLowerCase())) error = "Bullion name is already exists.";
     }
     if (field === "phone") {
-      const v = value.trim();
-      // if (!v) error = "Phone number is required.";
-       if (field === "phone" && value.trim()) {
-      if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
-    }}
+  const v = value.trim();
+  if (!v) error = "Phone number is required.";
+  else if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
+  else if (bullions.some((b) => String(b.phone).trim() === v))
+    error = "Bullion phone number already exists.";
+}
+
     setErrors((prev) => ({ ...prev, [field]: error }));
     return error === "";
   };
@@ -115,13 +118,14 @@ function MasterBullion() {
     };
 
     try {
+      console.log("in")
       setSaving(true); // start saving
       const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bullionData),
       });
-
+      console.log("out")
       if (response.ok) {
         const newBullion = await response.json();
         setBullions((prev) => [...prev, newBullion]);

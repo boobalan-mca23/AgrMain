@@ -239,12 +239,11 @@ const CustomerOrders = () => {
             status: item.status || "Pending",
             workerName: item.worker_name || "",
             imagePreviews:
-              item.productImages?.map(
-                (img) => `${BACKEND_SERVER_URL}/uploads/${img.filename}`
-              ) || [],
+              item.productImages?.map((img) => `${BACKEND_SERVER_URL}/uploads/${img.filename}`) || [],
             existingImages:
               item.productImages?.map((img) => ({
-                id: img.id,
+                id: img.id,                  // DB image id — used for delete
+                filename: img.filename,      // helpful for robust matching
                 url: `${BACKEND_SERVER_URL}/uploads/${img.filename}`,
               })) || [],
           })),
@@ -296,6 +295,68 @@ const CustomerOrders = () => {
     );
 
     e.target.value = null;
+  };
+
+  const handleRemovePreview = (itemIndex, previewIndex) => {
+    setItems((prev) => {
+      const updated = [...prev];
+      const item = { ...updated[itemIndex] };
+
+      const previewUrl = item.imagePreviews?.[previewIndex];
+      if (!previewUrl) return prev;
+      const existingImages = item.existingImages || [];
+      const previewFilename = previewUrl.split("/").pop();
+
+      const existingImg =
+        existingImages.find((img) => img.url === previewUrl) ||
+        existingImages.find((img) => img.filename === previewFilename);
+
+      if (existingImg && existingImg.id !== undefined && existingImg.id !== null) {
+        // Mark DB image for deletion (only valid ids)
+        item.deletedImageIds = Array.isArray(item.deletedImageIds) ? [...item.deletedImageIds] : [];
+        if (!item.deletedImageIds.includes(existingImg.id)) {
+          item.deletedImageIds.push(existingImg.id);
+        }
+
+        // remove image from existingImages and from previews
+        item.existingImages = existingImages.filter((img) => img.id !== existingImg.id);
+        item.imagePreviews = (item.imagePreviews || []).filter((_, i) => i !== previewIndex);
+      } else {
+        // It's a newly uploaded file (object URL). Need to map previewIndex -> index in item.images
+        const existingUrls = (item.existingImages || []).map((img) => img.url);
+        // count how many existing previews are before this previewIndex
+        const previewsBefore = item.imagePreviews.slice(0, previewIndex);
+        const numExistingBefore = previewsBefore.filter((p) => existingUrls.includes(p)).length;
+        const indexInNew = previewIndex - numExistingBefore;
+
+        const updatedFiles = [...(item.images || [])];
+        const updatedPreviewsAll = [...(item.imagePreviews || [])];
+
+        if (indexInNew >= 0 && indexInNew < updatedFiles.length) {
+          const removedPreview = updatedPreviewsAll.splice(previewIndex, 1)[0];
+          updatedFiles.splice(indexInNew, 1);
+
+          // revoke blob URL
+          try {
+            if (removedPreview && removedPreview.startsWith && removedPreview.startsWith("blob:")) {
+              URL.revokeObjectURL(removedPreview);
+            }
+          } catch (e) {
+            /* ignore */
+          }
+
+          item.images = updatedFiles;
+          item.imagePreviews = updatedPreviewsAll;
+        } else {
+          // fallback: remove preview to keep UI consistent
+          updatedPreviewsAll.splice(previewIndex, 1);
+          item.imagePreviews = updatedPreviewsAll;
+        }
+      }
+
+      updated[itemIndex] = item;
+      return updated;
+    });
   };
 
 
@@ -406,7 +467,8 @@ const CustomerOrders = () => {
     try {
       if (editingOrder?.isEditingSingle) {
         const item = items[0];
-        const removedImageIds = item.deletedImageIds || [];
+        const removedImageIds = (item.deletedImageIds || []).filter((id) => id !== undefined && id !== null && id !== "");
+        console.log("Deleting image ids for item", item.id, removedImageIds);
         if (removedImageIds.length > 0) {
           await Promise.all(
             removedImageIds.map((imgId) =>
@@ -983,36 +1045,30 @@ const CustomerOrders = () => {
 
                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 ,maxWidth: "100%",}}>
                   {item.imagePreviews.map((preview, pIdx) => (
-                    <Box key={pIdx} sx={{ position: "relative" }}>
-                      <ImagePreview onClick={() => handleOpenImageModal(preview)}>
-                        <img src={preview} alt={`preview-${pIdx}`} />
-                      </ImagePreview>
-                      <IconButton
-                        size="small"
-                        sx={{
-                          position: "absolute",
-                          top: -5,
-                          right: -5,
-                          bgcolor: "rgba(245, 55, 55, 0.6)",
-                          color: "white",
-                          "&:hover": { bgcolor: "rgba(255, 0, 0, 0.8)" },
-                        }}
-                        onClick={(e) => {
+                      <Box key={pIdx} sx={{ position: "relative" }}>
+                        <ImagePreview onClick={() => handleOpenImageModal(preview)}>
+                          <img src={preview} alt={`preview-${pIdx}`} />
+                        </ImagePreview>
+                        <IconButton
+                          size="small"
+                          sx={{
+                            position: "absolute",
+                            top: -5,
+                            right: -5,
+                            bgcolor: "rgba(245, 55, 55, 0.6)",
+                            color: "white",
+                            "&:hover": { bgcolor: "rgba(255, 0, 0, 0.8)" },
+                          }}
+                          onClick={(e) => {
                           e.stopPropagation();
-                          const updatedImages = [...item.images];
-                          updatedImages.splice(pIdx, 1);
-
-                          const updatedPreviews = [...item.imagePreviews];
-                          updatedPreviews.splice(pIdx, 1);
-
-                          handleChange(index, "images", updatedImages);
-                          handleChange(index, "imagePreviews", updatedPreviews);
+                          handleRemovePreview(index, pIdx);
                         }}
-                      >
-                        <Close fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  ))}
+                        >
+                          <Close fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ))}
+
                 </Box>
                   </Box>
                 </Box>

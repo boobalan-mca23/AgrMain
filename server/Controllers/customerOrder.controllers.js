@@ -18,7 +18,7 @@ const getCustomerOrder = async (req, res) => {
         status: true,
         worker_name: true,
         order_group_id: true,
-        productImages: { select: { filename: true } },
+        productImages: { select: { id: true, filename: true } },
       },
       orderBy: { order_group_id: "asc" },
     });
@@ -231,88 +231,6 @@ const addExtraItemToOrderGroup = async (req, res) => {
   }
 };
  
-// const deleteCustomerOrder = async (req, res) => {
-//   try {
-//     const orderId = parseInt(req.params?.orderId?.toString());
- 
-//     const existingOrder = await prisma.customer_order.findUnique({
-//       where: { id: orderId },
-//     });
- 
-//     if (!existingOrder) {
-//       return res.status(404).json({ error: "Order not found" });
-//     }
-//     await prisma.product_multiple_images.deleteMany({
-//       where: { customer_order_id: orderId },
-//     });
-//     const deletedOrder = await prisma.customer_order.delete({
-//       where: { id: orderId },
-//     });
- 
-//     res.status(200).json({
-//       message: "Successfully deleted",
-//       data: deletedOrder,
-//     });
-//   } catch (error) {
-//     console.error("Error deleting order:", error);
-//     res.status(500).json({ error: "Failed to delete order" });
-//   }
-// };
- 
-// const deleteOrderById=async(req,res)=>{
-//   try{
-//     const {customer_id,orderId}=req.params
-//       const ifExist= await prisma.customer_order.findUnique({
-//         where:{
-//           id:parseInt(orderId)
-//         }
-//       })
- 
-//       if(!ifExist){
-//         return res.status(400).json({err:`this order id ${orderId} not exist for this customer`})
-//       }
-//      await prisma.customer_order.delete({
-//       where:{
-//          id:parseInt(orderId)
-//       }
-//      })
- 
-//     const orders = await prisma.customer_order.findMany({
-//       where: { customer_id: parseInt(customer_id) },
-//       select: {
-//         id: true,
-//         item_name: true,
-//         description: true,
-//         weight: true,
-//         due_date: true,
-//         status: true,
-//         worker_name: true,
-//         order_group_id: true,
-//         productImages: { select: { filename: true } },
-//       },
-//       orderBy: { order_group_id: "asc" },
-//     });
- 
-//     const grouped = {};
- 
-//     for (const order of orders) {
-//       const groupId = order.order_group_id;
-//       if (!grouped[groupId]) grouped[groupId] = [];
- 
-//       grouped[groupId].push(order);
-//     }
- 
-//     return res.status(200).json({
-//       message: "Grouped orders fetched",
-//       data: grouped,
-//     });
-   
- 
-//   }catch(err){
-//     return res.status(500).json({err:err.message})
-//   }
-// }
- 
 const deleteImageById = async (req, res) => {
   try {
     const imageId = parseInt(req.params.imageId);
@@ -362,7 +280,7 @@ const getAllCustomerOrders = async (req, res) => {
         customer_id: true,
         created_at: true,
         updatedAt: true,
-        productImages: { select: { filename: true } },
+        productImages: { select: { id: true, filename: true } },
         customers: { select: { name: true } },
       },
     });
@@ -541,7 +459,6 @@ module.exports = {
   getCustomerOrder,
   createCustomerOrder,
   updateCustomerOrder,
-  // deleteCustomerOrder,
   deleteOrderById,
   addExtraItemToOrderGroup,
   deleteImageById,

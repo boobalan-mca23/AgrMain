@@ -70,28 +70,44 @@ function Mastergoldsmith() {
   };
 
   // Generic add-field validation (used by Add modal)
-  const validateField = (field, value) => {
-    let error = "";
-    if (field === "name") {
-      if (!value.trim()) {
-        error = "Goldsmith name is required.";
-      } else if (!validName.test(value.trim())) {
-        error = "Special characters are not allowed.";
-      } else if (
-        goldsmith.some((g) => g.name.toLowerCase() === value.trim().toLowerCase())
-      ) {
-        error = "Goldsmith name already exists.";
-      }
+const validateField = (field, value) => {
+  let error = "";
+
+  if (field === "name") {
+    if (!value.trim()) {
+      error = "Goldsmith name is required.";
+    } else if (!validName.test(value.trim())) {
+      error = "Special characters are not allowed.";
+    } else if (
+      goldsmith.some((g) => g.name.toLowerCase() === value.trim().toLowerCase())
+    ) {
+      error = "Goldsmith name already exists.";
     }
-    if (field === "phone" && value.trim()) {
-      if (!/^\d{10}$/.test(value)) {
+  }
+
+  if (field === "phone") {
+    const v = value.trim();
+
+    // Only validate if phone is entered
+    if (v) {
+      if (!/^\d{10}$/.test(v)) {
         error = "Phone number must be 10 digits.";
+      } else if (
+        goldsmith.some(
+          (g) => g.phone && String(g.phone).trim() === v
+        )
+      ) {
+        error = "Goldsmith phone number already exists.";
       }
     }
 
-    setErrors((prev) => ({ ...prev, [field]: error }));
-    return error === "";
-  };
+    // If empty, no error — since phone is optional
+  }
+
+  setErrors((prev) => ({ ...prev, [field]: error }));
+  return error === "";
+};
+
 
   const handleBlur = (field, value) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
