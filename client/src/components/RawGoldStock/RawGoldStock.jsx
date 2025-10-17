@@ -78,7 +78,7 @@ const RawGoldStock = () => {
               <div className="rawGoldContent">
                 <h3>Touch {item.touch}</h3>
                 <p>
-                  <span className="rawGoldWeight">{Number(item.weight).toFixed(3)}</span>{" "}
+                  <span className="rawGoldWeight">{item.weight}</span>{" "}
                   <span className="gr">gr</span>
                 </p>
               </div>
