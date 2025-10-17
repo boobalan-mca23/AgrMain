@@ -581,10 +581,15 @@ const Billing = () => {
     }
     const initialWt = Math.min(remainingWeight, perUnitWeight * defaultCount) || remainingWeight;
 
-    const stWtValue = Math.min(remainingStone, toNumber(product.stoneWeight) || 0);
+    // const stWtValue = Math.min(remainingStone, toNumber(product.stoneWeight) || 0);
     const percentVal = product.wastageValue || 0;
+    // const awtVal = toNumber(initialWt) - toNumber(stWtValue);
 
-    const awtVal = toNumber(initialWt) - toNumber(stWtValue);
+    const itemWt = toNumber(product.itemWeight);
+    const stoneWt = toNumber(product.stoneWeight);
+    const stWtValue = isNaN(stoneWt) ? 0 : stoneWt;
+    const awtVal = toNumber(itemWt) - stWtValue;
+
     const fwtVal = percentVal ? (awtVal * toNumber(percentVal)) / 100 : 0;
 
     const newRow = {
@@ -659,7 +664,7 @@ const Billing = () => {
         Stoneprofit:stoneProfit,
         Totalprofit:totalBillProfit,
         cashBalance: cashBalance,
-        hallmarkQty,
+        hallmarkQty:hallmarkQty,
 
         orderItems: billDetailRows.map((row) => ({
           stockId: row.productId,
@@ -889,14 +894,11 @@ const Billing = () => {
 
   const pureBalance = TotalFWT - totalReceivedPurity;
   // Replace the existing cashBalance calculation with:
-
   const hallmarkAmount = useMemo(() => toNumber(hallmarkQty) * toNumber(billHallmark), [hallmarkQty, billHallmark]);
   const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
 
   useMemo(() => {
-
     if (viewMode) return;
-
     const lastGoldRate = [...rows].reverse().find((row) => toNumber(row.goldRate))?.goldRate;
     const calculatedBalance = lastGoldRate ? (toNumber(lastGoldRate) * pureBalance).toFixed(2) : "0.00";
     setCashBalance(calculatedBalance);

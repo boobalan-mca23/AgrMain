@@ -23,6 +23,7 @@ const receiptRoutes=require("./Routes/receipt.routes");
 const masterWastageRoutes = require("./Routes/masterwastage.routes")
 const expenseRoutes=require("./Routes/expense.routes")
 const path = require("path");
+const fs = require("fs");
  
 require("dotenv").config();
  
@@ -30,7 +31,13 @@ const app = express();
 var morgan = require("morgan");
 const PORT = process.env.PORT || 5002;
 app.use(morgan("dev"));
-app.use(cors());
+app.use(cors({
+  origin: ["https://agrmain.onrender.com"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
+
 app.use(bodyParser.json());
 app.get("/", (req, res) => {
   res.send("Server is running");
@@ -59,7 +66,25 @@ app.use("/api/receipt",receiptRoutes);
 app.use("/api/expense",expenseRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
- 
+app.get("/uploads/:filename", (req, res) => {
+  const filePath = path.join(__dirname, "uploads", req.params.filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("File not found");
+  }
+
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === ".jpg" || ext === ".jpeg") res.type("jpeg");
+  else if (ext === ".png") res.type("png");
+  else if (ext === ".webp") res.type("webp");
+
+  res.sendFile(filePath);
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
