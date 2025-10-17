@@ -25,6 +25,7 @@
     "react-router-dom": "^7.3.0",
     "react-toastify": "^11.0.5",
     "web-vitals": "^2.1.4",
+    "yup": "^1.7.1",
     "zod": "^4.1.11"
   },
   "scripts": {
