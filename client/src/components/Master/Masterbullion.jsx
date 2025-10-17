@@ -78,7 +78,7 @@ function MasterBullion() {
       else if (!/^[a-zA-Z\s]+$/.test(value)) error = "Name should contain only letters.";
     }
     if (field === "phone") {
-      // const v = value.trim();
+      const v = value.trim();
       // if (!v) error = "Phone number is required.";
        if (field === "phone" && value.trim()) {
       if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";

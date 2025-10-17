@@ -104,9 +104,9 @@ const [saveDiasable,setSaveDisable]=useState(false)
       });
       setGoldRate(0);
       setShowFormPopup(false);
-       setSaveDisable(false)
+      setSaveDisable(false)
     } catch (err) {
-       setSaveDisable(false)
+      setSaveDisable(false)
       toast.error("Failed to add entry. Please try again.");
       console.error("Error submitting entry:", err);
     }
