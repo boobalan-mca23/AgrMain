@@ -31,8 +31,12 @@ const app = express();
 var morgan = require("morgan");
 const PORT = process.env.PORT || 5002;
 app.use(morgan("dev"));
+
 app.use(cors({
-  origin: ["https://agrmain.onrender.com"],
+  origin: [
+    "https://agrmain.onrender.com",
+    "http://localhost:3000",
+    "https://agrclient.onrender.com"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

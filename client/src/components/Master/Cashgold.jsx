@@ -5,7 +5,7 @@ import "./Cashgold.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-
+import {checkCashOrGold} from '../cashOrGoldValidation/cashOrGoldValidation'
 function Cashgold() {
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [entries, setEntries] = useState([]);
@@ -19,6 +19,8 @@ function Cashgold() {
     touch: "",
     purity: "",
   });
+const [goldCashError,setGoldCashError]=useState({})
+const [saveDiasable,setSaveDisable]=useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -81,11 +83,17 @@ function Cashgold() {
       purity: parseFloat(calculatedPurity), 
       goldRate: formData.type === "Cash" ? parseFloat(goldRate) : null,
     };
+   if(payload.type==="Select"){
+      return toast.warn("Please Select Gold or Cash Type")
+   }
+   const isValidationIsTrue=checkCashOrGold(payload,setGoldCashError)
 
-    try {
-      await axios.post(`${BACKEND_SERVER_URL}/api/entries`, payload);
+   if(Object.keys(isValidationIsTrue).length===0){
+   try {
+      setSaveDisable(true)
+      const response=await axios.post(`${BACKEND_SERVER_URL}/api/entries`, payload);
       toast.success("Value added successfully!");
-      fetchEntries();
+      setEntries(prev=>[response.data,...prev])
       setFormData({
         date: "",
         type: "Select", 
@@ -96,10 +104,14 @@ function Cashgold() {
       });
       setGoldRate(0);
       setShowFormPopup(false);
-    } catch (error) {
+       setSaveDisable(false)
+    } catch (err) {
+       setSaveDisable(false)
       toast.error("Failed to add entry. Please try again.");
-      console.error("Error submitting entry:", error);
+      console.error("Error submitting entry:", err);
     }
+   }
+    
   };
 
   const calculateTotalPurity = () => {
@@ -118,6 +130,7 @@ function Cashgold() {
   const fetchEntries = async () => {
     try {
       const response = await axios.get(`${BACKEND_SERVER_URL}/api/entries`);
+      console.log('response cashgold',response.data)
       setEntries(response.data);
     } catch (error) {
       console.error("Error fetching entries:", error);
@@ -132,7 +145,7 @@ function Cashgold() {
         console.error("Failed to fetch touch values", err);
       }
     };
-   
+ 
 
   return (
     <div className="cashgold-container">
@@ -188,7 +201,9 @@ function Cashgold() {
                       onChange={handleChange}
                       required
                       step="0.01"
+                      onWheel={(e)=>e.target.blur()}
                     />
+                 {goldCashError.cashAmount&& <p style={{color:"red"}}>{goldCashError.cashAmount}</p>}
                   </div>
                   <div className="form-group">
                     <label>Gold Rate (per gram):</label>
@@ -198,7 +213,9 @@ function Cashgold() {
                       onChange={(e) => setGoldRate(e.target.value)}
                       required
                       step="0.01"
+                      onWheel={(e)=>e.target.blur()}
                     />
+                    {goldCashError.goldRate&& <p style={{color:"red"}}>{goldCashError.goldRate}</p>}
                   </div>
                   <div className="form-group">
                     <label>Purity (g):</label>
@@ -224,7 +241,9 @@ function Cashgold() {
                       onChange={handleChange}
                       required
                       step="0.001"
+                      onWheel={(e)=>e.target.blur()}
                     />
+                    {goldCashError.goldValue&& <p style={{color:"red"}}>{goldCashError.goldValue}</p>}
                   </div>
                   <div className="form-group">
                     <label>Touch (%):</label>
@@ -247,6 +266,7 @@ function Cashgold() {
                       type="number"
                      
                     /> */}
+                 
                   </div>
                   <div className="form-group">
                     <label>Purity (g):</label>
@@ -262,8 +282,8 @@ function Cashgold() {
               )}
 
               <div className="button-group">
-                <button type="submit" className="submit-btn">
-                  Save
+                <button type="submit" className="submit-btn" disabled={saveDiasable?true:false} style={{background:saveDiasable?"grey":"green"}} >
+                  {saveDiasable?"CashOrGold is Saving..":"Save"}
                 </button>
               </div>
             </form>
