@@ -33,6 +33,8 @@ function MasterCustomer() {
     phone: "",
     address: "",
   });
+  const [saving, setSaving] = useState(false);
+
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
@@ -105,68 +107,57 @@ function MasterCustomer() {
     return nameValid && phoneValid;
   };
 
-  const handleSaveCustomer = async () => {
-    setSubmitted(true); // gate showing errors on untouched fields
+const handleSaveCustomer = async () => {
+  if (saving) return; // prevent double click
 
-    // compute validity synchronously for focusing logic
-    const nameOk = customerName.trim().length > 0;
-    const phoneOk = /^\d{10}$/.test(phoneNumber.trim());
-
-    if (
-      customers.some(
-        (c) => c.name.toLowerCase() === customerName.trim().toLowerCase()
-      )
-    ) {
-      toast.error("Customer name already exists!");
-      return;
+  setSubmitted(true); 
+  if (!validateForm()) {
+    if (!customerName.trim()) {
+      nameRef.current?.focus();
+    } else if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) {
+      phoneRef.current?.focus();
     }
+    return;
+  }
 
+  if (!validName.test(customerName.trim())) {
+    toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+    return;
+  }
 
-    if (!validateForm()) {
-      if (!nameOk) {
-        nameRef.current?.focus();
-      } else if (!phoneOk) {
-        phoneRef.current?.focus();
-      }
-      return;
-    }
-   
-
-    if (!validName.test(customerName.trim())) {
-      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
-      return;
-    }
-
-    const customerData = {
-      name: customerName.trim(),
-      phone: phoneNumber.trim(),
-      address: address.trim(),
-    };
-
-    try {
-      const response = await fetch(
-        `${BACKEND_SERVER_URL}/api/customers/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(customerData),
-        }
-      );
-
-      if (response.ok) {
-        const newCustomer = await response.json();
-        setCustomers((prev) => [...prev, newCustomer]);
-        toast.success("Customer added successfully!");
-        closeModal();
-      } else {
-        const err = await response.json();
-        toast.error(err.message);
-      }
-    } catch (error) {
-      console.error("Error saving customer:", error);
-      toast.error(error.response.data.message, { autoClose: 1000 });
-    }
+  const customerData = {
+    name: customerName.trim(),
+    phone: phoneNumber.trim(),
+    address: address.trim(),
   };
+
+  try {
+    setSaving(true);
+    const response = await fetch(
+      `${BACKEND_SERVER_URL}/api/customers/create`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(customerData),
+      }
+    );
+
+    if (response.ok) {
+      const newCustomer = await response.json();
+      setCustomers((prev) => [...prev, newCustomer]);
+      toast.success("Customer added successfully!");
+      closeModal();
+    } else {
+      const err = await response.json();
+      toast.error(err.message);
+    }
+  } catch (error) {
+    console.error("Error saving customer:", error);
+    toast.error(error.response?.data?.message || "Error saving customer", { autoClose: 1000 });
+  } finally {
+    setSaving(false); // re-enable button
+  }
+};
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this customer?")) {
@@ -203,25 +194,32 @@ function MasterCustomer() {
   };
 
   const handleUpdate = async () => {
-  
+    const phoneTrimmed = editedData.phone.trim();
+    if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
+      toast.error("Phone number must be 10 digits.");
+      return;
+    }
+   
     if (!validName.test(editedData.name.trim())) {
       toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
-    
-    if (
-        customers.some(
-          (c) =>
-            c.id !== editCustomer.id &&
-            c.name.toLowerCase() === editedData.name.trim().toLowerCase()
-        )
-      ) {
-        toast.error("Another customer with this name already exists!");
-        return;
-      }
 
+    if (
+      phoneTrimmed &&
+      customers.some(
+        (c) =>
+          c.id !== editCustomer.id &&
+          c.phone &&
+          c.phone.trim() === phoneTrimmed
+      )
+    ) {
+      toast.error("Another customer with this phone number exists!");
+      return;
+    }
 
     try {
+      setSaving(true);
       const response = await fetch(
         `${BACKEND_SERVER_URL}/api/customers/${editCustomer.id}`,
         {
@@ -237,14 +235,16 @@ function MasterCustomer() {
         setEditCustomer(null);
         toast.success("Customer updated successfully!");
       } else {
-        console.error("Failed to update customer");
         toast.error("Failed to update customer.");
       }
     } catch (error) {
       console.error("Error updating customer:", error);
       toast.error("Error updating customer.");
-    }
+    }finally {
+    setSaving(false);
+  }
   };
+  
 
   return (
     <>
@@ -343,9 +343,13 @@ function MasterCustomer() {
             <Button onClick={closeModal} color="secondary">
               Cancel
             </Button>
-            <Button onClick={handleSaveCustomer} color="primary">
-              Save
-            </Button>
+            <Button 
+                onClick={handleSaveCustomer} 
+                color="primary" 
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save"}
+              </Button>
           </DialogActions>
         </Dialog>
 
@@ -395,6 +399,7 @@ function MasterCustomer() {
           <TextField
             label="Name"
             value={editedData.name}
+            disabled
             onChange={(e) =>
               setEditedData({ ...editedData, name: e.target.value })
             }
@@ -422,8 +427,9 @@ function MasterCustomer() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditCustomer(null)}>Cancel</Button>
-          <Button onClick={handleUpdate} variant="contained" color="primary">
-            Update
+          <Button onClick={handleUpdate} variant="contained" color="primary" disabled={saving}>
+                {saving ? "Updating..." : "Update"}
+            
           </Button>
         </DialogActions>
       </Dialog>
