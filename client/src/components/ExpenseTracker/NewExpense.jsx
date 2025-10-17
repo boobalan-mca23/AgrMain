@@ -171,6 +171,7 @@ const expenseSchema = z.object({
                 onChange={(e) => {
                   handleChangeExpense(e);
                 }}
+                onWheel={(e)=>e.target.blur()}
               ></input>
               {expenseError.gold&& <p style={{color:"red"}}>{expenseError.gold}</p>}
               <select

@@ -1,55 +1,37 @@
 
-import React,{Suspense,lazy} from "react";
-import { CircularProgress, Box } from "@mui/material";
+import React from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import Home from "./components/Home/Home";
+import Customer from "./components/Customer/Customer";
+import Goldsmith from "./components/Goldsmith/Goldsmith";
+import Billing from "./components/Billing/Billing";
+import Report from "./components/Report/Report";
+import Stock from "./components/Stock/Stock";
+import RawGoldStock from "./components/RawGoldStock/RawGoldStock";
+import Navbar from "./components/Navbar/Navbar";
+import Master from "./components/Master/Master";
+import MasterCustomer from "./components/Master/Mastercustomer";
+import Customertrans from "./components/Customer/Customertrans";
+import CustomerReport from "./components/Report/customer.report";
+import Overallreport from "./components/Report/overallreport";
+import Jobcardreport from "./components/Report/jobcardreport";
+import ReceiptReport from "./components/Report/receiptreport";
+import Receipt from "./components/ReceiptVoucher/receiptvoucher";
+import Customerorders from "./components/Customer/Customerorders";
+import Orderreport from "./components/Report/orderreport";
+import Newjobcard from "./components/Goldsmith/Newjobcard";
+// import Goldsmithcard from "./components/Goldsmith/goldsmithcard"
+import ExpenseTracker from "./components/ExpenseTracker/ExpenseTracker";
+import JobCardDetails from "./components/Goldsmith/JobCard"
+import MasterBullion from "./components/Master/Masterbullion";
+import Bullion from "./components/Bullion/Bullion";
+import Repair from "./components/Repair/Repair";
+import Jewelstockreport from "./components/Report/jewelstockreport";
+import BillView from "./components/Billing/BillView";
 
-// Lazy Loading Components
-const Home=lazy(()=>import('./components/Home/Home'))
-const Customer=lazy(()=>import('./components/Customer/Customer'))
-const Goldsmith=lazy(()=>import('./components/Goldsmith/Goldsmith'))
-const Billing=lazy(()=> import('./components/Billing/Billing'))
-const Report=lazy(()=>import('./components/Report/Report'))
-const Stock=lazy(()=>import('./components/Stock/Stock'))
-const RawGoldStock=lazy(()=>import('./components/RawGoldStock/RawGoldStock'))
-const Navbar=lazy(()=>import('./components/Navbar/Navbar'))
-const Master=lazy(()=>import('./components/Master/Master'))
-const MasterCustomer=lazy(()=>import('./components/Master/Mastercustomer'))
-const Customertrans=lazy(()=>import('./components/Customer/Customertrans'))
-const CustomerReport=lazy(()=>import('./components/Report/customer.report'))
-const Overallreport=lazy(()=>import('./components/Report/overallreport'))
-const Jobcardreport=lazy(()=>import('./components/Report/jobcardreport'))
-const ReceiptReport=lazy(()=>import('./components/Report/receiptreport'))
-const Receipt=lazy(()=>import('./components/ReceiptVoucher/receiptvoucher'))
-const Customerorders=lazy(()=>import('./components/Customer/Customerorders'))
-const Orderreport=lazy(()=>import('./components/Report/orderreport'))
-const Newjobcard=lazy(()=>import('./components/Goldsmith/Newjobcard'))
-const ExpenseTracker=lazy(()=>import('./components/ExpenseTracker/ExpenseTracker'))
-const  JobCardDetails=lazy(()=>import('./components/Goldsmith/JobCard'))
-const MasterBullion=lazy(()=>import('./components/Master/Masterbullion'))
-const Bullion=lazy(()=>import('./components/Bullion/Bullion'))
-const Repair=lazy(()=>import('./components/Repair/Repair'))
-const Jewelstockreport =lazy(()=>import('./components/Report/jewelstockreport'))
-const BillView=lazy(()=>import('./components/Billing/BillView'))
-
-const Loader = () => (
-  <Box
-    sx={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "100vh",
-      fontSize:'1.5rem',
-      fontWeight:'bold'
-    }}
-  > Loading...
-    <CircularProgress /> 
-  </Box>
-);
 function App() {
   return (
     <BrowserRouter>
-
-    <Suspense fallback={<Loader/>}>
       <Routes>
         <Route path="/" element={<Home />} />
 
@@ -229,7 +211,6 @@ function App() {
         <Route path="/mastercustomer" element={<MasterCustomer />} />
         <Route path="/masterbullion" element={<MasterBullion />}></Route>
       </Routes>
-    </Suspense>
     </BrowserRouter>
   );
 }
