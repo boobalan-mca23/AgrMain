@@ -80,10 +80,10 @@ function MasterBullion() {
     }
     if (field === "phone" && value.trim()) {
       const v = value.trim();
-      else if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
+      if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
       else if (bullions.some((b) => String(b.phone).trim() === v))
       error = "Bullion phone number already exists.";
-}
+  }
 
     setErrors((prev) => ({ ...prev, [field]: error }));
     return error === "";
