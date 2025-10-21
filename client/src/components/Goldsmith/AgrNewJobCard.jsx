@@ -57,6 +57,8 @@ function AgrNewJobCard({
   open,
   jobCardId,
   isFinished,
+  saveDisable,
+  setSaveDisable
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
@@ -1268,7 +1270,7 @@ function AgrNewJobCard({
               handleSave();
             }}
             disabled={
-              edit ? (isFinished === "true"? true : false) : false
+              edit ? (isFinished === "true"? true : saveDisable?true:false) : saveDisable?true:false
             }
           >
             {edit ? "Update" : "Save"}

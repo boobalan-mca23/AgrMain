@@ -310,6 +310,9 @@ const handleCloseJobcard = () => {
           >
             <TableRow>
               <TableCell align="center">
+                <strong>S.no</strong>
+              </TableCell>
+              <TableCell align="center">
                 <strong>Goldsmith Name</strong>
               </TableCell>
               <TableCell align="center">
@@ -327,6 +330,7 @@ const handleCloseJobcard = () => {
             {filteredGoldsmith.length > 0 ? (
               filteredGoldsmith.map((goldsmith, index) => (
                 <TableRow key={index}>
+                  <TableCell align="center">{index+1}</TableCell>
                   <TableCell align="center">{goldsmith.name}</TableCell>
                   <TableCell align="center">{goldsmith.phone}</TableCell>
                   <TableCell align="center">{goldsmith.address}</TableCell>

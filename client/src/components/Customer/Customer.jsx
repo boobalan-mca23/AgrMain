@@ -113,6 +113,9 @@ const Customer = () => {
                 }}
               >
                 <TableRow>
+                 <TableCell align="center">
+                    <strong>S.no</strong>
+                  </TableCell>
                   <TableCell align="center">
                     <strong>Customer Name</strong>
                   </TableCell>
@@ -131,6 +134,7 @@ const Customer = () => {
               <TableBody>
                 {filteredCustomers.map((customer, index) => (
                   <TableRow key={index} hover>
+                    <TableCell align="center">{index+1}</TableCell>
                     <TableCell align="center">{customer.name}</TableCell>
                     <TableCell align="center">{customer.phone}</TableCell>
                     <TableCell align="center">{customer.address}</TableCell>
