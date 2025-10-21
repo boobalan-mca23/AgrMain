@@ -56,8 +56,6 @@ function AgrNewJobCard({
   handleUpdateJobCard,
   open,
   jobCardId,
-  lastJobCardId,
-  lastIsFinish,
   isFinished,
 }) {
   const today = new Date().toLocaleDateString("en-IN");

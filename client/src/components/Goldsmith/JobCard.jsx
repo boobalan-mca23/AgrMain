@@ -38,30 +38,30 @@ function JobCardDetails() {
   const [jobCardLength, setJobCardLength] = useState(0);
   const [description, setDescription] = useState("");
   const [givenGold, setGivenGold] = useState([
-    { touchId:"",weight: "", touch: "", purity: "",isEdit:false },
+    { touchId: "", weight: "", touch: "", purity: "", isEdit: false },
   ]);
   const [itemDelivery, setItemDelivery] = useState([
     {
       itemName: "",
       itemWeight: "",
-      count:"",
+      count: "",
       touch: "",
       deduction: [],
       netWeight: "",
       wastageType: "",
       wastageValue: "",
-      wastagePure:"",
+      wastagePure: "",
       finalPurity: "",
-      isEdit:false
+      isEdit: false,
     },
   ]);
   const [receivedMetalReturns, setReceivedMetalReturns] = useState([]);
   const [dropDownItems, setDropDownItems] = useState({
     masterItems: [],
     touchList: [],
-    masterWastage:[],
+    masterWastage: [],
   });
-  const [rawGoldStock,setRawGoldStock]=useState([])
+  const [rawGoldStock, setRawGoldStock] = useState([]);
   const [jobCardId, setJobCardId] = useState(0);
   const [jobCardIndex, setJobCardIndex] = useState(0);
   const [open, setOpen] = useState(false);
@@ -69,22 +69,22 @@ function JobCardDetails() {
   const [edit, setEdit] = useState(false);
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(5);
-
-  const [isFinished,setIsFinished]=useState("")
+  const [loading,setLoading]=useState(true)
+  const [isFinished, setIsFinished] = useState("");
   const paginatedData = jobCards.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
-const currentPageTotal = paginatedData.reduce(
+  const currentPageTotal = paginatedData.reduce(
     (acc, job) => {
       acc.givenWt += job.total[0]?.givenTotal;
       acc.itemWt += job.total[0]?.deliveryTotal;
       acc.receive += job.total[0]?.receivedTotal;
       return acc;
     },
-    { givenWt: 0, itemWt: 0,receive: 0 } // Initial accumulator
+    { givenWt: 0, itemWt: 0, receive: 0 } // Initial accumulator
   );
-  console.log('currentPageTotal',currentPageTotal)
+  console.log("currentPageTotal", currentPageTotal);
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -95,7 +95,7 @@ const currentPageTotal = paginatedData.reduce(
   };
 
   const handleOpenJobcard = async () => {
-    setOpen(true)
+    setOpen(true);
     setEdit(false);
     try {
       const res = await axios.get(
@@ -110,42 +110,41 @@ const currentPageTotal = paginatedData.reduce(
       toast.error("Something went wrong.");
     }
   };
-  
+
   const fetchRawGold = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_SERVER_URL}/api/rawGold`);
-        setRawGoldStock(response.data.allRawGold);
-        console.log('rawGoldStock',response.data.allRawGold)
-      } catch (err) {
-        console.log(err);
-        alert(err.message);
-      }
-    };
+    try {
+      const response = await axios.get(`${BACKEND_SERVER_URL}/api/rawGold`);
+      setRawGoldStock(response.data.allRawGold);
+      console.log("rawGoldStock", response.data.allRawGold);
+    } catch (err) {
+      console.log(err);
+      alert(err.message);
+    }
+  };
 
   const handleCloseJobcard = () => {
     setOpen(false);
     fetchRawGold();
     setDescription("");
-    setGivenGold([{ weight: "", touch: "", purity: "",isEdit:false }]);
+    setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
     setItemDelivery([
       {
-      itemName: "",
-      itemWeight: "",
-      count:"",
-      touch: "",
-      deduction: [],
-      netWeight: "",
-      wastageType: "",
-      wastageValue: "",
-      wastagePure:"",
-      finalPurity: "",
-      isEdit:false
-    },
+        itemName: "",
+        itemWeight: "",
+        count: "",
+        touch: "",
+        deduction: [],
+        netWeight: "",
+        wastageType: "",
+        wastageValue: "",
+        wastagePure: "",
+        finalPurity: "",
+        isEdit: false,
+      },
     ]);
     setReceivedMetalReturns([]);
-    
-    
-    console.log('rawGoldStock',rawGoldStock)
+
+    console.log("rawGoldStock", rawGoldStock);
   };
 
   const handleFilterJobCard = (id, index) => {
@@ -154,13 +153,15 @@ const currentPageTotal = paginatedData.reduce(
     let copy = [...jobCards];
     const filteredJobcard = copy.filter((item, _) => item.id === id);
 
-    const deepClone=(obj)=>JSON.parse(JSON.stringify(obj))
+    const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
     setDescription(deepClone(filteredJobcard[0]?.description || ""));
     setGivenGold(deepClone(filteredJobcard[0]?.givenGold || []));
     setItemDelivery(deepClone(filteredJobcard[0]?.deliveries || []));
     setReceivedMetalReturns(deepClone(filteredJobcard[0]?.received || []));
-    setOpeningBalance(deepClone(filteredJobcard[0]?.total[0]?.openingBalance || 0));
-    setIsFinished(deepClone(filteredJobcard[0]?.total[0]?.isFinished || 0))
+    setOpeningBalance(
+      deepClone(filteredJobcard[0]?.total[0]?.openingBalance || 0)
+    );
+    setIsFinished(deepClone(filteredJobcard[0]?.total[0]?.isFinished || 0));
     setOpen(true);
     setEdit(true);
   };
@@ -180,7 +181,6 @@ const currentPageTotal = paginatedData.reduce(
         jobCardBalance: jobCardBalance,
         openingBalance: openingBalance,
       },
-   
     };
     try {
       const response = await axios.post(
@@ -193,14 +193,14 @@ const currentPageTotal = paginatedData.reduce(
         }
       );
       handleCloseJobcard();
-      setGivenGold([{ weight: "", touch: "", purity: "",isEdit:false }]);
+      setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
       setDescription("");
       setJobCards(response.data.allJobCards);
-      console.log('response.data.jobCardLength',response.data.jobCardLength)
+      console.log("response.data.jobCardLength", response.data.jobCardLength);
       setJobCardLength(response.data.jobCardLength);
-        alert('JobCard Created')
+      alert("JobCard Created");
     } catch (err) {
-       toast.error(err.response.data.error);
+      toast.error(err.response.data.error);
     }
   };
 
@@ -209,13 +209,15 @@ const currentPageTotal = paginatedData.reduce(
     deliveryTotal,
     receivedTotal,
     jobCardBalance,
-    openingBalance,
+    openingBalance
   ) => {
     const payload = {
       description,
-      givenGold:givenGold.filter((item,_)=>item.isEdit===true),
-      itemDelivery:itemDelivery.filter((item,_)=>item.isEdit===true),
-      receiveSection: receivedMetalReturns.filter((item,_)=>item.isEdit===true),
+      givenGold: givenGold.filter((item, _) => item.isEdit === true),
+      itemDelivery: itemDelivery.filter((item, _) => item.isEdit === true),
+      receiveSection: receivedMetalReturns.filter(
+        (item, _) => item.isEdit === true
+      ),
       total: {
         id: jobCards[jobCardIndex]?.total[0]?.id,
         givenTotal,
@@ -224,10 +226,9 @@ const currentPageTotal = paginatedData.reduce(
         jobCardBalance,
         openingBalance,
       },
- 
     };
-    console.log('payload',payload)
-    
+    console.log("payload", payload);
+
     try {
       const response = await axios.put(
         `${BACKEND_SERVER_URL}/api/assignments/${id}/${jobCardId}`, // id is GoldSmith and jobCard id
@@ -239,41 +240,41 @@ const currentPageTotal = paginatedData.reduce(
         }
       );
       handleCloseJobcard();
-      setGivenGold([{ weight: "", touch: "", purity: "",isEdit:false }]);
+      setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
       setDescription("");
       setItemDelivery([
         {
           itemName: "",
           itemWeight: "",
-          count:"",
+          count: "",
           touch: "",
           deduction: [],
           netWeight: "",
           wastageType: "",
           wastageValue: "",
-          wastagePure:"",
+          wastagePure: "",
           finalPurity: "",
-          isEdit:false
+          isEdit: false,
         },
       ]);
       setReceivedMetalReturns([]);
       setJobCards(response.data.allJobCards);
       setJobCardLength(response.data.jobCardLength);
-      console.log('update response',response)
-      alert('JobCard Updated')
+      console.log("update response", response);
+      alert("JobCard Updated");
     } catch (err) {
-      console.log(err.response.data.error)
+      console.log(err.response.data.error);
       toast.error(err.response.data.error);
     }
   };
-  const totalStoneWt=(deduction)=>{
-    return deduction.reduce((acc,val)=>val.weight+acc,0)
-  }
-  
+  const totalStoneWt = (deduction) => {
+    return deduction.reduce((acc, val) => val.weight + acc, 0);
+  };
 
   useEffect(() => {
     const fetchJobCards = async () => {
       try {
+        
         const res = await axios.get(
           `${BACKEND_SERVER_URL}/api/assignments/${id}` // this is GoldSmith Id from useParams
         );
@@ -284,6 +285,8 @@ const currentPageTotal = paginatedData.reduce(
       } catch (err) {
         alert(err.message);
         toast.error("Something went wrong.");
+      }finally{
+        setLoading(false)
       }
     };
     const fetchMasterItems = async () => {
@@ -299,14 +302,14 @@ const currentPageTotal = paginatedData.reduce(
       }
     };
     const fetchWastageVal = async () => {
-        try {
-          const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`);
-         console.log("wastage fecth test:",res.data)
-         setDropDownItems((prev) => ({ ...prev, masterWastage: res.data }));
-        } catch (err) {
-          console.error("Failed to fetch touch values", err);
-        }
-      };
+      try {
+        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`);
+        console.log("wastage fecth test:", res.data);
+        setDropDownItems((prev) => ({ ...prev, masterWastage: res.data }));
+      } catch (err) {
+        console.error("Failed to fetch touch values", err);
+      }
+    };
     fetchWastageVal();
     fetchRawGold();
     fetchMasterItems();
@@ -316,7 +319,7 @@ const currentPageTotal = paginatedData.reduce(
 
   return (
     <>
-     <ToastContainer position="top-right" autoClose={1000} hideProgressBar />
+      <ToastContainer position="top-right" autoClose={1000} hideProgressBar />
       <Container maxWidth="xxl" sx={{ py: 3 }}>
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
           <Typography
@@ -330,45 +333,50 @@ const currentPageTotal = paginatedData.reduce(
           <Box
             sx={{
               display: "flex",
-              alignItems:"center",
-              justifyContent:"space-between"
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
-    
-              <Box sx={{ pl: 2 }}>
-                <Typography>
-                  <b>Name:</b> {name}
-                </Typography>
-              </Box>
+            <Box sx={{ pl: 2 }}>
+              <Typography>
+                <b>Name:</b> {name}
+              </Typography>
+            </Box>
 
-              <Box 
-                sx={{
-                 fontSize:"20px"
-                }}
-               >
-                {jobCards.length > 0 &&
-                  jobCards.at(-1)?.total?.length > 0 && (
+            <Box
+              sx={{
+                fontSize: "20px",
+              }}
+            >
+              {jobCards.length > 0 && jobCards.at(-1)?.total?.length > 0 && (
                 <div>
                   {jobCards.at(-1).total[0].jobCardBalance > 0 ? (
                     <p style={{ color: "green", fontWeight: "bolder" }}>
                       Gold Smith Should Given{" "}
-                       <span className="goldSmithBalance">{jobCards.at(-1).total[0].jobCardBalance}g</span>
+                      <span className="goldSmithBalance">
+                        {jobCards.at(-1).total[0].jobCardBalance}g
+                      </span>
                     </p>
                   ) : jobCards.at(-1).total[0].jobCardBalance < 0 ? (
                     <p style={{ color: "red", fontWeight: "bolder" }}>
                       Owner Should Given{" "}
-                      <span className="goldSmithBalance">  {jobCards.at(-1).total[0].jobCardBalance} g</span>
+                      <span className="goldSmithBalance">
+                        {" "}
+                        {jobCards.at(-1).total[0].jobCardBalance} g
+                      </span>
                     </p>
                   ) : (
                     <p style={{ color: "black", fontWeight: "bolder" }}>
                       Balance Nill:{" "}
-                     <span className="goldSmithBalance"> {jobCards.at(-1).total[0].jobCardBalance} g</span>
+                      <span className="goldSmithBalance">
+                        {" "}
+                        {jobCards.at(-1).total[0].jobCardBalance} g
+                      </span>
                     </p>
                   )}
                 </div>
               )}
-              </Box>
-       
+            </Box>
           </Box>
 
           <Divider sx={{ my: 2 }} />
@@ -393,15 +401,32 @@ const currentPageTotal = paginatedData.reduce(
               New Job Card
             </Button>
           </Box>
-            
-          {paginatedData.length === 0 ? (
+         {
+          loading ? (<Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "100vh",
+                  fontSize: "1.5rem",
+                  fontWeight: "bold",
+                }}
+              >
+                {" "}
+                 Loading JobCards...
+                <CircularProgress />
+              </Box>):(
+                  <>
+                  {paginatedData.length === 0 ? (
             <Paper elevation={0} sx={{ p: 4, textAlign: "center" }}>
               <Typography variant="h6" color="textSecondary">
                 No job cards found for this goldsmith
               </Typography>
+             
             </Paper>
           ) : (
             <Paper className="jobCardTableContainer">
+               
               <table className="jobcardTable">
                 <thead className="jobCardThead">
                   <tr>
@@ -424,7 +449,7 @@ const currentPageTotal = paginatedData.reduce(
                     <td>DlyDate</td>
                     <td>Name</td>
                     <td>Wt</td>
-                     <td>count</td>
+                    <td>count</td>
                     <td>tch</td>
                     <td>stoneWt</td>
                     <td>NetWt</td>
@@ -476,7 +501,7 @@ const currentPageTotal = paginatedData.reduce(
                             </>
                           )}
 
-                          <td >
+                          <td>
                             {g?.createdAt
                               ? new Date(g?.createdAt).toLocaleDateString(
                                   "en-GB",
@@ -489,7 +514,7 @@ const currentPageTotal = paginatedData.reduce(
                               : "-"}
                           </td>
 
-                          <td>{(g?.weight) || "-"}</td>
+                          <td>{g?.weight || "-"}</td>
                           {/* {i === 0 && (
                             <td rowSpan={maxRows}>{total?.givenWt || "-"}</td>
                           )} */}
@@ -509,22 +534,20 @@ const currentPageTotal = paginatedData.reduce(
                           </td>
                           <td>{d?.itemName || "-"}</td>
                           <td>{d?.itemWeight || "-"}</td>
-                          <td>{d?.count|| "0"}</td>
+                          <td>{d?.count || "0"}</td>
                           <td>{d?.touch || "-"}</td>
 
-                          <td>
-                            {d?.deduction && totalStoneWt(d?.deduction)}
-                          </td>
+                          <td>{d?.deduction && totalStoneWt(d?.deduction)}</td>
                           <td>{d?.netWeight || "0"}</td>
                           {/* <td>{d?.wastageType || "-"}</td> */}
                           <td>{d?.wastageValue || "0"}</td>
-                          <td>{d?.wastagePure||"0"}</td>
+                          <td>{d?.wastagePure || "0"}</td>
                           <td>{d?.finalPurity || "0"}</td>
-                         
+
                           <td>{r?.weight || "0"}</td>
                           <td>{r?.touch || "0"}</td>
-                          <td>{r?.purity||"0"}</td>
-                            {i === 0 && (
+                          <td>{r?.purity || "0"}</td>
+                          {i === 0 && (
                             <>
                               <td rowSpan={maxRows}>
                                 {total?.receivedTotal || "-"}
@@ -562,42 +585,43 @@ const currentPageTotal = paginatedData.reduce(
                   })}
                 </tbody>
                 <tfoot className="totalOfJobCard">
-                <tr>
-                  <td colSpan={6}>
-                    <b>Total</b>
-                  </td> 
-                  <td>
-                    <b> {currentPageTotal.givenWt?.toFixed(3)}</b>
-                  </td>
-                  <td colSpan={9}></td>
-                  <td>
-                    <b>{currentPageTotal?.itemWt?.toFixed(3)}</b>
-                  </td>
-                 
-                  <td colSpan={3}></td>
-                  <td>
-                    <b>{currentPageTotal?.receive?.toFixed(3)}</b>
-                  </td>
-                  <td colSpan={4}></td>
-                </tr>
-              </tfoot>
+                  <tr>
+                    <td colSpan={6}>
+                      <b>Total</b>
+                    </td>
+                    <td>
+                      <b> {currentPageTotal.givenWt?.toFixed(3)}</b>
+                    </td>
+                    <td colSpan={9}></td>
+                    <td>
+                      <b>{currentPageTotal?.itemWt?.toFixed(3)}</b>
+                    </td>
+
+                    <td colSpan={3}></td>
+                    <td>
+                      <b>{currentPageTotal?.receive?.toFixed(3)}</b>
+                    </td>
+                    <td colSpan={4}></td>
+                  </tr>
+                </tfoot>
               </table>
-             
             </Paper>
           )}
+                  </>)
+         }
+          
         </Paper>
-           {jobCards.length >= 1 && (
-            <TablePagination
-              component="div"
-              count={jobCards.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25]}
-            />
-          )}
-         
+        {jobCards.length >= 1 && (
+          <TablePagination
+            component="div"
+            count={jobCards.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+          />
+        )}
       </Container>
 
       <AgrNewJobCard
@@ -624,10 +648,7 @@ const currentPageTotal = paginatedData.reduce(
         lastJobCardId={jobCards?.at(-1)?.total[0]?.jobcardId}
         lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
         isFinished={isFinished}
-     
       />
-
-     
     </>
   );
 }
