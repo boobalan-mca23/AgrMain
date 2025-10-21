@@ -407,7 +407,7 @@ function JobCardDetails() {
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
-                  height: "100vh",
+                  height: "10vh",
                   fontSize: "1.5rem",
                   fontWeight: "bold",
                 }}
