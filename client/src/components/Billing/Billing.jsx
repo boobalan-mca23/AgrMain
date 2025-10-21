@@ -664,7 +664,7 @@ const Billing = () => {
         Stoneprofit:stoneProfit,
         Totalprofit:totalBillProfit,
         cashBalance: cashBalance,
-        hallmarkQty:hallmarkQty,
+        hallmarkQty,
 
         orderItems: billDetailRows.map((row) => ({
           stockId: row.productId,
@@ -707,6 +707,8 @@ const Billing = () => {
       await fetchAllBills();
       //much faster but little slower
       // setBills(prev => [resJson.bill, ...(prev || [])]);
+      await fetchProductStock();
+
 
       setBillDetailRows([]);
       setRows([]);
@@ -726,109 +728,12 @@ const Billing = () => {
     }
   };
 
-  // const handleUpdate = async () => {
-  //   if (!currentBill || !currentBill.id) {
-  //     alert("No bill selected to update.");
-  //     return;
-  //   }
-  //   // const isFrmValid = validateAllFields();
-  //   // if (!isFrmValid) {
-  //   // alert("Please fill in all required fields");
-  //   // return;
-  //   // }
-
-  //   try {
-  //     const FWT = billDetailRows.reduce(
-  //       (total, row) => total + (toNumber(row.fwt) || 0),
-  //       0
-  //     );
-  //     const totalReceivedPurity = rows.reduce(
-  //       (acc, row) => acc + (toNumber(row.purityWeight) || 0),
-  //       0
-  //     );
-  //     const TotalFWT = FWT - previousBalance;
-  //     const pureBalance = TotalFWT - totalReceivedPurity;
-
-  //     const billData = {
-  //       // billno: currentBill.billno,
-  //       // date,
-  //       // time,
-  //       customerId: selectedCustomer.id || selectedCustomer._id,
-  //       billTotal: FWT,
-  //       hallMark: toNumber(billHallmark) || 0,
-  //       pureBalance: toFixedStr(pureBalance, 3),
-  //       hallmarkBalance: toNumber(hallmarkBalance) + toNumber(prevHallmark),
-  //       // previousBalance,
-  //       // prevHallmark,
-  //       // currentHallmark: toNumber(billHallmark) || 0,
-  //       // orderItems: billDetailRows.map((row) => ({
-  //       // productName: row.productName,
-  //       // weight: toNumber(row.wt),
-  //       // stoneWeight: toNumber(row.stWt),
-  //       // afterWeight: toNumber(row.awt),
-  //       // percentage: toNumber(row.percent),
-  //       // finalWeight: toNumber(row.fwt),
-  //       // })),
-  //       received: rows
-  //         .filter((row) => !row.id || !row.isLocked)
-  //         .map((row) => ({
-  //           date: row.date,
-  //           type: row.type,
-  //           goldRate: toNumber(row.goldRate),
-  //           gold: toNumber(row.givenGold),
-  //           touch: toNumber(row.touch),
-  //           purity: toNumber(row.purityWeight),
-  //           receiveHallMark: toNumber(row.hallmark),
-  //           amount: toNumber(row.amount),
-  //         })),
-  //     };
-  //     console.log("Update Payload:", billData);
-  //     const response = await fetch(
-  //       `${BACKEND_SERVER_URL}/api/bill/updateBill/${selectedCustomer.id}/${currentBill.id}`,
-  //       { method: "PUT",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify(billData), });
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json().catch(() => ({}));
-  //       throw new Error( errorData.msg || `HTTP error! status: ${response.status}` ); }
-  //     toast.success("Bill updated successfully!", { autoClose: 1000 });
-  //     alert("Bill updated successfully!");
-  //     await response.json();
-
-  //     // reset state after update
-  //     setBillDetailRows([]);
-  //     setRows([]);
-  //     setSelectedCustomer(null);
-  //     setBillHallmark("");
-  //     setWeightAllocations({});
-  //     setFieldErrors({});
-  //     setViewMode(false);
-  //     setCurrentBill(null);
-  //     setPrevHallmark(0);
-  //     setPreviousBalance(0);
-  //   } catch (error) {
-  //     console.error("Error updating bill:", error);
-  //     alert(`Error updating bill: ${error.message}`);
-  //   }
-  // };
-
-
-
-
-  // === derived values ===
   const FWT = useMemo( () =>billDetailRows.reduce( (total, row) => total + (toNumber(row.fwt) || 0), 0), [billDetailRows] );
   const { billDetailsProfit, stoneProfit, totalBillProfit, billProfitPercentage } = useMemo(() => {
     let detailsProfit = 0;
     let stoneProfitCalc = 0;
 
-    // console.log('=== PROFIT CALCULATION DEBUG ===');
-    // console.log('billDetailRows:', billDetailRows);
-    // console.log('items:', items);
-    // console.log('availableProducts:', availableProducts);
-
     billDetailRows.forEach((row, index) => {
-      // console.log(`\n--- Row ${index + 1}: ${row.productName} ---`);
        // Find the product stock for touch value
       const productStock = availableProducts?.allStock?.find(product => (product.id || product._id) === row.productId);
       // if (!productStock) alert('no products available');
@@ -839,28 +744,18 @@ const Billing = () => {
       // console.log('AWT:', awt, 'FWT:', fwt, 'Stone WT:', enteredStoneWt, 'Entered %:', enteredPercentage);
       
       if (productStock) {
-        // console.log('Found product stock:', productStock);
-        
         // Bill Details Profit: (awt × wastage%) - fwt
         // Use the wastage from productStock (availableProducts), not items
         const wastageValue = toNumber(productStock.wastageValue) || 0;
         const purityFromWastage = (awt * wastageValue) / 100;
         const rowBillProfit =  fwt - purityFromWastage;
         detailsProfit += rowBillProfit;
-        
-        // console.log('Wastage Value:', wastageValue);
-        // console.log('Purity from Wastage:', purityFromWastage);
-        // console.log('Row Bill Profit:', rowBillProfit);
-        
         // Stone Profit: stockremaing wieght × product.touch%
         const remainingStone = getRemainingStone(row.productId, productStock.stoneWeight);
         const touchValue = toNumber(productStock.touch) || 0;
         // const rowStoneProfit = (enteredStoneWt * touchValue) / 100;
         const rowStoneProfit = (toNumber(remainingStone) * touchValue) / 100;
         stoneProfitCalc += rowStoneProfit;
-        
-        // console.log('Touch Value:', touchValue);
-        // console.log('Row Stone Profit:', rowStoneProfit);
       } else {
         console.log('Product stock not found for productId:', row.productId);
       }
@@ -868,12 +763,6 @@ const Billing = () => {
 
     const totalProfit = detailsProfit + stoneProfitCalc;
     const profitPercentage = FWT > 0 ? (totalProfit / FWT) * 100 : 0;
-
-    // console.log('\n=== FINAL RESULTS ===');
-    // console.log('Details Profit:', detailsProfit);
-    // console.log('Stone Profit:', stoneProfitCalc);
-    // console.log('Total Profit:', totalProfit);
-    // console.log('Profit %:', profitPercentage);
 
     return {
       billDetailsProfit: toFixedStr(detailsProfit, 3),
@@ -883,7 +772,6 @@ const Billing = () => {
     };
   }, [billDetailRows, items, availableProducts, FWT]);
   const totalReceivedPurity = useMemo(() => rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0),  [rows]  );
-  // const TotalFWT = FWT - previousBalance;
   const TotalFWT =
     previousBalance > 0
       ? toNumber(FWT) + toNumber(previousBalance)
@@ -1198,7 +1086,6 @@ const Billing = () => {
       billDetailsprofit: billDetailsProfit, 
       Stoneprofit: stoneProfit,        
       Totalprofit: totalBillProfit,
-      hallmarkQty:hallmarkQty,
     };
 
     console.log("Printing bill data:", billData);
@@ -1412,7 +1299,7 @@ const Billing = () => {
                       <TextField
                         size="small"
                         value={row.productName}
-                        disabled={viewMode}
+                        disabled
                         onChange={(e) => handleBillDetailChange(index, "productName", e.target.value )}
                         inputProps={{ style: inputStyle }}
                         error={!!fieldErrors[`billDetail_${index}_productName`]}
