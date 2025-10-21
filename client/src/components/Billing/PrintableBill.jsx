@@ -131,75 +131,136 @@ const PrintableBill = React.forwardRef((props, ref) => {
             )}
           </tbody>
         </table>
-                 <div
-                      className="hallmark-balance-wrapper"
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 4,
-                        mt: 2,
-                      }}
-                    >
-                      <div
-                        className="hallmark-column"
-                        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-                      >
-                        <p style={{ fontSize: "13px",marginTop:"0px"}}>
-                        <b>Hallmark Balance:</b>{prevHallmark || "0.000"}{" "}
-                          </p>
-                        <table style={{border: "1px solid #ddd !important"}}>
-                          <thead>
-                            <tr>
-                              <th 
-                              // colSpan={2}
-                              style={{ textAlign: "center !important", fontSize: "14px !important"}}
-                              >
-                                Qty
-                              </th>
-                              <th
-                              // colSpan={2} 
-                              style={{ textAlign: "center !important", fontSize: "14px !important"}}
-                               >
-                              Current Hallmark
-                              </th>
-                              <th 
-                              // colSpan={2} 
-                              style={{ textAlign: "center !important", fontSize: "14px !important"}}
-                              >
-                                Total
-                                </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td style={{textAlign:'center'}}>{hallmarkQty || "0.000"}</td>
-                              <td style={{textAlign:'center'}}>{hallMark || "0.000"}</td>
-                              <td style={{textAlign:'center'}}>{hallmarkAmount.toFixed(3) || "0.000"}</td>
-                            </tr>
-                            <tr>
-                              <td style={{fontSize:'14px'}}><b>Total Hallmark:</b>{totalHallmark.toFixed(3)}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                       </div>
-                          <div className="balance-info" style={{textAlign: "right", fontSize: "13px",}}> 
-                              <>
-                                  <div className="negative">
-                                    <b>Opening Balance: </b>{toFixedStr(prevBalance, 3)}
-                                  </div>
-                                  <div><b>FWT: </b>{toFixedStr(FWT, 3)}
-                                  </div>
-                                  <div>
-                                    <b>Total FWT: </b>{toFixedStr(TotalFWT,3)}
-                                    </div>
-                              </>
-                      </div>
-                    </div>
+        <div
+          className="hallmark-balance-wrapper"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: "3px",
+            marginTop: "3px",
+          }}
+        >
+          {/* Left side - Hallmark Summary */}
+          <div
+            className="hallmark-column"
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "12px",
+                margin: "0 0 4px 0",
+                fontWeight: "bold",
+              }}
+            >
+              Hallmark Balance: {prevHallmark || "0.000"}
+            </p>
+
+            <table
+              style={{
+                borderCollapse: "collapse",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                overflow: "hidden",
+                fontSize: "12px",
+                width: "50%",
+                minWidth: "200px",
+              }}
+            >
+              <thead>
+                <tr>
+                  <th
+                    style={{
+                      backgroundColor: "#f2f2f2",
+                      border: "1px solid #ccc",
+                      padding: "3px 6px",
+                      textAlign: "center",
+                    }}
+                  >
+                    Qty
+                  </th>
+                  <th
+                    style={{
+                      backgroundColor: "#f2f2f2",
+                      border: "1px solid #ccc",
+                      padding: "3px 6px",
+                      textAlign: "center",
+                    }}
+                  >
+                    Current Hallmark
+                  </th>
+                  <th
+                    style={{
+                      backgroundColor: "#f2f2f2",
+                      border: "1px solid #ccc",
+                      padding: "3px 6px",
+                      textAlign: "center",
+                    }}
+                  >
+                    Total
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ border: "1px solid #ccc", textAlign: "center", padding: "3px 6px" }}>
+                    {hallmarkQty || "0.000"}
+                  </td>
+                  <td style={{ border: "1px solid #ccc", textAlign: "center", padding: "3px 6px" }}>
+                    {hallMark || "0.000"}
+                  </td>
+                  <td style={{ border: "1px solid #ccc", textAlign: "center", padding: "3px 6px" }}>
+                    {hallmarkAmount?.toFixed(3) || "0.000"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Total Hallmark below table */}
+            <p
+              style={{
+                marginTop: "4px",
+                fontSize: "12px",
+                fontWeight: "bold",
+                textAlign: "left",
+              }}
+            >
+              Total Hallmark: {totalHallmark?.toFixed(3) || "0.000"}
+            </p>
+          </div>
+
+          {/* Right side - Balance Info */}
+          <div
+            className="balance-info"
+            style={{
+              flex: 1,
+              textAlign: "right",
+              fontSize: "12px",
+              lineHeight: "1.3",
+            }}
+          >
+            <div style={{ color: "#333" }}>
+              <b>Opening Balance:</b> {toFixedStr(prevBalance, 3)}
+            </div>
+            <div>
+              <b>FWT:</b> {toFixedStr(FWT, 3)}
+            </div>
+            <div>
+              <b>Total FWT:</b> {toFixedStr(TotalFWT, 3)}
+            </div>
+          </div>
+        </div>
+
 
         {/* Received Details */}
         {rows.length > 0 && (
-          <>
-            <h4 style={{ margin: "5px 0" }}>Received Details:</h4>
+          <div style={{ marginTop: "0px" }}>
+            <h4 style={{ margin: "0px 0" }}>Received Details:</h4>
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -246,7 +307,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
             )}
               </tbody>
             </table>
-          </>
+          </div>
         )}
 
         {/* Profit Summary */}
