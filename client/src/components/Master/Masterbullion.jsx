@@ -78,12 +78,11 @@ function MasterBullion() {
       else if (!/^[a-zA-Z\s]+$/.test(value)) error = "Name should contain only letters.";
       else if (bullions.some((b) => b.name.toLowerCase() === value.trim().toLowerCase())) error = "Bullion name is already exists.";
     }
-    if (field === "phone") {
-  const v = value.trim();
-  if (!v) error = "Phone number is required.";
-  else if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
-  else if (bullions.some((b) => String(b.phone).trim() === v))
-    error = "Bullion phone number already exists.";
+    if (field === "phone" && value.trim()) {
+      const v = value.trim();
+      else if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
+      else if (bullions.some((b) => String(b.phone).trim() === v))
+      error = "Bullion phone number already exists.";
 }
 
     setErrors((prev) => ({ ...prev, [field]: error }));
