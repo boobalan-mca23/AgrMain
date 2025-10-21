@@ -94,6 +94,7 @@ const Billing = () => {
   const [selectedProductCounts, setSelectedProductCounts] = useState({});
 
   const [printBill,setPrintBill]=useState([])
+  const [isSaving, setIsSaving] = useState(false);
 
   // === Validation helpers ===
   const validateInput = (
@@ -630,19 +631,22 @@ const Billing = () => {
 
 
   const handleSave = async () => {
-    if (!selectedCustomer) {
-      alert("Please select a customer before saving.");
-      toast.error("Please select a customer before saving.");
-      return;
-    }
-
-    const isFormValid = validateAllFields();
-    if (!isFormValid) {
-      alert("Please fill in all required fields");
-      return;
-    }
+    if (isSaving) return;
+    setIsSaving(true);    
 
     try {
+
+      if (!selectedCustomer) {
+        alert("Please select a customer before saving.");
+        toast.error("Please select a customer before saving.");
+        return;
+      }
+      const isFormValid = validateAllFields();
+      if (!isFormValid) {
+        alert("Please fill in all required fields");
+        return;
+      }
+
       const FWT = billDetailRows.reduce((total, row) => total + (toNumber(row.fwt) || 0),0 );
       const totalReceivedPurity = rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0);
       // const TotalFWT = toNumber(FWT) - toNumber(previousBalance);
@@ -725,7 +729,9 @@ const Billing = () => {
       console.error("Error saving bill:", error);
       alert(`Error saving bill: ${error.message}`);
       return;
-    }
+    }finally {
+    setIsSaving(false);
+  }
   };
 
   const FWT = useMemo( () =>billDetailRows.reduce( (total, row) => total + (toNumber(row.fwt) || 0), 0), [billDetailRows] );
@@ -1122,6 +1128,35 @@ const Billing = () => {
     printWindow.document.write(printHtml);
     printWindow.document.close();
   };
+
+  const handlePrintWithSave = async () => {
+    if (isSaving) return; 
+     setIsSaving(true);
+    try {
+      if (!selectedCustomer) {
+        toast.error("Please select a customer before printing.");
+        return;
+      }
+
+      const isValid = validateAllFields();
+      if (!isValid) {
+        toast.error("Please correct the highlighted fields before printing.");
+        return;
+      }
+
+      await handleSave();
+
+      setTimeout(() => {
+        handlePrint();
+      }, 500);
+    } catch (error) {
+      console.error("Error while saving before print:", error);
+      toast.error(`Unable to print: ${error.message}`);
+    } finally {
+    setIsSaving(false);
+  }
+  };
+
 
   useEffect(() => {
     const handleKeyDown = async (event) => {
@@ -1746,13 +1781,16 @@ const Billing = () => {
               color="primary"
               className="save-button no-print"
               onClick={handleSave}
+              disabled={isSaving}
             >
-              Save</Button>}
+               {isSaving ? "Saving..." : "Save"}
+              </Button>}
 
            <Button
               variant="contained"
               color="primary"
-              onClick={() => handlePrint()}
+              onClick={handlePrintWithSave}
+               disabled={isSaving}
               className="save-button no-print"
            > 
             Print </Button>
