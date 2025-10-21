@@ -71,6 +71,7 @@ function JobCardDetails() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [loading,setLoading]=useState(true)
   const [isFinished, setIsFinished] = useState("");
+  const [saveDisable,setSaveDisable]=useState(false)
   const paginatedData = jobCards.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -183,6 +184,7 @@ function JobCardDetails() {
       },
     };
     try {
+       setSaveDisable(true)
       const response = await axios.post(
         `${BACKEND_SERVER_URL}/api/assignments/create`,
         payload,
@@ -201,6 +203,7 @@ function JobCardDetails() {
       alert("JobCard Created");
     } catch (err) {
       toast.error(err.response.data.error);
+       setSaveDisable(false)
     }
   };
 
@@ -648,6 +651,8 @@ function JobCardDetails() {
         lastJobCardId={jobCards?.at(-1)?.total[0]?.jobcardId}
         lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
         isFinished={isFinished}
+        saveDisable={saveDisable}
+        setSaveDisable={setSaveDisable}
       />
     </>
   );
