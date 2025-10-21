@@ -274,7 +274,6 @@ function JobCardDetails() {
   useEffect(() => {
     const fetchJobCards = async () => {
       try {
-        setLoading(true)
         const res = await axios.get(
           `${BACKEND_SERVER_URL}/api/assignments/${id}` // this is GoldSmith Id from useParams
         );
