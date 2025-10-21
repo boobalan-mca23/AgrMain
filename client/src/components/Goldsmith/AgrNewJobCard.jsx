@@ -1272,8 +1272,9 @@ function AgrNewJobCard({
             disabled={
               edit ? (isFinished === "true"? true : saveDisable?true:false) : saveDisable?true:false
             }
+            style={{color:saveDisable?"grey":"#fff"}}
           >
-            {edit ? "Update" : "Save"}
+            {edit ? saveDisable?"Job Card Updating ...":"Update" : saveDisable?"Job Card Saving ...":"Save"}
           </Button>
           <Button
             autoFocus

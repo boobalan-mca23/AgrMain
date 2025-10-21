@@ -201,6 +201,7 @@ function JobCardDetails() {
       console.log("response.data.jobCardLength", response.data.jobCardLength);
       setJobCardLength(response.data.jobCardLength);
       alert("JobCard Created");
+      setSaveDisable(false)
     } catch (err) {
       toast.error(err.response.data.error);
        setSaveDisable(false)
@@ -233,6 +234,7 @@ function JobCardDetails() {
     console.log("payload", payload);
 
     try {
+      setSaveDisable(true)
       const response = await axios.put(
         `${BACKEND_SERVER_URL}/api/assignments/${id}/${jobCardId}`, // id is GoldSmith and jobCard id
         payload,
@@ -265,9 +267,11 @@ function JobCardDetails() {
       setJobCardLength(response.data.jobCardLength);
       console.log("update response", response);
       alert("JobCard Updated");
+      setSaveDisable(false)
     } catch (err) {
       console.log(err.response.data.error);
       toast.error(err.response.data.error);
+      setSaveDisable(false)
     }
   };
   const totalStoneWt = (deduction) => {
