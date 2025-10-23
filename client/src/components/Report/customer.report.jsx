@@ -10,11 +10,16 @@ import {
   Button,
   TextField,
   TablePagination,
+  IconButton,
 } from "@mui/material";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import axios from "axios";
 import CustomerReportPrint from "./Customer_Report_Print/CustomerReportPrint";
 import ReactDOMServer from "react-dom/server";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { useNavigate } from "react-router-dom";
+
+
 const CustReport = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
@@ -24,14 +29,12 @@ const CustReport = () => {
   const [selectedCustomer, setSelectedCustomer] = useState({});
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(5);
-
+  const navigate = useNavigate();
+  
   const paginatedData =billInfo.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
-
-  
-
 
 
   // Calculate totals for current page
@@ -219,6 +222,7 @@ const CustReport = () => {
                   <th>Bill Id</th>
                   <th>Date</th>
                   <th>Bill&Receive</th>
+                  <th style={{width:'10px'}}>View bill</th>
                   <th>ReceiveAmount</th>
                   <th>Bill Amount</th>
                 </tr>
@@ -304,6 +308,15 @@ const CustReport = () => {
                           </tbody>
                         </table>
                       )}
+                    </td>
+                    <td>
+                      {bill.type === "bill" ? (
+                      <IconButton color="primary" onClick={() => {console.log(
+                      `Navigating to bill-view/${bill.info.id}`
+                      ),navigate(`/bill-view/${bill.info.id}`)}}>
+                        <VisibilityIcon />
+                      </IconButton>):(<p>-</p>)}
+
                     </td>
 
                     {bill.type === "bill" ? (
