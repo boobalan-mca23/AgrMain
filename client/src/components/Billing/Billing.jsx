@@ -56,7 +56,7 @@ const Billing = () => {
 
   const [billId, setBillId] = useState(0);
   const [date] = useState(new Date().toLocaleDateString());
-  const [time] = useState(
+  const [time,setTime] = useState(
     new Date().toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
@@ -484,7 +484,6 @@ const Billing = () => {
     // console.log(updated)
   };
 
-
   const handleRowChange = (index, field, value) => {
     const updatedRows = [...rows];
     if (field === "type") {
@@ -553,7 +552,6 @@ const Billing = () => {
     return Math.max(0, originalCount - totalAllocated);
   };
 
-
   const handleProductClick = (product) => {
     const productId = product.id || product._id;
 
@@ -602,7 +600,8 @@ const Billing = () => {
       stWt: toFixedStr(stWtValue, 3),
       awt: toFixedStr(awtVal, 3),
       percent: '',
-      fwt: toFixedStr(fwtVal, 3),
+      // fwt: toFixedStr(fwtVal, 3),
+      fwt: "0.000",
     };
 
     // update allocations
@@ -628,7 +627,6 @@ const Billing = () => {
       [productId]: (prev[productId] || 0) + 1,
     }));
   };
-
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -735,12 +733,12 @@ const Billing = () => {
   };
 
   const FWT = useMemo( () =>billDetailRows.reduce( (total, row) => total + (toNumber(row.fwt) || 0), 0), [billDetailRows] );
+  console.log("FWT Calculation:",FWT);
   const { billDetailsProfit, stoneProfit, totalBillProfit, billProfitPercentage } = useMemo(() => {
     let detailsProfit = 0;
     let stoneProfitCalc = 0;
 
     billDetailRows.forEach((row, index) => {
-       // Find the product stock for touch value
       const productStock = availableProducts?.allStock?.find(product => (product.id || product._id) === row.productId);
       // if (!productStock) alert('no products available');
       const awt = toNumber(row.awt);
@@ -777,14 +775,13 @@ const Billing = () => {
       billProfitPercentage: toFixedStr(profitPercentage, 2),
     };
   }, [billDetailRows, items, availableProducts, FWT]);
-  const totalReceivedPurity = useMemo(() => rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0),  [rows]  );
-  const TotalFWT =
-    previousBalance > 0
-      ? toNumber(FWT) + toNumber(previousBalance)
-      : previousBalance < 0
-      ? toNumber(FWT) - Math.abs(toNumber(previousBalance))
-      : toNumber(FWT);
-
+    const totalReceivedPurity = useMemo(() => rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0),  [rows]  );
+    const TotalFWT =
+      previousBalance > 0
+        ? toNumber(FWT) + toNumber(previousBalance)
+        : previousBalance < 0
+        ? toNumber(FWT) - Math.abs(toNumber(previousBalance))
+        : toNumber(FWT);
 
   const pureBalance = TotalFWT - totalReceivedPurity;
   // Replace the existing cashBalance calculation with:
@@ -831,10 +828,16 @@ const Billing = () => {
   };
 
   const handleReset = () => {
+    try{
     setBillDetailRows([]);
     setRows([]);
     setSelectedCustomer(null);
     setBillHallmark("");
+    setTime(new Date().toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }))
     // clear allocations and selection trackers
     setWeightAllocations({});
     setStoneAllocations({});
@@ -857,6 +860,10 @@ const Billing = () => {
 
     console.log("Bill Reset Successfully");
     toast.success("Bill Reset Successfully", { autoClose: 1000 });
+  }catch(err){
+    console.error("Error resetting bill:", err);
+    toast.error("Error resetting bill");
+  }
   };
 
   const handleExit = () => {
@@ -1573,13 +1580,13 @@ const Billing = () => {
                     <TableRow key={row.id || index}>
                       <TableCell className="td">{index + 1}</TableCell>
                       <TableCell className="td">
-                        <TextField
+                       <TextField
                           size="small"
                           type="date"
                           value={row.date}
                           disabled={row.isLocked}
-                          onChange={(e) =>handleRowChange(index, "date", e.target.value) }
-                          inputProps={{ style: inputStyle }}
+                          onChange={(e) => handleRowChange(index, "date", e.target.value)}
+                          sx={{ width: { xs: 110, sm: 150 }, mr: 1, input: { padding: '6px 10px', borderRadius: '6px' } }}
                           error={!!fieldErrors[`receivedDetail_${index}_date`]}
                           helperText={fieldErrors[`receivedDetail_${index}_date`] || ""}
                         />
