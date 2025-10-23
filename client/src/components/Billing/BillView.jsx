@@ -245,7 +245,6 @@ const BillView = () => {
         billDetailsprofit: BillDetailsProfit, 
         Stoneprofit: StoneProfit,        
         Totalprofit: TotalBillProfit,
-        hallmarkQty:hallmarkQty,
       };
   
       console.log("Printing bill data:", billData);
