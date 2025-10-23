@@ -78,7 +78,7 @@ const OrderReport = () => {
         name: item.item_name,
         description: item.description,
         weight: weight.toFixed(3),
-        dueDate: item.due_date?.split("T")[0] || "N/A",
+        dueDate: new Date(item.due_date?.split("T")[0]).toLocaleDateString("en-IN") || "N/A",
         status: item.status || "Pending",
         images: item.productImages || [],
       });
@@ -93,7 +93,8 @@ const OrderReport = () => {
     return Object.values(grouped).map((group) => ({
       ...group,
       totalPurity: group.totalPurity.toFixed(3),
-      orderDate: group.createdAt.split("T")[0], 
+      orderDate:new Date(group.createdAt.split("T")[0]).toLocaleDateString("en-IN"),
+      
     }));
   };
 
@@ -133,11 +134,11 @@ const OrderReport = () => {
         >
           Order Report
         </Typography>
-        <div className="report-actions">
+        {/* <div className="report-actions">
           <IconButton color="primary">
             <Print />
           </IconButton>
-        </div>
+        </div> */}
       </div>
 
       <div

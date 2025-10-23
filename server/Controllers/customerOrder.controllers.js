@@ -459,6 +459,7 @@ module.exports = {
   getCustomerOrder,
   createCustomerOrder,
   updateCustomerOrder,
+  // deleteCustomerOrder,
   deleteOrderById,
   addExtraItemToOrderGroup,
   deleteImageById,

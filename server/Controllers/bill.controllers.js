@@ -248,6 +248,7 @@ const geAllBill = async (req, res) => {
       include: {
         orders: true,
         billReceive: true,
+        customers:true,
         customers:{
           include:{
             customerBillBalance:true
