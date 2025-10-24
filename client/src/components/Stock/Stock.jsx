@@ -222,7 +222,7 @@ const Stock = () => {
                   <td>{safeFixed(item.netWeight)}</td>
                   <td>{safeFixed(item.wastageValue)}</td>
                   <td>{safeFixed(item.wastagePure)}</td>
-                  <td>{safeFixed(item.finalWeight)}</td>
+                  <td>{safeFixed(item.finalPurity)}</td>
                   <td>{item.isBillProduct && <Button
                         variant="contained"
                         startIcon={<AddCircleOutline />}
