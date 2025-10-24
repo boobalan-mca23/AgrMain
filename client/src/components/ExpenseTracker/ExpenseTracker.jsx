@@ -10,6 +10,8 @@ import { FaWallet ,FaReceipt} from "react-icons/fa"; // wallet icon for header
 import { AiOutlinePlus } from "react-icons/ai"; // plus icon for button
 import "./Expense.css";
 const ExpenseTracker = () => {
+    const today = new Date();
+    const formattedToday = today.toISOString().split("T")[0];
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [allExpense, setAllExpense] = useState([]);
@@ -19,13 +21,14 @@ const ExpenseTracker = () => {
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [newExpense, setNewExpense] = useState({
+    expenseDate:formattedToday,
     description: "",
     gold: "",
     touch: "",
     purity: "",
   });
   const filteredTransactions = allExpense.filter((transaction) => {
-  const transactionDate = new Date(transaction.createdAt);
+  const transactionDate = new Date(transaction.expenseDate);
 
   const from = fromDate ? new Date(fromDate) : null;
   const to = toDate ? new Date(toDate) : null;
@@ -55,11 +58,11 @@ const ExpenseTracker = () => {
   const handleClosePop = () => {
     setOpen(false);
    
-    setNewExpense({ description: "", gold: "", touch: "", purity: "" });
+    setNewExpense({ expenseDate:formattedToday, description: "", gold: "", touch: "", purity: "" });
     fetchRawGold()
   };
   const handleSaveExpense = async (payload) => {
-  
+    console.log('payload expense',payload)
     try {
       const response = await axios.post(
         `${BACKEND_SERVER_URL}/api/expense`,
@@ -181,9 +184,9 @@ const ExpenseTracker = () => {
               <tbody>
                 {paginatedData.map((item, index) => (
                   <tr key={index + 1}>
-                    <td>{item.id}</td>
+                    <td>{page * rowsPerPage +(index+1)}</td>
                     <td>
-                      {new Date(item.createdAt).toLocaleDateString("en-GB")}
+                      {new Date(item.expenseDate).toLocaleDateString("en-GB")}
                     </td>
                     <td>{item.description || "-"}</td>
                     <td>{item.gold}</td>

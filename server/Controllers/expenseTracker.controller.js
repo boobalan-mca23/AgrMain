@@ -5,13 +5,13 @@ const reduce=require('../Utils/reduceRawGold')
 
 exports.createExpense=async(req,res)=>{
    try{
-       const {description,gold,touch,purity}=req.body
-        console.log(req.body)
+       const {expenseDate,description,gold,touch,purity}=req.body
+        console.log('Date',expenseDate)
 
        if(!gold||!touch){
           return res.status(400).json({err:"Missing Required Fields"})
        }
-       await reduce.expenseGoldReduce(gold,touch,purity,description)
+       await reduce.expenseGoldReduce(new Date(expenseDate),gold,touch,purity,description)
 
        const allExpense=await prisma.expenseTracker.findMany({
          orderBy:{

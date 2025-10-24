@@ -64,7 +64,7 @@ const Goldsmith = () => {
   const [isFinished, setIsFinished] = useState("");
   const [openingBalance, setOpeningBalance] = useState(0);
   const [rawGoldStock, setRawGoldStock] = useState([]);
-
+  const [saveDisable,setSaveDisable]=useState(false)
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState(false);
   const [lastJobCard, setLastJobCard] = useState({});
@@ -175,6 +175,7 @@ const Goldsmith = () => {
     };
 
     try {
+      setSaveDisable(true)
       const response = await axios.put(
         `${BACKEND_SERVER_URL}/api/assignments/${selectedName.id}/${jobCardId}`, // id is GoldSmith and jobCard id
         payload,
@@ -201,10 +202,12 @@ const Goldsmith = () => {
         },
       ]);
       setReceivedMetalReturns([]);
+      setSaveDisable(false)
+      alert(response.data.message);
 
-      toast.success(response.data.message, { autoClose: 2000 });
     } catch (err) {
       toast.error(err.message);
+      setSaveDisable(false)
     }
   };
   const handleJobCardId = (id) => {
@@ -410,9 +413,11 @@ const Goldsmith = () => {
         open={open}
         handleCloseJobcard={handleCloseJobcard}
         handleUpdateJobCard={handleUpdateJobCard}
-        lastJobCardId={lastJobCard.jobcardId}
-        lastIsFinish={lastJobCard.isFinished}
+        // lastJobCardId={lastJobCard.jobcardId}
+        // lastIsFinish={lastJobCard.isFinished}
         isFinished={isFinished}
+        saveDisable={saveDisable}
+
       />
 
       <ToastContainer position="top-right" autoClose={3000} />

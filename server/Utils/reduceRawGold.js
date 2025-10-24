@@ -84,8 +84,9 @@ const reduceRawGold  = async (givenGold,jobCardId,goldSmithId) => {
   }
   await setTotalRawGold();
 };
-const expenseGoldReduce=async(gold,touch,purity,description)=>{
+const expenseGoldReduce=async( expenseDate,gold,touch,purity,description)=>{
      let data={
+       expenseDate,
        description,
        gold,
        touch,

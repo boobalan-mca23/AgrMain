@@ -1,17 +1,10 @@
 import {
-  Container,
-  Typography,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText,
   IconButton,
-  Divider,
-  Box,
-  CircularProgress,
-  Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import "./NewExpense.css";
@@ -90,6 +83,7 @@ const expenseSchema = z.object({
     // Convert values to numbers for Zod
     const dataToValidate = {
       ...newExpense,
+      expenseDate:newExpense.expenseDate,
       gold: parseFloat(newExpense.gold),
       touch: parseFloat(newExpense.touch),
       purity: parseFloat(newExpense.purity),
@@ -122,7 +116,11 @@ const expenseSchema = z.object({
   return (
     <Dialog
       open={open}
-      onClose={handleClosePop}
+       onClose={(event, reason) => {
+        if (reason !== 'backdropClick') {
+            handleClosePop();
+          }
+         }}
       fullWidth
       maxWidth="xl" // larger than md
       PaperProps={{
@@ -153,6 +151,16 @@ const expenseSchema = z.object({
           {/* //Forms */}
           <div>
             <form className="formGrid">
+             <label className="expense-lable">Expense Date :</label>
+              <input
+                type="date"
+                name="expenseDate"
+                value={newExpense.expenseDate}
+                onChange={(e) => {
+                  handleChangeExpense(e);
+                }}
+              />
+              <label className="expense-lable">Notes :</label>
               <textarea
                 className="description"
                 name="description"
@@ -162,9 +170,9 @@ const expenseSchema = z.object({
                   handleChangeExpense(e);
                 }}
               />
-
+              <label className="expense-lable">Given Gold :</label>
               <input
-                placeholder="GivenGold"
+                // placeholder="GivenGold"
                 name="gold"
                 type="number"
                 value={newExpense.gold}
@@ -174,6 +182,7 @@ const expenseSchema = z.object({
                 onWheel={(e)=>e.target.blur()}
               ></input>
               {expenseError.gold&& <p style={{color:"red"}}>{expenseError.gold}</p>}
+               <label className="expense-lable">Select Touch :</label>
               <select
                 onChange={(e) => {
                   handleChangeExpense(e);
@@ -181,7 +190,7 @@ const expenseSchema = z.object({
                 name="touch"
                 value={newExpense.touch}
               >
-                <option value={""}>Select Touch </option>
+                <option value={""}>Touch </option>
                 {touch.map((t, index) => (
                   <option key={index + 1} value={t.touch}>
                     {t.touch}
@@ -189,8 +198,9 @@ const expenseSchema = z.object({
                 ))}
               </select>
                 {expenseError.touch&& <p style={{color:"red"}}>{expenseError.touch}</p>}
+             <label className="expense-lable">Purity :</label>
               <input
-                placeholder="Purity"
+                
                 readOnly
                 value={newExpense.purity}
               ></input>
