@@ -36,7 +36,7 @@ app.use(cors({
   origin: [
     "https://agrmain.onrender.com",
     "http://localhost:3000",
-    "https://agrclient.onrender.com"],
+    "https://agrclientapp.onrender.com"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
