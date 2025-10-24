@@ -49,10 +49,17 @@ const createBill = async (req, res) => {
       percentage: item.percentage ? parseFloat(item.percentage) : undefined,
       finalWeight: item.finalWeight ? parseFloat(item.finalWeight) : undefined,
     }));
- 
- 
+
+      const lastBill = await prisma.bill.findFirst({
+        orderBy: { id: "desc" },
+      });
+
+      const nextBillNo = lastBill ? (lastBill.billno || lastBill.id) + 1 : 1;
+
+      
     const newBill = await prisma.bill.create({
       data: {
+        billno: nextBillNo,
         date: new Date(date),
         time: time,
         customername: customername,
@@ -73,6 +80,7 @@ const createBill = async (req, res) => {
         customers: true,
       },
     });
+    console.log("newBill created", newBill);
     // newbill time we need to move rawgold stock
     await addRawGold.moveToRawGoldStock(received, newBill.id, customerId);
  
@@ -259,9 +267,10 @@ const geAllBill = async (req, res) => {
        id:"desc"
      }
     });
-    const billId=allBills.length+1
-    console.log('billid',billId)
-    return res.status(200).json({ data:allBills,billId:billId});
+   const lastBill = allBills[0];
+    const nextBillNo = lastBill ? (lastBill.billno || lastBill.id) + 1 : 1;
+    return res.status(200).json({ data: allBills, billId: nextBillNo });
+
 
   } catch (err) {
     console.error(err.message);
@@ -362,11 +371,42 @@ const customerReport = async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 };
+// delete bill
+const deleteBill = async (req, res) => {
+  const { billId } = req.params;
+
+  try {
+    // Check if the bill exists
+    const billExist = await prisma.bill.findUnique({
+      where: { id: parseInt(billId) },
+    });
+    if (!billExist) {
+      return res.status(404).json({ msg: "Bill not found" });
+    }
+
+    // Delete associated orders first due to foreign key constraints
+    // await prisma.order.deleteMany({
+    //   where: { bill_id: parseInt(billId) },
+    // });
+
+    // Delete the bill
+    await prisma.bill.delete({
+      where: { id: parseInt(billId) },
+    });
+
+    res.status(200).json({ message: "Bill deleted successfully" });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ err: err.message });
+  }
+};
+
 module.exports = {
   createBill,
   updateBill,
   getBillByCustomer,
   geAllBill,
+  deleteBill,
   getBillById,
   customerReport,
 };
