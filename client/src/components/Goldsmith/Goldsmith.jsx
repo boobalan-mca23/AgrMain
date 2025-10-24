@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
   Container,
@@ -35,7 +34,7 @@ const Goldsmith = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [description, setDescription] = useState("");
   const [givenGold, setGivenGold] = useState([
-    { weight: "", touch: "", purity: "",isEdit:false },
+    { weight: "", touch: "", purity: "", isEdit: false },
   ]);
 
   const [itemDelivery, setItemDelivery] = useState([
@@ -48,34 +47,38 @@ const Goldsmith = () => {
       wastageType: "",
       wastageValue: "",
       finalPurity: "",
-      isEdit:false
+      isEdit: false,
     },
   ]);
 
   const [selectedName, setSelectedName] = useState({});
   const [receivedMetalReturns, setReceivedMetalReturns] = useState([]);
-  const [dropDownItems,setDropDownItems]=useState({masterItems:[],touchList:[],masterWastage:[]})
+  const [dropDownItems, setDropDownItems] = useState({
+    masterItems: [],
+    touchList: [],
+    masterWastage: [],
+  });
   const [jobCardError, setJobCardError] = useState({});
   const [jobCardId, setJobCardId] = useState(null);
   const [noJobCard, setNoJobCard] = useState({});
-  const [isFinished,setIsFinished]=useState("")
+  const [isFinished, setIsFinished] = useState("");
   const [openingBalance, setOpeningBalance] = useState(0);
-  const [rawGoldStock, setRawGoldStock]=useState([])
+  const [rawGoldStock, setRawGoldStock] = useState([]);
 
-  const [open,setOpen]=useState(false)
+  const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState(false);
-  const [lastJobCard,setLastJobCard]=useState({})
+  const [lastJobCard, setLastJobCard] = useState({});
 
- const fetchRawGold = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_SERVER_URL}/api/rawGold`);
-        setRawGoldStock(response.data.allRawGold);
-        console.log('rawGoldStock',response.data.allRawGold)
-      } catch (err) {
-        console.log(err);
-        alert(err.message);
-      }
-    };
+  const fetchRawGold = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_SERVER_URL}/api/rawGold`);
+      setRawGoldStock(response.data.allRawGold);
+      console.log("rawGoldStock", response.data.allRawGold);
+    } catch (err) {
+      console.log(err);
+      alert(err.message);
+    }
+  };
 
   useEffect(() => {
     const fetchGoldsmiths = async () => {
@@ -89,39 +92,32 @@ const Goldsmith = () => {
     };
     const fetchMasterItems = async () => {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-items/`);
-      setDropDownItems((prev)=>({...prev,
-        masterItems:res.data
-      }))
+      setDropDownItems((prev) => ({ ...prev, masterItems: res.data }));
     };
     const fetchTouch = async () => {
       try {
         const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
-      setDropDownItems((prev)=>({...prev,
-          touchList:res.data
-      }))
+        setDropDownItems((prev) => ({ ...prev, touchList: res.data }));
       } catch (err) {
         console.error("Failed to fetch touch values", err);
       }
     };
     const fetchWastageVal = async () => {
-        try {
-          const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`);
-         console.log("wastage fecth test:",res.data)
-         setDropDownItems((prev) => ({ ...prev, masterWastage: res.data }));
-        } catch (err) {
-          console.error("Failed to fetch touch values", err);
-        }
-      };
-    
+      try {
+        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`);
+        console.log("wastage fecth test:", res.data);
+        setDropDownItems((prev) => ({ ...prev, masterWastage: res.data }));
+      } catch (err) {
+        console.error("Failed to fetch touch values", err);
+      }
+    };
+
     fetchWastageVal();
     fetchRawGold();
     fetchMasterItems();
     fetchTouch();
     fetchGoldsmiths();
-
   }, []);
-
-
 
   const filteredGoldsmith = goldsmith.filter((gs) => {
     const nameMatch =
@@ -131,25 +127,27 @@ const Goldsmith = () => {
       gs.address && gs.address.toLowerCase().includes(searchTerm.toLowerCase());
     return nameMatch || phoneMatch || addressMatch;
   });
-const handleCloseJobcard = () => {
-    
+  const handleCloseJobcard = () => {
     fetchRawGold();
     setOpen(false);
-    setEdit(false)
-    setDescription("")
-    setGivenGold([{ weight: "", touch: "", purity: "",isEdit:false }])
-    setItemDelivery([{
-      itemName: "",
-      itemWeight: "",
-      touch: "",
-      deduction: [{ type: "", weight: "" }],
-      netWeight: "",
-      wastageType: "",
-      wastageValue: "",
-      finalPurity: "",
-      isEdit:false
-    },,])
-    setReceivedMetalReturns([])
+    setEdit(false);
+    setDescription("");
+    setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
+    setItemDelivery([
+      {
+        itemName: "",
+        itemWeight: "",
+        touch: "",
+        deduction: [{ type: "", weight: "" }],
+        netWeight: "",
+        wastageType: "",
+        wastageValue: "",
+        finalPurity: "",
+        isEdit: false,
+      },
+      ,
+    ]);
+    setReceivedMetalReturns([]);
   };
 
   const handleUpdateJobCard = async (
@@ -157,25 +155,25 @@ const handleCloseJobcard = () => {
     deliveryTotal,
     receivedTotal,
     jobCardBalance,
-    openingBalance,
-  
+    openingBalance
   ) => {
     const payload = {
       description,
-      givenGold:givenGold.filter((item,_)=>item.isEdit===true),
-      itemDelivery:itemDelivery.filter((item,_)=>item.isEdit===true),
-      receiveSection: receivedMetalReturns.filter((item,_)=>item.isEdit===true),
+      givenGold: givenGold.filter((item, _) => item.isEdit === true),
+      itemDelivery: itemDelivery.filter((item, _) => item.isEdit === true),
+      receiveSection: receivedMetalReturns.filter(
+        (item, _) => item.isEdit === true
+      ),
       total: {
-        id:jobCardId,
+        id: jobCardId,
         givenTotal,
         deliveryTotal,
         receivedTotal,
         jobCardBalance,
-        openingBalance
+        openingBalance,
       },
-      
     };
-   
+
     try {
       const response = await axios.put(
         `${BACKEND_SERVER_URL}/api/assignments/${selectedName.id}/${jobCardId}`, // id is GoldSmith and jobCard id
@@ -187,22 +185,24 @@ const handleCloseJobcard = () => {
         }
       );
       handleCloseJobcard();
-      setGivenGold([{ weight: "", touch: "", purity: "",isEdit:false }])
-      setDescription("")
-      setItemDelivery( [{
-      itemName: "",
-      itemWeight: "",
-      touch: "",
-      deduction: [{ type: "", weight: "" }],
-      netWeight: "",
-      wastageType: "",
-      wastageValue: "",
-      finalPurity: "",
-      isEdit:false
-    },])
-      setReceivedMetalReturns([])
-     
-      toast.success(response.data.message,{autoClose:2000});
+      setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
+      setDescription("");
+      setItemDelivery([
+        {
+          itemName: "",
+          itemWeight: "",
+          touch: "",
+          deduction: [{ type: "", weight: "" }],
+          netWeight: "",
+          wastageType: "",
+          wastageValue: "",
+          finalPurity: "",
+          isEdit: false,
+        },
+      ]);
+      setReceivedMetalReturns([]);
+
+      toast.success(response.data.message, { autoClose: 2000 });
     } catch (err) {
       toast.error(err.message);
     }
@@ -217,57 +217,55 @@ const handleCloseJobcard = () => {
     }
   };
   const handleSearch = () => {
-      if (!jobCardError.err && !isNaN(jobCardId) && jobCardId !== null) {
-        const fetchJobCardById = async () => {
-          try {
-            const res = await fetch(
-              `${BACKEND_SERVER_URL}/api/assignments/${jobCardId}/jobcard`,
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              }
-            );
-            const data = await res.json();
-            console.log('data',data)
-            if (res.status === 404) {
-              setOpen(false);
-              setEdit(false);
-              setNoJobCard({ err: "No Job Card For This Id" });
-            } else {
-              setDescription(data.jobcard[0].description) 
-              setGivenGold(data.jobcard[0].givenGold);
-              setItemDelivery(
-                data.jobcard[0].deliveries.length >= 1
-                  ? data.jobcard[0].deliveries
-                  : []
-              );
-           
-              setReceivedMetalReturns(data.jobcard[0].received);
-              setSelectedName(data.jobcard[0].goldsmith);
-              setOpeningBalance(data.jobcard[0].total[0].openingBalance);
-              setLastJobCard(data.lastJobCard)
-              setIsFinished(data.jobcard[0].total[0].isFinished)
-              setOpen(true);
-              setEdit(true);
-              setNoJobCard({});
+    if (!jobCardError.err && !isNaN(jobCardId) && jobCardId !== null) {
+      const fetchJobCardById = async () => {
+        try {
+          const res = await fetch(
+            `${BACKEND_SERVER_URL}/api/assignments/${jobCardId}/jobcard`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
             }
-          } catch (err) {
-            toast.error(err.message);
+          );
+          const data = await res.json();
+          console.log("data", data);
+          if (res.status === 404) {
+            setOpen(false);
+            setEdit(false);
+            setNoJobCard({ err: "No Job Card For This Id" });
+          } else {
+            setDescription(data.jobcard[0].description);
+            setGivenGold(data.jobcard[0].givenGold);
+            setItemDelivery(
+              data.jobcard[0].deliveries.length >= 1
+                ? data.jobcard[0].deliveries
+                : []
+            );
+
+            setReceivedMetalReturns(data.jobcard[0].received);
+            setSelectedName(data.jobcard[0].goldsmith);
+            setOpeningBalance(data.jobcard[0].total[0].openingBalance);
+            setLastJobCard(data.lastJobCard);
+            setIsFinished(data.jobcard[0].total[0].isFinished);
+            setOpen(true);
+            setEdit(true);
+            setNoJobCard({});
           }
-        };
-        fetchJobCardById();
-      }
-    };
+        } catch (err) {
+          toast.error(err.message);
+        }
+      };
+      fetchJobCardById();
+    }
+  };
 
   return (
-      <div className="homeContainer">
-
-     
+    <div className="homeContainer">
       <Paper className="customer-details-container" elevation={3} sx={{ p: 3 }}>
         <Typography variant="h5" align="center" gutterBottom>
-         Goldsmith Details
+          Goldsmith Details
         </Typography>
 
         <TextField
@@ -330,7 +328,7 @@ const handleCloseJobcard = () => {
             {filteredGoldsmith.length > 0 ? (
               filteredGoldsmith.map((goldsmith, index) => (
                 <TableRow key={index}>
-                  <TableCell align="center">{index+1}</TableCell>
+                  <TableCell align="center">{index + 1}</TableCell>
                   <TableCell align="center">{goldsmith.name}</TableCell>
                   <TableCell align="center">{goldsmith.phone}</TableCell>
                   <TableCell align="center">{goldsmith.address}</TableCell>
@@ -349,16 +347,13 @@ const handleCloseJobcard = () => {
                         />
                       </Link>
                     </Tooltip>
-
-                   
-
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell colSpan={4} align="center">
-               No goldsmith details available...
+                  No goldsmith details available...
                 </TableCell>
               </TableRow>
             )}
@@ -366,7 +361,7 @@ const handleCloseJobcard = () => {
         </Table>
       </Paper>
 
-     <div className="customer-details-container">
+      <div className="customer-details-container">
         <Typography variant="h6" gutterBottom>
           Search Job Card
         </Typography>
@@ -396,32 +391,32 @@ const handleCloseJobcard = () => {
         </div>
       </div>
 
-        <AgrNewJobCard
-          description={description}
-          setDescription={setDescription}
-          givenGold={givenGold}
-          setGivenGold={setGivenGold}
-          itemDelivery={itemDelivery}
-          setItemDelivery={setItemDelivery}
-          receivedMetalReturns={receivedMetalReturns}
-          setReceivedMetalReturns={setReceivedMetalReturns}
-          dropDownItems={dropDownItems}
-          rawGoldStock={rawGoldStock}
-          setRawGoldStock={setRawGoldStock}
-          openingBalance={openingBalance}
-          name={selectedName.name}
-          edit={edit}
-          jobCardId={jobCardId}
-          open={open}
-          handleCloseJobcard={handleCloseJobcard}
-          handleUpdateJobCard={handleUpdateJobCard}
-          lastJobCardId={lastJobCard.jobcardId}
-          lastIsFinish={lastJobCard.isFinished}
-          isFinished={isFinished}
-        />
-        
+      <AgrNewJobCard
+        description={description}
+        setDescription={setDescription}
+        givenGold={givenGold}
+        setGivenGold={setGivenGold}
+        itemDelivery={itemDelivery}
+        setItemDelivery={setItemDelivery}
+        receivedMetalReturns={receivedMetalReturns}
+        setReceivedMetalReturns={setReceivedMetalReturns}
+        dropDownItems={dropDownItems}
+        rawGoldStock={rawGoldStock}
+        setRawGoldStock={setRawGoldStock}
+        openingBalance={openingBalance}
+        name={selectedName.name}
+        edit={edit}
+        jobCardId={jobCardId}
+        open={open}
+        handleCloseJobcard={handleCloseJobcard}
+        handleUpdateJobCard={handleUpdateJobCard}
+        lastJobCardId={lastJobCard.jobcardId}
+        lastIsFinish={lastJobCard.isFinished}
+        isFinished={isFinished}
+      />
+
       <ToastContainer position="top-right" autoClose={3000} />
-   </div>
+    </div>
   );
 };
 

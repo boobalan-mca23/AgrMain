@@ -1,6 +1,6 @@
 .expenseHeader {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-evenly;
     align-items: center;
     gap: 10px;
     background: linear-gradient(135deg, #f9f8fa, #fefefe); 
@@ -11,6 +11,12 @@
     font-weight: 500;
     
 }
+.expenseBtnGroup{
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 10px;
+}
 .expensebtn{
 
     border: none;
@@ -19,7 +25,7 @@
     padding: 10px;
     font-weight: 500;
     cursor: pointer;
-    border-radius: 9px;
+    border-radius: 5px;
     font-size: smaller;
    
 
@@ -71,5 +77,16 @@
   padding: 5px;
   border: 1px solid #ccc;
   border-radius: 5px;
+}
+.expenseClear{
+ 
+    border: none;
+    background-color:red;
+    color: white;
+    padding: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: medium;
 }
 

@@ -214,14 +214,14 @@ const expenseSchema = z.object({
                     <tr key={index + 1} className="jobCardTouchTableBody">
                       <td>{index + 1}</td>
                       <td>{rawStock.touch}</td>
-                      <td>{rawStock.weight}</td>
+                      <td>{Number(rawStock.weight).toFixed(3)}</td>
                       <td
                         style={{
                           backgroundColor:
                             rawStock.remainingWt < 0 ? "red" : "",
                         }}
                       >
-                        {rawStock.remainingWt}
+                        {Number(rawStock.remainingWt).toFixed(3)}
                       </td>
                     </tr>
                   ))}

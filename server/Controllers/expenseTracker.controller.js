@@ -13,7 +13,11 @@ exports.createExpense=async(req,res)=>{
        }
        await reduce.expenseGoldReduce(gold,touch,purity,description)
 
-       const allExpense=await prisma.expenseTracker.findMany()
+       const allExpense=await prisma.expenseTracker.findMany({
+         orderBy:{
+            id:"desc"
+         }
+       })
 
        return res.status(200).json({allExpense,message:"New Expense Created"})
    }catch(err){

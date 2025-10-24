@@ -139,9 +139,19 @@ const ExpenseTracker = () => {
               />
             </label>
           </div>
+        
+          <div className="expenseBtnGroup">
+            
+             <button
+              className="expenseClear"
+              onClick={() => {
+                setToDate("")
+                setFromDate("")
+              }}
+            >
+              Clear 
+            </button>
 
-          <div>
-            {" "}
             <button
               className="expensebtn"
               onClick={() => {
@@ -171,7 +181,7 @@ const ExpenseTracker = () => {
               <tbody>
                 {paginatedData.map((item, index) => (
                   <tr key={index + 1}>
-                    <td>{index + 1}</td>
+                    <td>{item.id}</td>
                     <td>
                       {new Date(item.createdAt).toLocaleDateString("en-GB")}
                     </td>
