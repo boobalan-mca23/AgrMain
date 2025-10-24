@@ -9,6 +9,6 @@ router.get('/customerBill/:customerId',bill.getBillByCustomer)
 router.get('/:billId',bill.getBillById)
 router.get('/',bill.geAllBill)
 router.get('/customerReport/:customerId',bill.customerReport)
-
+router.delete('/:billId',bill.deleteBill)
 
 module.exports=router

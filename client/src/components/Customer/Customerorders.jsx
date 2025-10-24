@@ -1077,6 +1077,7 @@ const CustomerOrders = () => {
           </DialogContent>
 
           <DialogActions sx={{ px: 4, py: 2 }}>
+            {!editingOrder &&
              <Button
               variant="outlined"
               startIcon={<Add />}
@@ -1084,7 +1085,7 @@ const CustomerOrders = () => {
               sx={{ display:"flex",flexDirection:"row", alignItems:"center", justifyContent:"center" }}
             >
               Add Another Item
-            </Button>
+            </Button>}
             <Button onClick={handleClose} sx={{ color: "text.secondary" }}>
               Cancel
             </Button>

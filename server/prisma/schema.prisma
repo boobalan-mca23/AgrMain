@@ -349,6 +349,7 @@ model ProductStock{
 
  model Bill{
   id           Int @id @default(autoincrement())
+  billno       Int?
   date         DateTime ?
   time         DateTime?
   customer_id  Int

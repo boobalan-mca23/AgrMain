@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -221,7 +222,7 @@ const CustReport = () => {
               <thead id="customerReportHead">
                 <tr>
                   <th>S.no</th>
-                  <th>Bill Id</th>
+                  <th>Bill No</th>
                   <th>Date</th>
                   <th>Bill&Receive</th>
                   <th>View bill</th>
@@ -233,7 +234,7 @@ const CustReport = () => {
                 {paginatedData.map((bill, index) => (
                   <tr key={index + 1}>
                     <td>{index + 1}</td>
-                    <td>{bill.type==="bill"?bill.info.id:"-"}</td>
+                    <td>{bill.type==="bill"?bill.info.billno:"-"}</td>
                     <td>
                       {new Date(bill.info.createdAt).toLocaleDateString(
                         "en-GB"

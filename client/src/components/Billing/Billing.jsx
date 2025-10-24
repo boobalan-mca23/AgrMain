@@ -711,7 +711,6 @@ const Billing = () => {
       // setBills(prev => [resJson.bill, ...(prev || [])]);
       await fetchProductStock();
 
-
       setBillDetailRows([]);
       setRows([]);
       setSelectedCustomer(null);
@@ -886,7 +885,7 @@ const Billing = () => {
     const bill = bills.find((b) => b.id === id);
     setCurrentBill(bill || null);
     if (!bill) return alert("Bill not found");
-    setBillId(bill.id)
+    setBillId(bill.id || "-");
     setBillDetailsProfit(bill.billDetailsprofit || "0.000");
     setStoneProfit(bill.Stoneprofit || "0.000");
     setTotalBillProfit(bill.Totalprofit || "0.000");
@@ -1139,6 +1138,11 @@ const Billing = () => {
   const handlePrintWithSave = async () => {
     if (isSaving) return; 
      setIsSaving(true);
+    if (viewMode) {
+      handlePrint();
+      setIsSaving(false);
+      return;
+    }
     try {
       if (!selectedCustomer) {
         toast.error("Please select a customer before printing.");
@@ -1192,11 +1196,11 @@ const Billing = () => {
          left:viewMode ? '15%' : '',
         }}
       >
-        {/* <Tooltip title="View Bills" arrow placement="right">
+        <Tooltip title="View Bills" arrow placement="right">
           <Box onClick={() => setIsModal(true)} sx={sidebarButtonSX}>
             <ReceiptLongIcon /><span>View</span>
           </Box>
-      </Tooltip> */}
+      </Tooltip>
 
       <Box  style={{
           display: "flex",
@@ -1211,7 +1215,7 @@ const Billing = () => {
             <ExitToAppIcon /><span>Exit</span>
           </Box>  )}
 
-        {/* {!viewMode && ( <Tooltip title="Reset Bill" arrow placement="right">
+        {!viewMode && ( <Tooltip title="Reset Bill" arrow placement="right">
             <Box
               onClick={handleReset}
               style={{
@@ -1231,7 +1235,7 @@ const Billing = () => {
               <RestartAltIcon /><span>Reset</span>
             </Box>
           </Tooltip>
-        )} */}
+        )}
       </Box>
         <h1 className="heading">Estimate Only</h1>
         <Box className="bill-header">
@@ -1959,7 +1963,7 @@ const Billing = () => {
                   zIndex: 1,
                 }}
               >
-                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}>  ID </TableCell>
+                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}>  Bill No </TableCell>
                 <TableCell style={{ textAlign: "center", color: "white", width: "90px" }} >Customer </TableCell>
                 <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}> Amount </TableCell>
                 <TableCell style={{ textAlign: "center", color: "white", width: "90px" }} >  Date </TableCell>
@@ -1970,7 +1974,7 @@ const Billing = () => {
               {Array.isArray(bills) && bills.length > 0 ? (
                 bills.map((bill) => (
                   <TableRow key={bill.id}>
-                    <TableCell style={{ textAlign: "center" }}>  {bill.id} </TableCell>
+                    <TableCell style={{ textAlign: "center" }}>  {bill.billno} </TableCell>
                     <TableCell style={{ textAlign: "center" }}> {bill.customers?.name || "N/A"} </TableCell>
                     <TableCell style={{ textAlign: "center" }}>  {bill.billAmount} </TableCell>
                     <TableCell style={{ textAlign: "center" }}>  {new Date(bill.createdAt).toLocaleDateString()} </TableCell>
