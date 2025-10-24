@@ -136,7 +136,7 @@ return(
                                <td rowSpan={maxRows}>
                                   {total?.receivedTotal || "-"}
                                 </td>
-                              <td rowSpan={maxRows}>{total?.jobCardBalance|| "-"}</td>
+                              <td rowSpan={maxRows}>{Number(total?.jobCardBalance).toFixed(3)|| "-"}</td>
                                <td rowSpan={maxRows}>
                                   {total?.isFinished === "true" ? <FaCheck /> :<GrFormSubtract size={30}/>}
                                 </td>

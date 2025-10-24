@@ -90,7 +90,8 @@ const ReceiptReport = () => {
   const handleDateClear = () => {
     setFromDate(null);
     setToDate(null);
-     setSelectedCustomer({})
+    setSelectedCustomer({})
+    setReceipt([])
   };
 
   const handleCustomer = (newValue) => {

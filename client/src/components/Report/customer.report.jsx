@@ -102,6 +102,8 @@ const CustReport = () => {
     setFromDate(null);
     setToDate(null);
     setSelectedCustomer({});
+    setBillInfo([])
+
   };
 
   const handleCustomer = (newValue) => {

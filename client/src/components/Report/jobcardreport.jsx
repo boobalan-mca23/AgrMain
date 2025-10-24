@@ -85,6 +85,7 @@ const JobCardReport = () => {
     setFromDate(null);
     setToDate(null);
     setSelectedGoldSmith({});
+    setJobCard([])
   };
 
   const handleGoldSmith = (newValue) => {

@@ -349,7 +349,7 @@ function JobCardDetails() {
                     <p style={{ color: "green", fontWeight: "bolder" }}>
                       Gold Smith Should Given{" "}
                       <span className="goldSmithBalance">
-                        {jobCards.at(-1).total[0].jobCardBalance}g
+                        {(Number(jobCards.at(-1).total[0].jobCardBalance).toFixed(3))}g
                       </span>
                     </p>
                   ) : jobCards.at(-1).total[0].jobCardBalance < 0 ? (
@@ -357,7 +357,7 @@ function JobCardDetails() {
                       Owner Should Given{" "}
                       <span className="goldSmithBalance">
                         {" "}
-                        {jobCards.at(-1).total[0].jobCardBalance} g
+                        {(Number(jobCards.at(-1).total[0].jobCardBalance).toFixed(3))} g
                       </span>
                     </p>
                   ) : (
@@ -365,7 +365,7 @@ function JobCardDetails() {
                       Balance Nill:{" "}
                       <span className="goldSmithBalance">
                         {" "}
-                        {jobCards.at(-1).total[0].jobCardBalance} g
+                        {(Number(jobCards.at(-1).total[0].jobCardBalance).toFixed(3))} g
                       </span>
                     </p>
                   )}

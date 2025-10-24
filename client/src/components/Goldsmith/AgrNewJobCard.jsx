@@ -228,9 +228,7 @@ function AgrNewJobCard({
     if (!isTrue) return;
     const copy = [...itemDelivery];
     copy[itemIndex].deduction.splice(stoneIndex, 1);
-    copy[itemIndex]["netWeight"] =
-      copy[itemIndex]["ItemWeight"] -
-      Number(totalDeduction(itemIndex, copy) || 0);
+    copy[itemIndex]["netWeight"] =format(copy[itemIndex]["ItemWeight"] -Number(totalDeduction(itemIndex, copy)))
     setItemDelivery(copy);
   };
 
