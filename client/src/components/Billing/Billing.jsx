@@ -1192,11 +1192,11 @@ const Billing = () => {
          left:viewMode ? '15%' : '',
         }}
       >
-        <Tooltip title="View Bills" arrow placement="right">
+        {/* <Tooltip title="View Bills" arrow placement="right">
           <Box onClick={() => setIsModal(true)} sx={sidebarButtonSX}>
             <ReceiptLongIcon /><span>View</span>
           </Box>
-      </Tooltip>
+      </Tooltip> */}
 
       <Box  style={{
           display: "flex",
