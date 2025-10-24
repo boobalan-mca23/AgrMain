@@ -20,6 +20,19 @@ const checkCashOrGold=(payload,setGoldCashError)=>{
     setGoldCashError(errors)
     return errors
 }
+const checkExpense=(dataToValidate,setExpenseError)=>{
+  
+   const errors={}
+     
+    if(!dataToValidate.expenseDate) errors.expenseDate="Date is Required"
+    if(!dataToValidate.gold) errors.gold="Gold Value is Required"
+    if(dataToValidate.gold<=0) errors.gold="Gold Value Should be Greater Than 0"
+    if(!dataToValidate.touch) errors.touch="Touch is Required"
+
+    setExpenseError(errors)
+    return errors
+}
 export{
-    checkCashOrGold
+    checkCashOrGold,
+    checkExpense
 }

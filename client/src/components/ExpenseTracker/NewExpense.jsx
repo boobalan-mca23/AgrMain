@@ -10,10 +10,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import "./NewExpense.css";
 import { ToastContainer, toast } from "react-toastify";
 import { useState } from "react";
-import {z} from "zod"
+
 import {
   checkAvailabilityStock,
 } from "../jobcardvalidation/JobcardValidation";
+import {checkExpense} from "../../components/cashOrGoldValidation/cashOrGoldValidation"
 const NewExpense = ({
   open,
   newExpense,
@@ -25,18 +26,8 @@ const NewExpense = ({
   setRawGold,
 }) => {
 const [expenseError,setExpenseError]=useState({})
-    
-const expenseSchema = z.object({
-  gold: z
-    .number({ invalid_type_error: "Gold must be a number" })
-    .min(1, "Gold cannot be negative"),
-  touch: z
-    .number({ invalid_type_error: "Touch must be a number" })
-    .min(0, "Touch cannot be negative"),
-  
-});
-  
-  const handleChangeExpense = (e) => {
+
+const handleChangeExpense = (e) => {
     const { name, value } = e.target;
 
     // Save previous touch & weight
@@ -89,11 +80,11 @@ const expenseSchema = z.object({
       purity: parseFloat(newExpense.purity),
     };
 
-    expenseSchema.parse(dataToValidate); // Throws if invalid
-    setExpenseError({}); // Clear previous errors
-
     // If validation passes
-     let exist = checkAvailabilityStock(rawGold);
+    let validExpense=checkExpense(dataToValidate,setExpenseError)
+    let exist = checkAvailabilityStock(rawGold);
+
+    if(Object.keys(validExpense).length!==0) return toast.warn("Give Valid Information in Expense ")
     if (exist.stock === "ok") {
       handleSaveExpense(dataToValidate);
       handleClosePop();
@@ -102,13 +93,7 @@ const expenseSchema = z.object({
     }
 
   } catch (err) {
-      if (err instanceof z.ZodError) {
-      const errors = {};
-      err.issues.forEach((e) => { // use 'issues' instead of 'errors'
-        if (e.path[0]) errors[e.path[0]] = e.message;
-      });
-      setExpenseError(errors);
-    }
+    alert(err.message)
   }
   
 };
@@ -160,6 +145,7 @@ const expenseSchema = z.object({
                   handleChangeExpense(e);
                 }}
               />
+               {expenseError.expenseDate&& <p style={{color:"red"}}>{expenseError.expenseDate}</p>}
               <label className="expense-lable">Notes :</label>
               <textarea
                 className="description"
