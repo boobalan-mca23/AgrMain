@@ -231,14 +231,19 @@ const Receipt = () => {
     console.log("payLoad", payLoad);
 
     const saveReceipt = async () => {
-      handlePrint(receipt, selectedCustomer);
+     
       try {
         const response = await axios.post(
           `${BACKEND_SERVER_URL}/api/receipt`,
           payLoad
         );
         if (response.status === 201) {
-          toast.success(response.data.message, { autoClose: 2000 });
+          toast.success(response.data.message);
+
+          setTimeout(()=>{
+             handlePrint(receipt, selectedCustomer);
+          },3000)
+
           setSelectedCustomer("");
           setReceipt([
             {
@@ -513,7 +518,7 @@ const Receipt = () => {
       </div>
       <ToastContainer
         position="top-right"
-        autoClose={2000}
+        autoClose={1000}
         hideProgressBar={true}
         newestOnTop={false}
         closeOnClick

@@ -6,7 +6,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import ReceiptPrintReport from "./Receipt_Voucher_Print/ReceiptPrint";
 import ReactDOMServer from "react-dom/server";
-import './receiptreport.css'
+import "./receiptreport.css";
 import {
   Autocomplete,
   Button,
@@ -23,7 +23,6 @@ import {
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import axios from "axios";
 
-
 const ReceiptReport = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
@@ -36,21 +35,20 @@ const ReceiptReport = () => {
   const paginatedData = receipt.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
-  );  
+  );
 
   const reportRef = useRef();
 
   // Calculate totals for current page
- 
-  const handlePrint =  () => {
 
+  const handlePrint = () => {
     const printContent = (
-      < ReceiptPrintReport
+      <ReceiptPrintReport
         fromDate={fromDate ? fromDate.format("DD/MM/YYYY") : ""}
         toDate={toDate ? toDate.format("DD/MM/YYYY") : ""}
         customerName={selectedCustomer?.name || ""}
         receipt={receipt}
-
+        selectedCustomer={selectedCustomer}
       />
     );
 
@@ -76,8 +74,7 @@ const ReceiptReport = () => {
     const printWindow = window.open("", "_blank", "width=1000,height=800");
     printWindow.document.write(printHtml);
     printWindow.document.close();
-
-};
+  };
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -90,8 +87,8 @@ const ReceiptReport = () => {
   const handleDateClear = () => {
     setFromDate(null);
     setToDate(null);
-    setSelectedCustomer({})
-    setReceipt([])
+    setSelectedCustomer({});
+    setReceipt([]);
   };
 
   const handleCustomer = (newValue) => {
@@ -111,13 +108,11 @@ const ReceiptReport = () => {
         );
         console.log("data", response.data);
         setReceipt(response.data);
-
-      
       } catch (error) {
         console.error("Error fetching receipt data:", error);
       }
     };
-    fetchReceipts ();
+    fetchReceipts();
   };
 
   useEffect(() => {
@@ -139,7 +134,7 @@ const ReceiptReport = () => {
 
   return (
     <>
-      <div >
+      <div>
         <div className="receiptreportHeader">
           <h3>Receipt Report</h3>
           <div className="receipt">
@@ -177,72 +172,84 @@ const ReceiptReport = () => {
               )}
             />
 
-     
-              <Button
-                id="clear"
-                className="clr noprint receiptreportBtn"
-                onClick={handleDateClear}
-              >
-                Clear
-              </Button>
-     
+            <Button
+              id="clear"
+              className="clr noprint receiptreportBtn"
+              onClick={handleDateClear}
+            >
+              Clear
+            </Button>
 
-              <div className="noprint">
-                <Button
-                  id="print"
-                  onClick={() => {
-                    handlePrint();
-                  }}
-                  className="receiptreportBtn"
-                >
-                  Print
-                </Button>
-              </div>
-            
+            <div className="noprint">
+              <Button
+                id="print"
+                onClick={() => {
+                  handlePrint();
+                }}
+                className="receiptreportBtn"
+              >
+                Print
+              </Button>
+            </div>
           </div>
+          <p style={{ display: "flex", alignItems: "center", gap: "10px"}}>
+            <strong>
+              {selectedCustomer?.customerBillBalance?.balance > 0
+                ? "Pure Balance: "
+                : selectedCustomer?.customerBillBalance?.balance < 0
+                ? "Excess Pure Balance: "
+                : " Balance "}
+              {Number(
+                selectedCustomer?.customerBillBalance?.balance || 0
+              ).toFixed(3)}
+            </strong>
+            <span
+              style={{ borderLeft: "2px solid #999", height: "30px" }}
+            ></span>
+            <strong>
+              HallMark Balance:
+              {Number(
+                selectedCustomer?.customerBillBalance?.hallMarkBal || 0
+              ).toFixed(3)}
+            </strong>
+          </p>
         </div>
 
-        <div className="receiptTable" >
+        <div className="receiptTable">
           {receipt.length >= 1 ? (
-         
-              <div className="receiptreportContainer" >
-                <table ref={reportRef} className="receiptreportTable">
-                  <thead  id="receiptreportHead">
-                    <tr className="receiptreportThead">
-                      <th>S.No</th>
-                      <th>Date</th>
-                      <th>Type</th>
-                      <th>GoldRate</th>
-                      <th>Gold</th>
-                      <th>Touch</th>
-                      <th>Purity</th>
-                      <th>Amount</th>
-                      <th>HallMark</th>
+            <div className="receiptreportContainer">
+              <table ref={reportRef} className="receiptreportTable">
+                <thead id="receiptreportHead">
+                  <tr className="receiptreportThead">
+                    <th>S.No</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>GoldRate</th>
+                    <th>Gold</th>
+                    <th>Touch</th>
+                    <th>Purity</th>
+                    <th>Amount</th>
+                    <th>HallMark</th>
+                  </tr>
+                </thead>
+                <tbody className="receiptreportTbody">
+                  {paginatedData.map((item, index) => (
+                    <tr key={index + 1}>
+                      <td>{index + 1}</td>
+                      <td>{item.date}</td>
+                      <td>{item.type}</td>
+                      <td>{item.goldRate}</td>
+                      <td>{item.gold}</td>
+                      <td>{item.touch}</td>
+                      <td>{item.purity}</td>
+                      <td>{item.amount}</td>
+                      <td>{item.receiveHallMark}</td>
                     </tr>
-                    
-                  </thead>
-                  <tbody className="receiptreportTbody">
-                    {
-                      paginatedData.map((item,index)=>(
-                        <tr key={index+1}>
-                          <td>{index+1}</td>
-                          <td>{item.date}</td>
-                          <td>{item.type}</td>
-                          <td>{item.goldRate}</td>
-                          <td>{item.gold}</td>
-                          <td>{item.touch}</td>
-                          <td>{item.purity}</td>
-                          <td>{item.amount}</td>
-                          <td>{item.receiveHallMark}</td>
+                  ))}
+                </tbody>
+              </table>
 
-                        </tr>
-                      ))
-                    }
-                   </tbody>
-                </table>
-
-                 <TablePagination
-               
+              <TablePagination
                 component="div"
                 count={receipt.length}
                 page={page}
@@ -251,11 +258,7 @@ const ReceiptReport = () => {
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 rowsPerPageOptions={[5, 10, 25]}
               />
-              </div>
-             
-         
-            
-
+            </div>
           ) : (
             <span style={{ display: "block", textAlign: "center" }}>
               No Receipts For this Customers
