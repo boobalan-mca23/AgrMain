@@ -1,9 +1,9 @@
 .expenseHeader {
     display: flex;
-    justify-content: space-evenly;
+    justify-content: space-between;
     align-items: center;
     gap: 10px;
-    background: linear-gradient(135deg, #f9f8fa, #fefefe); 
+    background: linear-gradient(135deg, #fdfdfd, #f5f7fa);
     color: black; 
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
     border-radius: 10px;
@@ -17,6 +17,24 @@
     align-items: center;
     gap: 10px;
 }
+input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background-color: #f9f9f9;
+  transition: all 0.3s ease;
+}
+
+input[type="date"]:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+  outline: none;
+}
+
+
+
 .expensebtn{
 
     border: none;

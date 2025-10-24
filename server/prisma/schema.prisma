@@ -280,6 +280,7 @@ model RawGoldLogs{
 model ExpenseTracker{
   id              Int          @id @default(autoincrement())
   logId           Int?
+  expenseDate     DateTime?
   gold            Float?
   touch           Float?
   purity          Float?

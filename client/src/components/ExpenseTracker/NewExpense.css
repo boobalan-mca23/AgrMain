@@ -4,6 +4,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-bottom: 24px;
+  
 }
 .formGrid{
   border: 1px solid black;
@@ -15,6 +16,12 @@
 .description{
     height: 100px;
     
+}
+.expense-lable{
+  color: black;
+  font-weight:bold;
+
+
 }
 .newExpenseForm input,
 .newExpenseForm select {

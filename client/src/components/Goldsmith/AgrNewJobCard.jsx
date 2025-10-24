@@ -403,7 +403,12 @@ function AgrNewJobCard({
     <>
       <Dialog
         open={open}
-        onClose={handleCloseJobcard}
+          onClose={(event, reason) => {
+        if (reason !== 'backdropClick') {
+            handleCloseJobcard();
+          }
+         }}
+       
         fullWidth
         maxWidth="md"
         PaperProps={{
