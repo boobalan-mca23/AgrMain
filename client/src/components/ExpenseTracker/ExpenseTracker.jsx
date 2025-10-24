@@ -9,6 +9,7 @@ import NewExpense from "./NewExpense";
 import { FaWallet ,FaReceipt} from "react-icons/fa"; // wallet icon for header
 import { AiOutlinePlus } from "react-icons/ai"; // plus icon for button
 import "./Expense.css";
+
 const ExpenseTracker = () => {
     const today = new Date();
     const formattedToday = today.toISOString().split("T")[0];
@@ -62,7 +63,7 @@ const ExpenseTracker = () => {
     fetchRawGold()
   };
   const handleSaveExpense = async (payload) => {
-    console.log('payload expense',payload)
+   
     try {
       const response = await axios.post(
         `${BACKEND_SERVER_URL}/api/expense`,
