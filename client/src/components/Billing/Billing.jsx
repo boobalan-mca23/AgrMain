@@ -1211,7 +1211,7 @@ const Billing = () => {
             <ExitToAppIcon /><span>Exit</span>
           </Box>  )}
 
-        {!viewMode && ( <Tooltip title="Reset Bill" arrow placement="right">
+        {/* {!viewMode && ( <Tooltip title="Reset Bill" arrow placement="right">
             <Box
               onClick={handleReset}
               style={{
@@ -1231,7 +1231,7 @@ const Billing = () => {
               <RestartAltIcon /><span>Reset</span>
             </Box>
           </Tooltip>
-        )}
+        )} */}
       </Box>
         <h1 className="heading">Estimate Only</h1>
         <Box className="bill-header">
