@@ -57,8 +57,9 @@ const PrintReceipt = React.forwardRef((props, ref) => {
 
       {/* Balance Section */}
       <div style={styles.balance}>
-        <strong style={styles.balanceItem}>Cash Balance:₹ {cashBalance.toLocaleString("en-IN", {
-                  minimumFractionDigits: 2,
+     
+        <strong style={styles.balanceItem}>Cash Balance:₹ { Number(cashBalance).toLocaleString("en-IN", {
+                  
                 })}</strong>
         <strong style={styles.balanceItem}>
           {pureBalance < 0 ? "Excess Balance: " : "Pure Balance: "}

@@ -203,7 +203,7 @@ const ExpenseTracker = () => {
       
         <TablePagination
           component="div"
-          count={allExpense.length}
+          count={paginatedData.length}
           page={page}
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}

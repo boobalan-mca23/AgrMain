@@ -209,8 +209,8 @@ const ReceiptReport = () => {
                 <table ref={reportRef} className="receiptreportTable">
                   <thead  id="receiptreportHead">
                     <tr className="receiptreportThead">
-                      <th >S.No</th>
-                      <th >Date</th>
+                      <th>S.No</th>
+                      <th>Date</th>
                       <th>Type</th>
                       <th>GoldRate</th>
                       <th>Gold</th>

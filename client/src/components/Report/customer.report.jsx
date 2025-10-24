@@ -224,8 +224,8 @@ const CustReport = () => {
                   <th>Bill Id</th>
                   <th>Date</th>
                   <th>Bill&Receive</th>
-                  <th style={{width:'10px'}}>View bill</th>
-                  <th>ReceiveAmount</th>
+                  <th>View bill</th>
+                  <th>Receive Amount</th>
                   <th>Bill Amount</th>
                 </tr>
               </thead>
@@ -336,7 +336,7 @@ const CustReport = () => {
                 ))}
                
                  <tr   className="custRepTfoot" >
-                  <td colSpan={4}></td>
+                  <td colSpan={5}></td>
 
                   <td className="customerTotal">
                     <strong>

@@ -24,7 +24,7 @@ const CustomerReportPrint=(props)=>{
                   <th style={style.customerReportBorder}>Date</th>
                   <th style={style.customerReportBorder}>Bill&Receive</th>
                   <th style={style.customerReportBorder}>ReceiveAmount</th>
-                  <th style={style.customerReportBorder}>Bill Amount</th>
+                  <th style={style.customerReportBorder}>BillAmount</th>
                 </tr>
               </thead>
               <tbody >
@@ -133,7 +133,7 @@ const CustomerReportPrint=(props)=>{
                     </strong>{" "}
                   </td>
                   <td style={style.customerReportBorder}>
-                    <strong> Total Amt:{(billAmount).toFixed(3)} gr</strong>
+                    <strong> Total Bill :{(billAmount).toFixed(3)} gr</strong>
                   </td>
                 </tr>
                
@@ -155,8 +155,8 @@ const CustomerReportPrint=(props)=>{
        
 
           <div style={style.custBal}>
-             <p>Excess Balance : {overAllBalance<0 ?(overAllBalance).toFixed(3):0.000} gr</p>
-             <p> Balance: {overAllBalance>=0 ?(overAllBalance).toFixed(3):0.000} gr</p>
+             <p><strong>Excess Balance : {overAllBalance<0 ?(overAllBalance).toFixed(3):0.000} gr</strong></p>
+             <p><strong>Balance: {overAllBalance>=0 ?(overAllBalance).toFixed(3):0.000} gr</strong></p>
           </div>
         </div>
       </>
@@ -176,10 +176,12 @@ const style={
   customerReportTable:{
     width:"100%",
     borderCollapse:"collapse",
-    textAlign:"center"
+    textAlign:"center",
+  
   },
   customerReportBorder:{
-    border:"1px solid black"
+    border:"1px solid black",
+     padding:"8px"
   },
   custBal:{
     display:"flex",
