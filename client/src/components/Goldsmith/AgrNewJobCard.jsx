@@ -35,6 +35,7 @@ import {
 import "../PrintJobCard/PrintJobCard";
 import PrintJobCard from "../PrintJobCard/PrintJobCard";
 import ReactDOMServer from "react-dom/server";
+import {jobCardBalance} from '../../utils/jobCardBalance'
 function AgrNewJobCard({
   edit,
   handleCloseJobcard,
@@ -58,7 +59,6 @@ function AgrNewJobCard({
   jobCardId,
   isFinished,
   saveDisable,
-  setSaveDisable,
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
@@ -68,7 +68,8 @@ function AgrNewJobCard({
   const [receivedErrors, setReceivedErrors] = useState([]);
   const stoneOptions = ["Stone", "Enamel", "Beads"];
   const symbolOptions = ["Touch", "%", "+"];
-  const [jobCardBalance, setJobCardBalance] = useState(0);
+ 
+  
 
   const recalculateFinalPurity = (item) => {
     const totalItemDeductions = item.deduction.reduce(
@@ -271,6 +272,9 @@ function AgrNewJobCard({
     (sum, row) => sum + parseFloat(row.purity || 0),
     0
   );
+  // find job Card Balance
+  const jobBalance= jobCardBalance( openingBalance,totalInputPurityGiven,totalFinishedPurity,totalReceivedPurity) 
+
   const handleSave = (print = "noprint") => {
     const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
     const existStock = checkAvailabilityStock(rawGoldStock);
@@ -280,13 +284,13 @@ function AgrNewJobCard({
         totalInputPurityGiven,
         totalFinishedPurity,
         totalReceivedPurity,
-        jobCardBalance,
+        jobBalance,
         openingBalance
       );
     };
 
     const doSave = () => {
-      handleSaveJobCard(totalInputPurityGiven, jobCardBalance, openingBalance);
+      handleSaveJobCard(totalInputPurityGiven, jobBalance, openingBalance);
     };
     if (edit) {
       const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
@@ -391,24 +395,10 @@ function AgrNewJobCard({
     const timer = setInterval(updateTime, 60000);
     return () => clearInterval(timer);
   }, []);
-  const safeParse = (val) => (isNaN(parseFloat(val)) ? 0 : parseFloat(val));
-
-  useEffect(() => {
-    const balance =
-      safeParse(openingBalance) >= 0
-        ? safeParse(totalInputPurityGiven) + safeParse(openingBalance)
-        : safeParse(openingBalance) + safeParse(totalInputPurityGiven); // we need to add openbalance and givenGold
-
-    let difference = balance - safeParse(totalFinishedPurity); // total item delivery
-
-    if (receivedMetalReturns.length >= 1) {
-      const totalReceived = totalReceivedPurity;
-
-      difference -= totalReceived;
-    }
-    console.log('diffrence',difference)
-    setJobCardBalance(format(difference));
-  }, [givenGold, itemDelivery, receivedMetalReturns]);
+ 
+   
+   
+  
   return (
     <>
       <Dialog
@@ -1287,22 +1277,22 @@ function AgrNewJobCard({
             </div>
           </div>
           <div className="section" style={{ textAlign: "center" }}>
-            {jobCardBalance > 0 ? (
+            {jobBalance > 0 ? (
                   <p className="balance-text-goldsmith ">
                 Goldsmith should give balance:
-                <span className="balance-amount">{format(jobCardBalance)}</span>
+                <span className="balance-amount">{format(jobBalance)}</span>
               </p>
              
-            ) : jobCardBalance < 0 ? (
+            ) : jobBalance < 0 ? (
            <p className="balance-text-owner">
                 Owner should give balance:
-                <span className="balance-amount">{format(jobCardBalance)}</span>
+                <span className="balance-amount">{format(jobBalance)}</span>
               </p>
             ) : (
               <p className="balanceNill">
                 balance Nill:
                 <span className="balance-amount">
-                  {format(jobCardBalance)}
+                  {format(jobBalance)}
                 </span>{" "}
               </p>
             )}
