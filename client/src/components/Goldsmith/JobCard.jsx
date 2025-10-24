@@ -85,7 +85,7 @@ function JobCardDetails() {
     },
     { givenWt: 0, itemWt: 0, receive: 0 } // Initial accumulator
   );
-  console.log("currentPageTotal", currentPageTotal);
+  
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -652,11 +652,11 @@ function JobCardDetails() {
         handleCloseJobcard={handleCloseJobcard}
         handleSaveJobCard={handleSaveJobCard}
         handleUpdateJobCard={handleUpdateJobCard}
-        lastJobCardId={jobCards?.at(-1)?.total[0]?.jobcardId}
-        lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
+        // lastJobCardId={jobCards?.at(-1)?.total[0]?.jobcardId}
+        // lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
         isFinished={isFinished}
         saveDisable={saveDisable}
-        setSaveDisable={setSaveDisable}
+       
       />
     </>
   );
