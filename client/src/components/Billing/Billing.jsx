@@ -29,6 +29,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import PrintableBill from "./PrintableBill";
 import ReactDOMServer from 'react-dom/server';
+import axios from "axios";
 import "./Billing.css";
 
 // Helper utilities
@@ -1590,7 +1591,17 @@ const Billing = () => {
                           value={row.date}
                           disabled={row.isLocked}
                           onChange={(e) => handleRowChange(index, "date", e.target.value)}
-                          sx={{ width: { xs: 110, sm: 150 }, mr: 1, input: { padding: '6px 10px', borderRadius: '6px' } }}
+                          sx={{
+                            minWidth: 100,        
+                            width: "140px", 
+                            mr: 1,
+                            input: {
+                              padding: "6px 10px",
+                              borderRadius: "6px",
+                              fontSize: "13px",
+                              boxSizing: "border-box",
+                            },
+                          }}
                           error={!!fieldErrors[`receivedDetail_${index}_date`]}
                           helperText={fieldErrors[`receivedDetail_${index}_date`] || ""}
                         />
@@ -1651,7 +1662,7 @@ const Billing = () => {
                         </TableCell>
                       )}
 
-                      {showTouchColumn && (
+                      {/* {showTouchColumn && (
                         <TableCell className="td">
                           {(row.type === "" || row.type === "Gold") && (
                             <TextField
@@ -1672,7 +1683,66 @@ const Billing = () => {
                             </TextField>
                           )}
                         </TableCell>
-                      )}
+                      )} */}
+
+                      {showTouchColumn && (
+                          <TableCell className="td">
+                            {(row.type === "" || row.type === "Gold") && (
+                              <Autocomplete
+                                freeSolo
+                                disableClearable
+                                options={touch.map((t) => t.touch.toString())}
+                                value={row.touch?.toString() || ""}
+                                onChange={(_, newValue) => {
+                                  handleRowChange(index, "touch", newValue);
+                                }}
+                                onInputChange={(_, newInputValue) => {
+                                  handleRowChange(index, "touch", newInputValue);
+                                }}
+                                onBlur={async (e) => {
+                                  const newTouch = e.target.value?.trim();
+                                  if (
+                                    newTouch &&
+                                    !touch.some((t) => t.touch.toString() === newTouch)
+                                  ) {
+                                    try {
+                                      const res = await axios.post(
+                                        `${BACKEND_SERVER_URL}/api/master-touch/create`,
+                                        { touch: newTouch }
+                                      );
+                                      toast.success("New touch value added!");
+                                      // refresh list
+                                      const refresh = await axios.get(
+                                        `${BACKEND_SERVER_URL}/api/master-touch`
+                                      );
+                                      setTouch(refresh.data);
+                                    } catch (err) {
+                                      console.error("Error adding new touch:", err);
+                                      toast.error(
+                                        err.response?.data?.msg || "Failed to add new touch."
+                                      );
+                                    }
+                                  }
+                                }}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    size="small"
+                                    placeholder="Type or select touch"
+                                    disabled={row.isLocked}
+                                    inputProps={{
+                                      ...params.inputProps,
+                                      style: inputStyle,
+                                    }}
+                                    error={!!fieldErrors[`receivedDetail_${index}_touch`]}
+                                    helperText={fieldErrors[`receivedDetail_${index}_touch`] || ""}
+                                  />
+                                )}
+                              />
+                            )}
+                          </TableCell>
+                        )}
+
 
                       <TableCell className="td">
                         <TextField
