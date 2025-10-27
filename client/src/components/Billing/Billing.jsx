@@ -15,8 +15,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Tooltip,
-  Modal,
+  Tooltip, Modal,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import PrintIcon from "@mui/icons-material/Print";

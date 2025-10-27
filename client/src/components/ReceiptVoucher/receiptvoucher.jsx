@@ -292,7 +292,7 @@ const Receipt = () => {
               </select>
             </div>
             <div>
-              <p className="receiptLabel">{receiptBalances?.oldbalance>=0?"Pure Balance":"Excees Balance"}</p>
+              <p className="receiptLabel">{receiptBalances?.oldbalance>=0?"Old Balance":"Excees Balance"}</p>
               <input
                 className="receiptInput"
                 readOnly

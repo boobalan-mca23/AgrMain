@@ -195,9 +195,9 @@ const ReceiptReport = () => {
           <p style={{ display: "flex", alignItems: "center", gap: "10px"}}>
             <strong>
               {selectedCustomer?.customerBillBalance?.balance > 0
-                ? "Pure Balance: "
+                ? "Old Balance: "
                 : selectedCustomer?.customerBillBalance?.balance < 0
-                ? "Excess Pure Balance: "
+                ? "Excess  Balance: "
                 : " Balance "}
               {Number(
                 selectedCustomer?.customerBillBalance?.balance || 0
