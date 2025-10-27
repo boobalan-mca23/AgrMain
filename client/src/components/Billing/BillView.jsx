@@ -198,7 +198,7 @@ const BillView = () => {
 
     const handlePrint = () => {
       const billData = {
-        billNo: billId,
+        billNo: currentBill?.billno,
         date:currentBill?.date  ? new Date(currentBill.date).toLocaleDateString("en-IN")  : date,
         time: currentBill?.time  ? new Date(currentBill.time).toLocaleTimeString("en-IN", {  hour: "2-digit",  minute: "2-digit",  hour12: true,  })  : time,
         selectedCustomer,
@@ -310,7 +310,7 @@ const BillView = () => {
         <Box className="bill-header">
           <>
             <Box className="bill-number">
-              <p> {" "} <strong>Bill No:</strong> {bill.id}{" "} </p>
+              <p> {" "} <strong>Bill No:</strong> {bill.billno}{" "} </p>
             </Box>
             <Box className="bill-info">
               <p> {" "} <strong>Date:</strong>{" "}

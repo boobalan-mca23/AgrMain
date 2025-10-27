@@ -29,6 +29,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import PrintableBill from "./PrintableBill";
 import ReactDOMServer from 'react-dom/server';
+import axios from "axios";
 import "./Billing.css";
 
 // Helper utilities
@@ -711,7 +712,6 @@ const Billing = () => {
       // setBills(prev => [resJson.bill, ...(prev || [])]);
       await fetchProductStock();
 
-
       setBillDetailRows([]);
       setRows([]);
       setSelectedCustomer(null);
@@ -886,7 +886,7 @@ const Billing = () => {
     const bill = bills.find((b) => b.id === id);
     setCurrentBill(bill || null);
     if (!bill) return alert("Bill not found");
-    setBillId(bill.id)
+    setBillId(bill.id || "-");
     setBillDetailsProfit(bill.billDetailsprofit || "0.000");
     setStoneProfit(bill.Stoneprofit || "0.000");
     setTotalBillProfit(bill.Totalprofit || "0.000");
@@ -1139,6 +1139,11 @@ const Billing = () => {
   const handlePrintWithSave = async () => {
     if (isSaving) return; 
      setIsSaving(true);
+    if (viewMode) {
+      handlePrint();
+      setIsSaving(false);
+      return;
+    }
     try {
       if (!selectedCustomer) {
         toast.error("Please select a customer before printing.");
@@ -1192,11 +1197,11 @@ const Billing = () => {
          left:viewMode ? '15%' : '',
         }}
       >
-        {/* <Tooltip title="View Bills" arrow placement="right">
+        <Tooltip title="View Bills" arrow placement="right">
           <Box onClick={() => setIsModal(true)} sx={sidebarButtonSX}>
             <ReceiptLongIcon /><span>View</span>
           </Box>
-      </Tooltip> */}
+      </Tooltip>
 
       <Box  style={{
           display: "flex",
@@ -1211,7 +1216,7 @@ const Billing = () => {
             <ExitToAppIcon /><span>Exit</span>
           </Box>  )}
 
-        {/* {!viewMode && ( <Tooltip title="Reset Bill" arrow placement="right">
+        {!viewMode && ( <Tooltip title="Reset Bill" arrow placement="right">
             <Box
               onClick={handleReset}
               style={{
@@ -1231,7 +1236,7 @@ const Billing = () => {
               <RestartAltIcon /><span>Reset</span>
             </Box>
           </Tooltip>
-        )} */}
+        )}
       </Box>
         <h1 className="heading">Estimate Only</h1>
         <Box className="bill-header">
@@ -1586,7 +1591,17 @@ const Billing = () => {
                           value={row.date}
                           disabled={row.isLocked}
                           onChange={(e) => handleRowChange(index, "date", e.target.value)}
-                          sx={{ width: { xs: 110, sm: 150 }, mr: 1, input: { padding: '6px 10px', borderRadius: '6px' } }}
+                          sx={{
+                            minWidth: 100,        
+                            width: "140px", 
+                            mr: 1,
+                            input: {
+                              padding: "6px 10px",
+                              borderRadius: "6px",
+                              fontSize: "13px",
+                              boxSizing: "border-box",
+                            },
+                          }}
                           error={!!fieldErrors[`receivedDetail_${index}_date`]}
                           helperText={fieldErrors[`receivedDetail_${index}_date`] || ""}
                         />
@@ -1647,7 +1662,7 @@ const Billing = () => {
                         </TableCell>
                       )}
 
-                      {showTouchColumn && (
+                      {/* {showTouchColumn && (
                         <TableCell className="td">
                           {(row.type === "" || row.type === "Gold") && (
                             <TextField
@@ -1668,7 +1683,66 @@ const Billing = () => {
                             </TextField>
                           )}
                         </TableCell>
-                      )}
+                      )} */}
+
+                      {showTouchColumn && (
+                          <TableCell className="td">
+                            {(row.type === "" || row.type === "Gold") && (
+                              <Autocomplete
+                                freeSolo
+                                disableClearable
+                                options={touch.map((t) => t.touch.toString())}
+                                value={row.touch?.toString() || ""}
+                                onChange={(_, newValue) => {
+                                  handleRowChange(index, "touch", newValue);
+                                }}
+                                onInputChange={(_, newInputValue) => {
+                                  handleRowChange(index, "touch", newInputValue);
+                                }}
+                                onBlur={async (e) => {
+                                  const newTouch = e.target.value?.trim();
+                                  if (
+                                    newTouch &&
+                                    !touch.some((t) => t.touch.toString() === newTouch)
+                                  ) {
+                                    try {
+                                      const res = await axios.post(
+                                        `${BACKEND_SERVER_URL}/api/master-touch/create`,
+                                        { touch: newTouch }
+                                      );
+                                      toast.success("New touch value added!");
+                                      // refresh list
+                                      const refresh = await axios.get(
+                                        `${BACKEND_SERVER_URL}/api/master-touch`
+                                      );
+                                      setTouch(refresh.data);
+                                    } catch (err) {
+                                      console.error("Error adding new touch:", err);
+                                      toast.error(
+                                        err.response?.data?.msg || "Failed to add new touch."
+                                      );
+                                    }
+                                  }
+                                }}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    size="small"
+                                    placeholder="Type or select touch"
+                                    disabled={row.isLocked}
+                                    inputProps={{
+                                      ...params.inputProps,
+                                      style: inputStyle,
+                                    }}
+                                    error={!!fieldErrors[`receivedDetail_${index}_touch`]}
+                                    helperText={fieldErrors[`receivedDetail_${index}_touch`] || ""}
+                                  />
+                                )}
+                              />
+                            )}
+                          </TableCell>
+                        )}
+
 
                       <TableCell className="td">
                         <TextField
@@ -1959,7 +2033,7 @@ const Billing = () => {
                   zIndex: 1,
                 }}
               >
-                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}>  ID </TableCell>
+                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}>  Bill No </TableCell>
                 <TableCell style={{ textAlign: "center", color: "white", width: "90px" }} >Customer </TableCell>
                 <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}> Amount </TableCell>
                 <TableCell style={{ textAlign: "center", color: "white", width: "90px" }} >  Date </TableCell>
@@ -1970,7 +2044,7 @@ const Billing = () => {
               {Array.isArray(bills) && bills.length > 0 ? (
                 bills.map((bill) => (
                   <TableRow key={bill.id}>
-                    <TableCell style={{ textAlign: "center" }}>  {bill.id} </TableCell>
+                    <TableCell style={{ textAlign: "center" }}>  {bill.billno} </TableCell>
                     <TableCell style={{ textAlign: "center" }}> {bill.customers?.name || "N/A"} </TableCell>
                     <TableCell style={{ textAlign: "center" }}>  {bill.billAmount} </TableCell>
                     <TableCell style={{ textAlign: "center" }}>  {new Date(bill.createdAt).toLocaleDateString()} </TableCell>

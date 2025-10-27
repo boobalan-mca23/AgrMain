@@ -608,3 +608,40 @@
  flex-direction: column;
  gap: 12px;
 }
+
+
+
+/* this is for the date field to display whoit cliping */
+.billing-wrapper .received-details-table {
+  table-layout: auto !important;
+}
+
+/* Make the Date column wide enough and prevent clipping */
+.billing-wrapper .received-details-table th:nth-child(2),
+.billing-wrapper .received-details-table td:nth-child(2) {
+  min-width: 140px;
+  width: 140px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* Ensure the date input itself cannot be clipped */
+.billing-wrapper .received-details-table input[type="date"] {
+  min-width: 120px;
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 6px;
+}
+
+/* Tiny Chrome tweak to avoid the edit area touching the right edge */
+.billing-wrapper .received-details-table input[type="date"]::-webkit-datetime-edit {
+  padding-right: 6px;
+}
+
+@media (max-width: 480px) {
+  .billing-wrapper .received-details-table th:nth-child(2),
+  .billing-wrapper .received-details-table td:nth-child(2) {
+    min-width: 110px;
+    width: 110px;
+  }
+}

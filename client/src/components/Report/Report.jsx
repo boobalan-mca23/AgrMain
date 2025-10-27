@@ -23,6 +23,7 @@ import { BACKEND_SERVER_URL } from "../../Config/Config";
 import "./Report.css"; // Import the CSS file
 import BillView from "../Billing/BillView";
 import { useNavigate } from "react-router-dom";
+import { MdDeleteForever } from "react-icons/md";
 
 const DailySalesReport = () => {
   const [bills, setBills] = useState([]);
@@ -98,12 +99,17 @@ const DailySalesReport = () => {
           0
         ) || 0;
 
-        const pureBalance = bill.customers?.customerBillBalance?.balance || 0;
+  const pureBalance = bill.customers?.customerBillBalance?.balance || 0;
 
         const totalTotalProfit = bill.Totalprofit || 0;
         // Calculate balances using billing component logic
         const previousBalance = bill.PrevBalance || 0;
-        const TotalFWT = FWT - previousBalance;
+        const TotalFWT =
+                  previousBalance > 0
+                    ? FWT + previousBalance
+                    : previousBalance < 0
+                    ? FWT - Math.abs(previousBalance)
+                    : FWT;
         
         // Cash balance calculation (using last gold rate if available)
         // const lastGoldRate = [...(bill.billReceive || [])].reverse()
@@ -131,7 +137,7 @@ const DailySalesReport = () => {
           cashBalance: acc.cashBalance + cashBalance,
           totalTotalProfit: acc.totalTotalProfit + totalTotalProfit,
           hallmarkBalance: acc.hallmarkBalance + hallmarkBalance,
-          pureBalance: pureBalance,
+          pureBalance: acc.pureBalance + pureBalance,
         };
       },
       {
@@ -172,6 +178,28 @@ const DailySalesReport = () => {
     setOpenModal(true);
   };
 
+  const HandlebillDelete=async(billId)=>{
+    if(window.confirm("Are you sure you want to delete this bill?")){
+      try{
+        const response=await fetch(`${BACKEND_SERVER_URL}/api/bill/${billId}`,{
+          method:'DELETE',
+        });
+        if(response.ok){
+          alert("Bill deleted successfully");
+          // Refresh the bills list
+          const updatedBills=bills.filter(bill=>bill.id!==billId);
+          setBills(updatedBills);
+          setFilteredBills(updatedBills);
+        }else{
+          alert("Failed to delete the bill");
+        }
+      }catch(error){
+        console.error("Error deleting bill:",error);
+        alert("An error occurred while deleting the bill");
+      }
+    }
+  };
+
   return (
     <Box className="daily-sales-report-container">
       <Typography variant="h5" className="report-title">
@@ -187,9 +215,12 @@ const DailySalesReport = () => {
           InputLabelProps={{ shrink: true }}
           sx={{ minWidth: 200 }}
         />
-        <Button variant="outlined" onClick={handleReset}>
+        {/* <Button variant="outlined" onClick={handleReset}>
           Show All
-        </Button>
+        </Button> */}
+      {date && <Button variant="outlined" onClick={handleReset}>
+          Clear Filters
+        </Button>}
       </Box>
 
       {/* Enhanced summary cards */}
@@ -213,6 +244,7 @@ const DailySalesReport = () => {
           <TableHead>
             <TableRow>
               <TableCell className="table-header">Bill No</TableCell>
+              <TableCell className="table-header">Date</TableCell>
               <TableCell className="table-header">Name</TableCell>
               <TableCell className="table-header">Weight</TableCell>
               {/* <TableCell className="table-header">FWT</TableCell> */}
@@ -262,8 +294,14 @@ const DailySalesReport = () => {
                 
                 // Balance calculations matching billing logic
                 const previousBalance = bill.PrevBalance || 0;
-                const TotalFWT = FWT - previousBalance;
-                const pureBalance = bill.customers.customerBillBalance.balance || 0;
+                const TotalFWT =      previousBalance > 0
+                                      ? FWT + previousBalance
+                                      : previousBalance < 0
+                                      ? FWT - Math.abs(previousBalance)
+                                      : FWT;
+
+                const pureBalance = TotalFWT - totalReceivedPurity;
+
                 
                 // Cash balance using last available gold rate
                 const lastGoldRate = [...(bill.billReceive || [])].reverse()
@@ -273,7 +311,8 @@ const DailySalesReport = () => {
 
                 return (
                   <TableRow key={bill.id}>
-                    <TableCell className="table-cell">BILL-{bill.id}</TableCell>
+                    <TableCell className="table-cell">BILL-{bill.billno}</TableCell>
+                    <TableCell className="table-cell">{new Date(bill.date).toLocaleDateString("en-IN")|| "-"}</TableCell>
                     <TableCell className="table-cell">{bill.customers?.name || "Unknown"}</TableCell>
                     <TableCell className="table-cell">{totalWeight.toFixed(3)}</TableCell>
                     {/* <TableCell className="table-cell">{FWT.toFixed(3)}</TableCell> */}
@@ -304,13 +343,17 @@ const DailySalesReport = () => {
                         }>
                         <VisibilityIcon />
                       </IconButton>
+                       <IconButton color="error" onClick={() => HandlebillDelete(bill.id)
+                       }>
+                      <MdDeleteForever/>
+                       </IconButton>
                     </TableCell>
                   </TableRow>
                 );
               })}
             {/* Totals Row */}
             <TableRow className="totals-row">
-              <TableCell colSpan={2} className="totals-cell">Total</TableCell>
+              <TableCell colSpan={3} className="totals-cell" style={{textAlign:'center'}}>Total</TableCell>
               <TableCell className="totals-cell">{topTotals.totalWeight.toFixed(3)}</TableCell>
               {/* <TableCell className="totals-cell">{topTotals.totalFWT.toFixed(3)}</TableCell> */}
               {/* <TableCell className="totals-cell">{topTotals.totalReceivedAmount.toFixed(2)}</TableCell> */}
