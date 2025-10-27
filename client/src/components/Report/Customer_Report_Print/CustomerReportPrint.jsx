@@ -23,7 +23,7 @@ const CustomerReportPrint=(props)=>{
                   <th style={style.customerReportBorder}>Bill Id</th>
                   <th style={style.customerReportBorder}>Date</th>
                   <th style={style.customerReportBorder}>Bill&Receive</th>
-                  <th style={style.customerReportBorder}>ReceiveAmount</th>
+                  <th style={style.customerReportBorder}>ReceivedAmount</th>
                   <th style={style.customerReportBorder}>BillAmount</th>
                 </tr>
               </thead>
@@ -129,7 +129,7 @@ const CustomerReportPrint=(props)=>{
 
                   <td style={style.customerReportBorder}>
                     <strong>
-                      Total Receive :{(billReceive).toFixed(3)} gr
+                      Total Received :{(billReceive).toFixed(3)} gr
                     </strong>{" "}
                   </td>
                   <td style={style.customerReportBorder}>
