@@ -133,7 +133,7 @@ const CustomerReportPrint=(props)=>{
                     </strong>{" "}
                   </td>
                   <td style={style.customerReportBorder}>
-                    <strong> Total Bill :{(billAmount).toFixed(3)} gr</strong>
+                    <strong> Total bill Amount :{(billAmount).toFixed(3)} gr</strong>
                   </td>
                 </tr>
                
