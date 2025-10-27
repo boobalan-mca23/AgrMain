@@ -226,7 +226,7 @@ const CustReport = () => {
                   <th>Date</th>
                   <th>Bill&Receive</th>
                   <th>View bill</th>
-                  <th>Receive Amount</th>
+                  <th>Received Amount</th>
                   <th>Bill Amount</th>
                 </tr>
               </thead>
@@ -341,7 +341,7 @@ const CustReport = () => {
 
                   <td className="customerTotal">
                     <strong>
-                      Total bill Receive :{(currentPageTotal.billReceive).toFixed(3)} gr
+                      Total bill Received :{(currentPageTotal.billReceive).toFixed(3)} gr
                     </strong>{" "}
                   </td>
                   <td className="customerTotal">
