@@ -631,7 +631,7 @@
   width: 100%;
   box-sizing: border-box;
   padding-right: 6px;
-  height: auto;
+  height: 2.5rem;
 }
 
 /* Tiny Chrome tweak to avoid the edit area touching the right edge */
