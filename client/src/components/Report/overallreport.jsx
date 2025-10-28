@@ -120,40 +120,25 @@ const OverallReportNew = () => {
         <head>
           <title>Customer Report</title>
           <style>
-            body {
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-              padding: 20px;
-              color: #000;
-            }
-            h2 {
-              text-align: center;
-              margin-bottom: 16px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 14px;
-            }
-            th, td {
-              border: 1px solid #000;
-              padding: 8px;
-              text-align: center;
-            }
-            th {
-              background-color: #f2f2f2;
-            }
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h2 { text-align: center; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+            th { background: #f2f2f2; }
           </style>
         </head>
-        <body>
-          ${printContent}
-        </body>
+        <body>${printContent}</body>
       </html>
     `);
     newWin.document.close();
-    newWin.focus();
-    newWin.print();
-    newWin.close();
+
+    newWin.onload = function () {
+      newWin.focus();
+      newWin.print();
+      newWin.close();
+    };
   };
+
 
   return (
     <div className="overall-report-container">
