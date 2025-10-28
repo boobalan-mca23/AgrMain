@@ -179,7 +179,7 @@
 }
 
 .billing-wrapper .table .MuiInputBase-input {
- padding: 8px 12px;
+ padding: 10px 12px;
  font-size: 13px;
  color: #495057;
  background-color: #ffffff;
@@ -314,7 +314,7 @@
  margin-top: 30px;
  padding: 20px;
  background-color: #e8f5e9;
- /* border: 1px solid #c8e6c9; */
+ border: 1px solid #c8e6c9;
  border-radius: 8px;
 }
 
@@ -631,6 +631,7 @@
   width: 100%;
   box-sizing: border-box;
   padding-right: 6px;
+  height: 2.5rem;
 }
 
 /* Tiny Chrome tweak to avoid the edit area touching the right edge */
