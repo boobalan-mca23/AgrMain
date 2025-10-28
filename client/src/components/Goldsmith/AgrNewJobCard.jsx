@@ -66,7 +66,7 @@ function AgrNewJobCard({
   const [itemDeliveryErrors, setItemDeliveryErrors] = useState([]);
   const [deductionErrors, setDeductionErrors] = useState([]);
   const [receivedErrors, setReceivedErrors] = useState([]);
-  const stoneOptions = ["Stone", "Enamel", "Beads"];
+  const stoneOptions = ["Stone","Stone 1","Stone 2","Stone 3","Enamel","Enamel 1","Enamel 2","Enamel 3","Beads","Thread","Antic"];
   const symbolOptions = ["Touch", "%", "+"];
  
   
