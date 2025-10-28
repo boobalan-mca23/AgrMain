@@ -71,24 +71,34 @@ function AgrNewJobCard({
  
   
 
-  const recalculateFinalPurity = (item) => {
-    const totalItemDeductions = item.deduction.reduce(
-      (sum, deduction) => sum + parseFloat(deduction.weight || 0),
-      0
-    );
-    const itemNetWeightCalc =
-      parseFloat(item.itemWeight || 0) - totalItemDeductions;
-    const wastageValue = parseFloat(item.wastageValue || 0);
+  const recalculateWastagePurity = (item) => {
+  const totalItemDeductions = item.deduction.reduce(
+    (sum, deduction) => sum + parseFloat(deduction.weight || 0),
+    0
+  );
+  const itemNetWeightCalc =
+    parseFloat(item.itemWeight || 0) - totalItemDeductions;
+  const wastageValue = parseFloat(item.wastageValue || 0);
+  const touch = parseFloat(item.touch || 0);
 
-    if (item.wastageType === "Touch") {
-      return (itemNetWeightCalc * wastageValue) / 100;
-    } else if (item.wastageType === "%") {
-      return itemNetWeightCalc + (itemNetWeightCalc * wastageValue) / 100;
-    } else if (item.wastageType === "+") {
-      return itemNetWeightCalc + wastageValue;
-    }
-    return 0;
-  };
+  let wastagePure = 0;
+  let finalPurity = 0;
+
+  if (item.wastageType === "Touch") {
+    wastagePure = (itemNetWeightCalc * wastageValue) / 100 - (itemNetWeightCalc * touch) / 100;
+    finalPurity = (itemNetWeightCalc * wastageValue) / 100
+  } else if (item.wastageType === "%") {
+    wastagePure = ((itemNetWeightCalc * touch) / 100) * (wastageValue / 100);
+   
+    finalPurity = ((itemNetWeightCalc * touch) / 100)+ wastagePure
+  } else if (item.wastageType === "+") {
+    wastagePure = (wastageValue*touch)/100;
+    finalPurity = wastagePure+(itemNetWeightCalc * touch) / 100 ;
+  }
+
+  return { wastagePure, finalPurity };
+};
+
   const format = (
     val // its used for set three digit after point value
   ) => (isNaN(parseFloat(val)) ? "" : parseFloat(val).toFixed(3));
@@ -163,17 +173,19 @@ function AgrNewJobCard({
     if (field === "itemWeight") {
       copy[i]["netWeight"] = format( copy[i]["itemWeight"] - Number(totalDeduction(i, copy)))
     }
-    if (
-      field === "touch" ||
-      field === "itemWeight" ||
-      field === "wastageValue"
-    ) {
-      copy[i].wastagePure = (
-        (copy[i].netWeight * copy[i].wastageValue) / 100 -
-        (copy[i].netWeight * copy[i].touch) / 100
-      ).toFixed(3);
-    }
-    copy[i].finalPurity = format(recalculateFinalPurity(copy[i]));
+    // if (
+    //   field === "touch" ||
+    //   field === "itemWeight" ||
+    //   field === "wastageValue"
+    // ) {
+    //   copy[i].wastagePure = (
+    //     (copy[i].netWeight * copy[i].wastageValue) / 100 -
+    //     (copy[i].netWeight * copy[i].touch) / 100
+    //   ).toFixed(3);
+    // }
+    const {wastagePure, finalPurity}=recalculateWastagePurity(copy[i])
+    copy[i].wastagePure = format(wastagePure);
+    copy[i].finalPurity= format(finalPurity)
     setItemDelivery(copy);
     itemValidation(itemDelivery, setItemDeliveryErrors);
   };
@@ -195,14 +207,17 @@ function AgrNewJobCard({
     updated[itemIndex].deduction[deductionIndex][field] = val;
     if (field === "weight") {
       updated[itemIndex]["netWeight"] =format(updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated)));
-      updated[itemIndex]["wastagePure"] = (
-        (updated[itemIndex]["netWeight"] * updated[itemIndex].wastageValue) /
-          100 -
-        (updated[itemIndex]["netWeight"] * updated[itemIndex]["touch"]) / 100
-      ).toFixed(3);
+      // updated[itemIndex]["wastagePure"] = (
+      //   (updated[itemIndex]["netWeight"] * updated[itemIndex].wastageValue) /
+      //     100 -
+      //   (updated[itemIndex]["netWeight"] * updated[itemIndex]["touch"]) / 100
+      // ).toFixed(3);
     }
     updated[itemIndex]["netWeight"] =format(updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated)));
-    updated[itemIndex].finalPurity = format(recalculateFinalPurity(updated[itemIndex]));
+      const {wastagePure, finalPurity}=recalculateWastagePurity(updated[itemIndex])
+
+    updated[itemIndex].wastagePure = format(wastagePure);
+    updated[itemIndex].finalPurity= format(finalPurity)
     setItemDelivery(updated);
   };
 
