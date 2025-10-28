@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect,useMemo } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { TablePagination, Button } from "@mui/material";
@@ -8,22 +8,32 @@ import "./Stock.css";
 const Stock = () => {
   const [stockData, setStockData] = useState([]);
 
-  const [page, setPage] = useState(0); // 0-indexed for TablePagination
+  const [page, setPage] = useState(0); // main table page
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  // NEW: mini-table pagination for grouped-by-touch table
+  const [groupPage, setGroupPage] = useState(0);
+  const [groupRowsPerPage, setGroupRowsPerPage] = useState(5);
+
+  // NEW: mini-table pagination for per-item final purity table
+  const [purityPage, setPurityPage] = useState(0);
+  const [purityRowsPerPage, setPurityRowsPerPage] = useState(5);
 
   const paginatedData = stockData.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
 
-  const currentPageTotal = paginatedData.reduce(
-    (acc, item) => {
-      acc.itemWt += item.itemWeight ?? 0;
-      acc.finalWt += item.finalPurity ?? 0;
-      return acc;
-    },
-    { itemWt: 0, finalWt: 0 } // Initial accumulator
-  );
+  const currentPageTotal = useMemo(() => {
+    return paginatedData.reduce(
+      (acc, item) => {
+        acc.itemWt += Number(item.itemWeight ?? 0);
+        acc.finalWt += Number(item.finalPurity ?? 0);
+        return acc;
+      },
+      { itemWt: 0, finalWt: 0 }
+    );
+  }, [paginatedData]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -123,16 +133,9 @@ const Stock = () => {
 
       const netPurity = (sumNet * (g.touch ?? 0)) / 100;
 
-      // build display strings like "1.200 + 2.500 = 3.700"
-      const itemWeightStr =
-        g.items.map((it) => safeFixed(it.itemWeight)).join(" + ") +
-        (g.items.length > 1 ? " = " + safeFixed(sumItem) : "");
-      const stoneWeightStr =
-        g.items.map((it) => safeFixed(it.stoneWeight)).join(" + ") +
-        (g.items.length > 1 ? " = " + safeFixed(sumStone) : "");
-      const netWeightStr =
-        g.items.map((it) => safeFixed(it.netWeight)).join(" + ") +
-        (g.items.length > 1 ? " = " + safeFixed(sumNet) : "");
+      const itemWeightStr = safeFixed(sumItem) || "0.000";
+      const stoneWeightStr = safeFixed(sumStone) || "0.000";
+      const netWeightStr = safeFixed(sumNet) || "0.000";
 
       return {
         touch: g.touch,
@@ -150,23 +153,75 @@ const Stock = () => {
 
   // For total purity mini-table: compute final purity per item as netWeight * wastageValue / 100
   const computeFinalPurityForItem = (item) => {
-    return ((Number(item.netWeight ?? 0) * Number(item.wastageValue ?? 0)) / 100);
+    const net = Number(item.netWeight ?? 0);
+    const wast = Number(item.wastageValue ?? 0);
+    return (net * wast) / 100;
   };
 
-  const grouped = groupByTouch(stockData);
-  const groupedNetPurityTotal = grouped.reduce((acc, g) => acc + (g.netPurity ?? 0), 0);
+// ---------- new helper: group by touch ----------
+const grouped = groupByTouch(stockData);
 
-  const totalFinalPurity = stockData.reduce(
-    (acc, it) => acc + computeFinalPurityForItem(it),
-    0
-  );
+// --------------- NEW: paginated sources for mini-tables ----------------
+const groupedPaginated = grouped.slice(
+  groupPage * groupRowsPerPage,
+  groupPage * groupRowsPerPage + groupRowsPerPage
+);
+
+const purityPaginated = stockData.slice(
+  purityPage * purityRowsPerPage,
+  purityPage * purityRowsPerPage + purityRowsPerPage
+);
+
+// --------------- PAGINATED TOTALS (page-wise) ----------------
+const groupedPaginatedTotal = groupedPaginated.reduce(
+  (acc, g) => acc + Number(g.netPurity ?? 0),
+  0
+);
+
+const purityPaginatedTotal = purityPaginated.reduce(
+  (acc, it) => acc + Number(computeFinalPurityForItem(it) ?? 0),
+  0
+);
+
+// --------------- GRAND TOTALS (all data) ----------------
+const groupedNetPurityTotal = grouped.reduce(
+  (acc, g) => acc + (g.netPurity ?? 0),
+  0
+);
+
+const totalFinalPurity = stockData.reduce(
+  (acc, it) => acc + computeFinalPurityForItem(it),
+  0
+);
+
+// --------------- HANDLERS ----------------
+const handleGroupChangePage = (event, newPage) => {
+  setGroupPage(newPage);
+};
+const handleGroupChangeRowsPerPage = (event) => {
+  setGroupRowsPerPage(parseInt(event.target.value, 10));
+  setGroupPage(0);
+};
+
+const handlePurityChangePage = (event, newPage) => {
+  setPurityPage(newPage);
+};
+const handlePurityChangeRowsPerPage = (event) => {
+  setPurityRowsPerPage(parseInt(event.target.value, 10));
+  setPurityPage(0);
+};
+
 
   return (
     <div className="stock-container">
       <h2 className="stock-heading">Stock Dashboard</h2>
-
       <div className="stock-summary">
-        <div className="stock-card">
+        <div style={{
+          backgroundColor: "#f0f4ff",
+          padding: "18px",
+          borderRadius: "8px",
+          boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
+        }} >
           <p className="stock-label">Total Item's Count</p>
           <p className="stock-value">
             {stockData.length > 0 ? (
@@ -179,6 +234,17 @@ const Stock = () => {
           </p>
         </div>
 
+         <div style={{
+          backgroundColor: "#f0f4ff",
+          padding: "18px",
+          borderRadius: "8px",
+          boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
+         }}>
+          <p className="stock-label">Total Wastage </p>
+          <p className="stock-value">{calculatewastgePure(stockData)}</p>
+        </div>
+        </div>
+      <div className="stock-summary">
         <div className="stock-card">
           <p className="stock-label">Total Weight</p>
 
@@ -203,9 +269,9 @@ const Stock = () => {
                     </td>
                   </tr>
                 )}
-                {grouped.map((g, idx) => (
-                  <tr key={idx}>
-                    <td>{idx + 1}</td>
+                {groupedPaginated.map((g, idx) => (
+                  <tr key={groupPage * groupRowsPerPage + idx}>
+                    <td>{groupPage * groupRowsPerPage + idx + 1}</td>
                     <td>{g.touch}</td>
                     <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>
                       {g.itemWeightStr}
@@ -226,22 +292,32 @@ const Stock = () => {
                     <strong>Total Net Purity</strong>
                   </td>
                   <td>
-                    <strong>{safeFixed(groupedNetPurityTotal)}</strong>
+                    <strong>{safeFixed(groupedPaginatedTotal)}</strong>
                   </td>
                 </tr>
               </tfoot>
             </table>
+
+            {/* NEW: pagination for grouped mini-table */}
+            {grouped.length > 0 && (
+              <TablePagination
+                component="div"
+                count={grouped.length}
+                page={groupPage}
+                onPageChange={handleGroupChangePage}
+                rowsPerPage={groupRowsPerPage}
+                onRowsPerPageChange={handleGroupChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25]}
+                // keep density small to avoid CSS shift
+                sx={{ "& .MuiTablePagination-toolbar": { padding: "0 8px" } }}
+              />
+            )}
           </div>
 
           <p style={{ marginTop: "6px" }}>
             <strong>Total Weight:</strong> 
             <span className="stock-value">{calculatePurityTotal(stockData)}</span>
           </p>
-        </div>
-
-        <div className="stock-card">
-          <p className="stock-label">Total Wastage </p>
-          <p className="stock-value">{calculatewastgePure(stockData)}</p>
         </div>
 
         <div className="stock-card">
@@ -266,11 +342,12 @@ const Stock = () => {
                     </td>
                   </tr>
                 )}
-                {stockData.map((it, idx) => {
+                {purityPaginated.map((it, idx) => {
                   const finalPur = computeFinalPurityForItem(it);
+                  const serial = purityPage * purityRowsPerPage + idx + 1;
                   return (
-                    <tr key={it.id ?? idx}>
-                      <td>{idx + 1}</td>
+                    <tr key={it.id ?? serial}>
+                      <td>{serial}</td>
                       <td>{safeFixed(it.wastageValue)}</td>
                       <td>{safeFixed(it.netWeight)}</td>
                       <td>{safeFixed(finalPur)}</td>
@@ -284,11 +361,25 @@ const Stock = () => {
                     <strong>Total Final Purity</strong>
                   </td>
                   <td>
-                    <strong>{safeFixed(totalFinalPurity)}</strong>
+                    <strong>{safeFixed(purityPaginatedTotal)}</strong>
                   </td>
                 </tr>
               </tfoot>
             </table>
+
+            {/* NEW: pagination for per-item final purity mini-table */}
+            {stockData.length > 0 && (
+              <TablePagination
+                component="div"
+                count={stockData.length}
+                page={purityPage}
+                onPageChange={handlePurityChangePage}
+                rowsPerPage={purityRowsPerPage}
+                onRowsPerPageChange={handlePurityChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25]}
+                sx={{ "& .MuiTablePagination-toolbar": { padding: "0 8px" } }}
+              />
+            )}
           </div>
             <strong>Total Purity:</strong> 
             <span className="stock-value">{safeFixed(totalFinalPurity)}</span>
@@ -297,7 +388,7 @@ const Stock = () => {
       </div>
 
       <div className="stock-table-container">
-        {stockData.length >= 1 ? (
+        {paginatedData.length >= 1 ? (
           <table className="stock-table">
             <thead>
               <tr>
@@ -315,15 +406,16 @@ const Stock = () => {
               </tr>
             </thead>
             <tbody>
-              {stockData.map((item, index) => (
+              {paginatedData.map((item, index) => (
                 <tr key={item.id}>
                   <td>{index + 1}</td>
                   <td>{item.itemName}</td>
+
+                  {/* NOTE: DON'T call handlers during render. See suggested fix below. */}
                   <td>
-                    {item.itemWeight < 0.050
-                      ? handleItemSold(item.id)
-                      : safeFixed(item.itemWeight)}
+                    {safeFixed(item.itemWeight)}
                   </td>
+
                   <td>{item.count || 0}</td>
                   <td>{item.touch ?? 0}</td>
                   <td>{safeFixed(item.stoneWeight)}</td>
@@ -332,7 +424,7 @@ const Stock = () => {
                   <td>{safeFixed(item.wastagePure)}</td>
                   <td>{safeFixed(item.finalPurity)}</td>
                   <td>
-                    {item.isBillProduct && (
+                    {item.isBillProduct ? (
                       <Button
                         variant="contained"
                         startIcon={<AddCircleOutline />}
@@ -348,7 +440,9 @@ const Stock = () => {
                       >
                         Sold
                       </Button>
-                    ) || "-"}
+                    ) : (
+                      "-"
+                    )}
                   </td>
                 </tr>
               ))}
