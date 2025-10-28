@@ -215,13 +215,19 @@ const handlePurityChangeRowsPerPage = (event) => {
   return (
     <div className="stock-container">
       <h2 className="stock-heading">Stock Dashboard</h2>
+      {/* <div className="stock-summary">
+        
+        </div> */}
       <div className="stock-summary">
-        <div style={{
+        <div 
+        style={{
           backgroundColor: "#f0f4ff",
           padding: "18px",
           borderRadius: "8px",
           boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
-        }} >
+        }} 
+        // className="stock-card"
+        >
           <p className="stock-label">Total Item's Count</p>
           <p className="stock-value">
             {stockData.length > 0 ? (
@@ -234,20 +240,10 @@ const handlePurityChangeRowsPerPage = (event) => {
           </p>
         </div>
 
-         <div style={{
-          backgroundColor: "#f0f4ff",
-          padding: "18px",
-          borderRadius: "8px",
-          boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
-         }}>
-          <p className="stock-label">Total Wastage </p>
-          <p className="stock-value">{calculatewastgePure(stockData)}</p>
-        </div>
-        </div>
-      <div className="stock-summary">
+         
         <div className="stock-card">
           <p className="stock-label">Total Weight</p>
-
+        
           {/* --- mini-table: grouped by touch --- */}
           <div className="mini-table-wrapper">
             <table className="mini-table">
@@ -318,6 +314,19 @@ const handlePurityChangeRowsPerPage = (event) => {
             <strong>Total Weight:</strong> 
             <span className="stock-value">{calculatePurityTotal(stockData)}</span>
           </p>
+        </div>
+
+        <div 
+         style={{
+          backgroundColor: "#f0f4ff",
+          padding: "18px",
+          borderRadius: "8px",
+          boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
+         }}
+        // className="stock-card"
+         >
+          <p className="stock-label">Total Wastage </p>
+          <p className="stock-value">{calculatewastgePure(stockData)}</p>
         </div>
 
         <div className="stock-card">
