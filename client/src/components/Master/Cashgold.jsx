@@ -1,16 +1,17 @@
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./Cashgold.css";
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-import {checkCashOrGold} from '../cashOrGoldValidation/cashOrGoldValidation'
+import { checkCashOrGold } from "../cashOrGoldValidation/cashOrGoldValidation";
 function Cashgold() {
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [entries, setEntries] = useState([]);
   const [goldRate, setGoldRate] = useState(0);
-  const [masterTouch,setMasterTouch]=useState([])
+  const [masterTouch, setMasterTouch] = useState([]);
   const [formData, setFormData] = useState({
     date: "",
     type: "Select",
@@ -19,8 +20,22 @@ function Cashgold() {
     touch: "",
     purity: "",
   });
-const [goldCashError,setGoldCashError]=useState({})
-const [saveDiasable,setSaveDisable]=useState(false)
+  const [goldCashError, setGoldCashError] = useState({});
+  const [saveDiasable, setSaveDisable] = useState(false);
+
+  const handleClose=()=>{
+   setShowFormPopup(false)
+   setFormData({
+    date: "",
+    type: "Select",
+    cashAmount: "",
+    goldValue: "",
+    touch: "",
+    purity: "",
+  })
+  setGoldCashError({})
+  }
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,7 +57,6 @@ const [saveDiasable,setSaveDisable]=useState(false)
     setFormData(updatedForm);
   };
 
-
   useEffect(() => {
     if (formData.type === "Cash") {
       const cashAmount = parseFloat(formData.cashAmount);
@@ -59,14 +73,13 @@ const [saveDiasable,setSaveDisable]=useState(false)
         }));
       }
     }
-  }, [formData.cashAmount, goldRate, formData.type]); 
+  }, [formData.cashAmount, goldRate, formData.type]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     let calculatedPurity = 0;
     if (formData.type === "Cash") {
-    
       calculatedPurity = formData.purity;
     } else if (formData.type === "Gold") {
       calculatedPurity = formData.purity;
@@ -80,38 +93,40 @@ const [saveDiasable,setSaveDisable]=useState(false)
       goldValue:
         formData.type === "Gold" ? parseFloat(formData.goldValue) : null,
       touch: formData.type === "Gold" ? parseFloat(formData.touch) : null,
-      purity: parseFloat(calculatedPurity), 
+      purity: parseFloat(calculatedPurity),
       goldRate: formData.type === "Cash" ? parseFloat(goldRate) : null,
     };
-   if(payload.type==="Select"){
-      return toast.warn("Please Select Gold or Cash Type")
-   }
-   const isValidationIsTrue=checkCashOrGold(payload,setGoldCashError)
-
-   if(Object.keys(isValidationIsTrue).length===0){
-   try {
-      setSaveDisable(true)
-      const response=await axios.post(`${BACKEND_SERVER_URL}/api/entries`, payload);
-      toast.success("Value added successfully!");
-      setEntries(prev=>[response.data,...prev])
-      setFormData({
-        date: "",
-        type: "Select", 
-        cashAmount: "",
-        goldValue: "",
-        touch: "",
-        purity: "",
-      });
-      setGoldRate(0);
-      setShowFormPopup(false);
-      setSaveDisable(false)
-    } catch (err) {
-      setSaveDisable(false)
-      toast.error("Failed to add entry. Please try again.");
-      console.error("Error submitting entry:", err);
+    if (payload.type === "Select") {
+      return toast.warn("Please Select Gold or Cash Type");
     }
-   }
-    
+    const isValidationIsTrue = checkCashOrGold(payload, setGoldCashError);
+
+    if (Object.keys(isValidationIsTrue).length === 0) {
+      try {
+        setSaveDisable(true);
+        const response = await axios.post(
+          `${BACKEND_SERVER_URL}/api/entries`,
+          payload
+        );
+        toast.success("Value added successfully!");
+        setEntries((prev) => [response.data, ...prev]);
+        setFormData({
+          date: "",
+          type: "Select",
+          cashAmount: "",
+          goldValue: "",
+          touch: "",
+          purity: "",
+        });
+        setGoldRate(0);
+        setShowFormPopup(false);
+        setSaveDisable(false);
+      } catch (err) {
+        setSaveDisable(false);
+        toast.error("Failed to add entry. Please try again.");
+        console.error("Error submitting entry:", err);
+      }
+    }
   };
 
   const calculateTotalPurity = () => {
@@ -124,28 +139,27 @@ const [saveDiasable,setSaveDisable]=useState(false)
 
   useEffect(() => {
     fetchEntries();
-     fetchTouch();
+    fetchTouch();
   }, []);
 
   const fetchEntries = async () => {
     try {
       const response = await axios.get(`${BACKEND_SERVER_URL}/api/entries`);
-      console.log('response cashgold',response.data)
+      console.log("response cashgold", response.data);
       setEntries(response.data);
     } catch (error) {
       console.error("Error fetching entries:", error);
     }
   };
   const fetchTouch = async () => {
-      try {
-        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
-        console.log('masterTouch',res.data)
-        setMasterTouch(res.data);
-      } catch (err) {
-        console.error("Failed to fetch touch values", err);
-      }
-    };
- 
+    try {
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+      console.log("masterTouch", res.data);
+      setMasterTouch(res.data);
+    } catch (err) {
+      console.error("Failed to fetch touch values", err);
+    }
+  };
 
   return (
     <div className="cashgold-container">
@@ -161,7 +175,7 @@ const [saveDiasable,setSaveDisable]=useState(false)
             <h3>Enter Cash or Gold Details</h3>
             <button
               className="close-btn"
-              onClick={() => setShowFormPopup(false)}
+              onClick={() =>handleClose()}
             >
               ×
             </button>
@@ -201,9 +215,11 @@ const [saveDiasable,setSaveDisable]=useState(false)
                       onChange={handleChange}
                       required
                       step="0.01"
-                      onWheel={(e)=>e.target.blur()}
+                      onWheel={(e) => e.target.blur()}
                     />
-                 {goldCashError.cashAmount&& <p style={{color:"red"}}>{goldCashError.cashAmount}</p>}
+                    {goldCashError.cashAmount && (
+                      <p style={{ color: "red" }}>{goldCashError.cashAmount}</p>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Gold Rate (per gram):</label>
@@ -213,9 +229,11 @@ const [saveDiasable,setSaveDisable]=useState(false)
                       onChange={(e) => setGoldRate(e.target.value)}
                       required
                       step="0.01"
-                      onWheel={(e)=>e.target.blur()}
+                      onWheel={(e) => e.target.blur()}
                     />
-                    {goldCashError.goldRate&& <p style={{color:"red"}}>{goldCashError.goldRate}</p>}
+                    {goldCashError.goldRate && (
+                      <p style={{ color: "red" }}>{goldCashError.goldRate}</p>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Purity (g):</label>
@@ -241,32 +259,53 @@ const [saveDiasable,setSaveDisable]=useState(false)
                       onChange={handleChange}
                       required
                       step="0.001"
-                      onWheel={(e)=>e.target.blur()}
+                      onWheel={(e) => e.target.blur()}
                     />
-                    {goldCashError.goldValue&& <p style={{color:"red"}}>{goldCashError.goldValue}</p>}
+                    {goldCashError.goldValue && (
+                      <p style={{ color: "red" }}>{goldCashError.goldValue}</p>
+                    )}
                   </div>
-                  <div className="form-group">
+                  <div className="direct-Touch">
                     <label>Touch (%):</label>
-                    <select
-                      name="touch"
-                      value={formData.touch}
-                      onChange={handleChange}
-                      required
-                      step="0.01"
-                      max="100"
-                    >
-                      <option value={""}>SelectTouch</option>
-                      {
-                        masterTouch.map((item,index)=>(
-                          <option value={item.touch} key={index+1}>{item.touch}</option>
-                        ))
-                      }
-                    </select>
-                    {/* <input
-                      type="number"
-                     
-                    /> */}
-                 
+                    <Autocomplete
+                      freeSolo
+                      forcePopupIcon
+                      options={masterTouch.map((item) => item.touch.toString())}
+                      value={formData.touch || ""}
+                      onChange={(event, newValue) => {
+                        handleChange({
+                          target: {
+                            name: "touch",
+                            value: newValue || "",
+                          },
+                        });
+                      }}
+                      noOptionsText=""
+                      sx={{
+                        width: 400,
+                        "& .MuiInputBase-root": {
+                          height: 40, // same height as your other input
+                          padding: "2px !important",
+                        },
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          name="touch"
+                          required
+                          size="small"
+                          onChange={(e) => handleChange(e)}
+                          inputProps={{
+                            ...params.inputProps,
+                            style: { padding: "8px" }, // adjust inner text padding
+                          }}
+                        />
+                      )}
+                    />
+
+                    {goldCashError.touch && (
+                      <p style={{ color: "red" }}>{goldCashError.touch}</p>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Purity (g):</label>
@@ -282,8 +321,13 @@ const [saveDiasable,setSaveDisable]=useState(false)
               )}
 
               <div className="button-group">
-                <button type="submit" className="submit-btn" disabled={saveDiasable?true:false} style={{background:saveDiasable?"grey":"green"}} >
-                  {saveDiasable?"CashOrGold is Saving..":"Save"}
+                <button
+                  type="submit"
+                  className="submit-btn"
+                  disabled={saveDiasable ? true : false}
+                  style={{ background: saveDiasable ? "grey" : "green" }}
+                >
+                  {saveDiasable ? "CashOrGold is Saving.." : "Save"}
                 </button>
               </div>
             </form>

@@ -563,6 +563,7 @@ function AgrNewJobCard({
                 <h3 className="section-title">Balance</h3>
                 <div className="balance-block">
                   <div className="balance-display-row">
+                    
                     <span className="balance-label">
                       {openingBalance >= 0
                         ? "Opening Balance"

@@ -22,11 +22,14 @@ function Mastergoldsmith() {
   const [goldsmithName, setGoldsmithName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
+  const [balance,setBalance]=useState("");
   const [goldsmith, setGoldsmith] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     address: "",
+    balance:"",
+    balanceisEdited:false
   });
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState(null);
@@ -38,6 +41,7 @@ function Mastergoldsmith() {
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
+  const balanceRef=useRef(null);
 
   useEffect(() => {
     fetchGoldsmiths();
@@ -58,6 +62,7 @@ function Mastergoldsmith() {
     setGoldsmithName("");
     setPhoneNumber("");
     setAddress("");
+    setBalance("");
     setErrors({ name: "", phone: "" });
     setTouched({ name: false, phone: false });
     setSubmitted(false);
@@ -121,9 +126,11 @@ const validateField = (field, value) => {
       if (field === "name") {
         phoneRef.current?.focus();
       } else if (field === "phone") {
-        addressRef.current?.focus();
-      } else if (field === "address") {
-        if (typeof submitFn === "function") submitFn();
+         balanceRef.current?.focus();
+      } else if (field === "balance") {
+         addressRef.current?.focus();
+        } else if(field ==="address"){
+         if (typeof submitFn === "function") submitFn();
       }
     }
   };
@@ -191,6 +198,7 @@ const validateField = (field, value) => {
       name: goldsmithName.trim(),
       phonenumber: phoneNumber.trim() ? phoneNumber.trim() : null,
       address: address.trim() || null,
+      balance:balance.trim() || null
     };
 
     try {
@@ -220,6 +228,8 @@ const validateField = (field, value) => {
       name: item.name || "",
       phone: item.phone || "",
       address: item.address || "",
+      balance:item.balance || "",
+      balanceisEdited:item.balanceisEdited||""
     });
     setErrors({ name: "", phone: "" });
     setTouched({ name: false, phone: false });
@@ -247,6 +257,8 @@ const validateField = (field, value) => {
       name: formData.name.trim(),
       phone: formData.phone ? formData.phone.trim() : null,
       address: formData.address ? formData.address.trim() : null,
+      balance:formData.balance ? formData.balance : null,
+      balanceisEdited:formData.balanceisEdited? formData.balanceisEdited:false
     };
 
     try {
@@ -343,6 +355,19 @@ const validateField = (field, value) => {
             helperText={(touched.phone || submitted) ? errors.phone : ""}
             onKeyDown={(e) => handleKeyDown(e, "phone", handleSaveGoldsmith)}
           />
+          
+          <TextField
+            inputRef={balanceRef}
+            margin="dense"
+            label="Balance"
+            type="number"
+            fullWidth
+            autoComplete="off"
+            value={balance}
+            onChange={(e) =>setBalance(e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, "address", handleSaveGoldsmith)}
+            onWheel={(e)=>e.target.blur()}
+          />
 
           <TextField
             inputRef={addressRef}
@@ -357,6 +382,8 @@ const validateField = (field, value) => {
             onChange={(e) => setAddress(e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, "address", handleSaveGoldsmith)}
           />
+
+       
         </DialogContent>
         <DialogActions>
           <Button onClick={closeModal} color="secondary">
@@ -379,6 +406,7 @@ const validateField = (field, value) => {
                 <th>Goldsmith Name</th>
                 <th>Phone Number</th>
                 <th>Address</th>
+                <th>Balance</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -389,6 +417,7 @@ const validateField = (field, value) => {
                   <td>{item.name}</td>
                   <td>{item.phone || "-"}</td>
                   <td>{item.address || "-"}</td>
+                  <td>{item.balance}</td>
                   <td>
                     <EditIcon
                       style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
@@ -452,14 +481,28 @@ const validateField = (field, value) => {
             /* removed onKeyDown for Edit per your request */
           />
           <TextField
+            type="number"
+            inputRef={balanceRef}
+            label="balance"
+            value={formData.balance}
+            fullWidth
+            margin="normal"
+            onChange={(e) => setFormData({ ...formData, balance: e.target.value ,balanceisEdited:true})}
+            onWheel={(e)=>e.target.blur()}
+            /* removed onKeyDown for Edit per your request */
+          />
+          <TextField
             inputRef={addressRef}
             label="Address"
             value={formData.address}
             fullWidth
+            multiline
+            rows={4}
             margin="normal"
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             /* removed onKeyDown for Edit per your request */
           />
+           
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>

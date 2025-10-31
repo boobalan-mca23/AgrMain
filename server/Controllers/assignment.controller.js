@@ -2,7 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const reduceGold = require("../Utils/reduceRawGold");
 const addRawGold = require("../Utils/addRawGoldStock");
-
+const {getGoldSmithBalance,updateGoldSmithBalance}=require('../Utils/updateGoldSmithBalance')
 // helper function itemDelivery in jobCard
 
 const moveToItemDelivery = async (itemDelivery,jobcardId,goldSmithId) => {
@@ -151,6 +151,7 @@ const createJobcard = async (req, res) => {
     if (givenGold.length < 1) {
       return res.status(400).json({ error: "Given gold data is required" });
     }
+      
 
     const jobCardTotal = {
       goldsmithId: parseInt(goldSmithId),
@@ -159,6 +160,8 @@ const createJobcard = async (req, res) => {
       stoneTotalWt: 0,
       jobCardBalance: parseFloat(total?.jobCardBalance) || 0,
       openingBalance: parseFloat(total?.openingBalance) || 0,
+      balanceOption:false,
+      goldSmithBalance:await getGoldSmithBalance(goldSmithId),
       receivedTotal: 0,
       isFinished: "false",
     };
@@ -173,6 +176,8 @@ const createJobcard = async (req, res) => {
       },
     });
     await reduceGold.reduceRawGold(givenGold, newJobcard.id, goldSmithId); // we need to reduce rawGold stock
+     
+    await updateGoldSmithBalance(goldSmithId) // side by side goldSmith Balance also we need to change
     const allJobCards = await prisma.jobcard.findMany({
       where: {
         goldsmithId: parseInt(goldSmithId),
@@ -222,11 +227,6 @@ const updateJobCard = async (req, res) => {
       return res.status(404).json({ error: "Goldsmith not found" });
     }
 
-    // if (givenGold.length < 1) {
-    //   return res
-    //     .status(400)
-    //     .json({ error: "GoldSmith information is required" });
-    // }
     if (!total) {
       return res.status(400).json({ error: "Total information is required" });
     }
@@ -311,7 +311,8 @@ const updateJobCard = async (req, res) => {
         });
       }
     }
-
+    // side by side goldSmith Balance also we need to change
+    await updateGoldSmithBalance(goldSmithId)
     const allJobCards = await prisma.jobcard.findMany({
       where: {
         goldsmithId: parseInt(goldSmithId),
@@ -457,9 +458,10 @@ const getPreviousJobCardBal = async (req, res) => {
 
       res
         .status(200)
-        .json({ status: "balance", balance: jobCard.jobCardBalance });
+        .json({ status: "balance", balance:jobCard.balanceOption? jobCard.goldSmithBalance : jobCard.jobCardBalance });
     } else {
-      res.status(200).json({ status: "nobalance", balance: 0 });
+     
+      res.status(200).json({ status: "nobalance", balance:await getGoldSmithBalance(id)});
     }
   } catch (err) {
     console.error("Previous Balance Error:", err);
