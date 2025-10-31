@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import {checkTransaction} from '../cashOrGoldValidation/cashOrGoldValidation'
 const Customertrans = () => {
   const today = new Date();
   const formattedToday = today.toISOString().split("T")[0]; // "2025-09-16"
@@ -20,6 +20,7 @@ const Customertrans = () => {
   const [transactions, setTransactions] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [error, setError] = useState("");
+  const [goldCashError,setGoldCashError]=useState({})
   const [goldRate, setGoldRate] = useState("");
   const [masterTouch,setMasterTouch]=useState([])
   const [newTransaction, setNewTransaction] = useState({
@@ -128,16 +129,20 @@ const Customertrans = () => {
             ? parseFloat(newTransaction.touch)
             : 0,
       };
-      console.log('customer transacation payload',transactionData)
-      const response = await axios.post(
+      let isTrue=checkTransaction(transactionData,setGoldCashError)
+       if(Object.keys(isTrue).length===0){
+         const response = await axios.post(
         `${BACKEND_SERVER_URL}/api/transactions`,
         transactionData
       );
 
-      setTransactions([...transactions, response.data]);
-      resetForm();
-      setShowPopup(false);
-      toast.success("Transaction added successfully!");
+       setTransactions([...transactions, response.data]);
+       resetForm();
+       setShowPopup(false);
+       toast.success("Transaction added successfully!");
+
+       } 
+     
     } catch (error) {
       console.error("Error adding transaction:", error);
       toast.error(error.message || "Error adding transaction");
@@ -259,6 +264,7 @@ const Customertrans = () => {
                       step="0.01"
                       required
                     />
+                     {goldCashError.amount&& <p style={{color:"red"}}>{goldCashError.amount}</p>}
                   </label>
                   <label>
                     Gold Rate (₹/gram):
@@ -282,6 +288,7 @@ const Customertrans = () => {
                       step="0.01"
                       required
                     />
+                    {goldCashError.goldRate&& <p style={{color:"red"}}>{goldCashError.goldRate}</p>}
                   </label>
                   <label>
                     Purity (grams):
@@ -307,6 +314,8 @@ const Customertrans = () => {
                       step="0.001"
                       required
                     />
+                     {goldCashError.gold&& <p style={{color:"red"}}>{goldCashError.gold}</p>}
+                    
                   </label>
                   <label>
                     Touch (%):

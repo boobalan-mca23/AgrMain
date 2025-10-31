@@ -104,8 +104,8 @@
     cursor: pointer;
   }
   
-  .form-group {
-    margin-bottom: 15px;
+  .form-group ,.direct-Touch{
+    margin-bottom: 20px;
   }
   
   .form-group label {

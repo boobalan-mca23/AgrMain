@@ -38,7 +38,7 @@ model MasterItem {
 
 model MasterTouch {
   id             Int    @id @default(autoincrement())
-  touch          Float
+  touch          Float  
   rawGoldStock   RawgoldStock[]
   createdAt DateTime @default(now())
 }
@@ -150,6 +150,7 @@ model Goldsmith {
   name       String
   phone      String?
   address    String?
+  balance    Float?
   jobcards   Jobcard[]       
   givenGold  givenGold[]      
   deliveries itemDelivery[]   
@@ -222,20 +223,22 @@ model deduction{
 
 }
 model Total {
-  id              Int         @id @default(autoincrement())
-  jobcardId       Int?
-  jobcard         Jobcard?      @relation(fields: [jobcardId], references: [id])
-  goldsmithId     Int
-  goldsmith       Goldsmith   @relation(fields: [goldsmithId], references: [id])
-  givenTotal      Float?
-  deliveryTotal   Float?
-  stoneTotalWt    Float?
-  openingBalance  Float?
-  jobCardBalance  Float?
-  receivedTotal   Float?
-  isFinished      String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @default(now())
+  id               Int         @id @default(autoincrement())
+  jobcardId        Int?
+  jobcard          Jobcard?      @relation(fields: [jobcardId], references: [id])
+  goldsmithId      Int
+  goldsmith        Goldsmith   @relation(fields: [goldsmithId], references: [id])
+  balanceOption    Boolean @default(false)
+  givenTotal       Float?
+  deliveryTotal    Float?
+  stoneTotalWt     Float?
+  openingBalance   Float?
+  goldSmithBalance Float?
+  jobCardBalance   Float?
+  receivedTotal    Float?
+  isFinished       String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @default(now())
 }
 
 model Receivedsection {

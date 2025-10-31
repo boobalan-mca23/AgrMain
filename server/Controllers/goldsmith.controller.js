@@ -1,8 +1,9 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-
+const {changeJobCardBalance}=require('../Utils/updateGoldSmithBalance')
 exports.createGoldsmith = async (req, res) => {
-  let { name, phonenumber, address } = req.body;
+
+  let { name, phonenumber, address ,balance} = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Goldsmith name is required." });
@@ -29,6 +30,7 @@ exports.createGoldsmith = async (req, res) => {
         name: name.trim(),
         phone: phonenumber,
         address,
+        balance:parseFloat(balance)||0
       },
     });
     res.status(201).json(newGoldsmith);
@@ -64,7 +66,7 @@ exports.getGoldsmithById = async (req, res) => {
 
 exports.updateGoldsmith = async (req, res) => {
   const { id } = req.params;
-  let { name, phone, address } = req.body;
+  let { name, phone, address ,balance,balanceisEdited} = req.body;
 
   phone = phone && phone.trim() !== "" ? phone.trim() : null;
   address = address && address.trim() !== "" ? address.trim() : null;
@@ -90,8 +92,13 @@ exports.updateGoldsmith = async (req, res) => {
         name: name.trim(),
         phone,
         address,
+        balance:parseFloat(balance)||0
       },
     });
+
+    if(balanceisEdited) { // change jobcard balance
+        changeJobCardBalance(id,balance)
+    }
     res.status(200).json(updatedGoldsmith);
   } catch (error) {
     res.status(500).json({ message: "Error updating goldsmith", error });
