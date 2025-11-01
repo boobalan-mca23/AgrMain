@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PreviewIcon from "@mui/icons-material/Preview";
+import ReceiptIcon from '@mui/icons-material/Receipt';
 
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useNavigate } from "react-router-dom";
@@ -164,6 +165,19 @@ const Customer = () => {
                           }
                         >
                           <PreviewIcon color="primary" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="View Receipts">
+                         <IconButton
+                          onClick={() =>
+                            navigate(
+                              `/receipt?id=${
+                                customer.id
+                              }&name=${encodeURIComponent(customer.name)}`
+                            )
+                          }
+                        >
+                          <ReceiptIcon color="primary" />
                         </IconButton>
                       </Tooltip>
                     </TableCell>

@@ -83,7 +83,6 @@ const Navbar = () => {
           "Customer",
           "Goldsmith",
           "Bill",
-          "Receipt Voucher",
           "Expense Voucher",
           "Bullion",
           "Repair",

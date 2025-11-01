@@ -1,12 +1,13 @@
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./Customertrans.css";
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
 import { useSearchParams } from "react-router-dom";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import {checkTransaction} from '../cashOrGoldValidation/cashOrGoldValidation'
+import { checkTransaction } from "../cashOrGoldValidation/cashOrGoldValidation";
 const Customertrans = () => {
   const today = new Date();
   const formattedToday = today.toISOString().split("T")[0]; // "2025-09-16"
@@ -20,11 +21,11 @@ const Customertrans = () => {
   const [transactions, setTransactions] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [error, setError] = useState("");
-  const [goldCashError,setGoldCashError]=useState({})
+  const [goldCashError, setGoldCashError] = useState({});
   const [goldRate, setGoldRate] = useState("");
-  const [masterTouch,setMasterTouch]=useState([])
+  const [masterTouch, setMasterTouch] = useState([]);
   const [newTransaction, setNewTransaction] = useState({
-    date: formattedToday ,
+    date: formattedToday,
     gold: "",
     type: "Select",
     amount: "",
@@ -48,10 +49,10 @@ const Customertrans = () => {
       }
     };
 
-     const fetchTouch = async () => {
+    const fetchTouch = async () => {
       try {
         const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
-        console.log('masterTouch',res.data)
+        console.log("masterTouch", res.data);
         setMasterTouch(res.data);
       } catch (err) {
         console.error("Failed to fetch touch values", err);
@@ -100,14 +101,14 @@ const Customertrans = () => {
       if (!newTransaction.date || newTransaction.type === "Select") {
         throw new Error("Date and transaction type are required");
       }
-      if(newTransaction.type==="Cash"){
-        if(!newTransaction.amount || !goldRate){
+      if (newTransaction.type === "Cash") {
+        if (!newTransaction.amount || !goldRate) {
           throw new Error("Cash value and goldRate are required");
         }
       }
 
-       if(newTransaction.type==="Gold"){
-        if(!newTransaction.gold || !newTransaction.touch){
+      if (newTransaction.type === "Gold") {
+        if (!newTransaction.gold || !newTransaction.touch) {
           throw new Error("gold value and touch are required");
         }
       }
@@ -119,30 +120,26 @@ const Customertrans = () => {
       const transactionData = {
         date: newTransaction.date,
         type: newTransaction.type,
-        amount:parseFloat(newTransaction.amount)||0,
-        gold: parseFloat(newTransaction.gold)||0,
+        amount: parseFloat(newTransaction.amount) || 0,
+        gold: parseFloat(newTransaction.gold) || 0,
         purity: parseFloat(newTransaction.purity),
         customerId: parseInt(customerId),
         goldRate: newTransaction.type === "Cash" ? parseFloat(goldRate) : 0,
         touch:
-          newTransaction.type === "Gold"
-            ? parseFloat(newTransaction.touch)
-            : 0,
+          newTransaction.type === "Gold" ? parseFloat(newTransaction.touch) : 0,
       };
-      let isTrue=checkTransaction(transactionData,setGoldCashError)
-       if(Object.keys(isTrue).length===0){
-         const response = await axios.post(
-        `${BACKEND_SERVER_URL}/api/transactions`,
-        transactionData
-      );
+      let isTrue = checkTransaction(transactionData, setGoldCashError);
+      if (Object.keys(isTrue).length === 0) {
+        const response = await axios.post(
+          `${BACKEND_SERVER_URL}/api/transactions`,
+          transactionData
+        );
 
-       setTransactions([...transactions, response.data]);
-       resetForm();
-       setShowPopup(false);
-       toast.success("Transaction added successfully!");
-
-       } 
-     
+        setTransactions([...transactions, response.data]);
+        resetForm();
+        setShowPopup(false);
+        toast.success("Transaction added successfully!");
+      }
     } catch (error) {
       console.error("Error adding transaction:", error);
       toast.error(error.message || "Error adding transaction");
@@ -151,13 +148,13 @@ const Customertrans = () => {
 
   const resetForm = () => {
     setNewTransaction({
-      date: formattedToday ,
-    gold: "",
-    type: "Select",
-    amount: "",
-    goldRate: "",
-    touch: "",
-    purity: "",
+      date: formattedToday,
+      gold: "",
+      type: "Select",
+      amount: "",
+      goldRate: "",
+      touch: "",
+      purity: "",
     });
     setError("");
     setGoldRate("");
@@ -264,7 +261,9 @@ const Customertrans = () => {
                       step="0.01"
                       required
                     />
-                     {goldCashError.amount&& <p style={{color:"red"}}>{goldCashError.amount}</p>}
+                    {goldCashError.amount && (
+                      <p style={{ color: "red" }}>{goldCashError.amount}</p>
+                    )}
                   </label>
                   <label>
                     Gold Rate (₹/gram):
@@ -288,7 +287,9 @@ const Customertrans = () => {
                       step="0.01"
                       required
                     />
-                    {goldCashError.goldRate&& <p style={{color:"red"}}>{goldCashError.goldRate}</p>}
+                    {goldCashError.goldRate && (
+                      <p style={{ color: "red" }}>{goldCashError.goldRate}</p>
+                    )}
                   </label>
                   <label>
                     Purity (grams):
@@ -314,24 +315,56 @@ const Customertrans = () => {
                       step="0.001"
                       required
                     />
-                     {goldCashError.gold&& <p style={{color:"red"}}>{goldCashError.gold}</p>}
-                    
+                    {goldCashError.gold && (
+                      <p style={{ color: "red" }}>{goldCashError.gold}</p>
+                    )}
                   </label>
                   <label>
                     Touch (%):
-                    <select
-                      value={newTransaction.touch}
-                      onChange={handleChange}
-                      name="touch"
-                     >
-                      <option value="">Select</option>
-                      
-                      {masterTouch.map((option)=>(
-                        <option key={option.id} value={option.touch}>
-                          {option.touch}
-                        </option>
-                      ))}
-                    </select>
+                    <Autocomplete
+                      freeSolo
+                      forcePopupIcon
+                      options={masterTouch.map((item) => item.touch.toString())}
+                      value={newTransaction.touch || ""}
+                      onChange={(event, newValue) => {
+                        handleChange({
+                          target: {
+                            name: "touch",
+                            value: newValue || "",
+                          },
+                        });
+                      }}
+                      noOptionsText=""
+                      sx={{
+                        width: 300,
+                        "& .MuiInputBase-root": {
+                          height: 40, // same height as your other input
+                          padding: "4px !important",
+                        },
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          name="touch"
+                          required
+                          size="small"
+                          onChange={(e) => handleChange(e)}
+                          variant="standard" 
+                          InputProps={{
+                            ...params.InputProps,
+                            disableUnderline: true, 
+                            style: { padding: "0px" },
+                          }}
+                          inputProps={{
+                            ...params.inputProps,
+                            style: { padding: "12px" },
+                          }}
+                        />
+                      )}
+                    />
+                    {goldCashError.touch && (
+                      <p style={{ color: "red" }}>{goldCashError.touch}</p>
+                    )}
                   </label>
                   <label>
                     Purity (grams):
@@ -346,7 +379,11 @@ const Customertrans = () => {
               )}
 
               <div className="form-actions">
-                <button type="button" className="save-btn" onClick={addTransaction}>
+                <button
+                  type="button"
+                  className="save-btn"
+                  onClick={addTransaction}
+                >
                   Save
                 </button>
                 <button
@@ -382,12 +419,8 @@ const Customertrans = () => {
             <tr key={transaction.id}>
               <td>{new Date(transaction.date).toLocaleDateString("en-GB")}</td>
               <td>{transaction.type}</td>
-              <td>
-                {transaction.goldRate}
-              </td>
-              <td>
-                {transaction.gold}gr
-              </td>
+              <td>{transaction.goldRate}</td>
+              <td>{transaction.gold}gr</td>
               <td>{transaction.purity.toFixed(3)}</td>
               <td> {transaction.amount}</td>
               <td>

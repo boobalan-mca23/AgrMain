@@ -1,0 +1,11 @@
+.receipt-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+}
+.receipt-form input,select{
+  padding: 5px;
+  font-size: 1rem;
+  border-radius: 6px;
+}

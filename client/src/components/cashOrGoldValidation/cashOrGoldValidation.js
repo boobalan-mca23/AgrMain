@@ -34,6 +34,12 @@ const checkTransaction=(payload,setGoldCashError)=>{
         if(payload.gold<=0){
         errors.gold="Gold Value must be Greater than 0 !"
       }
+       if(payload.touch<=0){
+        errors.touch="Touch must be Greater than 0 !"
+      }
+       if (!/^\d+(\.\d+)?$/.test(payload.touch)) {
+        errors.touch = "Only positive numeric values allowed !";
+       }
     }else{
      
       if(payload.amount<=0){
@@ -47,6 +53,37 @@ const checkTransaction=(payload,setGoldCashError)=>{
     return errors
 }
 
+const checkReceipt=(payload,setGoldCashError)=>{
+    const errors={}
+    if(!payload.date){
+      errors.date="Date is Required!"
+    }
+    if(!payload.type){
+      errors.date="Type is Required!"
+    }
+    if(payload.type==="Gold"){
+      
+        if(payload.gold<=0){
+        errors.gold="Gold Value must be Greater than 0 !"
+      }
+       if(payload.touch<=0){
+        errors.touch="Touch must be Greater than 0 !"
+      }
+       if (!/^\d+(\.\d+)?$/.test(payload.touch)) {
+        errors.touch = "Only positive numeric values allowed !";
+       }
+    }else{
+     
+      if(payload.amount<=0){
+        errors.amount="cashAmount must be Greater than 0 !"
+      }
+      if(payload.goldRate<=0){
+         errors.goldRate="goldRate must be Greater than 0 !"
+      }
+      }
+    setGoldCashError(errors)
+    return errors
+}
 
 const checkExpense=(dataToValidate,setExpenseError)=>{
   
@@ -63,5 +100,6 @@ const checkExpense=(dataToValidate,setExpenseError)=>{
 export{
     checkCashOrGold,
     checkExpense,
-    checkTransaction
+    checkTransaction,
+    checkReceipt
 }

@@ -45,6 +45,28 @@ const createReceipt = async (req, res) => {
   }
 };
 
+const getReceiptByCustomerId = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+
+      console.log('customerid',customerId)
+
+    if (!customerId) {
+      return res.status(400).json({ error: "Customer ID is required" });
+    }
+
+    const receipt = await prisma.receiptVoucher.findMany({
+      where: { customerId: parseInt(customerId) },
+      orderBy: { id: "desc" },
+    });
+     console.log(receipt)
+
+    res.status(200).json(receipt);
+  } catch (error) {
+    console.error("Error fetching receipt:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 const formatDate = (dateString) => {
   const [day, month, year] = dateString.split("/");
@@ -105,6 +127,7 @@ const receiptFilter = async (req, res) => {
 };
 module.exports = {
     createReceipt ,
+    getReceiptByCustomerId,
     receiptFilter
   
 };
