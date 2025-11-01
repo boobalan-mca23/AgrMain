@@ -2,6 +2,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const transToRawGold=require('../Utils/addRawGoldStock')
+const {directTouch}=require('../Utils/directTouch')
 const createTransaction = async (req, res) => {
   try {
     const { date, type,amount,gold, touch, purity, customerId, goldRate } = req.body;
@@ -9,7 +10,9 @@ const createTransaction = async (req, res) => {
     if (!date || !type || !customerId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
-   
+       // this function create touch direct
+      await directTouch(touch)
+
       const transaction=await transToRawGold.transactionToRawGold(date, type,amount,gold, touch, purity, customerId, goldRate )
      console.log('transaction form return function',transaction)
 
@@ -22,14 +25,15 @@ const createTransaction = async (req, res) => {
 const getAllTransactions = async (req, res) => {
   try {
     const { customerId } = req.params;
-      console.log('customerid',customerId)
+    console.log('customerid',customerId)
+    
     if (!customerId) {
       return res.status(400).json({ error: "Customer ID is required" });
     }
 
     const transactions = await prisma.transaction.findMany({
       where: { customerId: parseInt(customerId) },
-      orderBy: { date: "desc" },
+      orderBy: { id: "desc" },
     });
      console.log(transactions)
 
