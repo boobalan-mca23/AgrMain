@@ -49,6 +49,7 @@ const checkTransaction=(payload,setGoldCashError)=>{
          errors.goldRate="goldRate must be Greater than 0 !"
       }
       }
+      
     setGoldCashError(errors)
     return errors
 }
@@ -59,28 +60,39 @@ const checkReceipt=(payload,setGoldCashError)=>{
       errors.date="Date is Required!"
     }
     if(!payload.type){
-      errors.date="Type is Required!"
+      errors.type="Type is Required!"
     }
-    if(payload.type==="Gold"){
-      
-        if(payload.gold<=0){
+    if(payload.type==="gold"){
+      if(!payload.gold){
+        errors.gold="Gold Value is Required!"
+      }
+      else if(payload.gold<=0){
         errors.gold="Gold Value must be Greater than 0 !"
       }
-       if(payload.touch<=0){
+      else if(!payload.touch){
+        errors.touch="Touch Value is Required!"
+      }
+       else if(payload.touch<=0){
         errors.touch="Touch must be Greater than 0 !"
       }
-       if (!/^\d+(\.\d+)?$/.test(payload.touch)) {
-        errors.touch = "Only positive numeric values allowed !";
+      else if (!/^\d+(\.\d+)?$/.test(payload.touch)) {
+        errors.touch = "Only positive numeric values are allowed !";
        }
     }else{
-     
-      if(payload.amount<=0){
-        errors.amount="cashAmount must be Greater than 0 !"
+      if(!payload.amount){
+        errors.amount="Amount Value is  Required!"
       }
-      if(payload.goldRate<=0){
-         errors.goldRate="goldRate must be Greater than 0 !"
+      else if(payload.amount<=0){
+        errors.amount="CashAmount must be Greater than 0 !"
+      }
+     else if(!payload.goldRate){
+        errors.goldRate="GoldRate Value is  Required!"
+      }
+     else if(payload.goldRate<=0){
+         errors.goldRate="GoldRate must be Greater than 0 !"
       }
       }
+      console.log('errors',errors)
     setGoldCashError(errors)
     return errors
 }

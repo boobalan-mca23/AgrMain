@@ -8,8 +8,10 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
 import "./NewReceipt.css";
-import {checkReceipt} from '../cashOrGoldValidation/cashOrGoldValidation'
+import { checkReceipt } from "../cashOrGoldValidation/cashOrGoldValidation";
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialog-paper": {
     width: "100%",
@@ -25,7 +27,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 export default function NewReceipt(props) {
-  const { handleClose, open } = props;
+  const { handleClose, open, masterTouch } = props;
   const today = new Date();
   const formattedToday = today.toISOString().split("T")[0];
   const [newReceipt, setNewReceipt] = useState({
@@ -38,40 +40,41 @@ export default function NewReceipt(props) {
     amount: "",
     hallMark: "",
   });
- const [goldCashError,setGoldCashError]=useState({})
+  const [goldCashError, setGoldCashError] = useState({});
 
- const handleChangeReceipt = (e) => {
-  const { name, value } = e.target;
+  const handleChangeReceipt = (e) => {
+    const { name, value } = e.target;
 
-  setNewReceipt((prev) => {
-    const updated = { ...prev, [name]: value };
+    setNewReceipt((prev) => {
+      const updated = { ...prev, [name]: value };
 
-    let amount = parseFloat(updated.amount) || 0;
-    let goldRate = parseFloat(updated.goldRate) || 0;
-    let gold = parseFloat(updated.gold) || 0;
-    let touch = parseFloat(updated.touch) || 0;
+      let amount = parseFloat(updated.amount) || 0;
+      let goldRate = parseFloat(updated.goldRate) || 0;
+      let gold = parseFloat(updated.gold) || 0;
+      let touch = parseFloat(updated.touch) || 0;
 
-    // If cash receipt
-    if (updated.type === "cash" && amount > 0 && goldRate > 0) {
-      updated.purity = (amount / goldRate).toFixed(3);
+      // If cash receipt
+      if (updated.type === "cash" && amount > 0 && goldRate > 0) {
+        updated.purity = (amount / goldRate).toFixed(3);
+      }
+
+      // If gold receipt
+      if (updated.type === "gold" && gold > 0 && touch > 0) {
+        updated.purity = (gold * (touch / 100)).toFixed(3);
+      }
+
+      return updated;
+    });
+  };
+
+  const handleSubmit = () => {
+    let isTrue = checkReceipt(newReceipt, setGoldCashError);
+
+    if (Object.keys(isTrue).length === 0) {
+      handleClose();
+      setGoldCashError({});
     }
-
-    // If gold receipt
-    if (updated.type === "gold" && gold > 0 && touch > 0) {
-      updated.purity = (gold * (touch / 100)).toFixed(3);
-    }
-
-    return updated;
-  });
-};
-
-const handleSubmit=()=>{
-    let isTrue=checkReceipt(newReceipt,setGoldCashError)
-    if(Object.keys(isTrue).length===0){
-         handleClose()
-    }
- 
-}
+  };
 
   return (
     <React.Fragment>
@@ -97,7 +100,9 @@ const handleSubmit=()=>{
         </IconButton>
         <DialogContent dividers>
           <form className="receipt-form">
-            <label><strong>Date :</strong></label>
+            <label>
+              <strong>Date :</strong>
+            </label>
             <input
               type="date"
               name="date"
@@ -105,9 +110,11 @@ const handleSubmit=()=>{
               onChange={(e) => handleChangeReceipt(e)}
             ></input>
             {goldCashError.date && (
-                      <p style={{ color: "red" }}>{goldCashError.date}</p>
+              <p style={{ color: "red" }}>{goldCashError.date}</p>
             )}
-            <label><strong>Select Receipt Type :</strong></label>
+            <label>
+              <strong>Select Receipt Type :</strong>
+            </label>
             <select
               name="type"
               onChange={(e) => {
@@ -123,73 +130,127 @@ const handleSubmit=()=>{
             )}
             {newReceipt.type === "cash" ? (
               <>
-                <label><strong>Cash:</strong></label>
+                <label>
+                  <strong>Cash:</strong>
+                </label>
                 <input
                   type="number"
-                  onWheel={(e)=>e.target.blur()}
+                  onWheel={(e) => e.target.blur()}
                   name="amount"
                   className="receipt-form-input"
                   value={newReceipt.amount}
                   onChange={(e) => handleChangeReceipt(e)}
                 />
                 {goldCashError.amount && (
-              <p style={{ color: "red" }}>{goldCashError.amount}</p>
-            )}
-                <label><strong>GoldRate:</strong></label>
+                  <p style={{ color: "red" }}>{goldCashError.amount}</p>
+                )}
+                <label>
+                  <strong>GoldRate:</strong>
+                </label>
                 <input
                   type="number"
-                  onWheel={(e)=>e.target.blur()}
+                  onWheel={(e) => e.target.blur()}
                   name="goldRate"
                   value={newReceipt.goldRate}
                   onChange={(e) => handleChangeReceipt(e)}
                 />
-                 {goldCashError.goldRate && (
-              <p style={{ color: "red" }}>{goldCashError.goldRate}</p>
-            )}
-                <label><strong>Hall Mark:</strong></label>
+                {goldCashError.goldRate && (
+                  <p style={{ color: "red" }}>{goldCashError.goldRate}</p>
+                )}
+                <label>
+                  <strong>Hall Mark:</strong>
+                </label>
                 <input
                   type="number"
-                  onWheel={(e)=>e.target.blur()}
+                  onWheel={(e) => e.target.blur()}
                   name="hallMark"
                   value={newReceipt.hallMark}
                   onChange={(e) => handleChangeReceipt(e)}
                 />
 
-                <label><strong>Purity:</strong></label>
+                <label>
+                  <strong>Purity:</strong>
+                </label>
                 <input value={newReceipt.purity} readOnly />
               </>
             ) : (
               <>
                 {newReceipt.type === "gold" ? (
                   <>
-                    <label><strong>Gold:</strong></label>
+                    <label>
+                      <strong>Gold:</strong>
+                    </label>
                     <input
                       type="number"
-                      onWheel={(e)=>e.target.blur()}
+                      onWheel={(e) => e.target.blur()}
                       name="gold"
                       className="receipt-form-input"
                       value={newReceipt.gold}
                       onChange={(e) => handleChangeReceipt(e)}
                     />
                     {goldCashError.gold && (
-              <p style={{ color: "red" }}>{goldCashError.gold}</p>
-            )}
-                    <label><strong>Touch:</strong></label>
-                    <input
-                      name="touch"
-                      value={newReceipt.touch}
-                      onChange={(e) => handleChangeReceipt(e)}
+                      <p style={{ color: "red" }}>{goldCashError.gold}</p>
+                    )}
+                    <label>
+                      <strong>Touch:</strong>
+                    </label>
+                    <Autocomplete
+                      freeSolo
+                      forcePopupIcon
+                      options={masterTouch.map((item) => item.touch.toString())}
+                      value={newReceipt.touch || ""}
+                      onChange={(event, newValue) => {
+                        handleChangeReceipt({
+                          target: {
+                            name: "touch",
+                            value: newValue || "",
+                          },
+                        });
+                      }}
+                      noOptionsText=""
+                      sx={{
+                        width: 418,
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "4px !important",
+                        },
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          name="touch"
+                          required
+                          size="small"
+                          onChange={(e) => handleChangeReceipt(e)}
+                          variant="outlined" 
+                          InputProps={{
+                            ...params.InputProps,
+                            sx: { padding: 0 }, 
+                          }}
+                          inputProps={{
+                            ...params.inputProps,
+                            style: { padding: "12px" },
+                          }}
+                        />
+                      )}
                     />
-                    
-                    <label><strong>Hall Mark:</strong></label>
+
+                    {goldCashError.touch && (
+                      <p style={{ color: "red" }}>{goldCashError.touch}</p>
+                    )}
+                    <label>
+                      <strong>Hall Mark:</strong>
+                    </label>
                     <input
                       type="number"
-                      onWheel={(e)=>e.target.blur()}
+                      onWheel={(e) => e.target.blur()}
                       name="hallMark"
                       value={newReceipt.hallMark}
                       onChange={(e) => handleChangeReceipt(e)}
                     />
-                    <label><strong>Purity:</strong></label>
+                    <label>
+                      <strong>Purity:</strong>
+                    </label>
                     <input value={newReceipt.purity} readOnly />
                   </>
                 ) : (

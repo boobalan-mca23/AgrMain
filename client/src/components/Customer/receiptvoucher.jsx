@@ -339,6 +339,7 @@ const Receipt = () => {
          open={open}
          setOpend={setOpen}
          handleClose={handleClose}
+         masterTouch={masterTouch}
         />)
       }
     
