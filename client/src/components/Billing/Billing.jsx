@@ -628,6 +628,44 @@ const Billing = () => {
     }));
   };
 
+  // Creates any touch values present in rows but missing from `touch` master list.
+// Throws if creation fails (so handleSave can abort).
+const createMissingTouches = async () => {
+  try {
+    const existingSet = new Set((touch || []).map((t) => t.touch?.toString()));
+    // collect unique non-empty touch strings from rows
+    const rowTouches = Array.from(
+      new Set(
+        (rows || [])
+          .map((r) => (r.touch || "").toString().trim())
+          .filter((v) => v !== "")
+      )
+    );
+
+    const missing = rowTouches.filter((tVal) => !existingSet.has(tVal));
+    if (missing.length === 0) return;
+
+    // create all missing touches in parallel
+    await Promise.all(
+      missing.map((tVal) =>
+        axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, { touch: tVal })
+      )
+    );
+
+    // refresh master-touch list after creating
+    const refresh = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+    setTouch(Array.isArray(refresh.data) ? refresh.data : []);
+
+    toast.success(`${missing.length} new touch(es) added`);
+  } catch (err) {
+    console.error("Error creating missing touches:", err);
+    toast.error("Failed to create new touch values. Please try again.");
+    // rethrow so handleSave can abort the save if needed
+    throw err;
+  }
+};
+
+
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);    
@@ -642,6 +680,13 @@ const Billing = () => {
       const isFormValid = validateAllFields();
       if (!isFormValid) {
         alert("Please fill in all required fields");
+        return;
+      }
+      try {
+        await createMissingTouches();
+      } catch (err) {
+        // createMissingTouches throws on failure, so abort save
+        setIsSaving(false);
         return;
       }
 
@@ -1242,7 +1287,7 @@ const Billing = () => {
           {viewMode ? (
             <>
               <Box className="bill-number">
-                <p> <strong>Bill No:</strong> {billId} </p>
+                <p> <strong>Bill No:</strong> {currentBill.billno} </p>
               </Box>
               <Box className="bill-info">
                 <p>
@@ -1697,31 +1742,6 @@ const Billing = () => {
                                 }}
                                 onInputChange={(_, newInputValue) => {
                                   handleRowChange(index, "touch", newInputValue);
-                                }}
-                                onBlur={async (e) => {
-                                  const newTouch = e.target.value?.trim();
-                                  if (
-                                    newTouch &&
-                                    !touch.some((t) => t.touch.toString() === newTouch)
-                                  ) {
-                                    try {
-                                      const res = await axios.post(
-                                        `${BACKEND_SERVER_URL}/api/master-touch/create`,
-                                        { touch: newTouch }
-                                      );
-                                      toast.success("New touch value added!");
-                                      // refresh list
-                                      const refresh = await axios.get(
-                                        `${BACKEND_SERVER_URL}/api/master-touch`
-                                      );
-                                      setTouch(refresh.data);
-                                    } catch (err) {
-                                      console.error("Error adding new touch:", err);
-                                      toast.error(
-                                        err.response?.data?.msg || "Failed to add new touch."
-                                      );
-                                    }
-                                  }
                                 }}
                                 renderInput={(params) => (
                                   <TextField
