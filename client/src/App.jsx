@@ -16,7 +16,7 @@ import CustomerReport from "./components/Report/customer.report";
 import Overallreport from "./components/Report/overallreport";
 import Jobcardreport from "./components/Report/jobcardreport";
 import ReceiptReport from "./components/Report/receiptreport";
-import Receipt from "./components/Customer/receiptvoucher";
+import Receipt from "./components/ReceiptVoucher/receiptvoucher"
 import Customerorders from "./components/Customer/Customerorders";
 import Orderreport from "./components/Report/orderreport";
 import Newjobcard from "./components/Goldsmith/Newjobcard";
@@ -140,7 +140,7 @@ function App() {
           }
         />
         <Route
-          path="/rece"
+          path="/receiptreport"
           element={
             <PageWithNavbar>
               <ReceiptReport />
@@ -148,7 +148,7 @@ function App() {
           }
         />
         <Route
-          path="/receipt"
+          path="/receiptvoucher"
           element={
             <PageWithNavbar>
               <Receipt />

@@ -1,18 +1,12 @@
 
 .receiptFlex{
     display: flex;
-    justify-content:flex-start;
-    align-items: center;
+    justify-content: flex-start;
+    align-items: flex-end;
     flex-wrap: wrap;
     gap: 30px;
     padding: 0px 100px;
     
-}
-.receiptActions {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  margin-left: auto;  
 }
 .receiptTitle{
   color: #000;
@@ -70,7 +64,17 @@
   justify-content: center;
   margin-top: 20px;
 }
-
+.receiptTableInput,.receiptTableDate{
+    padding: 5px;
+    font-size: 1rem;
+    width: 85px;
+    border-radius: 6px;
+    background: transparent;
+  }
+.receiptTableInput{
+   border: 1px solid black;
+   vertical-align: middle;
+}
 /* Table css */
 .tableWrapper{
     padding: 20px 100px;
@@ -122,21 +126,3 @@
   font-weight: 600;
   color: #2b2b2b;
 }
-
-.addReceipt,.printReceipt{
-  padding: 10px;
-  border: none;
-  border-radius: 5px ;
-  cursor: pointer;
-  font-size: medium;
-}
-.addReceipt{
-  background-color: green;
-  color: white;
-}
-.printReceipt{
-  background-color: rgb(69, 83, 212);
-  color: white;
-}
-
-
