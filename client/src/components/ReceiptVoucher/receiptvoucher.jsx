@@ -5,6 +5,7 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import {
   IconButton,
   TextField,
+  Autocomplete,
   Table,
   TableBody,
   TableRow,
@@ -105,6 +106,9 @@ const Receipt = () => {
       const filterRows = receipt.filter((_, i) => i !== index);
       console.log("filterRows and index", filterRows, index);
       setReceipt(filterRows);
+      setReceiptErrors([]);
+      setHallMarkErrors([]);
+
     }
   };
   const handleChangeReceipt = (index, field, value) => {
@@ -221,7 +225,42 @@ const Receipt = () => {
     printWindow.document.close();
   };
 
-  const handleSaveReeceipt = () => {
+  // Creates any new touches entered that don't exist in masterTouch
+const createMissingTouches = async () => {
+  try {
+    const existing = new Set((masterTouch || []).map((t) => t.touch?.toString()));
+    const typedTouches = Array.from(
+      new Set(
+        (receipt || [])
+          .map((r) => (r.touch || "").toString().trim())
+          .filter((t) => t !== "")
+      )
+    );
+
+    const newTouches = typedTouches.filter((t) => !existing.has(t));
+    if (newTouches.length === 0) return;
+
+    await Promise.all(
+      newTouches.map((t) =>
+        axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, { touch: t })
+      )
+    );
+
+    const refresh = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+    setMasterTouch(Array.isArray(refresh.data) ? refresh.data : []);
+
+    toast.success(`${newTouches.length} new touch(es) added`);
+  } catch (err) {
+    console.error("Failed to create new touches:", err);
+    toast.error("Error creating new touch values");
+    throw err;
+  }
+};
+
+
+const handleSaveReeceipt = async() => {
+  setReceiptErrors([]);
+  setHallMarkErrors([]);
     const payLoad = {
       customerId: selectedCustomer,
       received: receipt,
@@ -229,9 +268,14 @@ const Receipt = () => {
       hallmarkBalance: hallmarkBalance,
     };
     console.log("payLoad", payLoad);
-
+ 
     const saveReceipt = async () => {
-     
+     try {
+        await createMissingTouches();
+      } catch {
+          toast.warn("new touches couldn’t be created");
+        return; 
+      }
       try {
         const response = await axios.post(
           `${BACKEND_SERVER_URL}/api/receipt`,
@@ -239,11 +283,11 @@ const Receipt = () => {
         );
         if (response.status === 201) {
           toast.success(response.data.message);
-
+ 
           setTimeout(()=>{
              handlePrint(receipt, selectedCustomer);
           },3000)
-
+ 
           setSelectedCustomer("");
           setReceipt([
             {
@@ -258,6 +302,8 @@ const Receipt = () => {
             },
           ]);
           setReceiptBalances({ oldbalance: 0, hallMark: 0 });
+          setReceiptErrors([]);
+  setHallMarkErrors([]);
         }
       } catch (err) {
         console.log(err);
@@ -267,6 +313,9 @@ const Receipt = () => {
     if (!selectedCustomer) return toast.warn("Select Customer");
      receiptValidation(receipt, setReceiptErrors)? receiptVoucherHallMark(receipt,setHallMarkErrors) ? saveReceipt(): toast.warn("Give Correct Information in HallMarks"):toast.warn("Give Correct Information In GoldRows");
   };
+
+
+
   return (
     <>
       <div> 
@@ -411,28 +460,36 @@ const Receipt = () => {
                       )}
                     </td>
                     <td>
-                      <select
-                        disabled={item.type === "Gold" ? false : true}
-                        value={item.touch}
-                        onChange={(e) => {
-                          handleChangeReceipt(index, "touch", e.target.value);
+                      <Autocomplete
+                      // className="receiptTableInput"
+                        freeSolo
+                        disableClearable
+                        disabled={item.type !== "Gold"}
+                        options={masterTouch.map((t) => t.touch.toString())}
+                        value={item.touch?.toString() || ""}
+                        onChange={(_, newValue) => {
+                          handleChangeReceipt(index, "touch", newValue);
                         }}
-                        className="receiptTableInput"
-                      >
-                        <option value="">touch</option>
-                        {masterTouch.map((option) => (
-                          <option key={option.id} value={option.touch}>
-                            {option.touch}
-                          </option>
-                        ))}
-                      </select>
-
-                      <br></br>
-                      {receiptErrors[index]?.touch && (
-                        <span className="error">
-                          {receiptErrors[index]?.touch}
-                        </span>
-                      )}
+                        onInputChange={(_, newInputValue) => {
+                          handleChangeReceipt(index, "touch", newInputValue);
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            placeholder="touch"
+                            size="small"
+                            style={{
+                                padding: 5,
+                                fontSize: "1rem",
+                                width: 95,
+                                borderRadius: 6,
+                                verticalAlign: "middle",
+                            }}
+                            error={!!receiptErrors[index]?.touch}
+                            helperText={receiptErrors[index]?.touch || ""}
+                          />
+                        )}
+                      />
                     </td>
                     <td>
                       <input
