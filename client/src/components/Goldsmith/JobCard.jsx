@@ -190,6 +190,7 @@ function JobCardDetails() {
       setJobCardLength(response.data.jobCardLength);
       alert("JobCard Created");
       setSaveDisable(false)
+      
     } catch (err) {
       toast.error(err.response.data.error);
        setSaveDisable(false)

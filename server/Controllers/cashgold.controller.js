@@ -2,6 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const {entryToRawGold}=require('../Utils/addRawGoldStock')
 const {directTouch}=require('../Utils/directTouch')
+
 exports.getAllEntries = async (req, res) => {
   try {
     const entries = await prisma.entry.findMany({
@@ -15,8 +16,7 @@ exports.getAllEntries = async (req, res) => {
 };
 
 exports.createEntry = async (req, res) => {
-  const { date, type, cashAmount, goldValue, touch, purity, goldRate } =
-    req.body;
+  const { date, type, cashAmount, goldValue, touch, purity, goldRate } =req.body;
    
   try {
     
@@ -31,3 +31,4 @@ exports.createEntry = async (req, res) => {
     res.status(500).json({ error: "Failed to create Entry" });
   }
 };
+

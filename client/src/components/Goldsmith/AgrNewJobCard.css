@@ -162,7 +162,12 @@
    align-items: center;
 }
 
-
+.auto-complete{
+    width: 120px;
+    padding: 5px 8px;
+    margin-top: 25px;
+    
+}
 .select-small {
     width: 100px;
     padding: 10px 8px;
@@ -179,7 +184,7 @@
     background-color: transparent;
     border: none;
   }
-  .select-small:focus {
+  .select-small:focus,.auto-complete:focus {
     border-color: #3498db;
     outline: none;
   }

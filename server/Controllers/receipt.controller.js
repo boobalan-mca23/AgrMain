@@ -22,7 +22,8 @@ const createReceipt = async (req, res) => {
         .json({ msg: "At least one received item is required" });
     }
        // receipt voucher time we need to add rawGold stock
-   await addRawGold.receiptMoveToRawGold(received,customerId) 
+    
+    await addRawGold.receiptMoveToRawGold(received,customerId) 
 
    await prisma.customerBillBalance.upsert({
       where: { customer_id: parseInt(customerId) },

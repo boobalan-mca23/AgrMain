@@ -74,8 +74,8 @@
 /* --- Styles for Input Fields within the Dialog --- */
 /* This targets the actual input element inside Material-UI's TextField */
 .MuiDialogContent-root .MuiTextField-root .MuiInputBase-input {
-  font-size: 1.1rem; /* Increase font size inside input fields */
-  padding: 12px 14px; /* Adjust padding for more vertical space */
+  font-size: 0.9rem; /* Increase font size inside input fields */
+  padding: 10px 8px; /* Adjust padding for more vertical space */
 }
 
 /* Ensure TextField takes up reasonable space within flex containers */

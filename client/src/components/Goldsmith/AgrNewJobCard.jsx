@@ -19,6 +19,8 @@ import {
   Box,
   CircularProgress,
   Alert,
+  Autocomplete,
+  TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { MdDeleteForever } from "react-icons/md";
@@ -35,7 +37,7 @@ import {
 import "../PrintJobCard/PrintJobCard";
 import PrintJobCard from "../PrintJobCard/PrintJobCard";
 import ReactDOMServer from "react-dom/server";
-import {jobCardBalance} from '../../utils/jobCardBalance'
+import { jobCardBalance } from "../../utils/jobCardBalance";
 function AgrNewJobCard({
   edit,
   handleCloseJobcard,
@@ -66,38 +68,50 @@ function AgrNewJobCard({
   const [itemDeliveryErrors, setItemDeliveryErrors] = useState([]);
   const [deductionErrors, setDeductionErrors] = useState([]);
   const [receivedErrors, setReceivedErrors] = useState([]);
-  const stoneOptions = ["Stone","Stone 1","Stone 2","Stone 3","Enamel","Enamel 1","Enamel 2","Enamel 3","Beads","Thread","Antic"];
+  const stoneOptions = [
+    "Stone",
+    "Stone 1",
+    "Stone 2",
+    "Stone 3",
+    "Enamel",
+    "Enamel 1",
+    "Enamel 2",
+    "Enamel 3",
+    "Beads",
+    "Thread",
+    "Antic",
+  ];
   const symbolOptions = ["Touch", "%", "+"];
- 
-  
 
   const recalculateWastagePurity = (item) => {
-  const totalItemDeductions = item.deduction.reduce(
-    (sum, deduction) => sum + parseFloat(deduction.weight || 0),
-    0
-  );
-  const itemNetWeightCalc =
-    parseFloat(item.itemWeight || 0) - totalItemDeductions;
-  const wastageValue = parseFloat(item.wastageValue || 0);
-  const touch = parseFloat(item.touch || 0);
+    const totalItemDeductions = item.deduction.reduce(
+      (sum, deduction) => sum + parseFloat(deduction.weight || 0),
+      0
+    );
+    const itemNetWeightCalc =
+      parseFloat(item.itemWeight || 0) - totalItemDeductions;
+    const wastageValue = parseFloat(item.wastageValue || 0);
+    const touch = parseFloat(item.touch || 0);
 
-  let wastagePure = 0;
-  let finalPurity = 0;
+    let wastagePure = 0;
+    let finalPurity = 0;
 
-  if (item.wastageType === "Touch") {
-    wastagePure = (itemNetWeightCalc * wastageValue) / 100 - (itemNetWeightCalc * touch) / 100;
-    finalPurity = (itemNetWeightCalc * wastageValue) / 100
-  } else if (item.wastageType === "%") {
-    wastagePure = ((itemNetWeightCalc * touch) / 100) * (wastageValue / 100);
-   
-    finalPurity = ((itemNetWeightCalc * touch) / 100)+ wastagePure
-  } else if (item.wastageType === "+") {
-    wastagePure = (wastageValue*touch)/100;
-    finalPurity = wastagePure+(itemNetWeightCalc * touch) / 100 ;
-  }
+    if (item.wastageType === "Touch") {
+      wastagePure =
+        (itemNetWeightCalc * wastageValue) / 100 -
+        (itemNetWeightCalc * touch) / 100;
+      finalPurity = (itemNetWeightCalc * wastageValue) / 100;
+    } else if (item.wastageType === "%") {
+      wastagePure = ((itemNetWeightCalc * touch) / 100) * (wastageValue / 100);
 
-  return { wastagePure, finalPurity };
-};
+      finalPurity = (itemNetWeightCalc * touch) / 100 + wastagePure;
+    } else if (item.wastageType === "+") {
+      wastagePure = (wastageValue * touch) / 100;
+      finalPurity = wastagePure + (itemNetWeightCalc * touch) / 100;
+    }
+
+    return { wastagePure, finalPurity };
+  };
 
   const format = (
     val // its used for set three digit after point value
@@ -171,7 +185,9 @@ function AgrNewJobCard({
     copy[i]["isEdit"] = true;
 
     if (field === "itemWeight") {
-      copy[i]["netWeight"] = format( copy[i]["itemWeight"] - Number(totalDeduction(i, copy)))
+      copy[i]["netWeight"] = format(
+        copy[i]["itemWeight"] - Number(totalDeduction(i, copy))
+      );
     }
     // if (
     //   field === "touch" ||
@@ -183,9 +199,9 @@ function AgrNewJobCard({
     //     (copy[i].netWeight * copy[i].touch) / 100
     //   ).toFixed(3);
     // }
-    const {wastagePure, finalPurity}=recalculateWastagePurity(copy[i])
+    const { wastagePure, finalPurity } = recalculateWastagePurity(copy[i]);
     copy[i].wastagePure = format(wastagePure);
-    copy[i].finalPurity= format(finalPurity)
+    copy[i].finalPurity = format(finalPurity);
     setItemDelivery(copy);
     itemValidation(itemDelivery, setItemDeliveryErrors);
   };
@@ -206,18 +222,26 @@ function AgrNewJobCard({
     const updated = [...itemDelivery];
     updated[itemIndex].deduction[deductionIndex][field] = val;
     if (field === "weight") {
-      updated[itemIndex]["netWeight"] =format(updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated)));
+      updated[itemIndex]["netWeight"] = format(
+        updated[itemIndex]["itemWeight"] -
+          Number(totalDeduction(itemIndex, updated))
+      );
       // updated[itemIndex]["wastagePure"] = (
       //   (updated[itemIndex]["netWeight"] * updated[itemIndex].wastageValue) /
       //     100 -
       //   (updated[itemIndex]["netWeight"] * updated[itemIndex]["touch"]) / 100
       // ).toFixed(3);
     }
-    updated[itemIndex]["netWeight"] =format(updated[itemIndex]["itemWeight"] -Number(totalDeduction(itemIndex, updated)));
-      const {wastagePure, finalPurity}=recalculateWastagePurity(updated[itemIndex])
+    updated[itemIndex]["netWeight"] = format(
+      updated[itemIndex]["itemWeight"] -
+        Number(totalDeduction(itemIndex, updated))
+    );
+    const { wastagePure, finalPurity } = recalculateWastagePurity(
+      updated[itemIndex]
+    );
 
     updated[itemIndex].wastagePure = format(wastagePure);
-    updated[itemIndex].finalPurity= format(finalPurity)
+    updated[itemIndex].finalPurity = format(finalPurity);
     setItemDelivery(updated);
   };
 
@@ -243,7 +267,9 @@ function AgrNewJobCard({
     if (!isTrue) return;
     const copy = [...itemDelivery];
     copy[itemIndex].deduction.splice(stoneIndex, 1);
-    copy[itemIndex]["netWeight"] =format(copy[itemIndex]["ItemWeight"] -Number(totalDeduction(itemIndex, copy)))
+    copy[itemIndex]["netWeight"] = format(
+      copy[itemIndex]["ItemWeight"] - Number(totalDeduction(itemIndex, copy))
+    );
     setItemDelivery(copy);
   };
 
@@ -286,7 +312,12 @@ function AgrNewJobCard({
     0
   );
   // find job Card Balance
-  const jobBalance= jobCardBalance( openingBalance,totalInputPurityGiven,totalFinishedPurity,totalReceivedPurity) 
+  const jobBalance = jobCardBalance(
+    openingBalance,
+    totalInputPurityGiven,
+    totalFinishedPurity,
+    totalReceivedPurity
+  );
 
   const handleSave = (print = "noprint") => {
     const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
@@ -408,20 +439,16 @@ function AgrNewJobCard({
     const timer = setInterval(updateTime, 60000);
     return () => clearInterval(timer);
   }, []);
- 
-   
-   
-  
+
   return (
     <>
       <Dialog
         open={open}
-          onClose={(event, reason) => {
-        if (reason !== 'backdropClick') {
+        onClose={(event, reason) => {
+          if (reason !== "backdropClick") {
             handleCloseJobcard();
           }
-         }}
-       
+        }}
         fullWidth
         maxWidth="md"
         PaperProps={{
@@ -563,7 +590,6 @@ function AgrNewJobCard({
                 <h3 className="section-title">Balance</h3>
                 <div className="balance-block">
                   <div className="balance-display-row">
-                    
                     <span className="balance-label">
                       {openingBalance >= 0
                         ? "Opening Balance"
@@ -1000,7 +1026,30 @@ function AgrNewJobCard({
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
                         >
-                          <select
+                          <Autocomplete
+                            className="auto-complete"
+                            freeSolo
+                            forcePopupIcon
+                            options={dropDownItems.masterWastage.map((item) =>
+                              item.wastage.toString()
+                            )}
+                            value={item?.wastageValue?.toString() || ""}
+                            onChange={(event, newValue) => {
+                              handleChangeDeliver(
+                                newValue || "",
+                                "wastageValue",
+                                index
+                              );
+                            }}
+                            onInputChange={(event, newInputValue) => {
+                              // This triggers for typing manually
+                              handleChangeDeliver(
+                                newInputValue || "",
+                                "wastageValue",
+                                index
+                              );
+                            }}
+                            noOptionsText=""
                             disabled={
                               edit
                                 ? isFinished === "true"
@@ -1008,24 +1057,14 @@ function AgrNewJobCard({
                                   : false
                                 : true
                             }
-                            value={item?.wastageValue}
-                            onChange={(e) =>
-                              handleChangeDeliver(
-                                e.target.value,
-                                "wastageValue",
-                                index
-                              )
-                            }
-                            className="select-small"
-                          >
-                            <option value="">Select</option>
-                            {dropDownItems.masterWastage.map((option) => (
-                              <option key={option.id} value={option.wastage}>
-                                {option.wastage}
-                              </option>
-                            ))}
-                          </select>
-
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                placeholder="Wastage"
+                                size="small"
+                              />
+                            )}
+                          />
                           <br></br>
                           {itemDeliveryErrors[index]?.wastageValue && (
                             <span className="error">
@@ -1227,24 +1266,47 @@ function AgrNewJobCard({
                   </div>
                   <span className="operator">x</span>
                   <div>
-                    <select
+                    <Autocomplete
+                      freeSolo
+                      forcePopupIcon
+                      options={dropDownItems.touchList.map((item) =>
+                        item.touch.toString()
+                      )}
+                      value={row.touch || ""}
+                      onChange={(event, newValue) => {
+                        handleReceivedRowChange(i, "touch", newValue || "");
+                      }}
+                      onInputChange={(event, newInputValue) => {
+                        handleReceivedRowChange(
+                          i,
+                          "touch",
+                          newInputValue || ""
+                        );
+                      }}
+                      noOptionsText=""
                       disabled={
                         edit ? (isFinished === "true" ? true : false) : true
                       }
-                      value={row.touch}
-                      onChange={(e) =>
-                        handleReceivedRowChange(i, "touch", e.target.value)
-                      }
-                      className="input-small"
-                      // disabled={isLoading || !isItemDeliveryEnabled}
-                    >
-                      <option value="">Select</option>
-                      {dropDownItems.touchList.map((option) => (
-                        <option key={option.id} value={option.touch}>
-                          {option.touch}
-                        </option>
-                      ))}
-                    </select>
+                      sx={{
+                        width: 120, // same width as your select
+                        "& .MuiInputBase-root": {
+                          height: 32, // match your .input-small height
+                          padding: "0px",
+                        },
+                        "& .MuiOutlinedInput-input": {
+                          padding: "4px 8px", // inner padding
+                          fontSize: "14px",
+                        },
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          placeholder="Touch"
+                          size="small"
+                        />
+                      )}
+                    />
+
                     {receivedErrors[i]?.touch && (
                       <span className="error">{receivedErrors[i]?.touch}</span>
                     )}
@@ -1297,13 +1359,12 @@ function AgrNewJobCard({
           </div>
           <div className="section" style={{ textAlign: "center" }}>
             {jobBalance > 0 ? (
-                  <p className="balance-text-goldsmith ">
+              <p className="balance-text-goldsmith ">
                 Goldsmith should give balance:
                 <span className="balance-amount">{format(jobBalance)}</span>
               </p>
-             
             ) : jobBalance < 0 ? (
-           <p className="balance-text-owner">
+              <p className="balance-text-owner">
                 Owner should give balance:
                 <span className="balance-amount">{format(jobBalance)}</span>
               </p>
