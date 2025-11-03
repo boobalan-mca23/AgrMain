@@ -167,19 +167,6 @@ const Customer = () => {
                           <PreviewIcon color="primary" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="View Receipts">
-                         <IconButton
-                          onClick={() =>
-                            navigate(
-                              `/receipt?id=${
-                                customer.id
-                              }&name=${encodeURIComponent(customer.name)}`
-                            )
-                          }
-                        >
-                          <ReceiptIcon color="primary" />
-                        </IconButton>
-                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
