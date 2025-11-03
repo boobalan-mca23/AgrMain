@@ -2,7 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 exports.createCustomer = async (req, res) => {
-  const { name, phone, address } = req.body;
+  const { name, phone, address,balance,hallMarkBal } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Customer name is required." });
@@ -19,7 +19,7 @@ exports.createCustomer = async (req, res) => {
   }
 
   try {
-
+    console.log('New Customer Created:', name,phone,address,balance);
     const newCustomer = await prisma.customer.create({
       data: {
         name,
@@ -27,14 +27,16 @@ exports.createCustomer = async (req, res) => {
         address: address || null,
         customerBillBalance:{
           create:{
-              balance:0, 
-              hallMarkBal:0 
+              balance:parseFloat(balance) || 0, 
+              hallMarkBal:parseFloat(hallMarkBal) || 0,
           }
         }
       },
-      
-      
+      include: {
+        customerBillBalance: true,
+      },  
     });
+    
     res.status(201).json(newCustomer);
   } catch (error) {
     res.status(500).json({ message: "Error creating customer", error });
@@ -76,18 +78,36 @@ exports.getCustomerById = async (req, res) => {
 
 exports.updateCustomer = async (req, res) => {
   const { id } = req.params;
-  const { name, phone, address } = req.body;
+  const { name, phone, address, balance, hallMarkBal } = req.body;
+
   try {
     const updatedCustomer = await prisma.customer.update({
       where: { id: parseInt(id) },
       data: {
         name,
-        phone,
-        address,
+        phone: phone || null,
+        address: address || null,
+        customerBillBalance: {
+          upsert: {
+            create: {
+              balance: balance != null && balance !== "" ? parseFloat(balance) : 0,
+              hallMarkBal: hallMarkBal != null && hallMarkBal !== "" ? parseFloat(hallMarkBal) : 0,
+            },
+            update: {
+              balance: balance != null && balance !== "" ? parseFloat(balance) : 0,
+              hallMarkBal: hallMarkBal != null && hallMarkBal !== "" ? parseFloat(hallMarkBal) : 0,
+            },
+          },
+        },
+      },
+      include: {
+        customerBillBalance: true,
       },
     });
+
     res.status(200).json(updatedCustomer);
   } catch (error) {
+    console.error("Error updating customer:", error);
     res.status(500).json({ message: "Error updating customer", error });
   }
 };
