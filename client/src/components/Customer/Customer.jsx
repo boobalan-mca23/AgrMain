@@ -22,7 +22,6 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PreviewIcon from "@mui/icons-material/Preview";
-import ReceiptIcon from '@mui/icons-material/Receipt';
 
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useNavigate } from "react-router-dom";
@@ -124,6 +123,12 @@ const Customer = () => {
                     <strong>Phone Number</strong>
                   </TableCell>
                   <TableCell align="center">
+                    <strong>Balance</strong>
+                  </TableCell>
+                  <TableCell align="center">
+                    <strong>Hallmark Balance</strong>
+                  </TableCell>
+                  <TableCell align="center">
                     <strong>Address</strong>
                   </TableCell>
                   <TableCell align="center">
@@ -138,6 +143,35 @@ const Customer = () => {
                     <TableCell align="center">{index+1}</TableCell>
                     <TableCell align="center">{customer.name}</TableCell>
                     <TableCell align="center">{customer.phone}</TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        color:
+                          customer?.customerBillBalance?.balance < 0
+                            ? "red"
+                            : customer?.customerBillBalance?.balance > 0
+                            ? "green"
+                            : "black",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {customer?.customerBillBalance?.balance ?? "-"}
+                    </TableCell>
+
+                    <TableCell
+                      align="center"
+                      sx={{
+                        color:
+                          customer?.customerBillBalance?.hallMarkBal < 0
+                            ? "red"
+                            : customer?.customerBillBalance?.hallMarkBal > 0
+                            ? "green"
+                            : "black",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {customer?.customerBillBalance?.hallMarkBal ?? "-"}
+                    </TableCell>
                     <TableCell align="center">{customer.address}</TableCell>
                     <TableCell align="center">
                       <Tooltip title="View Orders">
