@@ -95,7 +95,7 @@ const Billing = () => {
 
   const [printBill,setPrintBill]=useState([])
   const [isSaving, setIsSaving] = useState(false);
-
+  const [billNo, setBillNo] = useState("");
   // === Validation helpers ===
   const validateInput = (
     value,
@@ -752,6 +752,7 @@ const createMissingTouches = async () => {
       
       //to fecth new bills
       await fetchAllBills();
+      // await fetchLastBill();
       //much faster but little slower
       // setBills(prev => [resJson.bill, ...(prev || [])]);
       await fetchProductStock();
@@ -1020,8 +1021,10 @@ const createMissingTouches = async () => {
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        console.log('billiddddddd',data.billId)
-        setBillId(data.billId);
+        console.log('boo check',data)
+        // setBillId(data.billId);
+        console.log("gu check:", Array.isArray(data.data) ? data.data[0].id+1 : 0);
+        setBillNo(Array.isArray(data.data) ? data.data[0].id+1 : 0);
         setBills(Array.isArray(data.data) ? data.data : []);
       } catch (error) {
         console.error("Error fetching bills:", error);
@@ -1079,6 +1082,24 @@ const createMissingTouches = async () => {
         console.error("Error fetching bills:", error);
       }
     };
+
+      // const fetchLastBill = async () => {
+      //   try {
+      //     // const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`);
+      //     // const data = await response.json();
+      //     const bills = data.data || [];
+      //     if (bills.length > 0) {
+      //       const lastId = bills[bills.length - 1].id;
+      //       setBillNo(lastId + 1); 
+      //     } else {
+      //       setBillNo(1);
+      //     }
+      //   } catch (error) {
+      //     console.error("Error fetching last bill:", error);
+      //   }
+      // };          
+    
+    // fetchLastBill();
     fecthAllEntries();
     fetchAllBills();
     fetchProductStock();
@@ -1096,7 +1117,7 @@ const createMissingTouches = async () => {
 
   const handlePrint = () => {
     const billData = {
-      billNo: billId,
+      billNo: currentBill?.id,
       date:currentBill?.date  ? new Date(currentBill.date).toLocaleDateString("en-IN")  : date,
       time: currentBill?.time  ? new Date(currentBill.time).toLocaleTimeString("en-IN", {  hour: "2-digit",  minute: "2-digit",  hour12: true,  })  : time,
       selectedCustomer,
@@ -1287,7 +1308,7 @@ const createMissingTouches = async () => {
           {viewMode ? (
             <>
               <Box className="bill-number">
-                <p> <strong>Bill No:</strong> {currentBill.billno} </p>
+                <p> <strong>Bill No:</strong> {currentBill?.id} </p>
               </Box>
               <Box className="bill-info">
                 <p>
@@ -1303,7 +1324,7 @@ const createMissingTouches = async () => {
           ) : (
             <>
               <Box className="bill-number">
-                <p> <strong>Bill No:</strong> {billId} </p>
+                <p> <strong>Bill No:</strong> {billNo} </p>
               </Box>
               <Box className="bill-info">
                 <p> <strong>Date:</strong> {date} <br /><br /> <strong>Time:</strong> {time}  </p>
@@ -2063,7 +2084,7 @@ const createMissingTouches = async () => {
               {Array.isArray(bills) && bills.length > 0 ? (
                 bills.map((bill) => (
                   <TableRow key={bill.id}>
-                    <TableCell style={{ textAlign: "center" }}>  {bill.billno} </TableCell>
+                    <TableCell style={{ textAlign: "center" }}>  {bill.id} </TableCell>
                     <TableCell style={{ textAlign: "center" }}> {bill.customers?.name || "N/A"} </TableCell>
                     <TableCell style={{ textAlign: "center" }}>  {bill.billAmount} </TableCell>
                     <TableCell style={{ textAlign: "center" }}>  {new Date(bill.createdAt).toLocaleDateString()} </TableCell>
