@@ -16,7 +16,7 @@
          },
          data:{
             balanceOption:true,
-            goldSmithBalance:parseInt(balance)
+            goldSmithBalance:parseFloat(balance)
          }
        }) 
      }

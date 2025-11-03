@@ -105,6 +105,8 @@ const Receipt = () => {
       const filterRows = receipt.filter((_, i) => i !== index);
       console.log("filterRows and index", filterRows, index);
       setReceipt(filterRows);
+      setReceiptErrors([])
+      setHallMarkErrors([])
     }
   };
   const handleChangeReceipt = (index, field, value) => {
@@ -258,6 +260,7 @@ const Receipt = () => {
             },
           ]);
           setReceiptBalances({ oldbalance: 0, hallMark: 0 });
+          
         }
       } catch (err) {
         console.log(err);

@@ -337,7 +337,7 @@ const Goldsmith = () => {
                   <TableCell align="center">{index + 1}</TableCell>
                   <TableCell align="center">{goldsmith.name}</TableCell>
                   <TableCell align="center">{goldsmith.phone}</TableCell>
-                  <TableCell align="center" style={{color:goldsmith.balance<0?"red":""}}>{goldsmith.balance}</TableCell>
+                  <TableCell align="center" style={{color:goldsmith.balance<0?"red":goldsmith.balance>0?"green":""}}><b>{Number(goldsmith.balance).toFixed(3)}</b></TableCell>
                   <TableCell align="center">{goldsmith.address}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="View Jobcard">
