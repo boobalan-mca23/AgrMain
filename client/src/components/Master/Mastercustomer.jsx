@@ -22,6 +22,8 @@ function MasterCustomer() {
   const [customerName, setCustomerName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
+  const [balance, setBalance] = useState("");
+  const [hallMarkBal, setHallMarkBal] = useState("");
   const [customers, setCustomers] = useState([]);
 
   const [errors, setErrors] = useState({ name: "", phone: "" });
@@ -32,13 +34,17 @@ function MasterCustomer() {
     name: "",
     phone: "",
     address: "",
+    balance: "",
+    hallMarkBal:"",
   });
   const [saving, setSaving] = useState(false);
 
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
-   const validName = /^[a-zA-Z0-9\s]+$/;
+  const balanceRef = useRef(null);
+  const hallMarkBalRef = useRef(null);
+  const validName = /^[a-zA-Z0-9\s]+$/;
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -60,6 +66,8 @@ function MasterCustomer() {
     setCustomerName("");
     setPhoneNumber("");
     setAddress("");
+    setBalance("");
+    setHallMarkBal("");
     setErrors({ name: "", phone: "" });
     setTouched({ name: false, phone: false });
     setSubmitted(false);
@@ -129,10 +137,13 @@ const handleSaveCustomer = async () => {
     name: customerName.trim(),
     phone: phoneNumber.trim(),
     address: address.trim(),
+    balance: balance.trim(),
+    hallMarkBal: hallMarkBal.trim(),
   };
 
   try {
     setSaving(true);
+    
     const response = await fetch(
       `${BACKEND_SERVER_URL}/api/customers/create`,
       {
@@ -187,9 +198,16 @@ const handleSaveCustomer = async () => {
   const handleEdit = (customer) => {
     setEditCustomer(customer);
     setEditedData({
-      name: customer.name,
-      phone: customer.phone,
-      address: customer.address,
+      name: customer.name || "",
+      phone: customer.phone || "",
+      address: customer.address || "",
+      // convert to string so typing '.' or '-' works correctly
+      balance: customer?.customerBillBalance?.balance != null
+        ? String(customer.customerBillBalance.balance)
+        : "",
+      hallMarkBal: customer?.customerBillBalance?.hallMarkBal != null
+        ? String(customer.customerBillBalance.hallMarkBal)
+        : "",
     });
   };
 
@@ -218,6 +236,16 @@ const handleSaveCustomer = async () => {
       return;
     }
 
+      if (editedData.balance === "-" || editedData.balance === "." || editedData.balance === "-.") {
+        toast.error("Invalid balance value");
+        return;
+      }
+      if (editedData.hallMarkBal === "-" || editedData.hallMarkBal === "." || editedData.hallMarkBal === "-.") {
+        toast.error("Invalid hallmark value");
+        return;
+      }
+
+
     try {
       setSaving(true);
       const response = await fetch(
@@ -245,6 +273,7 @@ const handleSaveCustomer = async () => {
   }
   };
   
+  console.log("Customer:", customers);
 
   return (
     <>
@@ -312,11 +341,65 @@ const handleSaveCustomer = async () => {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  addressRef.current?.focus();
+                  balanceRef.current?.focus();
                 }
               }}
               error={(touched.phone || submitted) && !!errors.phone}
               helperText={touched.phone || submitted ? errors.phone : ""}
+            />
+
+            {/* Balance (optional) */}
+            <TextField
+              inputRef={balanceRef}
+              margin="dense"
+              label="Balance"
+              autoComplete="off"
+              type="text"
+              fullWidth
+              value={balance}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^-?\d*\.?\d{0,3}$/.test(value)) {
+                  setBalance(value);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  hallMarkBalRef.current?.focus();
+                }
+              }}
+              inputProps={{
+                inputMode: "decimal",
+                pattern: "[0-9]*[.,]?[0-9]*",
+              }}
+            />
+
+            {/* HallMark Balance (optional) */}
+            <TextField
+              inputRef={hallMarkBalRef}
+              margin="dense"
+              label="HallMark Balance"
+              autoComplete="off"
+              type="text"
+              fullWidth
+              value={hallMarkBal}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^-?\d*\.?\d{0,3}$/.test(value)) {
+                  setHallMarkBal(value);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addressRef.current?.focus();
+                }
+              }}
+              inputProps={{
+                inputMode: "decimal",
+                pattern: "[0-9]*[.,]?[0-9]*",
+              }}
             />
 
             {/* Address (optional) */}
@@ -338,6 +421,8 @@ const handleSaveCustomer = async () => {
                 }
               }}
             />
+
+
           </DialogContent>
           <DialogActions>
             <Button onClick={closeModal} color="secondary">
@@ -361,6 +446,8 @@ const handleSaveCustomer = async () => {
                   <th>S.no</th>
                   <th>Customer Name</th>
                   <th>Phone Number</th>
+                  <th>Balance</th>
+                  <th>Hallmark Balance</th>
                   <th>Address</th>
                   <th>Action</th>
                 </tr>
@@ -371,6 +458,34 @@ const handleSaveCustomer = async () => {
                     <td>{index + 1}</td>
                     <td>{customer.name}</td>
                     <td>{customer.phone || "-"}</td>
+                    <td
+                        style={{
+                          color:
+                            customer?.customerBillBalance?.balance < 0
+                              ? "red"
+                              : customer?.customerBillBalance?.balance > 0
+                              ? "green"
+                              : "black",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {customer?.customerBillBalance?.balance ?? "-"}
+                      </td>
+
+                      <td
+                        style={{
+                          color:
+                            customer?.customerBillBalance?.hallMarkBal < 0
+                              ? "red"
+                              : customer?.customerBillBalance?.hallMarkBal > 0
+                              ? "green"
+                              : "black",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {customer?.customerBillBalance?.hallMarkBal ?? "-"}
+                      </td>
+
                     <td>{customer.address || "-"}</td>
                     <td>
                       <Tooltip title="Edit Customer">
@@ -415,6 +530,33 @@ const handleSaveCustomer = async () => {
             fullWidth
             margin="normal"
           />
+          <TextField
+              label="Balance"
+              value={editedData.balance}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^-?\d*\.?\d{0,3}$/.test(value)) {
+                  setEditedData((prev) => ({ ...prev, balance: value }));
+                }
+              }}
+              fullWidth
+              margin="normal"
+              inputProps={{ inputMode: "decimal", pattern: "-?[0-9]*[.,]?[0-9]*" }}
+            />
+
+          <TextField
+              label="HallMark Balance"
+              value={editedData.hallMarkBal}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^-?\d*\.?\d{0,3}$/.test(value)) {
+                  setEditedData((prev) => ({ ...prev, hallMarkBal: value }));
+                }
+              }}
+              fullWidth
+              margin="normal"
+              inputProps={{ inputMode: "decimal", pattern: "-?[0-9]*[.,]?[0-9]*" }}
+            />
           <TextField
             label="Address"
             value={editedData.address}
