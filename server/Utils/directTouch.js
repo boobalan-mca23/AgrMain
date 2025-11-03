@@ -26,6 +26,48 @@ const directTouch=async(touch)=>{
    
 }
 
+const directTouchJobReceive=async(received)=>{
+    const dbtouch = await prisma.masterTouch.findMany({
+     select: {touch: true }
+  });
+  
+  const dbtouchs = dbtouch .map(w => Number(w.touch));
+
+  const requestTouch = [...new Set(
+  
+    received
+    .filter(item => item.touch !== undefined && item.touch !== null)
+    .map(item => Number(item.touch))
+)];
+
+
+const newTouches = requestTouch.filter(
+  w => !dbtouchs.includes(w)
+);
+
+console.log('newTouches',newTouches)
+
+if (newTouches.length > 0) {
+  await prisma.$transaction(
+    newTouches.map((val) =>
+      prisma.masterTouch.create({
+        data: {
+          touch: val,
+          rawGoldStock: {
+            create: {
+              weight: 0,
+              remainingWt: 0,
+              touch: val, // assign same touch
+            },
+          },
+        },
+      })
+    )
+  );
+}
+
+}
 module.exports={
-   directTouch
+   directTouch,
+   directTouchJobReceive
 }

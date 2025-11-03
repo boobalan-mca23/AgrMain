@@ -417,7 +417,7 @@ const validateField = (field, value) => {
                   <td>{item.name}</td>
                   <td>{item.phone || "-"}</td>
                   <td>{item.address || "-"}</td>
-                  <td>{item.balance}</td>
+                  <td  style={{color:item.balance<0?"red":""}}>{item.balance}</td>
                   <td>
                     <EditIcon
                       style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}

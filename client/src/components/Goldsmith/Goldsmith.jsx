@@ -320,6 +320,9 @@ const Goldsmith = () => {
                 <strong>Phone Number</strong>
               </TableCell>
               <TableCell align="center">
+                <strong>Gold Smith Balance</strong>
+              </TableCell>
+              <TableCell align="center">
                 <strong>Address</strong>
               </TableCell>
               <TableCell align="center">
@@ -334,6 +337,7 @@ const Goldsmith = () => {
                   <TableCell align="center">{index + 1}</TableCell>
                   <TableCell align="center">{goldsmith.name}</TableCell>
                   <TableCell align="center">{goldsmith.phone}</TableCell>
+                  <TableCell align="center" style={{color:goldsmith.balance<0?"red":""}}>{goldsmith.balance}</TableCell>
                   <TableCell align="center">{goldsmith.address}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="View Jobcard">

@@ -3,6 +3,9 @@ const prisma = new PrismaClient();
 const reduceGold = require("../Utils/reduceRawGold");
 const addRawGold = require("../Utils/addRawGoldStock");
 const {getGoldSmithBalance,updateGoldSmithBalance}=require('../Utils/updateGoldSmithBalance')
+const {directWatageValue}=require('../Utils/directWastageValue')
+const {directTouchJobReceive}=require('../Utils/directTouch')
+
 // helper function itemDelivery in jobCard
 
 const moveToItemDelivery = async (itemDelivery,jobcardId,goldSmithId) => {
@@ -276,10 +279,12 @@ const updateJobCard = async (req, res) => {
 
     // update given gold information
     await reduceGold.reduceRawGold(givenGold, jobCardId, goldSmithId);
-   
+     // this function create wastage value direct  
+    await directWatageValue(itemDelivery)
     // update itemDelivery information
     await moveToItemDelivery(itemDelivery, jobCardId, goldSmithId);
-
+    // this function create touch value direct  
+    await directTouchJobReceive(receiveSection)
     // receive section update and create
     await addRawGold.jobCardtoRawGoldStock(
       receiveSection,
