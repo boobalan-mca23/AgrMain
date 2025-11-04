@@ -155,8 +155,8 @@ const CustomerReportPrint=(props)=>{
        
 
           <div style={style.custBal}>
-             <p><strong>Excess Balance : {overAllBalance<0 ?(overAllBalance).toFixed(3):0.000} gr</strong></p>
-             <p><strong>Balance: {overAllBalance>=0 ?(overAllBalance).toFixed(3):0.000} gr</strong></p>
+             <p><strong>Excess Balance : {overAllBalance.balance<0 ?(overAllBalance.balance).toFixed(3):0.000} gr</strong></p>
+             <p><strong>Balance: {overAllBalance.balance>=0 ?(overAllBalance.balance).toFixed(3):0.000} gr</strong></p>
           </div>
         </div>
       </>

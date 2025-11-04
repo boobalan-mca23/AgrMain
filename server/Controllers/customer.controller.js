@@ -29,6 +29,7 @@ exports.createCustomer = async (req, res) => {
           create:{
               balance:parseFloat(balance) || 0, 
               hallMarkBal:parseFloat(hallMarkBal) || 0,
+              initialBalance:parseFloat(balance) || 0,
           }
         }
       },

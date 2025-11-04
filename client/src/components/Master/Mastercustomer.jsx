@@ -470,7 +470,7 @@ const handleSaveCustomer = async () => {
                           fontWeight: "500",
                         }}
                       >
-                        {customer?.customerBillBalance?.balance.toFixed(3) ?? "-"}
+                        {Number(customer?.customerBillBalance?.balance).toFixed(3) ?? "-"}
                       </td>
 
                       <td
@@ -484,7 +484,7 @@ const handleSaveCustomer = async () => {
                           fontWeight: "500",
                         }}
                       >
-                        {customer?.customerBillBalance?.hallMarkBal.toFixed(3) ?? "-"}
+                        {Number(customer?.customerBillBalance?.hallMarkBal).toFixed(3) ?? "-"}
                       </td>
 
                     <td>{customer.address || "-"}</td>
