@@ -18,6 +18,9 @@ import axios from "axios";
 import CustomerReportPrint from "./Customer_Report_Print/CustomerReportPrint";
 import ReactDOMServer from "react-dom/server";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+
 import { useNavigate } from "react-router-dom";
 
 
@@ -25,11 +28,14 @@ const CustReport = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [billInfo, setBillInfo] = useState([]);
-  const [overAllBalance, setOverAllBalance] = useState(0);
+  const [overAllBalance, setOverAllBalance] = useState({});
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState({});
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [showInitialPositive, setShowInitialPositive] = useState(false);
+  const [showInitialNegative, setShowInitialNegative] = useState(false);
+
   const navigate = useNavigate();
   
   const paginatedData =billInfo.slice(
@@ -378,14 +384,87 @@ const CustReport = () => {
               />
       </div>
         <div className="overAllBalance">
-           <div className="balanceCard balance-negative">
-                 Excess Balance: {overAllBalance<0 ?(overAllBalance).toFixed(3):0.000} gr
-           </div>
+          {/* Excess Balance (Negative) */}
+          <div className="balanceCard balance-negative">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span>
+                Excess Balance:{" "}
+                {overAllBalance.balance < 0
+                  ? overAllBalance.balance.toFixed(3)
+                  : 0.0}{" "}
+                gr
+              </span>
+              {overAllBalance.initialBalance < 0 && (
+                <IconButton
+                  onClick={() =>
+                    setShowInitialNegative((prev) => !prev)
+                  }
+                  size="small"
+                  color="inherit"
+                >
+                  {showInitialNegative ? (
+                    <ExpandLessIcon />
+                  ) : (
+                    <ExpandMoreIcon />
+                  )}
+                </IconButton>
+              )}
+            </div>
 
-           <div className="balanceCard balance-positive">
-               Balance : {overAllBalance>=0 ?(overAllBalance).toFixed(3):0.000} gr
-           </div>
+            {showInitialNegative && overAllBalance.initialBalance < 0 && (
+              <div className="balanceDetails">
+                <p>Initial Value: {overAllBalance.initialBalance}</p>
+              </div>
+            )}
           </div>
+
+          {/* Positive Balance */}
+          <div className="balanceCard balance-positive">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span>
+                Balance:{" "}
+                {overAllBalance.balance >= 0
+                  ? overAllBalance.balance.toFixed(3)
+                  : 0.0}{" "}
+                gr
+              </span>
+              {overAllBalance.initialBalance >= 0 && (
+                <IconButton
+                  onClick={() =>
+                    setShowInitialPositive((prev) => !prev)
+                  }
+                  size="small"
+                  color="inherit"
+                >
+                  {showInitialPositive ? (
+                    <ExpandLessIcon />
+                  ) : (
+                    <ExpandMoreIcon />
+                  )}
+                </IconButton>
+              )}
+            </div>
+
+            {showInitialPositive && overAllBalance.initialBalance >= 0 && (
+              <div className="balanceDetails">
+                <p>Initial Value: {overAllBalance.initialBalance}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
 
            
     </>
