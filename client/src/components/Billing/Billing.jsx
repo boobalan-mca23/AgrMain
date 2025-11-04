@@ -1015,21 +1015,48 @@ const createMissingTouches = async () => {
     width:80,
   };
 
+  // const fetchAllBills = async () => {
+  //   try {
+  //     const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`);
+  //     if (!response.ok)
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+
+  //     const data = await response.json();
+  //     console.log('boo check', data);
+
+  //     if (Array.isArray(data.data) && data.data.length > 0) {
+  //       const latestId = data.data[0].id;
+  //       setBillNo(latestId + 1);
+  //       setBills(data.data);
+  //     } else {
+  //       setBillNo(1);
+  //       setBills([]);
+  //     }
+
+  //   } catch (error) {
+  //     console.error("Error fetching bills:", error);
+  //     setBillNo(1);
+  //     setBills([]);
+  //   }
+  // };
   const fetchAllBills = async () => {
-      try {
-        const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`);
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        console.log('boo check',data)
-        // setBillId(data.billId);
-        console.log("gu check:", Array.isArray(data.data) ? data.data[0].id+1 : 0);
-        setBillNo(Array.isArray(data.data) ? data.data[0].id+1 : 0);
-        setBills(Array.isArray(data.data) ? data.data : []);
-      } catch (error) {
-        console.error("Error fetching bills:", error);
-      }
-  };
+  try {
+    const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`);
+    if (!response.ok)
+      throw new Error(`HTTP error! status: ${response.status}`);
+
+    const data = await response.json();
+    console.log("Bills fetched:", data);
+
+    setBillNo(data.nextBillNo || 1);
+    setBills(Array.isArray(data.data) ? data.data : []);
+  } catch (error) {
+    console.error("Error fetching bills:", error);
+    setBillNo(1);
+    setBills([]);
+  }
+};
+
 
   const fetchProductStock = async () => {
     try {

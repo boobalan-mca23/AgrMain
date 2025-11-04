@@ -280,7 +280,7 @@ const DailySalesReport = () => {
 
                   return (
                     <TableRow key={bill.id}>
-                      <TableCell className="table-cell">BILL-{bill.billno}</TableCell>
+                      <TableCell className="table-cell">BILL-{bill.id}</TableCell>
                       <TableCell className="table-cell">
                         {dayjs(bill.date || bill.createdAt).format("DD/MM/YYYY")}
                       </TableCell>

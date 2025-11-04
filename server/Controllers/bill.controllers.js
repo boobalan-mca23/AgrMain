@@ -267,10 +267,17 @@ const geAllBill = async (req, res) => {
        id:"desc"
      }
     });
-   const lastBill = allBills[0];
-    const nextBillNo = lastBill ? (lastBill.billno || lastBill.id) + 1 : 1;
-    return res.status(200).json({ data: allBills, billId: nextBillNo });
+    //uneven num
+  //  const lastBill = allBills[0];
+  //   const nextBillNo = lastBill ? (lastBill.billno || lastBill.id) + 1 : 1;
+    const [status] = await prisma.$queryRawUnsafe(
+      `SHOW TABLE STATUS LIKE 'Bill'`
+    );
 
+    // Convert BigInt safely to number
+    const nextBillNo = Number(status?.Auto_increment) || (allBills[0]?.id + 1) || 1;
+
+    return res.status(200).json({ data: allBills, billId: nextBillNo,nextBillNo,  });
 
   } catch (err) {
     console.error(err.message);
