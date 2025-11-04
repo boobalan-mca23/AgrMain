@@ -173,8 +173,14 @@ const Goldsmith = () => {
           },
         }
       );
-      handleCloseJobcard();
+     
+     
+      const index=goldsmith.findIndex(item=>item.id===response.data.goldSmithInfo.id)
+      const copy=[...goldsmith]
+      copy.splice(index, 1,response.data.goldSmithInfo);
+      setGoldsmith(copy)
       
+      handleCloseJobcard();
       setSaveDisable(false)
       alert(response.data.message);
 
