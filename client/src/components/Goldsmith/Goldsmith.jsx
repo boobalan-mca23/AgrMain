@@ -132,21 +132,9 @@ const Goldsmith = () => {
     setOpen(false);
     setEdit(false);
     setDescription("");
-    setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
-    setItemDelivery([
-      {
-        itemName: "",
-        itemWeight: "",
-        touch: "",
-        deduction: [{ type: "", weight: "" }],
-        netWeight: "",
-        wastageType: "",
-        wastageValue: "",
-        finalPurity: "",
-        isEdit: false,
-      },
-      ,
-    ]);
+    setGivenGold([]);
+    setItemDelivery([]);
+   
     setReceivedMetalReturns([]);
   };
 
@@ -186,22 +174,6 @@ const Goldsmith = () => {
         }
       );
       handleCloseJobcard();
-      setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
-      setDescription("");
-      setItemDelivery([
-        {
-          itemName: "",
-          itemWeight: "",
-          touch: "",
-          deduction: [{ type: "", weight: "" }],
-          netWeight: "",
-          wastageType: "",
-          wastageValue: "",
-          finalPurity: "",
-          isEdit: false,
-        },
-      ]);
-      setReceivedMetalReturns([]);
       setSaveDisable(false)
       alert(response.data.message);
 

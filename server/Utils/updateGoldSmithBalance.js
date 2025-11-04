@@ -16,7 +16,8 @@
          },
          data:{
             balanceOption:true,
-            goldSmithBalance:parseFloat(balance)
+            goldSmithBalance:parseFloat(balance),
+            // openingBalance:parseFloat(balance)
          }
        }) 
      }
