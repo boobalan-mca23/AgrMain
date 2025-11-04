@@ -42,7 +42,11 @@ exports.createGoldsmith = async (req, res) => {
 
 exports.getAllGoldsmith = async (req, res) => {
   try {
-    const goldsmith = await prisma.goldsmith.findMany();
+    const goldsmith = await prisma.goldsmith.findMany({
+      orderBy:{
+        id:"desc"
+      }
+    });
 
     res.status(200).json(goldsmith);
   } catch (error) {

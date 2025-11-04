@@ -82,7 +82,7 @@ function AgrNewJobCard({
     "Antic",
   ];
   const symbolOptions = ["Touch", "%", "+"];
-
+  
   const recalculateWastagePurity = (item) => {
     const totalItemDeductions = item.deduction.reduce(
       (sum, deduction) => sum + parseFloat(deduction.weight || 0),
@@ -303,10 +303,13 @@ function AgrNewJobCard({
   };
 
   const totalGivenToGoldsmith = openingBalance + totalInputPurityGiven;
+  console.log('itemDelivery',itemDelivery);
+  
   const totalFinishedPurity = itemDelivery.reduce(
     (sum, item) => sum + parseFloat(item.finalPurity || 0),
     0
   );
+
   const totalReceivedPurity = receivedMetalReturns.reduce(
     (sum, row) => sum + parseFloat(row.purity || 0),
     0
@@ -324,6 +327,8 @@ function AgrNewJobCard({
     const existStock = checkAvailabilityStock(rawGoldStock);
 
     const doUpdate = () => {
+      
+
       handleUpdateJobCard(
         totalInputPurityGiven,
         totalFinishedPurity,
@@ -331,10 +336,13 @@ function AgrNewJobCard({
         jobBalance,
         openingBalance
       );
+       
     };
 
     const doSave = () => {
+      
       handleSaveJobCard(totalInputPurityGiven, jobBalance, openingBalance);
+       
     };
     if (edit) {
       const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
@@ -353,6 +361,7 @@ function AgrNewJobCard({
 
       if (print === "print") {
         handlePrint();
+        
         if (isFinished === "false") {
           doUpdate();
         }
@@ -394,7 +403,7 @@ function AgrNewJobCard({
         totalDelivery={totalFinishedPurity}
         received={receivedMetalReturns}
         totalReceive={totalReceivedPurity}
-        jobCardBalance={jobCardBalance}
+        jobCardBalance={jobBalance}
       />
     );
 
@@ -1211,13 +1220,15 @@ function AgrNewJobCard({
                   {
                     itemName: "",
                     itemWeight: "",
+                    count: "",
                     touch: "",
                     deduction: [],
                     netWeight: "",
-                    wastageTyp: "",
+                    wastageType: "",
                     wastageValue: "",
+                    wastagePure: "",
                     finalPurity: "",
-                    isFinished: false,
+                    isEdit: false,
                   },
                 ])
               }

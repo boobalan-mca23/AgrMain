@@ -115,24 +115,10 @@ function JobCardDetails() {
     setOpen(false);
     fetchRawGold();
     setDescription("");
-    setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
-    setItemDelivery([
-      {
-        itemName: "",
-        itemWeight: "",
-        count: "",
-        touch: "",
-        deduction: [],
-        netWeight: "",
-        wastageType: "",
-        wastageValue: "",
-        wastagePure: "",
-        finalPurity: "",
-        isEdit: false,
-      },
-    ]);
+    setGivenGold([]);
+    setItemDelivery([]);
     setReceivedMetalReturns([]);
-
+    
     console.log("rawGoldStock", rawGoldStock);
   };
 
@@ -183,8 +169,6 @@ function JobCardDetails() {
         }
       );
       handleCloseJobcard();
-      setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
-      setDescription("");
       setJobCards(response.data.allJobCards);
       console.log("response.data.jobCardLength", response.data.jobCardLength);
       setJobCardLength(response.data.jobCardLength);
@@ -234,24 +218,7 @@ function JobCardDetails() {
         }
       );
       handleCloseJobcard();
-      setGivenGold([{ weight: "", touch: "", purity: "", isEdit: false }]);
-      setDescription("");
-      setItemDelivery([
-        {
-          itemName: "",
-          itemWeight: "",
-          count: "",
-          touch: "",
-          deduction: [],
-          netWeight: "",
-          wastageType: "",
-          wastageValue: "",
-          wastagePure: "",
-          finalPurity: "",
-          isEdit: false,
-        },
-      ]);
-      setReceivedMetalReturns([]);
+     
       setJobCards(response.data.allJobCards);
       setJobCardLength(response.data.jobCardLength);
       console.log("update response", response);
@@ -338,7 +305,7 @@ function JobCardDetails() {
                 <b>Name:</b> {name}
               </Typography>
             </Box>
-
+           {/* balance section */}
             <Box
               sx={{
                 fontSize: "20px",
@@ -346,19 +313,23 @@ function JobCardDetails() {
             >
               {jobCards.length > 0 && jobCards.at(-1)?.total?.length > 0 && (
                 <div>
-                  {jobCards.at(-1).total[0].jobCardBalance > 0 ? (
+
+                  {
+                    jobCards.at(-1).total[0].balanceOption? (
+                      
+                     jobCards.at(-1).total[0].goldSmithBalance > 0 ? (
                     <p style={{ color: "green", fontWeight: "bolder" }}>
                       Gold Smith Should Given{" "}
                       <span className="goldSmithBalance">
-                        {(Number(jobCards.at(-1).total[0].jobCardBalance).toFixed(3))}g
+                        {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))}g
                       </span>
                     </p>
-                  ) : jobCards.at(-1).total[0].jobCardBalance < 0 ? (
+                  ) : jobCards.at(-1).total[0].goldSmithBalance < 0 ? (
                     <p style={{ color: "red", fontWeight: "bolder" }}>
                       Owner Should Given{" "}
                       <span className="goldSmithBalance">
                         {" "}
-                        {(Number(jobCards.at(-1).total[0].jobCardBalance).toFixed(3))} g
+                        {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))} g
                       </span>
                     </p>
                   ) : (
@@ -366,10 +337,38 @@ function JobCardDetails() {
                       Balance Nill:{" "}
                       <span className="goldSmithBalance">
                         {" "}
-                        {(Number(jobCards.at(-1).total[0].jobCardBalance).toFixed(3))} g
+                        {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))} g
                       </span>
                     </p>
-                  )}
+                  )
+                    ):(
+                         jobCards.at(-1).total[0].jobCardBalance   > 0 ? (
+                    <p style={{ color: "green", fontWeight: "bolder" }}>
+                      Gold Smith Should Given{" "}
+                      <span className="goldSmithBalance">
+                        {(Number(jobCards.at(-1).total[0]?.jobCardBalance).toFixed(3))}g
+                      </span>
+                    </p>
+                  ) : jobCards.at(-1).total[0]. jobCardBalance   < 0 ? (
+                    <p style={{ color: "red", fontWeight: "bolder" }}>
+                      Owner Should Given{" "}
+                      <span className="goldSmithBalance">
+                        {" "}
+                        {(Number(jobCards.at(-1).total[0]?.jobCardBalance  ).toFixed(3))} g
+                      </span>
+                    </p>
+                  ) : (
+                    <p style={{ color: "black", fontWeight: "bolder" }}>
+                      Balance Nill:{" "}
+                      <span className="goldSmithBalance">
+                        {" "}
+                        {(Number(jobCards.at(-1).total[0]?.jobCardBalance).toFixed(3))} g
+                      </span>
+                    </p>
+                  )
+                    )
+                  }
+               
                 </div>
               )}
             </Box>

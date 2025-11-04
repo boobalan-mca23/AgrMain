@@ -51,19 +51,23 @@ const PrintJobCard = React.forwardRef((props, ref) => {
                 </div>
               ))}
             </div>
-            <div style={styles.totalpuritycontainer}>
-              <span style={styles.totalpuritylabel}>Total Purity:</span>
-              <span>{totalGivenPure}</span>
-            </div>
+           
           </div>
 
           <div style={styles.balance}>
             <span >
-              <strong>Balance:</strong>
+              {openingBalance >= 0 ? "(Open Bal)" : "(Excess Bal)"} :
               <strong> {openingBalance}{" "}</strong>
-              {openingBalance >= 0 ? "(Open Bal)" : "(Excess Bal)"} +
-             <strong> {totalGivenPure}</strong>(totalGivenPure ) =<strong>{totalGivenToGoldsmith}</strong> (total)
+              </span>
+             <span>
+              (totalGivenPure ) :
+             <strong> {Number(totalGivenPure).toFixed(3)}</strong>
+             </span>
+            <span>
+               (totalPurity) :
+             <strong> {Number(totalGivenToGoldsmith).toFixed(3)}</strong>
             </span>
+            
           </div>
           
         <div>
@@ -106,18 +110,18 @@ const PrintJobCard = React.forwardRef((props, ref) => {
             {jobCardBalance < 0 ? (
               <p style={styles.balancetextowner}>
                 Owner should give balance:
-                <span  style={styles.balanceamount}>{jobCardBalance}</span>
+                <span  style={styles.balanceamount}>{Number(jobCardBalance).toFixed(3)}</span>
               </p>
             ) : jobCardBalance > 0 ? (
               <p style={styles.balancetextgoldsmith}>
                 Goldsmith should give balance:
-                <span  style={styles.balanceamount}>{jobCardBalance}</span>
+                <span  style={styles.balanceamount}>{Number(jobCardBalance).toFixed(3)}</span>
               </p>
             ) : (
               <p style={styles.balanceNill}>
                 balance Nill:
                 <span style={styles.balanceamount}>
-                  {jobCardBalance}
+                  {Number(jobCardBalance).toFixed(3)}
                 </span>{" "}
               </p>
             )}
@@ -204,7 +208,10 @@ const styles = {
   balance: {
     margin:0,
    borderTop: "1px solid black",
-   borderBottom: "1px solid black"
+   borderBottom: "1px solid black",
+   display:"flex",
+   justifyContent:"space-between",
+   alignItems:"center"
   },
   balanceBox: {
     margin:0,
