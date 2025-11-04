@@ -46,6 +46,7 @@ function MasterCustomer() {
   const hallMarkBalRef = useRef(null);
   const validName = /^[a-zA-Z0-9\s]+$/;
 
+
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -469,7 +470,7 @@ const handleSaveCustomer = async () => {
                           fontWeight: "500",
                         }}
                       >
-                        {customer?.customerBillBalance?.balance ?? "-"}
+                        {customer?.customerBillBalance?.balance.toFixed(3) ?? "-"}
                       </td>
 
                       <td
@@ -483,7 +484,7 @@ const handleSaveCustomer = async () => {
                           fontWeight: "500",
                         }}
                       >
-                        {customer?.customerBillBalance?.hallMarkBal ?? "-"}
+                        {customer?.customerBillBalance?.hallMarkBal.toFixed(3) ?? "-"}
                       </td>
 
                     <td>{customer.address || "-"}</td>
