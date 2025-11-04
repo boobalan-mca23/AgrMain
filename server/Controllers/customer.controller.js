@@ -49,7 +49,10 @@ exports.getAllCustomers = async (req, res) => {
     const customers = await prisma.customer.findMany({
       include:{
         customerBillBalance:true
-      }
+      },
+      orderBy:{
+       id:"desc"
+     }
     });
     res.status(200).json(customers);
   } catch (error) {
