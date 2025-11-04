@@ -420,12 +420,13 @@ model OrderItems{
     createdAt   DateTime @default(now())
  }
 model customerBillBalance{
-  id           Int @id @default(autoincrement())
-  balance      Float?
-  hallMarkBal  Float?
-  customer_id  Int @unique
-  customers    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
+  id             Int @id @default(autoincrement())
+  balance        Float?
+  hallMarkBal    Float?
+  initialBalance Float?
+  customer_id    Int @unique
+  customers      Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
 
 }
 
