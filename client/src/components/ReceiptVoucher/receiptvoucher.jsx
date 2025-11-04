@@ -106,8 +106,9 @@ const Receipt = () => {
       const filterRows = receipt.filter((_, i) => i !== index);
       console.log("filterRows and index", filterRows, index);
       setReceipt(filterRows);
-      setReceiptErrors([]);
-      setHallMarkErrors([]);
+
+      setReceiptErrors([])
+      setHallMarkErrors([])
 
     }
   };
@@ -302,8 +303,7 @@ const handleSaveReeceipt = async() => {
             },
           ]);
           setReceiptBalances({ oldbalance: 0, hallMark: 0 });
-          setReceiptErrors([]);
-  setHallMarkErrors([]);
+
         }
       } catch (err) {
         console.log(err);

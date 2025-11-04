@@ -8,12 +8,14 @@ import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { checkCashOrGold } from "../cashOrGoldValidation/cashOrGoldValidation";
 function Cashgold() {
+  const today = new Date();
+  const formattedToday = today.toISOString().split("T")[0]; // "2025-09-16"
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [entries, setEntries] = useState([]);
   const [goldRate, setGoldRate] = useState(0);
   const [masterTouch, setMasterTouch] = useState([]);
   const [formData, setFormData] = useState({
-    date: "",
+    date: formattedToday,
     type: "Select",
     cashAmount: "",
     goldValue: "",
