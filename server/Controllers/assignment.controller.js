@@ -318,11 +318,17 @@ const updateJobCard = async (req, res) => {
     }
     // side by side goldSmith Balance also we need to change
     await updateGoldSmithBalance(goldSmithId)
+    const goldSmithInfo=await prisma.goldsmith.findUnique({
+      where:{
+        id:parseInt(goldSmithId),
+      }
+    })
     const allJobCards = await prisma.jobcard.findMany({
       where: {
         goldsmithId: parseInt(goldSmithId),
       },
       include: {
+        
         givenGold: true,
         deliveries: {
           include: {
@@ -338,6 +344,7 @@ const updateJobCard = async (req, res) => {
     res
       .status(200)
       .json({
+        goldSmithInfo:goldSmithInfo,
         sucees: "true",
         message: "jobCard Updated",
         allJobCards,
