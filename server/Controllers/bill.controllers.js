@@ -367,7 +367,10 @@ const customerReport = async (req, res) => {
       ];
 
       // get overAll balance
-      const overallBal = await getCustomerBal.getCustomerBalance(customerId);
+      const overallBal = await prisma.customerBillBalance.findUnique({
+        where: { customer_id: parseInt(customerId) },
+        select: { balance: true, initialBalance:true },
+      });
    
       res.status(200).json({ data: combinedData, overallBal: overallBal });
     } else {
