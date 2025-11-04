@@ -122,7 +122,7 @@
   justify-content: center;
   margin: 10px auto;
   gap: 20px;
-  max-width: 400px;
+  max-width: 500px;
 }
 
 .balanceCard {
@@ -156,8 +156,17 @@
 .custRepTfoot {
   position: sticky;
   bottom: 0;
-  background: rgb(249, 248, 247);   /* so it doesn’t overlap rows */
-  z-index: 2;          /* positive z-index to stay above */
+  background: rgb(249, 248, 247);
+  z-index: 2;
 }
 
 
+.balanceDetails {
+  margin-top: 5px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #555;
+  background: #f8f8f8;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
