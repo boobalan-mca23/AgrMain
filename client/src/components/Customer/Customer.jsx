@@ -155,7 +155,7 @@ const Customer = () => {
                         fontWeight: "500",
                       }}
                     >
-                      {customer?.customerBillBalance?.balance ?? "-"}
+                      {customer?.customerBillBalance?.balance.toFixed(3) ?? "-"}
                     </TableCell>
 
                     <TableCell
@@ -170,7 +170,7 @@ const Customer = () => {
                         fontWeight: "500",
                       }}
                     >
-                      {customer?.customerBillBalance?.hallMarkBal ?? "-"}
+                      {customer?.customerBillBalance?.hallMarkBal.toFixed(3) ?? "-"}
                     </TableCell>
                     <TableCell align="center">{customer.address}</TableCell>
                     <TableCell align="center">
