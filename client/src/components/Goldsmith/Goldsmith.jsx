@@ -174,6 +174,7 @@ const Goldsmith = () => {
         }
       );
       handleCloseJobcard();
+      
       setSaveDisable(false)
       alert(response.data.message);
 
@@ -331,7 +332,7 @@ const Goldsmith = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} align="center">
+                <TableCell colSpan={6} align="center">
                   No goldsmith details available...
                 </TableCell>
               </TableRow>

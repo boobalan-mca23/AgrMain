@@ -56,15 +56,15 @@ const PrintJobCard = React.forwardRef((props, ref) => {
 
           <div style={styles.balance}>
             <span >
-              {openingBalance >= 0 ? "(Open Bal)" : "(Excess Bal)"} :
+              <b>  {openingBalance >= 0 ? "Open Bal" : "Excess Bal"} :</b>
               <strong> {openingBalance}{" "}</strong>
               </span>
              <span>
-              (totalGivenPure ) :
+             <b> totalGivenPure :</b>
              <strong> {Number(totalGivenPure).toFixed(3)}</strong>
              </span>
             <span>
-               (totalPurity) :
+             <b> totalPurity :</b>
              <strong> {Number(totalGivenToGoldsmith).toFixed(3)}</strong>
             </span>
             
