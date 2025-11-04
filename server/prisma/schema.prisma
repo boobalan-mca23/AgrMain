@@ -70,7 +70,7 @@ model Transaction {
   purity      Float?
   touch       Float?
   rawGoldLogs RawGoldLogs?  @relation(fields: [logId], references: [id])
-  customer   Customer @relation(fields: [customerId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id],onDelete: Cascade)
   customerId Int
   createdAt  DateTime @default(now())
 }
