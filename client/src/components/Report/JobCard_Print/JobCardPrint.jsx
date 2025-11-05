@@ -85,7 +85,7 @@ const JobCardPrintLayout = (props) => {
               <th style={style.jobReportBorder}>weight</th>
               <th style={style.jobReportBorder}>touch</th>
               <th style={style.jobReportBorder}>purity</th>
-              <th style={style.jobReportBorder} colSpan={4}></th>
+              <th style={style.jobReportBorder} colSpan={2}></th>
             </tr>
           </thead>
           <tbody className="reportTbody">
@@ -185,7 +185,7 @@ const JobCardPrintLayout = (props) => {
               <td style={style.jobReportBorder}>
                 <b>{currentPageTotal.receive.toFixed(3)}</b>
               </td>
-              <td colSpan={4} style={style.jobReportBorder}></td>
+              <td colSpan={2} style={style.jobReportBorder}></td>
             </tr>
           </tfoot>
         </table>
@@ -207,7 +207,8 @@ const style = {
     width: "100%",
     borderCollapse: "collapse",
     textAlign: "center",
-    fontSize:"14px"
+    fontSize:"14px",
+    margin:"30px"
    
   },
   jobReportBorder: {
