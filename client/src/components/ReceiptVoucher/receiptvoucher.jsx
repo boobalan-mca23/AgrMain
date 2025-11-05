@@ -37,6 +37,7 @@ const Receipt = () => {
   ]);
   const [receiptErrors, setReceiptErrors] = useState([]);
   const [hallMarkErrors,setHallMarkErrors]=useState([]);
+  const [issaving, setIsSaving] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [allReceipts, setAllReceipts] = useState([]);
   const inputRefs = useRef({});
@@ -243,7 +244,7 @@ const createMissingTouches = async () => {
 const handleSaveReeceipt = async () => {
   // setReceiptErrors([]);
   // setHallMarkErrors([]);
-
+  setIsSaving(true);
   if (!selectedCustomer) {
     toast.warn("Select Customer");
     return;
@@ -309,6 +310,8 @@ const handleSaveReeceipt = async () => {
   } catch (err) {
     console.log(err);
     toast.error(err.response?.data?.error || "Error saving receipt", { autoClose: 2000 });
+  } finally {
+    setIsSaving(false);
   }
 };
 
@@ -542,8 +545,14 @@ const handleSaveReeceipt = async () => {
           </div>
           <div className="receiptcommanbtn saveReceiptbtn">
              <button
-                disabled={receipt.length <= 0}
-                onClick={() => {
+                disabled={receipt.length <= 0 || issaving}
+                style={{
+                      backgroundColor: issaving ? "#9e9e9e" : "#2b7d23",
+                      cursor: issaving ? "not-allowed" : "pointer",
+                      transition: "background-color 300ms ease, transform 150ms ease, opacity 300ms ease",
+                      transform: issaving ? "scale(0.99)" : "none",
+                      opacity: issaving ? 0.9 : 1,
+                    }}                onClick={() => {
                   handleSaveReeceipt();
                 }}
               >
