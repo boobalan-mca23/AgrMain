@@ -1,30 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import {
-  IconButton,
   TextField,
   Autocomplete,
-  Table,
-  TableBody,
-  TableRow,
-  TableCell,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  Box,
-  Typography,
-  CircularProgress,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TableHead,
-  Paper,
-  TableContainer,
+
 } from "@mui/material";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -106,9 +84,8 @@ const Receipt = () => {
       const filterRows = receipt.filter((_, i) => i !== index);
       console.log("filterRows and index", filterRows, index);
       setReceipt(filterRows);
-
-      setReceiptErrors([])
-      setHallMarkErrors([])
+      setReceiptErrors([]);
+      setHallMarkErrors([]);
 
     }
   };
@@ -139,7 +116,11 @@ const Receipt = () => {
     updatedRows[index].purity = calculatedPurity.toFixed(3);
 
     setReceipt(updatedRows);
-    receiptValidation(receipt, setReceiptErrors);
+
+    if (field !== "date" && field !== "hallMark") {
+        receiptValidation(updatedRows, setReceiptErrors);
+    }
+
   };
 
   const handleCustomerChange = (event) => {
@@ -259,60 +240,78 @@ const createMissingTouches = async () => {
 };
 
 
-const handleSaveReeceipt = async() => {
-  setReceiptErrors([]);
-  setHallMarkErrors([]);
-    const payLoad = {
-      customerId: selectedCustomer,
-      received: receipt,
-      pureBalance: pureBalance,
-      hallmarkBalance: hallmarkBalance,
-    };
-    console.log("payLoad", payLoad);
- 
-    const saveReceipt = async () => {
-     try {
-        await createMissingTouches();
-      } catch {
-          toast.warn("new touches couldn’t be created");
-        return; 
-      }
-      try {
-        const response = await axios.post(
-          `${BACKEND_SERVER_URL}/api/receipt`,
-          payLoad
-        );
-        if (response.status === 201) {
-          toast.success(response.data.message);
- 
-          setTimeout(()=>{
-             handlePrint(receipt, selectedCustomer);
-          },3000)
- 
-          setSelectedCustomer("");
-          setReceipt([
-            {
-              date: formattedToday,
-              type: "",
-              goldRate: "",
-              gold: "",
-              touch: "",
-              purity: "",
-              amount: "",
-              hallMark: "",
-            },
-          ]);
-          setReceiptBalances({ oldbalance: 0, hallMark: 0 });
+const handleSaveReeceipt = async () => {
+  // setReceiptErrors([]);
+  // setHallMarkErrors([]);
 
-        }
-      } catch (err) {
-        console.log(err);
-        toast.error(err.response.data.error, { autoClose: 2000 });
-      }
-    };
-    if (!selectedCustomer) return toast.warn("Select Customer");
-     receiptValidation(receipt, setReceiptErrors)? receiptVoucherHallMark(receipt,setHallMarkErrors) ? saveReceipt(): toast.warn("Give Correct Information in HallMarks"):toast.warn("Give Correct Information In GoldRows");
+  if (!selectedCustomer) {
+    toast.warn("Select Customer");
+    return;
+  }
+
+  const isValidReceipt = receiptValidation(receipt, setReceiptErrors);
+  const isValidHallmark = receiptVoucherHallMark(receipt, setHallMarkErrors);
+
+  if (!isValidReceipt) {
+    toast.warn("Give Correct Information In GoldRows");
+    return;
+  }
+
+  if (!isValidHallmark) {
+    toast.warn("Give Correct Information in HallMarks");
+    return;
+  }
+
+  const payLoad = {
+    customerId: selectedCustomer,
+    received: receipt,
+    pureBalance: pureBalance,
+    hallmarkBalance: hallmarkBalance,
   };
+
+  try {
+    await createMissingTouches();
+  } catch {
+    toast.warn("New touches couldn’t be created");
+    return;
+  }
+
+  try {
+    const response = await axios.post(
+      `${BACKEND_SERVER_URL}/api/receipt`,
+      payLoad
+    );
+
+    if (response.status === 201) {
+      toast.success(response.data.message);
+
+      setTimeout(() => {
+        handlePrint(receipt, selectedCustomer);
+      }, 3000);
+
+      setSelectedCustomer("");
+      setReceipt([
+        {
+          date: formattedToday,
+          type: "Select Type",
+          goldRate: "",
+          gold: "",
+          touch: "",
+          purity: "",
+          amount: "",
+          hallMark: "",
+        },
+      ]);
+      setReceiptBalances({ oldbalance: 0, hallMark: 0 });
+      setReceiptErrors([]);
+      setHallMarkErrors([]);
+    }
+  } catch (err) {
+    console.log(err);
+    toast.error(err.response?.data?.error || "Error saving receipt", { autoClose: 2000 });
+  }
+};
+
 
 
 
