@@ -151,17 +151,40 @@ const PrintableBill = React.forwardRef((props, ref) => {
               alignItems: "flex-start",
             }}
           >
-            <p
-              style={{
-                fontSize: "12px",
-                margin: "0 0 4px 0",
-                fontWeight: "bold",
-              }}
-            >
-              Hallmark Balance: {prevHallmark || "0.000"}
-            </p>
+            {prevHallmark > 0 ? (
+              <p
+                style={{
+                  fontSize: "12px",
+                  margin: "0",
+                  fontWeight: "bold",
+                }}
+              >
+                Opening Hallmark Balance: {formatToFixed3Strict(prevHallmark) || "0.000"}
+              </p>
+            ) : prevHallmark < 0 ? (
+              <p
+                style={{
+                  fontSize: "12px",
+                  margin: "0",
+                  fontWeight: "bold",
+                }}
+              >
+                Excess Hallmark Balance: {formatToFixed3Strict(prevHallmark) || "0.000"}
+              </p>
+            ) : (
+              <p
+                style={{
+                  fontSize: "12px",
+                  margin: "0",
+                  fontWeight: "bold",
+                }}
+              >
+                Opening Hallmark Balance: 0.000
+              </p>
+            )}
+           
 
-            <table
+            {/* <table
               style={{
                 borderCollapse: "collapse",
                 border: "1px solid #ccc",
@@ -219,12 +242,25 @@ const PrintableBill = React.forwardRef((props, ref) => {
                   </td>
                 </tr>
               </tbody>
-            </table>
-
+            </table> */}
+            <div style={{ display: "flex",}}>
+              <p
+              style={{fontSize: "12px",margin: "0",}}
+              ><b>Qty:</b>{hallmarkQty || "0.000"} X</p> 
+              
+              <p
+              style={{fontSize: "12px",margin: "0",}}
+              ><b>Rate:</b>{hallMark || "0.000"} =</p>
+              
+              <p
+              style={{fontSize: "12px",margin: "0",}}
+              ><b></b>{hallmarkAmount?.toFixed(3) || "0.000"}</p>
+           
+                </div>
             {/* Total Hallmark below table */}
             <p
               style={{
-                marginTop: "4px",
+                marginTop: "2px",
                 fontSize: "12px",
                 fontWeight: "bold",
                 textAlign: "left",
@@ -244,9 +280,15 @@ const PrintableBill = React.forwardRef((props, ref) => {
               lineHeight: "1.3",
             }}
           >
-            <div style={{ color: "#333" }}>
-              <b>Opening Balance:</b> {toFixedStr(prevBalance, 3)}
-            </div>
+            {prevBalance < 0 ? (
+              <div style={{ color: "#333" }}>
+                <b>Excess Balance:</b> {toFixedStr(prevBalance, 3)}
+              </div>
+            ) : (
+              <div style={{ color: "#333" }}>
+                <b>Opening Balance:</b> {toFixedStr(prevBalance, 3)}
+              </div>
+            )}  
             <div>
               <b>FWT:</b> {toFixedStr(FWT, 3)}
             </div>
@@ -353,10 +395,28 @@ const PrintableBill = React.forwardRef((props, ref) => {
             <b>Cash Balance: ₹{formatToFixed3Strict(cashBalance)} </b>
           </p>
           <p style={styles.flexChild}>
-            <b>Pure Balance:{formatToFixed3Strict(pureBalance)}g</b>
+            {
+              pureBalance < 0 ? (
+                <span>
+                  <b>Excess Balance: {formatToFixed3Strict(pureBalance)}g</b>
+                </span>
+              ) : (
+                <span>
+                  <b>Pure Balance: {formatToFixed3Strict(pureBalance)}g</b>
+                </span>
+              )
+            }
           </p>
           <p style={styles.flexChild}>
-            <b>Hallmark Balance: {formatToFixed3Strict(hallmarkBalance)} g</b>
+            {hallmarkBalance < 0 ? (
+              <span>
+                <b>Excess Hallmark Balance: {formatToFixed3Strict(hallmarkBalance)} g</b>
+              </span>
+            ) : (
+              <span>
+                <b>Hallmark Balance: {formatToFixed3Strict(hallmarkBalance)} g</b>
+              </span>
+            )} 
           </p>
         </div>
       </div>

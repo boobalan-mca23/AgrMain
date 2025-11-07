@@ -748,15 +748,7 @@ const createMissingTouches = async () => {
         throw new Error( errorData.msg || `HTTP error! status: ${response.status}`);
       }
       await response.json();
-      toast.success("Bill saved successfully!");
       
-      //to fecth new bills
-      await fetchAllBills();
-      // await fetchLastBill();
-      //much faster but little slower
-      // setBills(prev => [resJson.bill, ...(prev || [])]);
-      await fetchProductStock();
-
       setBillDetailRows([]);
       setRows([]);
       setSelectedCustomer(null);
@@ -767,7 +759,14 @@ const createMissingTouches = async () => {
       setPreviousBalance(0);
       setCashBalance("0.00");
       setHallmarkQty(0)
-      fetchProductStock();
+      //to fecth new bills
+      await fetchAllBills();
+      await fetchCustomers();
+      // await fetchLastBill();
+      //much faster but little slower
+      // setBills(prev => [resJson.bill, ...(prev || [])]);
+      await fetchProductStock();
+      toast.success("Bill saved successfully!");
     } catch (error) {
       console.error("Error saving bill:", error);
       alert(`Error saving bill: ${error.message}`);
@@ -1071,7 +1070,6 @@ const createMissingTouches = async () => {
     }
   };  
 
-  useEffect(() => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
@@ -1084,6 +1082,7 @@ const createMissingTouches = async () => {
       }
     };
 
+  useEffect(() => {
     const fetchItems = async () => {
       try {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/master-items`);
@@ -1553,8 +1552,19 @@ const createMissingTouches = async () => {
               sx={{ display: "flex", flexDirection: "column", gap: 2 }}
             >
               <Box>
-                <strong>Hallmark Balance:</strong>{" "}
-                {prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}
+                {prevHallmark > 0 ? (
+                  <>
+                    <p>Opening Hallmark Balance:{" "}{prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}</p>
+                
+                  </>
+                ) : prevHallmark < 0 ? (
+                  <>
+                    <p>Excess Hallmark Balance:{" "}{prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}</p>{" "}
+                    
+                  </>
+                ) : (
+                  <p>Hallmark Balance: 0.000</p>
+                )}
               </Box>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <TextField
@@ -1902,7 +1912,10 @@ const createMissingTouches = async () => {
                         : `Excess Balance: ${toFixedStr(pureBalance, 3)}`}
                       </strong>
 
-              <strong> Hallmark Balance:{" "} {toFixedStr(hallmarkBalance, 3)} </strong>
+              <strong>{hallmarkBalance >=0
+                        ?`Hallmark Balance:${toFixedStr(hallmarkBalance, 3)}`
+                        :`Excess Hallmark Balance:${toFixedStr(hallmarkBalance, 3)}`}
+                        </strong>
             </div>
             
           </Box>
