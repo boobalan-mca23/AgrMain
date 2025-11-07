@@ -193,6 +193,11 @@ const validateField = (field, value) => {
       toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
+    if (balance === "-" || balance === "." || balance === "-.") {
+      toast.error("Invalid balance value");
+      return;
+    }
+
 
     const newGoldsmith = {
       name: goldsmithName.trim(),
@@ -252,6 +257,11 @@ const validateField = (field, value) => {
       toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
+    if (formData.balance === "-" || formData.balance === "." || formData.balance === "-.") {
+      toast.error("Invalid balance value");
+      return;
+    }
+
 
     const payload = {
       name: formData.name.trim(),
@@ -360,14 +370,24 @@ const validateField = (field, value) => {
             inputRef={balanceRef}
             margin="dense"
             label="Balance"
-            type="number"
-            fullWidth
             autoComplete="off"
+            type="text"
+            fullWidth
             value={balance}
-            onChange={(e) =>setBalance(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^-?\d*\.?\d{0,3}$/.test(value)) {
+                setBalance(value);
+              }
+            }}
             onKeyDown={(e) => handleKeyDown(e, "address", handleSaveGoldsmith)}
-            onWheel={(e)=>e.target.blur()}
+            inputProps={{
+              inputMode: "decimal",
+              pattern: "[0-9]*[.,]?[0-9]*",
+            }}
+            onWheel={(e) => e.target.blur()}
           />
+
 
           <TextField
             inputRef={addressRef}
@@ -481,16 +501,24 @@ const validateField = (field, value) => {
             /* removed onKeyDown for Edit per your request */
           />
           <TextField
-            type="number"
-            inputRef={balanceRef}
-            label="balance"
+            label="Balance"
             value={formData.balance}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^-?\d*\.?\d{0,3}$/.test(value)) {
+                setFormData({
+                  ...formData,
+                  balance: value,
+                  balanceisEdited: true,
+                });
+              }
+            }}
             fullWidth
             margin="normal"
-            onChange={(e) => setFormData({ ...formData, balance: e.target.value ,balanceisEdited:true})}
-            onWheel={(e)=>e.target.blur()}
-            /* removed onKeyDown for Edit per your request */
+            inputProps={{ inputMode: "decimal", pattern: "-?[0-9]*[.,]?[0-9]*" }}
+            onWheel={(e) => e.target.blur()}
           />
+
           <TextField
             inputRef={addressRef}
             label="Address"
