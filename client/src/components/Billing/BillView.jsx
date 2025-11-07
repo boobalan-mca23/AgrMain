@@ -201,7 +201,7 @@ const BillView = () => {
         billNo: currentBill?.id,
         date:currentBill?.date  ? new Date(currentBill.date).toLocaleDateString("en-IN")  : date,
         time: currentBill?.time  ? new Date(currentBill.time).toLocaleTimeString("en-IN", {  hour: "2-digit",  minute: "2-digit",  hour12: true,  })  : time,
-        selectedCustomer,
+        selectedCustomer:currentBill.customername,,
   
         // bill details
         billItems: billDetailRows.map((row) => ({
