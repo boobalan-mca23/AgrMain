@@ -482,8 +482,19 @@ const BillView = () => {
               sx={{ display: "flex", flexDirection: "column", gap: 2 }}
             >
               <Box>
-                <strong>Hallmark Balance:</strong>{" "}
-                {prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}
+                {prevHallmark > 0 ? (
+                  <>
+                    <p>Opening Hallmark Balance:{" "}{prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}</p>
+                
+                  </>
+                ) : prevHallmark < 0 ? (
+                  <>
+                    <p>Excess Hallmark Balance:{" "}{prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}</p>{" "}
+                    
+                  </>
+                ) : (
+                  <p>Hallmark Balance: 0.000</p>
+                )}
               </Box>
               <div
                 style={{ display: "flex", alignItems: "center", gap: "10px" }}
@@ -755,9 +766,10 @@ const BillView = () => {
               </strong>
 
               <strong>
-                {" "}
-                Hallmark Balance:{" "}
-                {toFixedStr(hallmarkBalance + prevHallmark, 3)}{" "}
+                <strong>{hallmarkBalance >=0
+                        ?`Hallmark Balance:${toFixedStr(hallmarkBalance, 3)}`
+                        :`Excess Hallmark Balance:${toFixedStr(hallmarkBalance, 3)}`}
+                        </strong>
               </strong>
             </div>
           </Box>
