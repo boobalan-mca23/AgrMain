@@ -28,7 +28,7 @@ function Cashgold() {
   const handleClose=()=>{
    setShowFormPopup(false)
    setFormData({
-    date: "",
+    date: formattedToday,
     type: "Select",
     cashAmount: "",
     goldValue: "",
@@ -113,7 +113,7 @@ function Cashgold() {
         toast.success("Value added successfully!");
         setEntries((prev) => [response.data, ...prev]);
         setFormData({
-          date: "",
+          date: formattedToday,
           type: "Select",
           cashAmount: "",
           goldValue: "",
