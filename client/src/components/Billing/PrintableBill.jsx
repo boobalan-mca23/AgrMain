@@ -81,7 +81,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
               <strong>Bill No:</strong> {billNo}
             </p>
             <p style={styles.billInfoItem}>
-              <strong>Customer Name:</strong> {selectedCustomer?.name || ""}
+              <strong>Customer Name:</strong> {selectedCustomer|| "null"}
             </p>
           </div>
           <div>
