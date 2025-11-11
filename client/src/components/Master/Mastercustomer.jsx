@@ -138,8 +138,14 @@ const handleSaveCustomer = async () => {
     name: customerName.trim(),
     phone: phoneNumber.trim(),
     address: address.trim(),
-    balance: balance.trim(),
-    hallMarkBal: hallMarkBal.trim(),
+    balance:
+    balance !== ""
+      ? parseFloat(Number(balance).toFixed(3))
+      : null,
+  hallMarkBal:
+    hallMarkBal !== ""
+      ? parseFloat(Number(hallMarkBal).toFixed(3))
+      : null,
   };
 
   try {
@@ -204,10 +210,10 @@ const handleSaveCustomer = async () => {
       address: customer.address || "",
       // convert to string so typing '.' or '-' works correctly
       balance: customer?.customerBillBalance?.balance != null
-        ? String(customer.customerBillBalance.balance)
+        ? Number(customer.customerBillBalance.balance).toFixed(3)
         : "",
       hallMarkBal: customer?.customerBillBalance?.hallMarkBal != null
-        ? String(customer.customerBillBalance.hallMarkBal)
+        ? Number(customer.customerBillBalance.hallMarkBal).toFixed(3)
         : "",
     });
   };
@@ -245,6 +251,20 @@ const handleSaveCustomer = async () => {
         toast.error("Invalid hallmark value");
         return;
       }
+      const payload = {
+  name: editedData.name.trim(),
+  phone: editedData.phone.trim(),
+  address: editedData.address.trim(),
+  balance:
+    editedData.balance !== ""
+      ? parseFloat(Number(editedData.balance).toFixed(3))
+      : null,
+  hallMarkBal:
+    editedData.hallMarkBal !== ""
+      ? parseFloat(Number(editedData.hallMarkBal).toFixed(3))
+      : null,
+};
+
 
 
     try {
@@ -254,7 +274,7 @@ const handleSaveCustomer = async () => {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editedData),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -460,33 +480,35 @@ const handleSaveCustomer = async () => {
                     <td>{customer.name}</td>
                     <td>{customer.phone || "-"}</td>
                     <td
-                        style={{
-                          color:
-                            customer?.customerBillBalance?.balance < 0
-                              ? "red"
-                              : customer?.customerBillBalance?.balance > 0
-                              ? "green"
-                              : "black",
-                          fontWeight: "500",
-                        }}
-                      >
-                        {Number(customer?.customerBillBalance?.balance).toFixed(3) ?? "-"}
-                      </td>
-
-                      <td
-                        style={{
-                          color:
-                            customer?.customerBillBalance?.hallMarkBal < 0
-                              ? "red"
-                              : customer?.customerBillBalance?.hallMarkBal > 0
-                              ? "green"
-                              : "black",
-                          fontWeight: "500",
-                        }}
-                      >
-                        {Number(customer?.customerBillBalance?.hallMarkBal).toFixed(3) ?? "-"}
-                      </td>
-
+                      style={{
+                        color:
+                          customer?.customerBillBalance?.balance < 0
+                            ? "red"
+                            : customer?.customerBillBalance?.balance > 0
+                            ? "green"
+                            : "black",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {customer?.customerBillBalance?.balance != null
+                        ? Number(customer.customerBillBalance.balance).toFixed(3)
+                        : "-"}
+                    </td>
+                    <td
+                      style={{
+                        color:
+                          customer?.customerBillBalance?.hallMarkBal < 0
+                            ? "red"
+                            : customer?.customerBillBalance?.hallMarkBal > 0
+                            ? "green"
+                            : "black",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {customer?.customerBillBalance?.hallMarkBal != null
+                        ? Number(customer.customerBillBalance.hallMarkBal).toFixed(3)
+                        : "-"}
+                    </td>
                     <td>{customer.address || "-"}</td>
                     <td>
                       <Tooltip title="Edit Customer">
