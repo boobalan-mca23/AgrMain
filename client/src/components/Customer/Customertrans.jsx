@@ -33,6 +33,7 @@ const Customertrans = () => {
     touch: "",
     purity: "",
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -95,6 +96,8 @@ const Customertrans = () => {
 
   const addTransaction = async (e) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
     setError("");
 
     try {
@@ -143,6 +146,8 @@ const Customertrans = () => {
     } catch (error) {
       console.error("Error adding transaction:", error);
       toast.error(error.message || "Error adding transaction");
+    }finally {
+      setIsSaving(false);
     }
   };
 
@@ -383,8 +388,9 @@ const Customertrans = () => {
                   type="button"
                   className="save-btn"
                   onClick={addTransaction}
+                  disabled={isSaving}
                 >
-                  Save
+                  {isSaving ? "Saving transaction..." : "Save"}
                 </button>
                 <button
                   type="button"
