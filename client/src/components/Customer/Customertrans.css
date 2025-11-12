@@ -160,6 +160,10 @@ td {
   background-color: green;
   color: white;
 }
+.save-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .cancel-btn{
   background-color: rgb(212, 69, 69);
   color: white;
