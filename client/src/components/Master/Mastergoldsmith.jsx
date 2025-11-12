@@ -203,7 +203,7 @@ const validateField = (field, value) => {
       name: goldsmithName.trim(),
       phonenumber: phoneNumber.trim() ? phoneNumber.trim() : null,
       address: address.trim() || null,
-      balance:balance.trim() || null
+      balance:balance !== "" ? parseFloat(Number(balance).toFixed(3)) : null
     };
 
     try {
@@ -233,7 +233,7 @@ const validateField = (field, value) => {
       name: item.name || "",
       phone: item.phone || "",
       address: item.address || "",
-      balance:item.balance || "",
+      balance:item.balance != null ? Number(item.balance).toFixed(3) : "",
       balanceisEdited:item.balanceisEdited||""
     });
     setErrors({ name: "", phone: "" });
@@ -267,7 +267,7 @@ const validateField = (field, value) => {
       name: formData.name.trim(),
       phone: formData.phone ? formData.phone.trim() : null,
       address: formData.address ? formData.address.trim() : null,
-      balance:formData.balance ? formData.balance : null,
+      balance:formData.balance !== "" ? parseFloat(Number(formData.balance).toFixed(3)) : null,
       balanceisEdited:formData.balanceisEdited? formData.balanceisEdited:false
     };
 
