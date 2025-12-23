@@ -12,6 +12,8 @@ const Navbar = () => {
   const reportsRef = useRef(null);
   const [showStock, setShowStock] = useState(false);
   const [activeStock, setActiveStock] = useState("");
+  const [showVoucher, setShowVoucher] = useState(false);
+  const [activeVoucher, setActiveVoucher] = useState("");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -40,6 +42,17 @@ const Navbar = () => {
 
   const handleStockClick = (path) => {
     setActiveStock(path);
+    handleLinkClick(path);
+    navigate(path);
+  };
+
+  const toggleVoucher = (e) => {
+    e.stopPropagation();
+    setShowVoucher(!showVoucher);
+  };
+
+  const handleVoucherClick = (path) => {
+    setActiveVoucher(path);
     handleLinkClick(path);
     navigate(path);
   };
@@ -83,8 +96,6 @@ const Navbar = () => {
           "Customer",
           "Goldsmith",
           "Bill",
-          "Receipt Voucher",
-          "Expense Voucher",
           "Bullion",
           "Repair",
         ].map((label) => {
@@ -102,6 +113,63 @@ const Navbar = () => {
             </a>
           );
         })}
+        <div
+          style={{
+            ...navLink,
+            backgroundColor:
+              hoveredItem === "voucher"
+                ? "rgba(255, 255, 255, 0.1)"
+                : "transparent",
+            color: "rgba(255, 255, 255, 0.8)",
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            position: "relative",
+            cursor: "pointer",
+          }}
+          onClick={toggleVoucher}
+          onMouseEnter={() => {
+            setHoveredItem("voucher");
+            setShowVoucher(true);
+          }}
+          onMouseLeave={() => {
+            setHoveredItem(null);
+            setTimeout(() => setShowVoucher(false), 300);
+          }}
+        >
+          Voucher{" "}
+          {showVoucher ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          {showVoucher && (
+            <div
+              style={dropdownMenu}
+              onMouseEnter={() => setShowVoucher(true)}
+              onMouseLeave={() => setShowVoucher(false)}
+            >
+              {[
+                ["Receipt Voucher", "/receiptvoucher"],
+                ["Expense Voucher", "/expensevoucher"],
+              ].map(([name, path]) => (
+                <a
+                  key={path}
+                  href={path}
+                  style={getReportItemStyle(path)} // reuse styles
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleStockClick(path);
+                  }}
+                  onMouseEnter={() => setHoveredItem(path)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  {name}
+                  {activeVoucher === path && (
+                    <span style={selectedIndicator}>✓</span>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
         <div
           style={{
             ...navLink,

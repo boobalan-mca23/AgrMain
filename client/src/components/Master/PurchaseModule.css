@@ -1,0 +1,58 @@
+/* Force table to behave normally */
+.item-list table {
+  width: 100%;
+  border-collapse: collapse;
+  display: table !important;
+}
+
+.item-list table tr {
+  display: table-row !important;
+}
+
+.item-list table td,
+.item-list table th {
+  display: table-cell !important;
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+
+/* Prevent parent flex from aligning elements sideways */
+.master-container {
+  display: block !important;
+}
+
+.item-list {
+  display: block !important;
+  width: 100% !important;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+/* Make title full width */
+.form-grid h2 {
+  grid-column: span 2;
+  text-align: center;
+}
+
+/* Make Save button full width */
+.form-grid .full-row {
+  grid-column: span 2;
+}
+
+/* Inputs styling (optional) */
+.form-grid label {
+  font-weight: 600;
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}

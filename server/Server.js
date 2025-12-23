@@ -22,6 +22,10 @@ const billRoutes=require("./Routes/bill.routes")
 const receiptRoutes=require("./Routes/receipt.routes");
 const masterWastageRoutes = require("./Routes/masterwastage.routes")
 const expenseRoutes=require("./Routes/expense.routes")
+const supplierRoutes = require("./Routes/supplier.routes");
+const purchaseEntryRoutes = require("./Routes/purchaseEntry.routes");
+const purchaseStockRoutes = require("./Routes/purchaseStock.routes");
+const purchaseReportRoutes = require("./Routes/purchaseReport.routes");
 const path = require("path");
 const fs = require("fs");
  
@@ -68,6 +72,10 @@ app.use("/api/productStock",productStock);
 app.use("/api/bill",billRoutes)
 app.use("/api/receipt",receiptRoutes);
 app.use("/api/expense",expenseRoutes);
+app.use("/api/supplier", supplierRoutes);
+app.use("/api/purchase-entry", purchaseEntryRoutes);
+app.use("/api/purchase-stock", purchaseStockRoutes);
+app.use("/api/purchase-report", purchaseReportRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/uploads/:filename", (req, res) => {
