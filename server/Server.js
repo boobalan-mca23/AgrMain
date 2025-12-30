@@ -15,7 +15,6 @@ const masterTouchRoutes = require("./Routes/mastertouch.routes");
 const masterBullionRoutes = require("./Routes/masterbullion.routes");
 const bullionPurchaseRoutes = require("./Routes/bullionpurchase.routes");
 const assignmentRoutes = require("./Routes/assignment.routes");
-const repairRoutes = require("./Routes/repair.routes");
 const rawGoldRoutes=require("./Routes/rawGoldStock.routes");
 const productStock=require("./Routes/productStock.routes");
 const billRoutes=require("./Routes/bill.routes")
@@ -26,6 +25,7 @@ const supplierRoutes = require("./Routes/supplier.routes");
 const purchaseEntryRoutes = require("./Routes/purchaseEntry.routes");
 const purchaseStockRoutes = require("./Routes/purchaseStock.routes");
 const purchaseReportRoutes = require("./Routes/purchaseReport.routes");
+const repairRoutes = require("./Routes/repairStock.routes");
 const path = require("path");
 const fs = require("fs");
  
@@ -67,7 +67,6 @@ app.use("/api/master-wastage", masterWastageRoutes);
 app.use("/api/master-bullion", masterBullionRoutes);
 app.use("/api/bullion-purchase", bullionPurchaseRoutes);
 app.use("/api/assignments", assignmentRoutes);
-app.use("/api/repair", repairRoutes);
 app.use("/api/productStock",productStock);
 app.use("/api/bill",billRoutes)
 app.use("/api/receipt",receiptRoutes);
@@ -76,6 +75,7 @@ app.use("/api/supplier", supplierRoutes);
 app.use("/api/purchase-entry", purchaseEntryRoutes);
 app.use("/api/purchase-stock", purchaseStockRoutes);
 app.use("/api/purchase-report", purchaseReportRoutes);
+app.use("/api/repair", repairRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/uploads/:filename", (req, res) => {

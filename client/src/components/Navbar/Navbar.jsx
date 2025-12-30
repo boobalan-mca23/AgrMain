@@ -14,6 +14,8 @@ const Navbar = () => {
   const [activeStock, setActiveStock] = useState("");
   const [showVoucher, setShowVoucher] = useState(false);
   const [activeVoucher, setActiveVoucher] = useState("");
+  const [showRepair, setShowRepair] = useState(false);
+  const [activeRepair, setActiveRepair] = useState("");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -40,6 +42,11 @@ const Navbar = () => {
     setShowStock(!showStock);
   };
 
+  const toggleRepair = (e) => {
+    e.stopPropagation();
+    setShowRepair(!showRepair);
+  };
+
   const handleStockClick = (path) => {
     setActiveStock(path);
     handleLinkClick(path);
@@ -53,6 +60,12 @@ const Navbar = () => {
 
   const handleVoucherClick = (path) => {
     setActiveVoucher(path);
+    handleLinkClick(path);
+    navigate(path);
+  };
+
+  const handleRepairClick = (path) => {
+    setActiveRepair(path);
     handleLinkClick(path);
     navigate(path);
   };
@@ -83,6 +96,18 @@ const Navbar = () => {
     transform: hoveredItem === path ? "translateX(2px)" : "translateX(0)",
   });
 
+  const getDropdownItemStyle = (path, activeState) => ({
+    ...dropdownItem,
+    backgroundColor:
+      activeState === path
+        ? "#f1f3f5"
+        : hoveredItem === path
+        ? "#f8f9fa"
+        : "#fff",
+    fontWeight: activeState === path ? 600 : 400,
+    transform: hoveredItem === path ? "translateX(2px)" : "translateX(0)",
+  });
+
   return (
     <div style={navContainer}>
       <div style={navLeft}>
@@ -97,7 +122,6 @@ const Navbar = () => {
           "Goldsmith",
           "Bill",
           "Bullion",
-          "Repair",
         ].map((label) => {
           const path = `/${label.replace(/\s+/g, "").toLowerCase()}`;
           return (
@@ -156,7 +180,7 @@ const Navbar = () => {
                   style={getReportItemStyle(path)} // reuse styles
                   onClick={(e) => {
                     e.preventDefault();
-                    handleStockClick(path);
+                    handleVoucherClick(path);
                   }}
                   onMouseEnter={() => setHoveredItem(path)}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -220,6 +244,65 @@ const Navbar = () => {
                 >
                   {name}
                   {activeStock === path && (
+                    <span style={selectedIndicator}>✓</span>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{
+            ...navLink,
+            backgroundColor:
+              hoveredItem === "repair"
+                ? "rgba(255, 255, 255, 0.1)"
+                : "transparent",
+            color: "rgba(255, 255, 255, 0.8)",
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            position: "relative",
+            cursor: "pointer",
+          }}
+          onClick={toggleRepair}
+          onMouseEnter={() => {
+            setHoveredItem("repair");
+            setShowRepair(true);
+          }}
+          onMouseLeave={() => {
+            setHoveredItem(null);
+            setTimeout(() => setShowRepair(false), 300);
+          }}
+        >
+          Repair{" "}
+          {showRepair ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+
+          {showRepair && (
+            <div
+              style={dropdownMenu}
+              onMouseEnter={() => setShowRepair(true)}
+              onMouseLeave={() => setShowRepair(false)}
+            >
+              {[
+                ["Goldsmith Repair", "/repairgoldsmith"],
+                ["Repair Stock", "/repairstocklist"],
+              ].map(([name, path]) => (
+                <a
+                  key={path}
+                  href={path}
+                  style={getDropdownItemStyle(path, activeRepair)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleRepairClick(path);
+                  }}
+                  onMouseEnter={() => setHoveredItem(path)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  {name}
+                  {activeRepair === path && (
                     <span style={selectedIndicator}>✓</span>
                   )}
                 </a>

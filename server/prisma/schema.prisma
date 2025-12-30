@@ -172,6 +172,9 @@ model Goldsmith {
   totals     Total[]
   givenGold  givenGold[]
   deliveries itemDelivery[]
+
+  repairItems RepairStock[] @relation("GoldsmithRepairRelation")
+  @@map("goldsmith")
 }
 
 model Jobcard {
@@ -387,8 +390,11 @@ model ProductStock {
   itemDelivery  itemDelivery? @relation(fields: [deliveryId], references: [id])
   jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
 
+  repairStock RepairStock[] @relation("ProductRepairRelation")
+
   @@index([deliveryId], map: "ProductStock_deliveryId_fkey")
   @@index([jobcardId], map: "ProductStock_jobcardId_fkey")
+  @@map("productstock")
 }
 
 model Bill {
@@ -557,4 +563,34 @@ model PurchaseStock {
   @@index([entryId], map: "PurchaseStock_entryId_fkey")
   @@index([supplierId], map: "PurchaseStock_supplierId_fkey")
   @@map("purchase_stock")
+}
+
+model RepairStock {
+  id           Int       @id @default(autoincrement())
+  productId    Int
+  goldsmithId  Int?
+  reason       String?
+  sentDate     DateTime  @default(now())
+  receivedDate DateTime?
+  status       String    @default("InRepair")
+
+  itemName    String?
+  grossWeight Float?
+  netWeight   Float?
+  purity      Float?
+
+  product   ProductStock @relation("ProductRepairRelation", fields: [productId], references: [id], onDelete: Cascade)
+  goldsmith Goldsmith?   @relation("GoldsmithRepairRelation", fields: [goldsmithId], references: [id])
+
+  @@index([productId])
+  @@index([goldsmithId])
+  @@map("repairstock")
+}
+
+model RepairLogs {
+  id        Int      @id @default(autoincrement())
+  repairId  Int
+  action    String
+  note      String?
+  createdAt DateTime @default(now())
 }

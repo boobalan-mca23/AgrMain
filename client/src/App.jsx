@@ -25,7 +25,8 @@ import ExpenseTracker from "./components/ExpenseTracker/ExpenseTracker";
 import JobCardDetails from "./components/Goldsmith/JobCard"
 import MasterBullion from "./components/Master/Masterbullion";
 import Bullion from "./components/Bullion/Bullion";
-import Repair from "./components/Repair/Repair";
+import GoldsmithRepair from "./components/GoldsmithRepair/RepairStock";
+import RepairStockList from "./components/GoldsmithRepair/RepairStockList";
 import Jewelstockreport from "./components/Report/jewelstockreport";
 import BillView from "./components/Billing/BillView";
 
@@ -91,11 +92,27 @@ function App() {
             </PageWithNavbar>
           }
         />
-        <Route
+        {/* <Route
           path="/repair"
           element={
             <PageWithNavbar>
               <Repair />
+            </PageWithNavbar>
+          }
+        ></Route> */}
+        <Route
+          path="/repairgoldsmith"
+          element={
+            <PageWithNavbar>
+              <GoldsmithRepair />
+            </PageWithNavbar>
+          }
+        ></Route>
+        <Route
+          path="/repairstocklist"
+          element={
+            <PageWithNavbar>
+              <RepairStockList />
             </PageWithNavbar>
           }
         ></Route>
