@@ -1,8 +1,12 @@
-const express=require('express')
-const router=express.Router()
-const productStock=require('../Controllers/productStock.controller')
+const express = require("express");
+const router = express.Router();
+const productStock = require("../Controllers/productStock.controller");
 
-router.get('/',productStock.getAllProductStock);
-router.put('/:id',productStock.updateProductStock);
+router.post("/add-weight", productStock.addNetWeightToProduct);
 
-module.exports=router
+router.get("/", productStock.getAllProductStock);
+router.put("/:id", productStock.updateProductStock);
+
+
+
+module.exports = router;

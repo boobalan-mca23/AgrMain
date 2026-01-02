@@ -24,7 +24,7 @@
   font-weight: bold;
 }
 
-.add-item-form input {
+.add-item-form input, textarea, select {
   width: 100%;
   padding: 8px;
   margin-bottom: 10px;
@@ -55,6 +55,10 @@
   background: #fff;
 }
 
+.item-list-supplier {
+  width: 60%;
+}
+
 .item-list h2 {
   margin-bottom: 10px;
 }
@@ -74,3 +78,4 @@
   background: #1DA3A3;
   color: white;
 }
+

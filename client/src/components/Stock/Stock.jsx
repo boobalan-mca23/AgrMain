@@ -4,6 +4,16 @@ import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { TablePagination, Button } from "@mui/material";
 import { AddCircleOutline } from "@mui/icons-material";
 import "./Stock.css";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Checkbox,
+  FormControlLabel
+} from "@mui/material";
 
 const Stock = () => {
   const [stockData, setStockData] = useState([]);
@@ -18,6 +28,14 @@ const Stock = () => {
   // NEW: mini-table pagination for per-item final purity table
   const [purityPage, setPurityPage] = useState(0);
   const [purityRowsPerPage, setPurityRowsPerPage] = useState(5);
+
+  const [openAddPopup, setOpenAddPopup] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [purchaseStocks, setPurchaseStocks] = useState([]);
+  const [selectedPurchase, setSelectedPurchase] = useState(null);
+  const [addNetWeight, setAddNetWeight] = useState("");
+  const [isBackchain, setIsBackchain] = useState(false);
+  const [backchainPurity, setBackchainPurity] = useState("");
 
   const paginatedData = stockData.slice(
     page * rowsPerPage,
@@ -211,6 +229,73 @@ const handlePurityChangeRowsPerPage = (event) => {
   setPurityPage(0);
 };
 
+const openAddWeightPopup = async (product) => {
+  try {
+    setSelectedProduct(product);
+    setOpenAddPopup(true);
+    setAddNetWeight("");
+    setSelectedPurchase(null);
+    setIsBackchain(false);
+    setBackchainPurity("");
+
+    const res = await axios.get(
+      `${BACKEND_SERVER_URL}/api/purchase-stock/touch/${product.touch}`
+    );
+
+    // show only available stocks
+    const available = res.data.filter(ps => ps.netWeight > 0);
+    setPurchaseStocks(available);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const handleSaveAddWeight = async () => {
+  const weight = Number(addNetWeight);
+
+  if (!selectedPurchase || weight <= 0) {
+    alert("Invalid input");
+    return;
+  }
+
+  if (weight > selectedPurchase.netWeight) {
+    alert("Entered weight exceeds available purchase stock");
+    return;
+  }
+
+  // ✅ Backchain validation
+  if (isBackchain) {
+    const bcPurity = Number(backchainPurity);
+
+    if (!bcPurity || bcPurity <= 0) {
+      alert("Enter valid backchain purity");
+      return;
+    }
+
+    if (bcPurity >= selectedProduct.touch) {
+      alert("Backchain purity must be lower than product purity");
+      return;
+    }
+  }
+
+  try {
+    await axios.post(
+      `${BACKEND_SERVER_URL}/api/productStock/add-weight`,
+      {
+        productStockId: selectedProduct.id,
+        purchaseStockId: selectedPurchase.id,
+        addNetWeight: weight,
+        isBackchain,
+        backchainPurity: isBackchain ? Number(backchainPurity) : null
+      }
+    );
+
+    setOpenAddPopup(false);
+    await fetchProductStock();
+  } catch (err) {
+    alert(err.response?.data?.err || "Failed to add weight");
+  }
+};
 
   return (
     <div className="stock-container">
@@ -433,25 +518,31 @@ const handlePurityChangeRowsPerPage = (event) => {
                   <td>{safeFixed(item.wastagePure)}</td>
                   <td>{safeFixed(item.finalPurity)}</td>
                   <td>
-                    {item.isBillProduct ? (
-                      <Button
-                        variant="contained"
-                        startIcon={<AddCircleOutline />}
-                        onClick={() => handleItemSold(item.id)}
-                        sx={{
-                          bgcolor: "primary.main",
-                          "&:hover": { bgcolor: "primary.dark" },
-                          px: 3,
-                          py: 1.5,
-                          borderRadius: "8px",
-                          textTransform: "none",
-                        }}
-                      >
-                        Sold
-                      </Button>
-                    ) : (
-                      "-"
-                    )}
+                    <>
+                      
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<AddCircleOutline />}
+                          onClick={() => openAddWeightPopup(item)}
+                          sx={{ mr: 1 }}
+                        >
+                          Add
+                        </Button>
+                  
+
+                      {item.isBillProduct && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          color="error"
+                          onClick={() => handleItemSold(item.id)}
+                        >
+                          Sold
+                        </Button>
+                      )}
+                    </>
+
                   </td>
                 </tr>
               ))}
@@ -489,6 +580,87 @@ const handlePurityChangeRowsPerPage = (event) => {
           />
         )}
       </div>
+      <Dialog
+        open={openAddPopup}
+        onClose={() => setOpenAddPopup(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add Net Weight</DialogTitle>
+
+        <DialogContent>
+          <p><strong>Product:</strong> {selectedProduct?.itemName}</p>
+          <p><strong>Touch:</strong> {selectedProduct?.touch}%</p>
+
+          <TextField
+            select
+            fullWidth
+            label="Purchase Stock"
+            margin="normal"
+            value={selectedPurchase?.id || ""}
+            onChange={(e) => {
+              const ps = purchaseStocks.find(
+                p => p.id === Number(e.target.value)
+              );
+              setSelectedPurchase(ps);
+            }}
+          >
+            {purchaseStocks.map(ps => (
+              <MenuItem key={ps.id} value={ps.id}>
+                {ps.jewelName} — Available {ps.netWeight} g
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            fullWidth
+            label="Add Net Weight (g)"
+            type="number"
+            margin="normal"
+            value={addNetWeight}
+            onChange={(e) => setAddNetWeight(e.target.value)}
+            inputProps={{ min: 0 }}
+          />
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isBackchain}
+                onChange={(e) => setIsBackchain(e.target.checked)}
+              />
+            }
+            label="Is Backchain"
+          />
+
+          {isBackchain && (
+            <TextField
+              fullWidth
+              label="Backchain Purity (%)"
+              type="number"
+              margin="normal"
+              value={backchainPurity}
+              onChange={(e) => setBackchainPurity(e.target.value)}
+              inputProps={{
+                min: 0,
+                max: selectedProduct?.touch
+              }}
+            />
+          )}
+
+          {selectedPurchase && (
+            <p style={{ color: "gray" }}>
+              Available: {selectedPurchase.netWeight} g
+            </p>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenAddPopup(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSaveAddWeight}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };
