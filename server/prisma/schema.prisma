@@ -390,7 +390,6 @@ model ProductStock {
   createdAt     DateTime      @default(now())
   itemDelivery  itemDelivery? @relation(fields: [deliveryId], references: [id])
   jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
-
   repairStock RepairStock[] @relation("ProductRepairRelation")
   returnLogs  returnLogs[]
 
