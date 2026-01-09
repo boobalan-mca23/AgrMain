@@ -59,6 +59,7 @@ const ProductStock = () => {
   // ---------- SEND TO REPAIR ----------
   const handleSend = async () => {
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/send`, {
+      source: "GOLDSMITH",
       productId: selectedProduct.id,
       goldsmithId: selectedGoldsmith || null,
       reason: reason || null           // ⭐ send reason
