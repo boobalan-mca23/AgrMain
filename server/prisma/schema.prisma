@@ -174,6 +174,7 @@ model Goldsmith {
   deliveries itemDelivery[]
 
   repairItems RepairStock[] @relation("GoldsmithRepairRelation")
+
   @@map("goldsmith")
 }
 
@@ -391,6 +392,7 @@ model ProductStock {
   jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
 
   repairStock RepairStock[] @relation("ProductRepairRelation")
+  returnLogs  returnLogs[]
 
   @@index([deliveryId], map: "ProductStock_deliveryId_fkey")
   @@index([jobcardId], map: "ProductStock_jobcardId_fkey")
@@ -417,6 +419,7 @@ model Bill {
   customers         Customer       @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   orders            OrderItems[]
   billReceive       billReceived[]
+  returnLogs        returnLogs[]
 
   @@index([customer_id], map: "Bill_customer_id_fkey")
 }
@@ -433,6 +436,9 @@ model OrderItems {
   finalWeight Float?
   createdAt   DateTime @default(now())
   bill        Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  repairStatus String       @default("NONE")
+  returnLogs   returnLogs[]
 
   @@index([billId], map: "OrderItems_billId_fkey")
 }
@@ -569,6 +575,7 @@ model RepairStock {
   id           Int       @id @default(autoincrement())
   productId    Int
   goldsmithId  Int?
+  source       String?
   reason       String?
   sentDate     DateTime  @default(now())
   receivedDate DateTime?
@@ -593,4 +600,23 @@ model RepairLogs {
   action    String
   note      String?
   createdAt DateTime @default(now())
+}
+
+model returnLogs {
+  id Int @id @default(autoincrement())
+
+  billId         Int?
+  orderItemId    Int?
+  productStockId Int?
+
+  bill      Bill?         @relation(fields: [billId], references: [id])
+  orderItem OrderItems?   @relation(fields: [orderItemId], references: [id])
+  product   ProductStock? @relation(fields: [productStockId], references: [id])
+
+  productName String
+  weight      Float
+  count       Int
+  reason      String?
+  source      String
+  createdAt   DateTime @default(now())
 }
