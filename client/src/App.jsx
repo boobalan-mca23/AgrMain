@@ -27,6 +27,8 @@ import MasterBullion from "./components/Master/Masterbullion";
 import Bullion from "./components/Bullion/Bullion";
 import GoldsmithRepair from "./components/GoldsmithRepair/RepairStock";
 import RepairStockList from "./components/GoldsmithRepair/RepairStockList";
+import CustomerReturn from "./components/CustomerReturn&Repair/CustomerReturn&Repair";
+import ReturnStockList from "./components/CustomerReturn&Repair/ReturnStockList";
 import Jewelstockreport from "./components/Report/jewelstockreport";
 import BillView from "./components/Billing/BillView";
 
@@ -108,6 +110,22 @@ function App() {
             </PageWithNavbar>
           }
         ></Route>
+        <Route
+          path="/customerreturn"
+          element={
+            <PageWithNavbar>
+            <CustomerReturn />
+            </PageWithNavbar>
+          }
+        />
+        <Route
+          path="/returnstocklist"
+          element={
+            <PageWithNavbar>  
+              <ReturnStockList />
+            </PageWithNavbar>
+          }
+        />
         <Route
           path="/repairstocklist"
           element={

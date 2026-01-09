@@ -182,7 +182,7 @@ const BillView = () => {
   const hallmarkAmount = useMemo(() => toNumber(hallmarkQty) * toNumber(billHallmark), [hallmarkQty, billHallmark]);
   const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
   const pureBalance = TotalFWT - totalReceivedPurity;
-  const totalBillHallmark = toNumber(billHallmark);
+  const totalBillHallmark =  toNumber(hallmarkQty) * toNumber(billHallmark) + toNumber(prevHallmark);
   const totalReceivedHallmark = rows.reduce((total, row) => total + (toNumber(row.hallmark) || 0),0);
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
   const hasCash = rows.some(r => r.type === "Cash");

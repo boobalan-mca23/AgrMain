@@ -20,7 +20,7 @@ const PurchaseEntry = () => {
     wastage: "",
     touch: "",
     finalPurity: "",
-    moveTo: "product",
+    moveTo: "purchase",
   });
 
   const [editId, setEditId] = useState(null);
@@ -82,7 +82,8 @@ const PurchaseEntry = () => {
       wastage: Number(form.wastage) || 0,
       touch: Number(form.touch) || 0,
       finalPurity: Number(form.finalPurity) || 0,
-      moveTo: form.moveTo === "product" ? "product" : "purchase",
+      moveTo: "purchase",
+      // moveTo: form.moveTo === "product" ? "product" : "purchase",
     };
 
     try {
@@ -97,7 +98,7 @@ const PurchaseEntry = () => {
         wastage: "",
         touch: "",
         finalPurity: "",
-        moveTo: "product",
+        moveTo: "purchase",
       });
       fetchEntries();
     } catch (err) {
@@ -223,14 +224,14 @@ const PurchaseEntry = () => {
         <label>Final Purity</label>
         <input type="number" step="0.001" value={form.finalPurity} readOnly />
 
-        <label>Move To</label>
+        {/* <label>Move To</label>
         <select
           value={form.moveTo}
           onChange={(e) => setForm({ ...form, moveTo: e.target.value })}
         >
           <option value="product">Move to Product Stock</option>
           <option value="purchase">Move to Purchase Stock</option>
-        </select>
+        </select> */}
 
         <button onClick={handleAdd} style={{ marginTop: 12 }}>
           Save Entry
@@ -256,7 +257,7 @@ const PurchaseEntry = () => {
                 <th>Wastage</th>
                 <th>Touch</th>
                 <th>Final Purity</th>
-                <th>Move To</th>
+                <th>Moved To</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -328,10 +329,11 @@ const PurchaseEntry = () => {
                         <input type="number" step="0.001" value={editForm.finalPurity} readOnly />
                       </td>
                       <td>
-                        <select value={editForm.moveTo} onChange={(e) => setEditForm({ ...editForm, moveTo: e.target.value })}>
+                        {editForm.moveTo === "product" ? "Product Stock" : "Purchase Stock"}
+                        {/* <select value={editForm.moveTo} onChange={(e) => setEditForm({ ...editForm, moveTo: e.target.value })}>
                           <option value="product">Product Stock</option>
                           <option value="purchase">Purchase Stock</option>
-                        </select>
+                        </select> */}
                       </td>
 
                       <td>
