@@ -15,8 +15,9 @@ const Navbar = () => {
   const [showVoucher, setShowVoucher] = useState(false);
   const [activeVoucher, setActiveVoucher] = useState("");
   const [showRepair, setShowRepair] = useState(false);
+  const [showReturn, setShowReturn] = useState(false);
   const [activeRepair, setActiveRepair] = useState("");
-
+  const [activeReturn, setActiveReturn] = useState("");
   const handleLogout = () => {
     localStorage.removeItem("token");
     window.location.href = "/";
@@ -47,6 +48,11 @@ const Navbar = () => {
     setShowRepair(!showRepair);
   };
 
+  const toggleReturn = (e) => {
+    e.stopPropagation();
+    setShowReturn(!showReturn);
+  }
+
   const handleStockClick = (path) => {
     setActiveStock(path);
     handleLinkClick(path);
@@ -66,6 +72,12 @@ const Navbar = () => {
 
   const handleRepairClick = (path) => {
     setActiveRepair(path);
+    handleLinkClick(path);
+    navigate(path);
+  };
+
+  const handleReturnClick = (path) => {
+    setActiveReturn(path);
     handleLinkClick(path);
     navigate(path);
   };
@@ -303,6 +315,64 @@ const Navbar = () => {
                 >
                   {name}
                   {activeRepair === path && (
+                    <span style={selectedIndicator}>✓</span>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{
+            ...navLink,
+            backgroundColor:
+              hoveredItem === "return"
+                ? "rgba(255, 255, 255, 0.1)"
+                : "transparent",
+            color: "rgba(255, 255, 255, 0.8)",
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            position: "relative",
+            cursor: "pointer",
+          }}
+          onClick={toggleReturn}
+          onMouseEnter={() => {
+            setHoveredItem("return");
+            setShowReturn(true);
+          }}
+          onMouseLeave={() => {
+            setHoveredItem(null);
+            setTimeout(() => setShowReturn(false), 300);
+          }}
+        >
+          Customer Return & Repair{" "}
+          {showReturn ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          {showReturn && (
+            <div
+              style={dropdownMenu}
+              onMouseEnter={() => setShowReturn(true)}
+              onMouseLeave={() => setShowReturn(false)}
+            >
+              {[
+                ["Customer Return & Repair", "/customerreturn"],
+                ["Return Stock", "/returnstocklist"],
+              ].map(([name, path]) => (
+                <a
+                  key={path}
+                  href={path}
+                  style={getDropdownItemStyle(path, activeReturn)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleReturnClick(path);
+                  }}
+                  onMouseEnter={() => setHoveredItem(path)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  {name}
+                  {activeReturn === path && (
                     <span style={selectedIndicator}>✓</span>
                   )}
                 </a>
