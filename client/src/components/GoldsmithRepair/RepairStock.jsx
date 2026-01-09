@@ -137,34 +137,81 @@ const ProductStock = () => {
         <DialogTitle>Send Product to Repair</DialogTitle>
 
         <DialogContent>
-          <p><b>{selectedProduct?.itemName}</b></p>
 
-          {/* GOLDMSITH SELECT */}
-          <TextField
-            select
-            fullWidth
-            label="Goldsmith"
-            value={selectedGoldsmith}
-            onChange={(e) => setSelectedGoldsmith(e.target.value)}
-            margin="normal"
-          >
-            {goldsmiths.map((g) => (
-              <MenuItem key={g.id} value={g.id}>
-                {g.name}
-              </MenuItem>
-            ))}
-          </TextField>
+        {/* ITEM HEADER */}
+        <div
+          style={{
+            borderBottom: "2px solid #ddd",
+            marginBottom: "12px",
+            paddingBottom: "8px"
+          }}
+        >
+          <h3 style={{ margin: 0, color: "#2e7d32" }}>
+           Item Name : {selectedProduct?.itemName}
+          </h3>
+        </div>
 
-          {/* ⭐ REASON INPUT */}
-          <TextField
-            fullWidth
-            label="Repair Reason"
-            placeholder="Eg. Stone missing / polish / solder break"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            margin="normal"
-          />
-        </DialogContent>
+        {/* ITEM INFO CARD */}
+        <div
+          style={{
+            background: "#f9fafb",
+            border: "1px solid #ddd",
+            borderRadius: "8px",
+            padding: "12px",
+            marginBottom: "15px"
+          }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: "8px" }}>
+            <div><b>Touch</b></div>
+            <div>{safeFixed(selectedProduct?.touch)}</div>
+
+            <div><b>Stone Weight (g)</b></div>
+            <div>{safeFixed(selectedProduct?.stoneWeight)}</div>
+
+            <div><b>Net Weight (g)</b></div>
+            <div>{safeFixed(selectedProduct?.netWeight)}</div>
+
+            <div><b>Wastage Value (g)</b></div>
+            <div>{safeFixed(selectedProduct?.wastageValue)}</div>
+
+            <div><b>Wastage Pure (g)</b></div>
+            <div>{safeFixed(selectedProduct?.wastagePure)}</div>
+
+            <div><b>Final Purity</b></div>
+            <div style={{ fontWeight: "bold", color: "#2e7d32" }}>
+              {safeFixed(selectedProduct?.finalPurity)}
+            </div>
+          </div>
+        </div>
+
+        {/* ASSIGN TO GOLDSMITH */}
+        <TextField
+          select
+          fullWidth
+          label="Assign to Goldsmith"
+          value={selectedGoldsmith}
+          onChange={(e) => setSelectedGoldsmith(e.target.value)}
+          margin="normal"
+        >
+          {goldsmiths.map((g) => (
+            <MenuItem key={g.id} value={g.id}>
+              {g.name}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        {/* REASON */}
+        <TextField
+          fullWidth
+          label="Reason for Repair"
+          placeholder="Eg. Stone missing / polish / solder break"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          margin="normal"
+        />
+
+      </DialogContent>
+
 
         <DialogActions>
           <Button onClick={() => setOpenSendDialog(false)}>Cancel</Button>
