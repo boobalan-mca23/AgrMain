@@ -26,6 +26,8 @@ const purchaseEntryRoutes = require("./Routes/purchaseEntry.routes");
 const purchaseStockRoutes = require("./Routes/purchaseStock.routes");
 const purchaseReportRoutes = require("./Routes/purchaseReport.routes");
 const repairRoutes = require("./Routes/repairStock.routes");
+const customerReturnRoutes = require("./Routes/returnStock.routes.js");
+// const customerRepairRoutes = require("./Routes/customerReturn-Repair.routes.js");
 const path = require("path");
 const fs = require("fs");
  
@@ -76,7 +78,8 @@ app.use("/api/purchase-entry", purchaseEntryRoutes);
 app.use("/api/purchase-stock", purchaseStockRoutes);
 app.use("/api/purchase-report", purchaseReportRoutes);
 app.use("/api/repair", repairRoutes);
-
+app.use("/api/returns", customerReturnRoutes);
+// app.use("/api/repair", customerRepairRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/uploads/:filename", (req, res) => {
   const filePath = path.join(__dirname, "uploads", req.params.filename);

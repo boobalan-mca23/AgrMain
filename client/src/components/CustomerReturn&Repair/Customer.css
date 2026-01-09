@@ -1,0 +1,36 @@
+.BillTable{
+    border:1px solid rgba(224, 224, 224, 1);
+}
+
+.BillTable-th-td{
+    padding: 10px 12px !important;
+    background-color: #0074d9;
+    color: white !important;
+    font-size: 1.05rem !important;
+    font-weight: bold !important;
+    border:1px solid rgba(224, 224, 224, 1);
+    text-align: center !important;
+    width: 10rem;
+}
+.BillTable-tb-td{
+    padding: 6px 4px !important;
+    width: 10rem;
+    font-size: 1.05rem !important;
+    text-align: center !important;
+}
+.model-main-button{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+.model-heading-section{
+    display: flex;
+    justify-content:flex-start;
+    gap: 1rem;
+}
+
+.BillTable-button{
+    font-size: 0.85rem !important;
+    padding: 1px 6px !important;
+}
