@@ -25,7 +25,8 @@ const returnCustomerItem = async (req, res) => {
           finalPurity: item.percentage,
           count: item.count || 1,
           isBillProduct: true,
-          isActive: true
+          isActive: true,
+          source: "CUSTOMER_RETURN",
         }
       });
 
