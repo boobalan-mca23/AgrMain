@@ -490,7 +490,7 @@ const handleSaveAddWeight = async () => {
                 <th>ProductName</th>
                 <th>ItemWeight (g)</th>
                 <th>Count</th>
-                <th>Tocuh </th>
+                <th>Touch </th>
                 <th>StoneWt (g)</th>
                 <th>NetWeight (g)</th>
                 <th>WastageValue (g)</th>

@@ -33,6 +33,15 @@ const RepairStockList = () => {
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
 
+  const [qc, setQc] = useState({
+    itemWeight: 0,
+    count: 1,
+    stoneWeight: 0,
+    wastageValue: 0,
+    wastagePure: 0,
+    netWeight: 0
+  });
+
   // ---------- INITIAL LOAD ----------
   useEffect(() => {
     fetchGoldsmiths();
@@ -88,11 +97,22 @@ const RepairStockList = () => {
     { weight: 0, purity: 0 }
   );
 
-  // ---------- OPEN POPUP ----------
   const openReceivePopup = (repair) => {
+    const p = repair.product;
     setSelectedRepair(repair);
+
+    setQc({
+      itemWeight: p.itemWeight || 0,
+      count: p.count || 1,
+      stoneWeight: p.stoneWeight || 0,
+      wastageValue: p.wastageValue || 0,
+      wastagePure: p.wastagePure || 0,
+      netWeight: p.netWeight || 0
+    });
+
     setOpenReceiveDialog(true);
   };
+
 
   // ---------- CONFIRM STEP 1 ----------
   const firstConfirm = () => {
@@ -103,7 +123,8 @@ const RepairStockList = () => {
   // ---------- FINAL CONFIRM ----------
   const handleReceive = async () => {
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/return`, {
-      repairId: selectedRepair.id
+      repairId: selectedRepair.id,
+      ...qc
     });
 
     setOpenFinalConfirm(false);
@@ -286,10 +307,72 @@ const RepairStockList = () => {
         <DialogTitle>Return Product to Stock</DialogTitle>
 
         <DialogContent>
-          <p>
-            Move <b>{selectedRepair?.product?.itemName}</b> back to Product Stock?
-          </p>
+          <h4>{selectedRepair?.product?.itemName}</h4>
+
+          <table style={{ width: "100%", fontSize: 13 }}>
+            <tbody>
+              <tr>
+                <td>Item Weight (g)</td>
+                <td>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={qc.itemWeight}
+                    onChange={(e)=>setQc({...qc,itemWeight:e.target.value})}
+                  />
+                </td>
+              </tr>
+
+              <tr>
+                <td>Count</td>
+                <td>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={qc.count}
+                    onChange={(e)=>setQc({...qc,count:e.target.value})}
+                  />
+                </td>
+              </tr>
+
+              <tr>
+                <td>Stone Wt (g)</td>
+                <td>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={qc.stoneWeight}
+                    onChange={(e)=>setQc({...qc,stoneWeight:e.target.value})}
+                  />
+                </td>
+              </tr>
+
+              <tr>
+                <td>Wastage (g)</td>
+                <td>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={qc.wastageValue}
+                    onChange={(e)=>setQc({...qc,wastageValue:e.target.value})}
+                  />
+                </td>
+              </tr>
+
+              <tr>
+                <td>Final Purity %</td>
+                <td>
+                  <b>{qc.finalPurity}</b>
+                </td>
+              </tr>
+
+              <tr><td>Net Weight (g)</td><td><b>{safeFixed(qc.netWeight)}</b></td></tr>
+              <tr><td>Wastage Pure (g)</td><td><b>{safeFixed(qc.wastagePure)}</b></td></tr>
+            </tbody>
+          </table>
+
         </DialogContent>
+
 
         <DialogActions>
           <Button onClick={() => setOpenReceiveDialog(false)}>Cancel</Button>
@@ -304,15 +387,15 @@ const RepairStockList = () => {
         open={openFinalConfirm}
         onClose={() => setOpenFinalConfirm(false)}
       >
-        <DialogTitle>⚠ Final Confirmation</DialogTitle>
+        <DialogTitle>Final Confirmation</DialogTitle>
 
         <DialogContent>
           <p>
-            Are you <b>sure</b> you want to mark
+            Confirm returning
             <br />
             <b>{selectedRepair?.product?.itemName}</b>
             <br />
-            as Returned?
+            with updated values?
           </p>
 
           <p style={{ color: "red" }}>

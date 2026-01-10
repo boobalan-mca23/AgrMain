@@ -85,12 +85,6 @@ const Master = () => {
                 </div>
                 <div
                   style={{ ...dropdownItemStyle, borderBottom: "none" }}
-                  onClick={() => handleTabChange("purchasestock")}
-                >
-                  Purchase Stock
-                </div>
-                <div
-                  style={{ ...dropdownItemStyle, borderBottom: "none" }}
                   onClick={() => handleTabChange("purchasestockreport")}
                 >
                   Purchase Stock Report

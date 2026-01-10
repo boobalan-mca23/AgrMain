@@ -3,59 +3,48 @@ const prisma = new PrismaClient();
 
 const getAllRepairStock = async (req, res) => {
   try {
-    const {
-      status,
-      goldsmith,
-      from,
-      to,
-      search,
-      page = 1,
-      limit = 50
-    } = req.query;
+    const { status, goldsmith, from, to, search, source, page = 1, limit = 50 } = req.query;
 
     const where = { AND: [] };
 
-    // STATUS FILTER
     if (status && status !== "All") {
-      where.AND.push({ status });
+      where.AND.push({ status: { equals: status } });
     }
 
-    if (req.query.source) {
-      where.AND.push({ source: req.query.source });
+    if (source) {
+      where.AND.push({ source });
     }
 
-    // GOLDSMITH FILTER
     if (goldsmith) {
-      where.AND.push({ goldsmithId: Number(goldsmith) });
-    }
-
-    // DATE RANGE
-    if (from || to) {
-      const range = {};
-      if (from) range.gte = new Date(from + "T00:00:00");
-      if (to)   range.lte = new Date(to + "T23:59:59");
-
-      where.AND.push({ sentDate: range });
-    }
-
-    // SEARCH FILTER
-    if (search?.trim()) {
       where.AND.push({
         OR: [
-          { itemName: { contains: search, mode: "insensitive" } },
-          { product: { itemName: { contains: search, mode: "insensitive" } } }
+          { goldsmithId: Number(goldsmith) },
+          { source: "CUSTOMER" }
         ]
       });
     }
 
-    // PAGINATION
+    if (from || to) {
+      const range = {};
+      if (from) range.gte = new Date(from + "T00:00:00");
+      if (to)   range.lte = new Date(to + "T23:59:59");
+      where.AND.push({ sentDate: range });
+    }
+
+    if (search?.trim()) {
+      where.AND.push({
+        OR: [
+          { itemName: { contains: search } },
+          { product: { is: { itemName: { contains: search } } } }
+        ]
+      });
+    }
+
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
 
-    // TOTAL
     const total = await prisma.repairStock.count({ where });
 
-    // DATA
     const repairs = await prisma.repairStock.findMany({
       where,
       include: { product: true, goldsmith: true },
@@ -64,20 +53,13 @@ const getAllRepairStock = async (req, res) => {
       take
     });
 
-    res.status(200).json({
-      success: true,
-      total,
-      page: Number(page),
-      limit: take,
-      count: repairs.length,
-      repairs
-    });
+    res.json({ success: true, total, repairs });
 
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ err: err.message });
+    res.status(500).json({ error: err.message });
   }
 };
+
 
 const sendToRepair = async (req, res) => {
   const { productId, goldsmithId, reason, source } = req.body;
@@ -143,65 +125,75 @@ const sendToRepair = async (req, res) => {
   }
 };
 
-
-
 const returnFromRepair = async (req, res) => {
-  const { repairId } = req.body;
+  const {
+    repairId,
+    itemWeight,
+    count,
+    stoneWeight,
+    wastageValue,
+    wastagePure,
+    netWeight,
+    finalPurity
+  } = req.body;
 
   try {
-    if (!repairId)
-      return res.status(400).json({ msg: "repairId is required" });
+    if (!repairId) throw new Error("repairId required");
 
     const result = await prisma.$transaction(async (tx) => {
 
       const repair = await tx.repairStock.findUnique({
-        where: { id: Number(repairId) }
+        where: { id: Number(repairId) },
+        include: { product: true }
       });
 
-      if (!repair) throw new Error("Repair record not found");
+      if (!repair) throw new Error("Repair not found");
+      if (repair.status !== "InRepair")
+        throw new Error("Already returned");
 
-      if (repair.status !== "InRepair") {
-      throw new Error("Repair already completed");
-    }
-
-
+      // 🔥 Update ProductStock with edited values
       await tx.productStock.update({
         where: { id: repair.productId },
-        data: { isActive: true },
+        data: {
+          itemWeight: Number(itemWeight),
+          count: Number(count),
+          stoneWeight: Number(stoneWeight),
+          wastageValue: Number(wastageValue),
+          wastagePure: Number(wastagePure),
+          netWeight: Number(netWeight),
+          finalPurity: Number(finalPurity),
+          isActive: true
+        }
       });
-
-      await tx.repairLogs.create({
-      data: {
-        repairId: repair.id,
-        action: "RETURNED_FROM_REPAIR",
-      },
-    });
-
 
       await tx.repairStock.update({
         where: { id: repair.id },
-        data: { status: "Returned", receivedDate: new Date() },
+        data: {
+          status: "Returned",
+          receivedDate: new Date()
+        }
       });
 
-      return await tx.repairStock.findUnique({
+      await tx.repairLogs.create({
+        data: {
+          repairId: repair.id,
+          action: "RETURNED_WITH_UPDATE"
+        }
+      });
+
+      return tx.repairStock.findUnique({
         where: { id: repair.id },
         include: { product: true, goldsmith: true }
       });
     });
 
-    res.status(200).json({
-      msg: "Product returned from repair",
-      repair: result
-    });
+    res.json({ success: true, repair: result });
 
   } catch (err) {
-    console.log(err);
-    res.status(400).json({ err: err.message });
+    console.error(err);
+    res.status(400).json({ error: err.message });
   }
 };
-
-
-
 
 const sendCustomerItemToRepair = async (req, res) => {
   const {
