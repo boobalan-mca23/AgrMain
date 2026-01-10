@@ -199,6 +199,7 @@ const sendCustomerItemToRepair = async (req, res) => {
   const {
     billId,
     orderItemId,
+    goldsmithId,
     reason
   } = req.body;
 
@@ -225,13 +226,15 @@ const sendCustomerItemToRepair = async (req, res) => {
           finalPurity: orderItem.percentage,
           count: orderItem.count || 1,
           isBillProduct: true,
-          isActive: false // immediately inactive → in repair
+          isActive: false, // immediately inactive → in repair
+          source: "REPAIR_RETURN",
         }
       });
 
       const repair = await tx.repairStock.create({
         data: {
           productId: productStock.id,
+          goldsmithId: goldsmithId ? Number(goldsmithId) : null,
           source: "CUSTOMER",
           reason: reason || null,
           itemName: productStock.itemName,
@@ -271,7 +274,7 @@ const sendCustomerItemToRepair = async (req, res) => {
 };
 
 const sendCustomerBillToRepair = async (req, res) => {
-  const { billId, reason } = req.body;
+  const { billId, reason, goldsmithId } = req.body;
 
   if (!billId) {
     return res.status(400).json({ error: "billId is required" });
@@ -300,13 +303,15 @@ const sendCustomerBillToRepair = async (req, res) => {
             finalPurity: item.percentage,
             count: item.count || 1,
             isBillProduct: true,
-            isActive: false
+            isActive: false,
+            source: "REPAIR_RETURN",
           }
         });
 
         const repair = await tx.repairStock.create({
           data: {
             productId: productStock.id,
+            goldsmithId: goldsmithId ? Number(goldsmithId) : null,
             source: "CUSTOMER",
             reason: reason || null,
             itemName: productStock.itemName,
