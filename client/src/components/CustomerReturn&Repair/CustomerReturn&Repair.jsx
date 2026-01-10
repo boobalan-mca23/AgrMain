@@ -85,6 +85,7 @@ const openRepairPopup = (item) => {
       const res = await fetch(`${BACKEND_SERVER_URL}/api/bill?status=ACTIVE`);
       const json = await res.json();
       setBills(Array.isArray(json.data) ? json.data : []);
+      console.log("bills",json.data);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch bills");
@@ -238,6 +239,7 @@ const handleSend = async () => {
 
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/customer-send`, {
       billId: selectedBill.id,
+      goldsmithId: selectedGoldsmith, 
       orderItemId: selectedProduct.id,
       reason
     });
@@ -294,6 +296,9 @@ const hasRepairItems = selectedBill?.orders?.some(
 const allReturned = selectedBill?.orders?.every(
   item => item.repairStatus === "RETURNED"
 );
+
+  const safeFixed = (v, d = 3) =>
+    isNaN(parseFloat(v)) ? "0.000" : parseFloat(v).toFixed(d);
 
 
   const showValue = (v) =>
@@ -552,7 +557,52 @@ const allReturned = selectedBill?.orders?.every(
         <DialogTitle>Send Product to Repair</DialogTitle>
 
         <DialogContent>
-          <p><b>{selectedProduct?.productName}</b></p>
+          {/* ITEM HEADER */}
+          {console.log("selectedProduct",selectedProduct)}
+        <div
+          style={{
+            borderBottom: "2px solid #ddd",
+            marginBottom: "12px",
+            paddingBottom: "8px"
+          }}
+        >
+          <h3 style={{ margin: 0, color: "#2e7d32" }}>
+           Item Name : {selectedProduct?.productName}
+          </h3>
+        </div>
+
+        {/* ITEM INFO CARD */}
+        <div
+          style={{
+            background: "#f9fafb",
+            border: "1px solid #ddd",
+            borderRadius: "8px",
+            padding: "12px",
+            marginBottom: "15px"
+          }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: "8px" }}>
+            <div><b>Touch</b></div>
+            <div>{safeFixed(selectedProduct?.touch)}</div>
+
+            <div><b>Stone Weight (g)</b></div>
+            <div>{safeFixed(selectedProduct?.stoneWeight)}</div>
+
+            <div><b>Net Weight (g)</b></div>
+            <div>{safeFixed(selectedProduct?.afterWeight)}</div>
+
+            <div><b>Wastage Value (g)</b></div>
+            <div>{safeFixed(selectedProduct?.wastageValue)}</div>
+
+            <div><b>Wastage Pure (g)</b></div>
+            <div>{safeFixed(selectedProduct?.wastagePure)}</div>
+
+            <div><b>Final Purity</b></div>
+            <div style={{ fontWeight: "bold", color: "#2e7d32" }}>
+              {safeFixed(selectedProduct?.finalPurity)}
+            </div>
+          </div>
+        </div>
 
           {/* GOLDMSITH SELECT */}
           <TextField
