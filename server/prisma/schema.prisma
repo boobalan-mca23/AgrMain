@@ -392,11 +392,19 @@ model ProductStock {
   jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
   repairStock RepairStock[] @relation("ProductRepairRelation")
   returnLogs  returnLogs[]
+  source        StockSource @default(NORMAL)
 
   @@index([deliveryId], map: "ProductStock_deliveryId_fkey")
   @@index([jobcardId], map: "ProductStock_jobcardId_fkey")
   @@map("productstock")
 }
+
+enum StockSource {
+  NORMAL
+  CUSTOMER_RETURN
+  REPAIR_RETURN
+}
+
 
 model Bill {
   id                Int            @id @default(autoincrement())
@@ -436,8 +444,15 @@ model OrderItems {
   createdAt   DateTime @default(now())
   bill        Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
 
-  repairStatus String       @default("NONE")
-  returnLogs   returnLogs[]
+  stockId       Int?
+  touch         Float?
+  netWeight     Float?
+  wastageValue  Float?
+  wastagePure   Float?
+  finalPurity   Float?
+
+ repairStatus String       @default("NONE")
+ returnLogs   returnLogs[]
 
   @@index([billId], map: "OrderItems_billId_fkey")
 }
