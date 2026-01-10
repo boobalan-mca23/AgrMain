@@ -196,7 +196,7 @@ const logoutButton = {
 // NEW DROPDOWN STYLES
 const dropdownMenuStyle = {
   position: "absolute",
-  top: "64px",
+  top: "40px",
   left: 0,
   backgroundColor: "#1e2a33",
   borderRadius: "6px",
