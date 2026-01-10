@@ -96,6 +96,9 @@ const Billing = () => {
   const [printBill,setPrintBill]=useState([])
   const [isSaving, setIsSaving] = useState(false);
   const [billNo, setBillNo] = useState("");
+
+  const [stockSource, setStockSource] = useState("ALL");
+
   // === Validation helpers ===
   const validateInput = (
     value,
@@ -713,16 +716,54 @@ const createMissingTouches = async () => {
         cashBalance: cashBalance,
         hallmarkQty,
 
-        orderItems: billDetailRows.map((row) => ({
+        // orderItems: billDetailRows.map((row) => ({
+        //   stockId: row.productId,
+        //   productName: row.productName,
+        //   count: toNumber(row.count || 0), 
+        //   weight: toNumber(row.wt),
+        //   stoneWeight: toNumber(row.stWt),
+        //   afterWeight: toNumber(row.awt),
+        //   percentage: toNumber(row.percent),
+        //   finalWeight: toNumber(row.fwt),
+        // })),
+       
+       orderItems: billDetailRows.map((row) => {
+        const productStock = availableProducts?.allStock?.find(
+          p => (p.id || p._id) === row.productId
+        );
+
+        const wt = toNumber(row.wt);
+        const stWt = toNumber(row.stWt);
+        const awt = wt - stWt;
+
+        const touch = toNumber(productStock?.touch || 0);
+        const wastageValue = toNumber(productStock?.wastageValue || 0);
+
+        const wastagePure = (awt * wastageValue) / 100;
+        const finalPurity = (awt * touch) / 100;
+
+        return {
           stockId: row.productId,
           productName: row.productName,
-          count: toNumber(row.count || 0), 
-          weight: toNumber(row.wt),
-          stoneWeight: toNumber(row.stWt),
-          afterWeight: toNumber(row.awt),
+
+          // bill data
+          count: toNumber(row.count || 0),
+          weight: wt,
+          stoneWeight: stWt,
+          afterWeight: awt,
           percentage: toNumber(row.percent),
           finalWeight: toNumber(row.fwt),
-        })),
+
+          // ⭐ SNAPSHOT DATA (THIS FIXES EVERYTHING)
+          touch,
+          netWeight: awt,
+          wastageValue,
+          wastagePure,
+          finalPurity,
+        };
+      }),
+
+
         received: rows.map((row) => ({
           date: row.date,
           cash: toNumber(row.cash),
@@ -841,6 +882,17 @@ const createMissingTouches = async () => {
   const totalBillHallmark = toNumber(totalHallmark);
   const totalReceivedHallmark = rows.reduce((total, row) => total + (toNumber(row.hallmark) || 0),  0);
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
+
+  const filteredStock = useMemo(() => {
+    if (!availableProducts?.allStock) return [];
+
+    if (stockSource === "ALL") return availableProducts.allStock;
+
+    return availableProducts.allStock.filter(
+      p => p.source === stockSource
+    );
+  }, [availableProducts, stockSource]);
+
 
   const handleSearch = (e) => {
     const searchValue = e.target.value.toLowerCase();
@@ -1986,6 +2038,27 @@ const createMissingTouches = async () => {
                   <MenuItem key={productName} value={productName}>{productName} </MenuItem>  ))}
               </Select>
             </FormControl>
+            {console.log("Available Products:", availableProducts)}
+            <Button
+              variant={stockSource === "REPAIR_RETURN" ? "contained" : "outlined"}
+              onClick={() => setStockSource("REPAIR_RETURN")}
+            >
+              Show Repaired
+            </Button>
+
+            <Button
+              variant={stockSource === "CUSTOMER_RETURN" ? "contained" : "outlined"}
+              onClick={() => setStockSource("CUSTOMER_RETURN")}
+            >
+              Show Returned
+            </Button>
+
+            <Button
+              variant={stockSource === "ALL" ? "contained" : "outlined"}
+              onClick={() => setStockSource("ALL")}
+            >
+              Show All
+            </Button>
           </Box>
 
           <Box className="table-container" sx={{ marginTop: "10px" }}>
@@ -2009,11 +2082,11 @@ const createMissingTouches = async () => {
                   <TableCell className="th" style={{ textAlign: "center" }}>Count </TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Wastage</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
+                   <TableCell className="th" style={{ textAlign: "center" }}>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {availableProducts &&
-                  (availableProducts.allStock || []).map((prodata, index) => {
+                {filteredStock.map((prodata, index) => {
                     const productId = prodata.id || prodata._id;
                     const remainingWeight = getRemainingWeight(productId, prodata.itemWeight);
                     const isFullyAllocated = remainingWeight <= 0;
@@ -2061,6 +2134,25 @@ const createMissingTouches = async () => {
                           {toNumber(getRemainingCount(productId, prodata.count)).toString()}</TableCell>
                         <TableCell className="td" style={{ textAlign: "center" }} > {prodata.wastageValue} </TableCell> 
                         <TableCell className="td" style={{ textAlign: "center" }} > {prodata.touch} </TableCell>
+                        <TableCell className="td" style={{ textAlign: "center" }}>
+                          {prodata.source !== "NORMAL" ? (
+                            <span
+                              style={{
+                                padding: "2px 6px",
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: "white",
+                                background:
+                                  prodata.source === "REPAIR_RETURN"
+                                    ? "#ff9800"
+                                    : "#4caf50"
+                              }}
+                            >
+                              {prodata.source === "REPAIR_RETURN" ? "REPAIR" : "RETURN"}
+                            </span>
+                          ) : "-"}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
