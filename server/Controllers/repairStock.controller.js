@@ -216,15 +216,23 @@ const sendCustomerItemToRepair = async (req, res) => {
 
       if (!orderItem) throw new Error("Order item not found");
 
-      
+      {console.log("selected order item",orderItem)}
       const productStock = await tx.productStock.create({
         data: {
           itemName: orderItem.productName,
           itemWeight: orderItem.weight,
           stoneWeight: orderItem.stoneWeight,
           netWeight: orderItem.afterWeight || orderItem.weight,
-          finalPurity: orderItem.percentage,
-          count: orderItem.count || 1,
+          finalPurity: orderItem.finalPurity,
+          count: orderItem.count||0,
+          touch         : orderItem.touch,
+          
+          wastageValue  : orderItem.wastageValue,
+          
+          wastagePure   : orderItem.wastagePure,
+          // wastageType   : orderItem.wastageType,
+          // finalPurity   : orderItem.count || 1,
+
           isBillProduct: true,
           isActive: false, // immediately inactive → in repair
           source: "REPAIR_RETURN",
