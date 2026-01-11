@@ -55,7 +55,19 @@ const CustomerReturn = () => {
   // const [openRepairDialog, setOpenRepairDialog] = useState(false);
   // const [repairReason, setRepairReason] = useState("");
   // const [selectedItem, setSelectedItem] = useState(null);
-
+  //return pop up 
+   const [openReturnDialog, setOpenReturnDialog] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnQC, setReturnQC] = useState({
+    touch: 0,
+    itemWeight: 0,
+    count: 1,
+    stoneWeight: 0,
+    wastageValue: 0,
+    wastagePure: 0,
+    netWeight: 0,
+    finalPurity: 0,
+  });
   //send to repair popup
   const [openSendDialog, setOpenSendDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState("");
@@ -70,12 +82,51 @@ const CustomerReturn = () => {
   }
 }, [openSendDialog]);
 
+useEffect(() => {
+  const net =
+    Number(returnQC.itemWeight || 0) -
+    Number(returnQC.stoneWeight || 0) -
+    Number(returnQC.wastageValue || 0);
+
+  const wastagePure =
+    (Number(returnQC.wastageValue || 0) *
+      Number(returnQC.finalPurity || 0)) / 100;
+
+  setReturnQC(q => ({
+    ...q,
+    netWeight: net,
+    wastagePure
+  }));
+}, [
+  returnQC.itemWeight,
+  returnQC.stoneWeight,
+  returnQC.wastageValue,
+  returnQC.finalPurity
+]);
 
 const openRepairPopup = (item) => {
   setSelectedProduct(item);
   setSelectedGoldsmith("");
   setReason("");
   setOpenSendDialog(true);
+};
+
+const openReturnPopup = (item) => {
+  setSelectedProduct(item);
+
+  setReturnQC({
+    itemWeight: item.weight || 0,
+    touch: item.touch || item.percentage || 0,
+    count: item.count || 0,
+    stoneWeight: item.stoneWeight || 0,
+    wastageValue: item.wastageValue || 0,
+    wastagePure: item.wastagePure || 0,
+    netWeight: item.netWeight || 0,
+    finalPurity: item.finalPurity || 0,
+  });
+
+  setReturnReason("");
+  setOpenReturnDialog(true);
 };
 
 
@@ -152,47 +203,72 @@ const openRepairPopup = (item) => {
 
 
   // ================= RETURN SINGLE ITEM =================
-  const returnItem = async (item) => {
-    if (!window.confirm(`Return ${item.productName}?`)) return;
-    console.log("data",item);
-    try {
-      setLoading(true);
-      const res = await fetch(`${BACKEND_SERVER_URL}/api/returns/customer-item-return`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          billId: selectedBill.id,
-          productId: item.id,
-          orderItemId: item.id,
-          reason: "Customer return",
-          productName: item.productName,
-          weight: item.weight,
-          stoneWeight: item.stoneWeight,
-          count: item.count,
-        }),
-      });
-      console.log("data",item);
-      if (!res.ok) throw new Error();
+  // const returnItem = async (item) => {
+  //   if (!window.confirm(`Return ${item.productName}?`)) return;
+  //   console.log("data",item);
+  //   try {
+  //     setLoading(true);
+  //     const res = await fetch(`${BACKEND_SERVER_URL}/api/returns/customer-item-return`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         billId: selectedBill.id,
+  //         productId: item.id,
+  //         orderItemId: item.id,
+  //         reason: "Customer return",
+  //         productName: item.productName,
+  //         weight: item.weight,
+  //         stoneWeight: item.stoneWeight,
+  //         count: item.count,
+  //       }),
+  //     });
+  //     console.log("data",item);
+  //     if (!res.ok) throw new Error();
 
-      toast.success("Item returned successfully");
-      setSelectedBill(prev => ({
-        ...prev,
-        orders: prev.orders.map(o =>
-          o.id === item.id
-            ? { ...o, repairStatus: "RETURNED" }
-            : o
-        )
-      }));
+  //     toast.success("Item returned successfully");
+  //     setSelectedBill(prev => ({
+  //       ...prev,
+  //       orders: prev.orders.map(o =>
+  //         o.id === item.id
+  //           ? { ...o, repairStatus: "RETURNED" }
+  //           : o
+  //       )
+  //     }));
 
-      setSelectedBill(null);
-      fetchSoldBills();
-    } catch {
-      toast.error("Failed to return item");
-    } finally {
-      setLoading(false);
+  //     setSelectedBill(null);
+  //     fetchSoldBills();
+  //   } catch {
+  //     toast.error("Failed to return item");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+const confirmReturn = async () => {
+  await axios.post(
+    `${BACKEND_SERVER_URL}/api/returns/customer-item-return`,
+    {
+      billId: selectedBill.id,
+      orderItemId: selectedProduct.id,
+      reason: returnReason,
+      ...returnQC
     }
-  };
+  );
 
+  toast.success("Item returned successfully");
+//   setSelectedBill(prev => ({
+//   ...prev,
+//   orders: prev.orders.map(o =>
+//     o.id === selectedProduct.id
+//       ? { ...o, repairStatus: "RETURNED" }
+//       : o
+//   )
+// }));
+
+  setOpenReturnDialog(false);
+  setSelectedBill(null);
+  fetchSoldBills();
+};
   // ================= RETURN ENTIRE BILL =================
   const returnEntireBill = async () => {
     if (!window.confirm(`Return entire Bill #${selectedBill.id}?`)) return;
@@ -467,7 +543,7 @@ const allReturned = selectedBill?.orders?.every(
                             color="error"
                             variant="outlined"
                             size="small"
-                            onClick={() => returnItem(item)}
+                            onClick={() => openReturnPopup(item)}
                             disabled={loading}
                           >
                             Return Item
@@ -644,6 +720,111 @@ const allReturned = selectedBill?.orders?.every(
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* RETURN POPUP */}
+      <Dialog open={openReturnDialog} onClose={() => setOpenReturnDialog(false)}>
+      <DialogTitle>Confirm Customer Return</DialogTitle>
+
+      <DialogContent>
+        <h4>{selectedProduct?.productName}</h4>
+
+        <table style={{ width: "100%", fontSize: 13 }}>
+          <tbody>
+            <tr>
+              <td>Item Weight (g)</td>
+              <td>
+                <TextField
+                  size="small"
+                  type="number"
+                  value={returnQC.itemWeight}
+                  onChange={(e) =>
+                    setReturnQC({ ...returnQC, itemWeight: e.target.value })
+                  }
+                />
+              </td>
+            </tr>
+
+            <tr>
+              <td>Count</td>
+              <td>
+                <TextField
+                  size="small"
+                  type="number"
+                  value={returnQC.count}
+                  onChange={(e) =>
+                    setReturnQC({ ...returnQC, count: e.target.value })
+                  }
+                />
+              </td>
+            </tr>
+
+            <tr>
+              <td>Stone Weight (g)</td>
+              <td>
+                <TextField
+                  size="small"
+                  type="number"
+                  value={returnQC.stoneWeight}
+                  onChange={(e) =>
+                    setReturnQC({ ...returnQC, stoneWeight: e.target.value })
+                  }
+                />
+              </td>
+            </tr>
+
+            <tr>
+              <td>Wastage (g)</td>
+              <td>
+                <TextField
+                  size="small"
+                  type="number"
+                  value={returnQC.wastageValue}
+                  onChange={(e) =>
+                    setReturnQC({ ...returnQC, wastageValue: e.target.value })
+                  }
+                />
+              </td>
+            </tr>
+
+            <tr>
+              <td>Wastage Pure (g)</td>
+              <td><b>{returnQC.wastagePure}</b></td>
+            </tr>
+
+            <tr>
+              <td>Net Weight (g)</td>
+              <td><b>{returnQC.netWeight}</b></td>
+            </tr>
+
+            <tr>
+              <td>Final Purity</td>
+              <td><b>{returnQC.finalPurity}</b></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <TextField
+          fullWidth
+          label="Return Reason"
+          margin="normal"
+          value={returnReason}
+          onChange={(e) => setReturnReason(e.target.value)}
+        />
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={() => setOpenReturnDialog(false)}>Cancel</Button>
+        <Button
+          variant="contained"
+          color="success"
+          disabled={!returnReason || loading}
+          onClick={confirmReturn}
+        >
+          Confirm Return
+        </Button>
+      </DialogActions>
+    </Dialog>
+
     </Box>
   );
 };
