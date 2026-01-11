@@ -1,54 +1,128 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+// const returnCustomerItem = async (req, res) => {
+//   const { billId, orderItemId, reason } = req.body;
+
+//   try {
+//     const result = await prisma.$transaction(async (tx) => {
+
+//       const item = await tx.orderItems.findUnique({
+//         where: { id: Number(orderItemId) }
+//       });
+
+//       if (!item) throw new Error("Item not found");
+
+//       if (item.repairStatus === "IN_REPAIR")
+//         throw new Error("Item is in repair");
+
+//       await tx.productStock.create({
+//         data: {
+//           itemName: item.productName,
+//           itemWeight: item.weight,
+//           stoneWeight: item.stoneWeight,
+//           netWeight: item.afterWeight || item.weight,
+//           finalPurity: item.finalPurity,
+//           count: item.count,
+//           touch: item.touch,
+//           wastageValue  : item.wastageValue,
+//           wastagePure   : item.wastagePure,
+//           isBillProduct: true,
+//           isActive: true,
+//           source: "CUSTOMER_RETURN",
+//         }
+//       });
+
+//       await tx.orderItems.update({
+//         where: { id: item.id },
+//         data: { repairStatus: "RETURNED" }
+//       });
+
+//       await tx.returnLogs.create({
+//         data: {
+//             billId: Number(billId),
+//             orderItemId: item.id,
+//             productName: item.productName,
+//             weight: item.weight,
+//             count: item.count || 1,
+//             reason: reason || "Customer return",
+//             source: "CUSTOMER"
+//         }
+//         });
+
+
+//       return true;
+//     });
+
+//     res.json({ success: true });
+
+//   } catch (err) {
+//     res.status(400).json({ error: err.message });
+//   }
+// };
 const returnCustomerItem = async (req, res) => {
-  const { billId, orderItemId, reason } = req.body;
+  const {
+    billId,
+    orderItemId,
+    reason,
+    itemWeight,
+    touch,
+    count,
+    stoneWeight,
+    wastageValue,
+    wastagePure,
+    netWeight,
+    finalPurity
+  } = req.body;
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
 
       const item = await tx.orderItems.findUnique({
         where: { id: Number(orderItemId) }
       });
 
       if (!item) throw new Error("Item not found");
-
       if (item.repairStatus === "IN_REPAIR")
         throw new Error("Item is in repair");
 
-      await tx.productStock.create({
+      // ✅ CREATE PRODUCT STOCK USING QC VALUES
+      const product = await tx.productStock.create({
         data: {
           itemName: item.productName,
-          itemWeight: item.weight,
-          stoneWeight: item.stoneWeight,
-          netWeight: item.afterWeight || item.weight,
-          finalPurity: item.percentage,
-          count: item.count || 1,
+          itemWeight: Number(itemWeight),
+          touch: Number(touch) || null,
+          count: Number(count) || 1,
+          stoneWeight: Number(stoneWeight) || 0,
+          wastageValue: Number(wastageValue) || 0,
+          wastagePure: Number(wastagePure) || 0,
+          netWeight: Number(netWeight),
+          finalPurity: Number(finalPurity),
           isBillProduct: true,
           isActive: true,
           source: "CUSTOMER_RETURN",
         }
       });
 
+      // ✅ UPDATE ORDER ITEM
       await tx.orderItems.update({
         where: { id: item.id },
         data: { repairStatus: "RETURNED" }
       });
 
+      // ✅ RETURN LOG
       await tx.returnLogs.create({
         data: {
-            billId: Number(billId),
-            orderItemId: item.id,
-            productName: item.productName,
-            weight: item.weight,
-            count: item.count || 1,
-            reason: reason || "Customer return",
-            source: "CUSTOMER"
+          billId: Number(billId),
+          orderItemId: item.id,
+          productStockId: product.id,
+          productName: item.productName,
+          weight: Number(itemWeight),
+          count: Number(count) || 1,
+          reason: reason || "Customer return",
+          source: "CUSTOMER"
         }
-        });
-
-
-      return true;
+      });
     });
 
     res.json({ success: true });
@@ -57,7 +131,6 @@ const returnCustomerItem = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
-
 const returnCustomerBill = async (req, res) => {
   const { billId } = req.body;
 
