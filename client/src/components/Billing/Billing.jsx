@@ -731,7 +731,7 @@ const createMissingTouches = async () => {
         const productStock = availableProducts?.allStock?.find(
           p => (p.id || p._id) === row.productId
         );
-
+        {console.log("bill check 1",productStock)}
         const wt = toNumber(row.wt);
         const stWt = toNumber(row.stWt);
         const awt = wt - stWt;

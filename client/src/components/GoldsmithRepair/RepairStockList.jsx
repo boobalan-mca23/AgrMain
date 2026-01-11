@@ -39,7 +39,9 @@ const RepairStockList = () => {
     stoneWeight: 0,
     wastageValue: 0,
     wastagePure: 0,
-    netWeight: 0
+    netWeight: 0,
+    touch:0,
+    finalPurity:0,
   });
 
   // ---------- INITIAL LOAD ----------
@@ -100,14 +102,16 @@ const RepairStockList = () => {
   const openReceivePopup = (repair) => {
     const p = repair.product;
     setSelectedRepair(repair);
-
+    console.log("checking p",p)
     setQc({
       itemWeight: p.itemWeight || 0,
       count: p.count || 1,
       stoneWeight: p.stoneWeight || 0,
       wastageValue: p.wastageValue || 0,
       wastagePure: p.wastagePure || 0,
-      netWeight: p.netWeight || 0
+      netWeight: p.netWeight || 0,
+      finalPurity:p.finalPurity,
+      touch:p.touch,
     });
 
     setOpenReceiveDialog(true);
@@ -356,6 +360,13 @@ const RepairStockList = () => {
                     value={qc.wastageValue}
                     onChange={(e)=>setQc({...qc,wastageValue:e.target.value})}
                   />
+                </td>
+              </tr>
+
+              <tr>
+                <td>Touch</td>
+                <td>
+                  <b>{qc.touch}</b>
                 </td>
               </tr>
 
