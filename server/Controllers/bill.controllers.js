@@ -48,6 +48,12 @@ const createBill = async (req, res) => {
       afterWeight: item.afterWeight ? parseFloat(item.afterWeight) : undefined,
       percentage: item.percentage ? parseFloat(item.percentage) : undefined,
       finalWeight: item.finalWeight ? parseFloat(item.finalWeight) : undefined,
+
+      touch         : item.touch ? parseFloat(item.touch) : undefined,
+      netWeight     : item.netWeight ? parseFloat(item.netWeight) : undefined,
+      wastageValue  : item.wastageValue ? parseFloat(item.wastageValue) : undefined,
+      wastagePure   : item.wastagePure ? parseFloat(item.wastagePure) : undefined,
+      finalPurity   : item.finalPurity ? parseFloat(item.finalPurity) : undefined,
     }));
 
       const lastBill = await prisma.bill.findFirst({
