@@ -726,63 +726,67 @@ const allReturned = selectedBill?.orders?.every(
       <DialogTitle>Confirm Customer Return</DialogTitle>
 
       <DialogContent>
-        <h4>{selectedProduct?.productName}</h4>
+        <h4 >Item name{" "}:{" "}{selectedProduct?.productName}</h4>
 
         <table style={{ width: "100%", fontSize: 13 }}>
           <tbody>
             <tr>
               <td>Item Weight (g)</td>
               <td>
-                <TextField
+                <b>{returnQC.itemWeight}</b>
+                {/* <TextField
                   size="small"
                   type="number"
                   value={returnQC.itemWeight}
                   onChange={(e) =>
                     setReturnQC({ ...returnQC, itemWeight: e.target.value })
                   }
-                />
+                /> */}
               </td>
             </tr>
 
             <tr>
               <td>Count</td>
               <td>
-                <TextField
+                <b>{returnQC.count}</b>
+                {/* <TextField
                   size="small"
                   type="number"
                   value={returnQC.count}
                   onChange={(e) =>
                     setReturnQC({ ...returnQC, count: e.target.value })
                   }
-                />
+                /> */}
               </td>
             </tr>
 
             <tr>
               <td>Stone Weight (g)</td>
               <td>
-                <TextField
+                <b>{returnQC.stoneWeight}</b>
+                {/* <TextField
                   size="small"
                   type="number"
                   value={returnQC.stoneWeight}
                   onChange={(e) =>
                     setReturnQC({ ...returnQC, stoneWeight: e.target.value })
                   }
-                />
+                /> */}
               </td>
             </tr>
 
             <tr>
               <td>Wastage (g)</td>
               <td>
-                <TextField
+              <b>{returnQC.wastageValue}</b>
+                {/* <TextField
                   size="small"
                   type="number"
                   value={returnQC.wastageValue}
                   onChange={(e) =>
                     setReturnQC({ ...returnQC, wastageValue: e.target.value })
                   }
-                />
+                /> */}
               </td>
             </tr>
 
