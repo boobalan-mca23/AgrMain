@@ -42,8 +42,6 @@ const SupplierManagement = () => {
 
   const handleAddSupplier = async () => {
     if (!form.name.trim()) return toast.warn("Supplier name is required");
-    if (!form.contactNumber.trim())
-      return toast.warn("Contact number is required");
 
     try {
       await axios.post(`${BACKEND_SERVER_URL}/api/supplier/create`, form);
@@ -93,8 +91,6 @@ const SupplierManagement = () => {
 
   const handleSaveEdit = async (id) => {
     if (!editForm.name.trim()) return toast.warn("Supplier name is required");
-    if (!editForm.contactNumber.trim())
-      return toast.warn("Contact number is required");
 
     try {
       await axios.put(`${BACKEND_SERVER_URL}/api/supplier/${id}`, editForm);

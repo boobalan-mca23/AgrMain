@@ -11,6 +11,7 @@ import {
   DialogActions
 } from "@mui/material";
 
+
 const RepairStockList = () => {
 
   const [repairList, setRepairList] = useState([]);
@@ -18,11 +19,10 @@ const RepairStockList = () => {
 
   // pagination
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   // popup states
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
-  const [openFinalConfirm, setOpenFinalConfirm] = useState(false);
 
   const [selectedRepair, setSelectedRepair] = useState(null);
 
@@ -37,14 +37,23 @@ const RepairStockList = () => {
     itemWeight: 0,
     count: 1,
     stoneWeight: 0,
-    wastageValue: 0,
-    wastagePure: 0,
     netWeight: 0,
-    touch:0,
-    finalPurity:0,
+    touch: 0,
+    wastageType: "",
+    wastageValue: 0,
+    originalWastagePure: 0, 
+    wastageDelta: 0,       
+    finalPurity: 0
   });
 
-  // ---------- INITIAL LOAD ----------
+  const netWeight = Math.max(0,Number(qc.itemWeight || 0) - Number(qc.stoneWeight || 0));
+
+  const actualPurity = (netWeight * Number(qc.touch || 0)) / 100;
+
+  const updatedWastagePure = Number(qc.originalWastagePure || 0) + Number(qc.wastageDelta || 0);
+
+  const finalPurity = actualPurity + updatedWastagePure;
+
   useEffect(() => {
     fetchGoldsmiths();
     fetchRepairStock();
@@ -89,49 +98,40 @@ const RepairStockList = () => {
     page * rowsPerPage + rowsPerPage
   );
 
-  // ---------- TOTALS ----------
-  const totals = paginated.reduce(
-    (acc, item) => {
-      acc.weight += Number(item?.product?.netWeight ?? item?.netWeight ?? 0);
-      acc.purity += Number(item?.product?.finalPurity ?? item?.purity ?? 0);
-      return acc;
-    },
-    { weight: 0, purity: 0 }
-  );
-
   const openReceivePopup = (repair) => {
     const p = repair.product;
     setSelectedRepair(repair);
     console.log("checking p",p)
     setQc({
-      itemWeight: p.itemWeight || 0,
-      count: p.count || 1,
-      stoneWeight: p.stoneWeight || 0,
-      wastageValue: p.wastageValue || 0,
-      wastagePure: p.wastagePure || 0,
-      netWeight: p.netWeight || 0,
-      finalPurity:p.finalPurity,
-      touch:p.touch,
+      itemWeight: p?.itemWeight ?? 0,
+      count: p?.count ?? 1,
+      stoneWeight: p?.stoneWeight ?? 0,
+      netWeight: p?.netWeight ?? 0,
+      touch: p?.touch ?? 0,
+      wastageType: p?.wastageType ?? "",
+      wastageValue: p?.wastageValue ?? 0,
+
+      originalWastagePure: p?.wastagePure ?? 0, 
+      wastageDelta: 0,                          
+
+      finalPurity: p?.finalPurity ?? 0
     });
 
     setOpenReceiveDialog(true);
-  };
-
-
-  // ---------- CONFIRM STEP 1 ----------
-  const firstConfirm = () => {
-    setOpenReceiveDialog(false);
-    setOpenFinalConfirm(true);
   };
 
   // ---------- FINAL CONFIRM ----------
   const handleReceive = async () => {
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/return`, {
       repairId: selectedRepair.id,
-      ...qc
+      itemWeight: qc.itemWeight,
+      stoneWeight: qc.stoneWeight,
+      netWeight,
+      wastagePure: updatedWastagePure,
+      finalPurity
     });
 
-    setOpenFinalConfirm(false);
+    setOpenReceiveDialog(false);
     fetchRepairStock();
   };
 
@@ -227,8 +227,10 @@ const RepairStockList = () => {
                 <th>Serial</th>
                 <th>Item Name</th>
                 <th>Goldsmith</th>
-                <th>Net Weight (g)</th>
-                <th>Final Purity</th>
+                <th>Item Wt (g)</th>
+                <th>Net Wt (g)</th>
+                <th>Touch</th>
+                <th>Final Purity (g)</th>
                 <th>Sent Date</th>
                 <th>Status</th>
                 <th>Reason</th>
@@ -242,10 +244,11 @@ const RepairStockList = () => {
                   <td>{i + 1}</td>
                   <td>{r.product?.itemName || r.itemName}</td>
                   <td>{r.goldsmith?.name || "-"}</td>
+                  <td>{safeFixed(r.product?.itemWeight ?? r.itemWeight)}</td>
                   <td>{safeFixed(r.product?.netWeight ?? r.netWeight)}</td>
+                  <td>{r.product?.touch ?? r.touch}</td>
                   <td>{safeFixed(r.product?.finalPurity ?? r.purity)}</td>
                   <td>{new Date(r.sentDate).toLocaleDateString()}</td>
-
                   <td>
                     {r.status === "InRepair" ? (
                       <span style={{ color: "red", fontWeight: "bold" }}>
@@ -257,9 +260,7 @@ const RepairStockList = () => {
                       </span>
                     )}
                   </td>
-
                   <td>{r.reason || "-"}</td>
-
                   <td>
                     {r.status === "InRepair" ? (
                       <Button
@@ -275,14 +276,6 @@ const RepairStockList = () => {
                 </tr>
               ))}
             </tbody>
-
-            <tfoot>
-              <tr>
-                <td colSpan={3}><strong>Total</strong></td>
-                <td><strong>{safeFixed(totals.weight)}</strong></td>
-                <td><strong>{safeFixed(totals.purity)}</strong></td>
-              </tr>
-            </tfoot>
           </table>
         ) : (
           <p style={{ textAlign: "center", color: "red" }}>
@@ -311,116 +304,130 @@ const RepairStockList = () => {
         <DialogTitle>Return Product to Stock</DialogTitle>
 
         <DialogContent>
-          <h4>{selectedRepair?.product?.itemName}</h4>
+          <h4>Item Name : {selectedRepair?.product?.itemName}</h4>
 
-          <table style={{ width: "100%", fontSize: 13 }}>
+          <table
+            style={{
+              width: "100%",
+              fontSize: 15,
+              borderCollapse: "collapse",
+              tableLayout: "fixed"  
+            }}
+          >
+
             <tbody>
               <tr>
-                <td>Item Weight (g)</td>
+                <td>Item Weight</td>
+                <td><strong>{safeFixed(qc.itemWeight)} g</strong></td>
                 <td>
                   <TextField
                     size="small"
                     type="number"
                     value={qc.itemWeight}
-                    onChange={(e)=>setQc({...qc,itemWeight:e.target.value})}
+                    onChange={(e) =>
+                      setQc({ ...qc, itemWeight: e.target.value })
+                    }
                   />
                 </td>
               </tr>
 
               <tr>
                 <td>Count</td>
-                <td>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={qc.count}
-                    onChange={(e)=>setQc({...qc,count:e.target.value})}
-                  />
-                </td>
+                <td><strong>{qc.count}</strong></td>
+                <td>—</td>
               </tr>
 
               <tr>
-                <td>Stone Wt (g)</td>
+                <td>Stone Weight</td>
+                <td><strong>{safeFixed(qc.stoneWeight)} g</strong></td>
                 <td>
                   <TextField
                     size="small"
                     type="number"
                     value={qc.stoneWeight}
-                    onChange={(e)=>setQc({...qc,stoneWeight:e.target.value})}
+                    onChange={(e) =>
+                      setQc({ ...qc, stoneWeight: e.target.value })
+                    }
                   />
                 </td>
               </tr>
 
               <tr>
-                <td>Wastage (g)</td>
-                <td>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={qc.wastageValue}
-                    onChange={(e)=>setQc({...qc,wastageValue:e.target.value})}
-                  />
-                </td>
+                <td>Net Weight</td>
+                <td><strong>{safeFixed(netWeight)} g</strong></td>
+                <td>—</td>
               </tr>
 
               <tr>
                 <td>Touch</td>
+                <td><strong>{qc.touch}</strong></td>
+                <td>—</td>
+              </tr>
+
+              <tr>
+                <td>Actual Purity</td>
+                <td><strong>{safeFixed(actualPurity)} g</strong></td>
+                <td>—</td>
+              </tr>
+
+              <tr>
+                <td>Wastage ({qc.wastageType || "-"})</td>
                 <td>
-                  <b>{qc.touch}</b>
+                  <strong>
+                    {qc.wastageValue}
+                  </strong>
+                </td>
+                <td>—</td>
+              </tr>
+
+              <tr>
+                <td>Wastage Pure</td>
+                <td>
+                  <strong>{safeFixed(updatedWastagePure)} g</strong>
+                  <div style={{ fontSize: 12, color: "#777" }}>
+                  </div>
+                </td>
+                <td>
+                  <TextField
+                    size="small"
+                    type="number"
+                    fullWidth
+                    placeholder="+ / - value"
+                    value={qc.wastageDelta}
+                    onChange={(e) =>
+                      setQc({ ...qc, wastageDelta: e.target.value })
+                    }
+                  />
                 </td>
               </tr>
 
               <tr>
-                <td>Final Purity %</td>
-                <td>
-                  <b>{qc.finalPurity}</b>
+                <td>Final Purity</td>
+                <td style={{ color: "#2e7d32" }}>
+                  <strong>{safeFixed(finalPurity)} g</strong>
                 </td>
+                <td>—</td>
               </tr>
-
-              <tr><td>Net Weight (g)</td><td><b>{safeFixed(qc.netWeight)}</b></td></tr>
-              <tr><td>Wastage Pure (g)</td><td><b>{safeFixed(qc.wastagePure)}</b></td></tr>
             </tbody>
           </table>
 
-        </DialogContent>
 
+        </DialogContent>
 
         <DialogActions>
           <Button onClick={() => setOpenReceiveDialog(false)}>Cancel</Button>
-          <Button variant="contained" color="warning" onClick={firstConfirm}>
-            Continue
+
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleReceive}
+          >
+            Confirm & Return to Stock
           </Button>
         </DialogActions>
+
       </Dialog>
 
-      {/* CONFIRM 2 */}
-      <Dialog
-        open={openFinalConfirm}
-        onClose={() => setOpenFinalConfirm(false)}
-      >
-        <DialogTitle>Final Confirmation</DialogTitle>
-
-        <DialogContent>
-          <p>
-            Confirm returning
-            <br />
-            <b>{selectedRepair?.product?.itemName}</b>
-            <br />
-            with updated values?
-          </p>
-
-          <p style={{ color: "red" }}>
-            This will activate the item in Product Stock.
-          </p>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setOpenFinalConfirm(false)}>Cancel</Button>
-          <Button variant="contained" color="success" onClick={handleReceive}>
-            Yes, Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
     </div>
   );
 };

@@ -527,61 +527,62 @@ model Supplier {
   @@map("suppliers")
 }
 
-/**
- * ---------------- PURCHASE ENTRY (Purchase Form) ----------------
- */
 model PurchaseEntry {
   id Int @id @default(autoincrement())
 
   supplierId   Int
-  // Keep a denormalized supplier name for quick view (optional)
   supplierName String?
 
   jewelName   String
+
   grossWeight Float
   stoneWeight Float
   netWeight   Float
-  wastage     Float
+
   touch       Float
+
+  wastageType String
+  wastage     Float
+  wastagePure Float
+
+  actualPure  Float
   finalPurity Float
-  moveTo      String // "product" | "purchase"
+
+  moveTo      String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // relations
   supplier Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   stock    PurchaseStock[]
-
-  @@index([supplierId], map: "PurchaseEntry_supplierId_fkey")
   @@map("purchase_entries")
 }
 
-/**
- * ---------------- PURCHASE STOCK (items saved to purchase stock) ----------------
- */
 model PurchaseStock {
   id Int @id @default(autoincrement())
 
-  entryId     Int? // optional because you might create stock directly
-  supplierId  Int
+  entryId    Int?
+  supplierId Int
+
   jewelName   String
+
   grossWeight Float
   stoneWeight Float
   netWeight   Float
-  wastage     Float
+
   touch       Float
+  wastageType String
+  wastage     Float
+  wastagePure Float
+
+  actualPure  Float
   finalPurity Float
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // relations
   purchaseEntry PurchaseEntry? @relation(fields: [entryId], references: [id], onDelete: Cascade)
   supplier      Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-
-  @@index([entryId], map: "PurchaseStock_entryId_fkey")
-  @@index([supplierId], map: "PurchaseStock_supplierId_fkey")
   @@map("purchase_stock")
 }
 

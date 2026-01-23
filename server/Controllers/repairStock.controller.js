@@ -129,12 +129,9 @@ const returnFromRepair = async (req, res) => {
   const {
     repairId,
     itemWeight,
-    count,
     stoneWeight,
-    wastageValue,
-    wastagePure,
-    netWeight,
-    finalPurity
+    wastagePure,   
+    finalPurity    
   } = req.body;
 
   try {
@@ -151,17 +148,36 @@ const returnFromRepair = async (req, res) => {
       if (repair.status !== "InRepair")
         throw new Error("Already returned");
 
-      // 🔥 Update ProductStock with edited values
+      const product = repair.product;
+
+      const itemWt = Number(itemWeight);
+      const stoneWt = Number(stoneWeight);
+      const touch = Number(product.touch);
+
+      if (itemWt < stoneWt) {
+        throw new Error("Item weight cannot be less than stone weight");
+      }
+
+      const netWeight = itemWt - stoneWt;
+
+      const actualPurity = (netWeight * touch) / 100;
+
+      const updatedWastagePure = Number(wastagePure);
+
+      const computedFinalPurity = actualPurity + updatedWastagePure;
+
+      if (Math.abs(computedFinalPurity - Number(finalPurity)) > 0.01) {
+        throw new Error("Final purity mismatch");
+      }
+
       await tx.productStock.update({
         where: { id: repair.productId },
         data: {
-          itemWeight: Number(itemWeight),
-          count: Number(count),
-          stoneWeight: Number(stoneWeight),
-          wastageValue: Number(wastageValue),
-          wastagePure: Number(wastagePure),
-          netWeight: Number(netWeight),
-          finalPurity: Number(finalPurity),
+          itemWeight: itemWt,
+          stoneWeight: stoneWt,
+          netWeight,
+          wastagePure: updatedWastagePure,
+          finalPurity: computedFinalPurity,
           isActive: true
         }
       });
@@ -177,7 +193,7 @@ const returnFromRepair = async (req, res) => {
       await tx.repairLogs.create({
         data: {
           repairId: repair.id,
-          action: "RETURNED_WITH_UPDATE"
+          action: "RETURNED_WITH_RECALCULATION"
         }
       });
 
@@ -230,11 +246,9 @@ const sendCustomerItemToRepair = async (req, res) => {
           wastageValue  : orderItem.wastageValue,
           
           wastagePure   : orderItem.wastagePure,
-          // wastageType   : orderItem.wastageType,
-          // finalPurity   : orderItem.count || 1,
-
+      
           isBillProduct: true,
-          isActive: false, // immediately inactive → in repair
+          isActive: false, 
           source: "REPAIR_RETURN",
         }
       });

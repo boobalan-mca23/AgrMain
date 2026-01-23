@@ -1,30 +1,49 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import {
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Paper,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
+import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./Masteradditems.css";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { BACKEND_SERVER_URL } from "../../Config/Config";
 
-const PurchaseEntry = () => {
+const initialForm = {
+  supplierId: "",
+  jewelName: "",
+  grossWeight: "",
+  stoneWeight: "",
+  netWeight: "",
+  touch: "",
+  wastage: "",
+  wastageType: "%",
+  wastagePure: "",
+  finalPurity: "",
+};
+
+const round3 = (num) => Number.isFinite(num) ? Number(num.toFixed(3)) : 0;
+
+
+function PurchaseEntry() {
   const [suppliers, setSuppliers] = useState([]);
   const [entries, setEntries] = useState([]);
 
-  const [form, setForm] = useState({
-    supplierId: "",
-    jewelName: "",
-    grossWeight: "",
-    stoneWeight: "",
-    netWeight: "",
-    wastage: "",
-    touch: "",
-    finalPurity: "",
-    moveTo: "purchase",
-  });
+  const [openDialog, setOpenDialog] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
 
-  const [editId, setEditId] = useState(null);
-  const [editForm, setEditForm] = useState({ ...form });
+  const [form, setForm] = useState(initialForm);
+  const [saving, setSaving] = useState(false);
+
+  const jewelRef = useRef(null);
 
   useEffect(() => {
     fetchSuppliers();
@@ -35,8 +54,8 @@ const PurchaseEntry = () => {
     try {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/supplier`);
       setSuppliers(res.data);
-    } catch (err) {
-      console.error("Fetch suppliers error", err);
+    } catch {
+      toast.error("Failed to load suppliers");
     }
   };
 
@@ -44,331 +63,341 @@ const PurchaseEntry = () => {
     try {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/purchase-entry`);
       setEntries(res.data);
-    } catch (err) {
-      console.error("Fetch entries error", err);
+    } catch {
+      toast.error("Failed to load entries");
     }
   };
 
   const recalc = (obj) => {
-    const gross = Number(obj.grossWeight) || 0;
-    const stone = Number(obj.stoneWeight) || 0;
-    const wastage = Number(obj.wastage) || 0;
-    const touch = Number(obj.touch) || 0;
-    const net = parseFloat((gross - stone).toFixed(3));
-    const finalPurity = parseFloat(((net + wastage) * (touch / 100)).toFixed(3));
-    return { net, finalPurity };
+    const gross = round3(Number(obj.grossWeight) || 0);
+    const stone = round3(Number(obj.stoneWeight) || 0);
+    const touch = round3(Number(obj.touch) || 0);
+    const wastage = round3(Number(obj.wastage) || 0);
+
+    const netWeight = round3(gross - stone);
+    const actualPure = round3((netWeight * touch) / 100);
+    let finalPurity = 0;
+
+    if (obj.wastageType === "Touch") {
+      finalPurity = round3((netWeight * wastage) / 100);
+    }
+
+    if (obj.wastageType === "%") {
+      const A = round3((netWeight * wastage) / 100);
+      const B = round3(A + netWeight);
+      finalPurity = round3((B * touch) / 100);
+    }
+
+    if (obj.wastageType === "+") {
+      const A = round3(netWeight + wastage);
+      finalPurity = round3((A * touch) / 100);
+    }
+
+    const wastagePure = round3(finalPurity - actualPure);
+
+    return {
+      netWeight,
+      wastagePure,
+      finalPurity,
+    };
   };
 
   const handleChange = (field, value) => {
     const updated = { ...form, [field]: value };
-    if (["grossWeight", "stoneWeight", "wastage", "touch"].includes(field)) {
-      const { net, finalPurity } = recalc(updated);
-      updated.netWeight = net;
-      updated.finalPurity = finalPurity;
+
+    if (
+      [
+        "grossWeight",
+        "stoneWeight",
+        "touch",
+        "wastage",
+        "wastageType",
+      ].includes(field)
+    ) {
+      Object.assign(updated, recalc(updated));
     }
+
     setForm(updated);
   };
 
-  const handleAdd = async () => {
-    if (!form.supplierId) return toast.warn("Select supplier");
-    if (!form.jewelName) return toast.warn("Enter jewel name");
 
-    const payload = {
-      supplierId: Number(form.supplierId),
-      jewelName: form.jewelName,
-      grossWeight: Number(form.grossWeight) || 0,
-      stoneWeight: Number(form.stoneWeight) || 0,
-      netWeight: Number(form.netWeight) || 0,
-      wastage: Number(form.wastage) || 0,
-      touch: Number(form.touch) || 0,
-      finalPurity: Number(form.finalPurity) || 0,
-      moveTo: "purchase",
-      // moveTo: form.moveTo === "product" ? "product" : "purchase",
-    };
-
-    try {
-      await axios.post(`${BACKEND_SERVER_URL}/api/purchase-entry/create`, payload);
-      toast.success("Purchase entry saved");
-      setForm({
-        supplierId: "",
-        jewelName: "",
-        grossWeight: "",
-        stoneWeight: "",
-        netWeight: "",
-        wastage: "",
-        touch: "",
-        finalPurity: "",
-        moveTo: "purchase",
-      });
-      fetchEntries();
-    } catch (err) {
-      toast.error(err.response?.data?.msg || "Failed to save entry");
-    }
+  const openAddDialog = () => {
+    setIsEdit(false);
+    setSelectedId(null);
+    setForm(initialForm);
+    setOpenDialog(true);
+    requestAnimationFrame(() => jewelRef.current?.focus());
   };
 
-  const handleEdit = (entry) => {
-    setEditId(entry.id);
-    setEditForm({
+  const openEditDialog = (entry) => {
+    setIsEdit(true);
+    setSelectedId(entry.id);
+
+    setForm({
       supplierId: entry.supplierId,
       jewelName: entry.jewelName,
+
       grossWeight: entry.grossWeight,
       stoneWeight: entry.stoneWeight,
       netWeight: entry.netWeight,
-      wastage: entry.wastage,
+
       touch: entry.touch,
+
+      wastageType: entry.wastageType || "%",
+      wastage: entry.wastage,
+      wastagePure: entry.wastagePure,
+
       finalPurity: entry.finalPurity,
-      moveTo: entry.moveTo,
     });
+
+    setOpenDialog(true);
+    requestAnimationFrame(() => jewelRef.current?.focus());
   };
 
-  const handleSaveEdit = async (id) => {
-    if (!editForm.supplierId) return toast.warn("Select supplier");
-    if (!editForm.jewelName) return toast.warn("Enter jewel name");
+  const closeDialog = () => {
+    setOpenDialog(false);
+    setForm(initialForm);
+  };
+
+  const handleSubmit = async () => {
+    if (!form.supplierId) return toast.warn("Select supplier");
+    if (!form.jewelName.trim()) return toast.warn("Enter jewel name");
 
     const payload = {
-      supplierId: Number(editForm.supplierId),
-      jewelName: editForm.jewelName,
-      grossWeight: Number(editForm.grossWeight) || 0,
-      stoneWeight: Number(editForm.stoneWeight) || 0,
-      netWeight: Number(editForm.netWeight) || 0,
-      wastage: Number(editForm.wastage) || 0,
-      touch: Number(editForm.touch) || 0,
-      finalPurity: Number(editForm.finalPurity) || 0,
-      moveTo: editForm.moveTo === "product" ? "product" : "purchase",
+      supplierId: Number(form.supplierId),
+      jewelName: form.jewelName.trim(),
+      grossWeight: Number(form.grossWeight) || 0,
+      stoneWeight: Number(form.stoneWeight) || 0,
+      netWeight: Number(form.netWeight) || 0,
+      touch: Number(form.touch) || 0,
+      wastageType: form.wastageType,
+      wastage: Number(form.wastage) || 0,
+      wastagePure: Number(form.wastagePure) || 0,
+      finalPurity: Number(form.finalPurity) || 0,
+      moveTo: "purchase",
     };
 
     try {
-      await axios.put(`${BACKEND_SERVER_URL}/api/purchase-entry/${id}`, payload);
-      toast.success("Entry updated");
-      setEditId(null);
+      setSaving(true);
+
+      if (isEdit) {
+        await axios.put(
+          `${BACKEND_SERVER_URL}/api/purchase-entry/${selectedId}`,
+          payload
+        );
+        toast.success("Entry updated");
+      } else {
+        await axios.post(
+          `${BACKEND_SERVER_URL}/api/purchase-entry/create`,
+          payload
+        );
+        toast.success("Entry added");
+      }
+
+      closeDialog();
       fetchEntries();
-    } catch (err) {
-      toast.error("Failed to update entry");
+    } catch {
+      toast.error("Operation failed");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete entry?")) return;
+    if (!window.confirm("Delete this entry?")) return;
+
     try {
       await axios.delete(`${BACKEND_SERVER_URL}/api/purchase-entry/${id}`);
       toast.success("Entry deleted");
       fetchEntries();
-    } catch (err) {
+    } catch {
       toast.error("Delete failed");
     }
   };
 
   return (
     <div className="master-container">
-      <ToastContainer position="top-right" autoClose={2000} />
+      <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Form at top */}
-      <div className="add-item-form" style={{ marginBottom: 24, width: "100%" }}>
-        <h2 style={{ textAlign: "center" }}>Purchase Entry</h2>
-
-        <label>Supplier</label>
-        <select
-          value={form.supplierId}
-          onChange={(e) => setForm({ ...form, supplierId: e.target.value })}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          marginBottom: 12,
+        }}
+      >
+        <Button
+          variant="contained"
+          onClick={openAddDialog}
         >
-          <option value="">Select supplier</option>
-          {suppliers.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-
-        <label>Jewel Name</label>
-        <input
-          type="text"
-          value={form.jewelName}
-          onChange={(e) => setForm({ ...form, jewelName: e.target.value })}
-        />
-
-        <label>Gross Weight</label>
-        <input
-          type="number"
-          step="0.001"
-          value={form.grossWeight}
-          onChange={(e) => handleChange("grossWeight", e.target.value)}
-        />
-
-        <label>Stone Weight</label>
-        <input
-          type="number"
-          step="0.001"
-          value={form.stoneWeight}
-          onChange={(e) => handleChange("stoneWeight", e.target.value)}
-        />
-
-        <label>Net Weight</label>
-        <input type="number" step="0.001" value={form.netWeight} readOnly />
-
-        <label>Wastage</label>
-        <input
-          type="number"
-          step="0.001"
-          value={form.wastage}
-          onChange={(e) => handleChange("wastage", e.target.value)}
-        />
-
-        <label>Touch (Purity)</label>
-        <input
-          type="number"
-          step="0.1"
-          value={form.touch}
-          onChange={(e) => handleChange("touch", e.target.value)}
-        />
-
-        <label>Final Purity</label>
-        <input type="number" step="0.001" value={form.finalPurity} readOnly />
-
-        {/* <label>Move To</label>
-        <select
-          value={form.moveTo}
-          onChange={(e) => setForm({ ...form, moveTo: e.target.value })}
-        >
-          <option value="product">Move to Product Stock</option>
-          <option value="purchase">Move to Purchase Stock</option>
-        </select> */}
-
-        <button onClick={handleAdd} style={{ marginTop: 12 }}>
-          Save Entry
-        </button>
+          Add Purchase Entry
+        </Button>
       </div>
 
-      {/* List below */}
-      <div className="item-list item-list-supplier" style={{ width: "100%" }}>
-        <h2 style={{ textAlign: "center" }}>Purchase Entries</h2>
-
-        {entries.length === 0 ? (
-          <p>No entries found</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>SI.No</th>
-                <th>Supplier</th>
-                <th>Jewel</th>
-                <th>Gross</th>
-                <th>Stone</th>
-                <th>Net</th>
-                <th>Wastage</th>
-                <th>Touch</th>
-                <th>Final Purity</th>
-                <th>Moved To</th>
-                <th>Action</th>
+      <Paper style={{ overflowX: "auto", marginTop: "60px", marginLeft: "60px", position: "absolute" }}>
+        <table
+          className="item-list"
+          style={{ minWidth: "1400px", width: "100%" }}
+        >
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Supplier</th>
+              <th>Jewel</th>
+              <th>Gross Weight (g)</th>
+              <th>Stone Weight (g)</th>
+              <th>Net Weight (g)</th>
+              <th>Touch</th>
+              <th>Wastage Type</th>
+              <th>Wastage Value</th>
+              <th>Wastage Pure (g)</th>
+              <th>Final Purity (g)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((e, i) => (
+              <tr key={e.id}>
+                <td>{i + 1}</td>
+                <td>{e.supplier?.name}</td>
+                <td>{e.jewelName}</td>
+                <td>{Number(e.grossWeight).toFixed(3)}</td>
+                <td>{Number(e.stoneWeight).toFixed(3)}</td>
+                <td>{Number(e.netWeight).toFixed(3)}</td>
+                <td>{Number(e.touch).toFixed(3)}</td>
+                <td>{e.wastageType}</td>
+                <td>{Number(e.wastage)}</td>
+                <td>{Number(e.wastagePure).toFixed(3)}</td>
+                <td>{Number(e.finalPurity).toFixed(3)}</td>
+                <td>
+                  <EditIcon
+                    style={{ cursor: "pointer", marginRight: 8, color: "#388e3c" }}
+                    onClick={() => openEditDialog(e)}
+                  />
+                  <DeleteIcon
+                    style={{ cursor: "pointer", color: "#d32f2f" }}
+                    onClick={() => handleDelete(e.id)}
+                  />
+                </td>
               </tr>
-            </thead>
+            ))}
+          </tbody>
+        </table>
+      </Paper>
 
-            <tbody>
-              {entries.map((en, idx) => (
-                <tr key={en.id}>
-                  <td>{idx + 1}</td>
 
-                  {editId === en.id ? (
-                    <>
-                      <td>
-                        <select
-                          value={editForm.supplierId}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, supplierId: e.target.value })
-                          }
-                        >
-                          <option value="">Select</option>
-                          {suppliers.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <input
-                          value={editForm.jewelName}
-                          onChange={(e) => setEditForm({ ...editForm, jewelName: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.001"
-                          value={editForm.grossWeight}
-                          onChange={(e) => setEditForm({ ...editForm, grossWeight: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.001"
-                          value={editForm.stoneWeight}
-                          onChange={(e) => setEditForm({ ...editForm, stoneWeight: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <input type="number" step="0.001" value={editForm.netWeight} readOnly />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.001"
-                          value={editForm.wastage}
-                          onChange={(e) => setEditForm({ ...editForm, wastage: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={editForm.touch}
-                          onChange={(e) => setEditForm({ ...editForm, touch: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <input type="number" step="0.001" value={editForm.finalPurity} readOnly />
-                      </td>
-                      <td>
-                        {editForm.moveTo === "product" ? "Product Stock" : "Purchase Stock"}
-                        {/* <select value={editForm.moveTo} onChange={(e) => setEditForm({ ...editForm, moveTo: e.target.value })}>
-                          <option value="product">Product Stock</option>
-                          <option value="purchase">Purchase Stock</option>
-                        </select> */}
-                      </td>
+      <Dialog open={openDialog} onClose={closeDialog} fullWidth maxWidth="sm">
+        <DialogTitle>
+          {isEdit ? "Edit Purchase Entry" : "Add Purchase Entry"}
+        </DialogTitle>
 
-                      <td>
-                        <button onClick={() => handleSaveEdit(en.id)} style={{ marginRight: 6 }}>
-                          Save
-                        </button>
-                        <button onClick={() => setEditId(null)}>Cancel</button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td>{en.supplier?.name ?? en.supplierId}</td>
-                      <td>{en.jewelName}</td>
-                      <td>{en.grossWeight}</td>
-                      <td>{en.stoneWeight}</td>
-                      <td>{en.netWeight}</td>
-                      <td>{en.wastage}</td>
-                      <td>{en.touch}</td>
-                      <td>{en.finalPurity}</td>
-                      <td>{en.moveTo === "product" ? "Product Stock" : "Purchase Stock"}</td>
+        <DialogContent>
+          <TextField
+            select
+            fullWidth
+            margin="dense"
+            SelectProps={{ native: true }}
+            value={form.supplierId}
+            onChange={(e) => handleChange("supplierId", e.target.value)}
+          >
+            <option value="">Select Supplier</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </TextField>
 
-                      <td>
-                        <EditIcon style={{ cursor: "pointer", marginRight: 8 }} onClick={() => handleEdit(en)} />
-                        <DeleteIcon style={{ cursor: "pointer" }} onClick={() => handleDelete(en.id)} />
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+          <TextField
+            label="Jewel Name"
+            fullWidth
+            margin="dense"
+            value={form.jewelName}
+            onChange={(e) => handleChange("jewelName", e.target.value)}
+          />
+
+          <TextField
+            label="Gross Weight"
+            fullWidth
+            margin="dense"
+            value={form.grossWeight}
+            onChange={(e) => handleChange("grossWeight", e.target.value)}
+          />
+
+          <TextField
+            label="Stone Weight"
+            fullWidth
+            margin="dense"
+            value={form.stoneWeight}
+            onChange={(e) => handleChange("stoneWeight", e.target.value)}
+          />
+
+          <TextField
+            label="Net Weight"
+            fullWidth
+            margin="dense"
+            value={form.netWeight}
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            label="Touch"
+            fullWidth
+            margin="dense"
+            value={form.touch}
+            onChange={(e) => handleChange("touch", e.target.value)}
+          />
+
+          <TextField
+            select
+            label="Wastage Type"
+            fullWidth
+            margin="dense"
+            SelectProps={{ native: true }}
+            value={form.wastageType}
+            onChange={(e) => handleChange("wastageType", e.target.value)}
+          >
+            <option value="%">%</option>
+            <option value="Touch">Touch</option>
+            <option value="+">+</option>
+          </TextField>
+
+          <TextField
+            label="Wastage"
+            fullWidth
+            margin="dense"
+            value={form.wastage}
+            onChange={(e) => handleChange("wastage", e.target.value)}
+          />
+
+          <TextField
+            label="Wastage Pure"
+            fullWidth
+            margin="dense"
+            value={form.wastagePure}
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            label="Final Purity"
+            fullWidth
+            margin="dense"
+            value={form.finalPurity}
+            InputProps={{ readOnly: true }}
+          />
+
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={closeDialog}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={saving} variant="contained">
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
-};
+}
 
 export default PurchaseEntry;

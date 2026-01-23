@@ -19,7 +19,7 @@ const Stock = () => {
   const [stockData, setStockData] = useState([]);
 
   const [page, setPage] = useState(0); // main table page
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   // NEW: mini-table pagination for grouped-by-touch table
   const [groupPage, setGroupPage] = useState(0);
@@ -34,8 +34,6 @@ const Stock = () => {
   const [purchaseStocks, setPurchaseStocks] = useState([]);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [addNetWeight, setAddNetWeight] = useState("");
-  const [isBackchain, setIsBackchain] = useState(false);
-  const [backchainPurity, setBackchainPurity] = useState("");
 
   const paginatedData = stockData.slice(
     page * rowsPerPage,
@@ -169,12 +167,34 @@ const Stock = () => {
     });
   };
 
-  // For total purity mini-table: compute final purity per item as netWeight * wastageValue / 100
-  const computeFinalPurityForItem = (item) => {
-    const net = Number(item.netWeight ?? 0);
-    const wast = Number(item.wastageValue ?? 0);
-    return (net * wast) / 100;
-  };
+const computeFinalPurityForItem = (item) => {
+
+  const net = Number(item.netWeight ?? 0);
+  const touch = Number(item.touch ?? 0);
+  const wast = Number(item.wastageValue ?? 0);
+  const type = item.wastageType;
+
+  if (net <= 0 || touch <= 0) return 0;
+
+  let finalPurity = 0;
+
+  if (type === "Touch") {
+    finalPurity = (net * wast) / 100;
+  }
+
+  else if (type === "%") {
+    const A = (net * wast) / 100;
+    const B = A + net;
+    finalPurity = (B * touch) / 100;
+  }
+
+  else if (type === "+") {
+    const A = net + wast;
+    finalPurity = (A * touch) / 100;
+  }
+
+  return Number(finalPurity.toFixed(3));
+};
 
 // ---------- new helper: group by touch ----------
 const grouped = groupByTouch(stockData);
@@ -197,7 +217,7 @@ const groupedPaginatedTotal = groupedPaginated.reduce(
 );
 
 const purityPaginatedTotal = purityPaginated.reduce(
-  (acc, it) => acc + Number(computeFinalPurityForItem(it) ?? 0),
+  (acc, it) => acc + Number(it.finalPurity ?? 0),
   0
 );
 
@@ -208,7 +228,7 @@ const groupedNetPurityTotal = grouped.reduce(
 );
 
 const totalFinalPurity = stockData.reduce(
-  (acc, it) => acc + computeFinalPurityForItem(it),
+  (acc, it) => acc + Number(it.finalPurity ?? 0),
   0
 );
 
@@ -235,8 +255,6 @@ const openAddWeightPopup = async (product) => {
     setOpenAddPopup(true);
     setAddNetWeight("");
     setSelectedPurchase(null);
-    setIsBackchain(false);
-    setBackchainPurity("");
 
     const res = await axios.get(
       `${BACKEND_SERVER_URL}/api/purchase-stock/touch/${product.touch}`
@@ -263,32 +281,12 @@ const handleSaveAddWeight = async () => {
     return;
   }
 
-  // ✅ Backchain validation
-  if (isBackchain) {
-    const bcPurity = Number(backchainPurity);
-
-    if (!bcPurity || bcPurity <= 0) {
-      alert("Enter valid backchain purity");
-      return;
-    }
-
-    if (bcPurity >= selectedProduct.touch) {
-      alert("Backchain purity must be lower than product purity");
-      return;
-    }
-  }
-
   try {
-    await axios.post(
-      `${BACKEND_SERVER_URL}/api/productStock/add-weight`,
-      {
-        productStockId: selectedProduct.id,
-        purchaseStockId: selectedPurchase.id,
-        addNetWeight: weight,
-        isBackchain,
-        backchainPurity: isBackchain ? Number(backchainPurity) : null
-      }
-    );
+    await axios.post(`${BACKEND_SERVER_URL}/api/productStock/add-weight`, {
+    productStockId: selectedProduct.id,
+    purchaseStockId: selectedPurchase.id,
+    addNetWeight: weight
+  });
 
     setOpenAddPopup(false);
     await fetchProductStock();
@@ -423,7 +421,7 @@ const handleSaveAddWeight = async () => {
               <thead>
                 <tr>
                   <th>Sno</th>
-                  <th>Wastage Val (%)</th>
+                  <th>Wastage Value</th>
                   <th>Net Wt (g)</th>
                   <th>Final Purity (g)</th>
                 </tr>
@@ -442,9 +440,9 @@ const handleSaveAddWeight = async () => {
                   return (
                     <tr key={it.id ?? serial}>
                       <td>{serial}</td>
-                      <td>{safeFixed(it.wastageValue)}</td>
+                      <td>{it.wastageValue} ({it.wastageType})</td>
                       <td>{safeFixed(it.netWeight)}</td>
-                      <td>{safeFixed(finalPur)}</td>
+                      <td>{safeFixed(it.finalPurity)}</td>
                     </tr>
                   );
                 })}
@@ -493,9 +491,9 @@ const handleSaveAddWeight = async () => {
                 <th>Touch </th>
                 <th>StoneWt (g)</th>
                 <th>NetWeight (g)</th>
-                <th>WastageValue (g)</th>
+                <th>WastageValue</th>
                 <th>WastagePure (g)</th>
-                <th>Final Purity</th>
+                <th>Final Purity (g)</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -514,7 +512,7 @@ const handleSaveAddWeight = async () => {
                   <td>{item.touch ?? 0}</td>
                   <td>{safeFixed(item.stoneWeight)}</td>
                   <td>{safeFixed(item.netWeight)}</td>
-                  <td>{safeFixed(item.wastageValue)}</td>
+                  <td>{item.wastageValue} ({item.wastageType})</td>
                   <td>{safeFixed(item.wastagePure)}</td>
                   <td>{safeFixed(item.finalPurity)}</td>
                   <td>
@@ -621,31 +619,6 @@ const handleSaveAddWeight = async () => {
             onChange={(e) => setAddNetWeight(e.target.value)}
             inputProps={{ min: 0 }}
           />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={isBackchain}
-                onChange={(e) => setIsBackchain(e.target.checked)}
-              />
-            }
-            label="Is Backchain"
-          />
-
-          {isBackchain && (
-            <TextField
-              fullWidth
-              label="Backchain Purity (%)"
-              type="number"
-              margin="normal"
-              value={backchainPurity}
-              onChange={(e) => setBackchainPurity(e.target.value)}
-              inputProps={{
-                min: 0,
-                max: selectedProduct?.touch
-              }}
-            />
-          )}
 
           {selectedPurchase && (
             <p style={{ color: "gray" }}>

@@ -7,6 +7,8 @@ const toNumber = (v, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+const round3 = (n) => Number.isFinite(n) ? Number(n.toFixed(3)) : 0;
+
 module.exports = {
   createEntry: async (req, res) => {
     try {
@@ -15,56 +17,96 @@ module.exports = {
         jewelName,
         grossWeight,
         stoneWeight,
-        wastage,
         touch,
+        wastageType,
+        wastage,
         moveTo
       } = req.body;
 
-      if (!supplierId || !jewelName) return res.status(400).json({ msg: "supplierId and jewelName required" });
+      if (!supplierId || !jewelName) {
+        return res.status(400).json({ msg: "supplierId and jewelName required" });
+      }
 
-      const gross = toNumber(grossWeight);
-      const stone = toNumber(stoneWeight);
-      const ws = toNumber(wastage);
-      const tc = toNumber(touch);
+      const gross = round3(Number(grossWeight) || 0);
+      const stone = round3(Number(stoneWeight) || 0);
+      const tc = round3(Number(touch) || 0);
+      const ws = round3(Number(wastage) || 0);
 
-      const net = parseFloat((gross - stone).toFixed(3));
-      const finalPurity = parseFloat(((net + ws) * (tc / 100)).toFixed(3));
+      const net = round3(gross - stone);
+
+      const actualPure = round3((net * tc) / 100);
+
+      let finalPurity = 0;
+
+      if (wastageType === "Touch") {
+        finalPurity = round3((net * ws) / 100);
+      }
+
+      if (wastageType === "%") {
+        const A = round3((net * ws) / 100);
+        const B = round3(A + net);
+        finalPurity = round3((B * tc) / 100);
+      }
+
+      if (wastageType === "+") {
+        const A = round3(net + ws);
+        finalPurity = round3((A * tc) / 100);
+      }
+
+      const wastagePure = round3(finalPurity - actualPure);
+
+      const supplier = await prisma.supplier.findUnique({
+        where: { id: Number(supplierId) }
+      });
 
       const entry = await prisma.purchaseEntry.create({
         data: {
           supplierId: Number(supplierId),
-          supplierName: (await prisma.supplier.findUnique({ where: { id: Number(supplierId)} })).name,
+          supplierName: supplier?.name,
           jewelName,
+
           grossWeight: gross,
           stoneWeight: stone,
           netWeight: net,
-          wastage: ws,
+
           touch: tc,
+          wastageType,
+          wastage: ws,
+          wastagePure,
+
+          actualPure,
           finalPurity,
+
           moveTo: moveTo === "product" ? "product" : "purchase",
-        },
+        }
       });
 
-      // If moveTo === "purchase", also create a PurchaseStock row linked to this entry
       if (entry.moveTo === "purchase") {
         await prisma.purchaseStock.create({
           data: {
             entryId: entry.id,
             supplierId: Number(supplierId),
-            jewelName: entry.jewelName,
-            grossWeight: entry.grossWeight,
-            stoneWeight: entry.stoneWeight,
-            netWeight: entry.netWeight,
-            wastage: entry.wastage,
-            touch: entry.touch,
-            finalPurity: entry.finalPurity,
-          },
+
+            jewelName,
+
+            grossWeight: gross,
+            stoneWeight: stone,
+            netWeight: net,
+
+            touch: tc,
+            wastageType,
+            wastage: ws,
+            wastagePure,
+
+            actualPure,
+            finalPurity,
+          }
         });
       }
 
       res.json({ msg: "Created", entry });
     } catch (err) {
-      console.error("Create entry error:", err);
+      console.error(err);
       res.status(500).json({ msg: "Server error", error: err.message });
     }
   },
@@ -104,75 +146,119 @@ module.exports = {
         jewelName,
         grossWeight,
         stoneWeight,
-        wastage,
         touch,
+        wastageType,
+        wastage,
         moveTo
       } = req.body;
 
-      const gross = toNumber(grossWeight);
-      const stone = toNumber(stoneWeight);
-      const ws = toNumber(wastage);
-      const tc = toNumber(touch);
-      const net = parseFloat((gross - stone).toFixed(3));
-      const finalPurity = parseFloat(((net + ws) * (tc / 100)).toFixed(3));
+      const gross = round3(Number(grossWeight) || 0);
+      const stone = round3(Number(stoneWeight) || 0);
+      const tc = round3(Number(touch) || 0);
+      const ws = round3(Number(wastage) || 0);
+
+      const net = round3(gross - stone);
+      const actualPure = round3((net * tc) / 100);
+
+      let finalPurity = 0;
+
+      if (wastageType === "Touch") {
+        finalPurity = round3((net * ws) / 100);
+      }
+
+      if (wastageType === "%") {
+        const A = round3((net * ws) / 100);
+        const B = round3(A + net);
+        finalPurity = round3((B * tc) / 100);
+      }
+
+      if (wastageType === "+") {
+        const A = round3(net + ws);
+        finalPurity = round3((A * tc) / 100);
+      }
+
+      const wastagePure = round3(finalPurity - actualPure);
+
+      const supplier = await prisma.supplier.findUnique({
+        where: { id: Number(supplierId) }
+      });
 
       const updated = await prisma.purchaseEntry.update({
         where: { id },
         data: {
           supplierId: Number(supplierId),
-          supplierName: (await prisma.supplier.findUnique({ where: { id: Number(supplierId)} })).name,
+          supplierName: supplier?.name,
           jewelName,
+
           grossWeight: gross,
           stoneWeight: stone,
           netWeight: net,
-          wastage: ws,
+
           touch: tc,
+          wastageType,
+          wastage: ws,
+          wastagePure,
+
+          actualPure,
           finalPurity,
+
           moveTo: moveTo === "product" ? "product" : "purchase",
         }
       });
 
-      // if moveTo changed to purchase and stock doesn't exist -> create one
       if (updated.moveTo === "purchase") {
-        const existingStock = await prisma.purchaseStock.findFirst({ where: { entryId: id }});
-        if (!existingStock) {
+        const stock = await prisma.purchaseStock.findFirst({
+          where: { entryId: id }
+        });
+
+        if (stock) {
+          await prisma.purchaseStock.update({
+            where: { id: stock.id },
+            data: {
+              supplierId: Number(supplierId),
+              jewelName,
+
+              grossWeight: gross,
+              stoneWeight: stone,
+              netWeight: net,
+
+              touch: tc,
+              wastageType,
+              wastage: ws,
+              wastagePure,
+
+              actualPure,
+              finalPurity,
+            }
+          });
+        } else {
           await prisma.purchaseStock.create({
             data: {
               entryId: id,
               supplierId: Number(supplierId),
-              jewelName: updated.jewelName,
-              grossWeight: updated.grossWeight,
-              stoneWeight: updated.stoneWeight,
-              netWeight: updated.netWeight,
-              wastage: updated.wastage,
-              touch: updated.touch,
-              finalPurity: updated.finalPurity,
-            },
-          });
-        } else {
-          // update existing stock to match changes
-          await prisma.purchaseStock.update({
-            where: { id: existingStock.id },
-            data: {
-              supplierId: Number(supplierId),
-              jewelName: updated.jewelName,
-              grossWeight: updated.grossWeight,
-              stoneWeight: updated.stoneWeight,
-              netWeight: updated.netWeight,
-              wastage: updated.wastage,
-              touch: updated.touch,
-              finalPurity: updated.finalPurity,
-            },
+              jewelName,
+
+              grossWeight: gross,
+              stoneWeight: stone,
+              netWeight: net,
+
+              touch: tc,
+              wastageType,
+              wastage: ws,
+              wastagePure,
+
+              actualPure,
+              finalPurity,
+            }
           });
         }
       } else {
-        // moveTo is product -> if a purchaseStock exists for this entry, delete it
-        await prisma.purchaseStock.deleteMany({ where: { entryId: id }});
+        await prisma.purchaseStock.deleteMany({ where: { entryId: id } });
       }
 
       res.json({ msg: "Updated", updated });
     } catch (err) {
-      console.error("Update entry error:", err);
+      console.error(err);
       res.status(500).json({ msg: "Server error", error: err.message });
     }
   },

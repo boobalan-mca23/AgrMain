@@ -6,7 +6,11 @@ const prisma = new PrismaClient();
 ------------------------------------ */
 const getAllProductStock = async (req, res) => {
   try {
-    const allStock = await prisma.productStock.findMany();
+    const allStock = await prisma.productStock.findMany({
+      orderBy: {
+        id: "desc", // latest products first
+      },
+    });
 
     // auto deactivate near-zero items
     const inactiveItems = allStock.filter(
@@ -57,101 +61,102 @@ const addNetWeightToProduct = async (req, res) => {
   const {
     productStockId,
     purchaseStockId,
-    addNetWeight,
+    addNetWeight,     // this is GROSS weight being added
     isBackchain,
     backchainPurity
   } = req.body;
 
   try {
-    if (!productStockId || !purchaseStockId || !addNetWeight) {
-      return res.status(400).json({ msg: "Missing required fields" });
-    }
-
-    const weightToAdd = Number(addNetWeight);
-    if (weightToAdd <= 0) {
-      return res.status(400).json({ msg: "Invalid weight" });
-    }
-
     const result = await prisma.$transaction(async (tx) => {
-      // 1️⃣ Fetch product stock
+
       const product = await tx.productStock.findUnique({
         where: { id: Number(productStockId) }
       });
 
-      if (!product) {
-        throw new Error("Product stock not found");
-      }
-
-      // 2️⃣ Fetch purchase stock
       const purchase = await tx.purchaseStock.findUnique({
         where: { id: Number(purchaseStockId) }
       });
 
-      if (!purchase) {
-        throw new Error("Purchase stock not found");
+      if (!product || !purchase) {
+        throw new Error("Stock not found");
       }
 
-      if (purchase.netWeight < weightToAdd) {
-        throw new Error("Insufficient purchase stock weight");
+      if (purchase.netWeight < addNetWeight) {
+        throw new Error("Insufficient purchase stock");
       }
 
-      // 3️⃣ Reduce purchase stock
+      /* 1️⃣ Reduce purchase stock */
       await tx.purchaseStock.update({
         where: { id: purchase.id },
         data: {
-          netWeight: purchase.netWeight - weightToAdd
+          netWeight: purchase.netWeight - addNetWeight
         }
       });
 
-      // 4️⃣ Calculate new weight
-      const mainWeight = Number(product.netWeight || 0);
-      const mainPurity = Number(product.touch || 0);
+      /* 2️⃣ Update ITEM (Gross) Weight */
+      const newItemWeight =
+        Number(product.itemWeight || 0) + Number(addNetWeight);
 
-      let newTotalWeight = mainWeight + weightToAdd;
-      let newPurity = mainPurity;
+      const stoneWeight = Number(product.stoneWeight || 0);
+      const netWeight = newItemWeight - stoneWeight;
 
-      // 5️⃣ BACKCHAIN LOGIC
-      if (isBackchain === true) {
-        if (!backchainPurity && backchainPurity !== 0) {
-          throw new Error("Backchain purity is required");
-        }
+      /* 3️⃣ Purity Mixing (Backchain) */
+      let newTouch = Number(product.touch || 0);
 
-        const bcPurity = Number(backchainPurity);
-
+      if (isBackchain) {
         const totalPure =
-          mainWeight * mainPurity +
-          weightToAdd * bcPurity;
+          (product.netWeight * product.touch) +
+          (addNetWeight * backchainPurity);
 
-        newPurity = totalPure / newTotalWeight;
+        newTouch = totalPure / netWeight;
       }
 
-      // 6️⃣ Final purity grams
-      const finalPurity = (newTotalWeight * newPurity) / 100;
+      /* 4️⃣ Actual Pure */
+      const actualPure = (netWeight * newTouch) / 100;
 
-      // 7️⃣ Update product stock
-      const updatedProduct = await tx.productStock.update({
+      /* 5️⃣ Wastage Calculation */
+      let finalPurity = 0;
+      let wastagePure = 0;
+
+      const wastage = Number(product.wastageValue || 0);
+      const wastageType = product.wastageType; // "Touch" | "%" | "+"
+
+      if (wastageType === "Touch") {
+        finalPurity = (netWeight * wastage) / 100;
+      }
+
+      if (wastageType === "%") {
+        const A = (netWeight * wastage) / 100;
+        const B = A + netWeight;
+        finalPurity = (B * newTouch) / 100;
+      }
+
+      if (wastageType === "+") {
+        const A = netWeight + wastage;
+        finalPurity = (A * newTouch) / 100;
+      }
+
+      wastagePure = finalPurity - actualPure;
+
+      /* 6️⃣ Update Product Stock */
+      return await tx.productStock.update({
         where: { id: product.id },
         data: {
-          netWeight: newTotalWeight,
-          touch: Number(newPurity.toFixed(3)),
-          finalPurity: Number(finalPurity.toFixed(3))
+          itemWeight: Number(newItemWeight.toFixed(3)),
+          netWeight: Number(netWeight.toFixed(3)),
+          touch: Number(newTouch.toFixed(3)),
+          finalPurity: Number(finalPurity.toFixed(3)),
+          wastagePure: Number(wastagePure.toFixed(3))
         }
       });
-
-      return updatedProduct;
     });
 
-    return res.status(200).json({
-      msg: "Weight added successfully",
-      product: result
-    });
+    res.json({ msg: "Weight added successfully", product: result });
 
   } catch (err) {
-    console.error(err.message);
-    return res.status(400).json({ err: err.message });
+    res.status(400).json({ err: err.message });
   }
 };
-
 
 module.exports = {
   getAllProductStock,
