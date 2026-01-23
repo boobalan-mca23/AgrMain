@@ -22,7 +22,7 @@ const ProductStock = () => {
 
   const [openSendDialog, setOpenSendDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState("");
-  const [reason, setReason] = useState("");           // ⭐ NEW
+  const [reason, setReason] = useState("");           
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ const ProductStock = () => {
   const openSendPopup = (product) => {
     setSelectedProduct(product);
     setSelectedGoldsmith("");
-    setReason("");                     // ⭐ reset
+    setReason("");                     
     setOpenSendDialog(true);
   };
 
@@ -62,7 +62,7 @@ const ProductStock = () => {
       source: "GOLDSMITH",
       productId: selectedProduct.id,
       goldsmithId: selectedGoldsmith || null,
-      reason: reason || null           // ⭐ send reason
+      reason: reason || null           
     });
 
     setOpenSendDialog(false);
@@ -73,30 +73,48 @@ const ProductStock = () => {
 
   return (
     <div className="stock-container">
-      <h2 className="stock-heading">Product Stock</h2>
+      <h2 className="stock-heading">Product Stock (Send to Goldsmith Repair)</h2>
 
       <div className="stock-table-container">
         {paginated.length ? (
           <table className="stock-table">
             <thead>
               <tr>
-                <th>Serial</th>
-                <th>Item</th>
-                <th>Weight</th>
-                <th>Purity</th>
-                <th>Status</th>
-                <th>Send To Repair</th>
+                <th>S.No</th>
+                <th>Item Name</th>
+                <th>Item Wt (g)</th>
+                <th>Stone Wt (g)</th>
+                <th>Net Wt (g)</th>
+                <th>Touch</th>
+                <th>Wastage Val</th>
+                <th>Wastage Pure (g)</th>
+                <th>Final Purity (g)</th>
+                <th>Action</th>
               </tr>
             </thead>
 
             <tbody>
               {paginated.map((p, i) => (
                 <tr key={p.id}>
-                  <td>{i + 1}</td>
+                  <td>{page * rowsPerPage + i + 1}</td>
+
                   <td>{p.itemName}</td>
+
+                  <td>{safeFixed(p.itemWeight)}</td>
+
+                  <td>{safeFixed(p.stoneWeight)}</td>
+
                   <td>{safeFixed(p.netWeight)}</td>
-                  <td>{safeFixed(p.finalPurity)}</td>
-                  <td>{p.isActive ? "Active" : "Inactive"}</td>
+
+                  <td>{p.touch}</td>
+
+                  <td>{p.wastageValue} ({p.wastageType})</td>
+
+                  <td>{safeFixed(p.wastagePure)}</td>
+
+                  <td style={{ fontWeight: "bold" }}>
+                    {safeFixed(p.finalPurity)}
+                  </td>
 
                   <td>
                     {p.isActive ? (
@@ -107,7 +125,9 @@ const ProductStock = () => {
                       >
                         Send to Repair
                       </Button>
-                    ) : "-"}
+                    ) : (
+                      "-"
+                    )}
                   </td>
                 </tr>
               ))}
@@ -132,13 +152,10 @@ const ProductStock = () => {
         />
       </div>
 
-      {/* SEND TO REPAIR POPUP */}
       <Dialog open={openSendDialog} onClose={() => setOpenSendDialog(false)}>
         <DialogTitle>Send Product to Repair</DialogTitle>
 
         <DialogContent>
-
-        {/* ITEM HEADER */}
         <div
           style={{
             borderBottom: "2px solid #ddd",
@@ -151,7 +168,6 @@ const ProductStock = () => {
           </h3>
         </div>
 
-        {/* ITEM INFO CARD */}
         <div
           style={{
             background: "#f9fafb",
@@ -161,30 +177,44 @@ const ProductStock = () => {
             marginBottom: "15px"
           }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: "8px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              rowGap: "8px",
+              columnGap: "10px"
+            }}
+          >
+            <div><b>Item Weight</b></div>
+            <div>{safeFixed(selectedProduct?.itemWeight)} g</div>
+
+            <div><b>Stone Weight</b></div>
+            <div>{safeFixed(selectedProduct?.stoneWeight)} g</div>
+
+            <div><b>Net Weight</b></div>
+            <div>{safeFixed(selectedProduct?.netWeight)} g</div>
+
             <div><b>Touch</b></div>
-            <div>{safeFixed(selectedProduct?.touch)}</div>
+            <div>{selectedProduct?.touch}</div>
 
-            <div><b>Stone Weight (g)</b></div>
-            <div>{safeFixed(selectedProduct?.stoneWeight)}</div>
+            <div><b>Wastage Type</b></div>
+            <div>{selectedProduct?.wastageType || "-"}</div>
 
-            <div><b>Net Weight (g)</b></div>
-            <div>{safeFixed(selectedProduct?.netWeight)}</div>
+            <div><b>Wastage Value</b></div>
+            <div>
+              {selectedProduct?.wastageValue}
+            </div>
 
-            <div><b>Wastage Value (g)</b></div>
-            <div>{safeFixed(selectedProduct?.wastageValue)}</div>
-
-            <div><b>Wastage Pure (g)</b></div>
-            <div>{safeFixed(selectedProduct?.wastagePure)}</div>
+            <div><b>Wastage Pure</b></div>
+            <div>{safeFixed(selectedProduct?.wastagePure)} g</div>
 
             <div><b>Final Purity</b></div>
             <div style={{ fontWeight: "bold", color: "#2e7d32" }}>
-              {safeFixed(selectedProduct?.finalPurity)}
+              {safeFixed(selectedProduct?.finalPurity)} g
             </div>
           </div>
         </div>
 
-        {/* ASSIGN TO GOLDSMITH */}
         <TextField
           select
           fullWidth
@@ -200,7 +230,6 @@ const ProductStock = () => {
           ))}
         </TextField>
 
-        {/* REASON */}
         <TextField
           fullWidth
           label="Reason for Repair"
