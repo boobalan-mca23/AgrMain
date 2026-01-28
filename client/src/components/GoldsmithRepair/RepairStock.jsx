@@ -18,7 +18,7 @@ const ProductStock = () => {
   const [goldsmiths, setGoldsmiths] = useState([]);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   const [openSendDialog, setOpenSendDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState("");
@@ -48,7 +48,6 @@ const ProductStock = () => {
   const safeFixed = (v, d = 3) =>
     isNaN(parseFloat(v)) ? "0.000" : parseFloat(v).toFixed(d);
 
-  // ---------- OPEN REPAIR POPUP ----------
   const openSendPopup = (product) => {
     setSelectedProduct(product);
     setSelectedGoldsmith("");
@@ -56,7 +55,6 @@ const ProductStock = () => {
     setOpenSendDialog(true);
   };
 
-  // ---------- SEND TO REPAIR ----------
   const handleSend = async () => {
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/send`, {
       source: "GOLDSMITH",
@@ -245,7 +243,6 @@ const ProductStock = () => {
         <DialogActions>
           <Button onClick={() => setOpenSendDialog(false)}>Cancel</Button>
 
-          {/* disable until filled (optional) */}
           <Button
             variant="contained"
             disabled={!selectedGoldsmith || !reason}

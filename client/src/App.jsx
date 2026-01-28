@@ -242,9 +242,7 @@ function App() {
           }
         ></Route>
 
-        <Route path="/master" element={<Master />} />
-        <Route path="/mastercustomer" element={<MasterCustomer />} />
-        <Route path="/masterbullion" element={<MasterBullion />}></Route>
+        <Route path="/master/*" element={<Master />} />
       </Routes>
     </BrowserRouter>
   );

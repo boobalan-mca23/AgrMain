@@ -31,7 +31,6 @@ const initialForm = {
 
 const round3 = (num) => Number.isFinite(num) ? Number(num.toFixed(3)) : 0;
 
-
 function PurchaseEntry() {
   const [suppliers, setSuppliers] = useState([]);
   const [entries, setEntries] = useState([]);
@@ -163,17 +162,35 @@ function PurchaseEntry() {
     if (!form.supplierId) return toast.warn("Select supplier");
     if (!form.jewelName.trim()) return toast.warn("Enter jewel name");
 
+    if (!form.grossWeight || Number(form.grossWeight) <= 0)
+      return toast.warn("Enter valid gross weight");
+
+    if (!form.touch || Number(form.touch) <= 0)
+      return toast.warn("Enter valid touch");
+
+    if (!form.wastageType)
+      return toast.warn("Select wastage type");
+
+    if (form.wastage === "" || Number(form.wastage) < 0)
+      return toast.warn("Enter valid wastage value");
+
+    if (!form.netWeight || Number(form.netWeight) <= 0)
+      return toast.warn("Net weight must be greater than 0");
+
+    if (!form.finalPurity || Number(form.finalPurity) <= 0)
+      return toast.warn("Final purity must be greater than 0");
+
     const payload = {
       supplierId: Number(form.supplierId),
       jewelName: form.jewelName.trim(),
-      grossWeight: Number(form.grossWeight) || 0,
+      grossWeight: Number(form.grossWeight),
       stoneWeight: Number(form.stoneWeight) || 0,
-      netWeight: Number(form.netWeight) || 0,
-      touch: Number(form.touch) || 0,
+      netWeight: Number(form.netWeight),
+      touch: Number(form.touch),
       wastageType: form.wastageType,
-      wastage: Number(form.wastage) || 0,
-      wastagePure: Number(form.wastagePure) || 0,
-      finalPurity: Number(form.finalPurity) || 0,
+      wastage: Number(form.wastage),
+      wastagePure: Number(form.wastagePure),
+      finalPurity: Number(form.finalPurity),
       moveTo: "purchase",
     };
 
@@ -322,7 +339,10 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.grossWeight}
-            onChange={(e) => handleChange("grossWeight", e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (/^\d*\.?\d*$/.test(v)) handleChange("grossWeight", v);
+            }}
           />
 
           <TextField
@@ -346,7 +366,10 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.touch}
-            onChange={(e) => handleChange("touch", e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (/^\d*\.?\d*$/.test(v)) handleChange("touch", v);
+            }}
           />
 
           <TextField
@@ -368,7 +391,10 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.wastage}
-            onChange={(e) => handleChange("wastage", e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (/^\d*\.?\d*$/.test(v)) handleChange("wastage", v);
+            }}
           />
 
           <TextField

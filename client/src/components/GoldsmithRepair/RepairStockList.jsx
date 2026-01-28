@@ -17,18 +17,15 @@ const RepairStockList = () => {
   const [repairList, setRepairList] = useState([]);
   const [goldsmiths, setGoldsmiths] = useState([]);
 
-  // pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
 
-  // popup states
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
 
   const [selectedRepair, setSelectedRepair] = useState(null);
 
-  // filters (DEFAULT — show ALL history)
   const [filterGoldsmith, setFilterGoldsmith] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  const [filterStatus, setFilterStatus] = useState("InRepair");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
@@ -59,7 +56,6 @@ const RepairStockList = () => {
     fetchRepairStock();
   }, []);
 
-  // ---------- FETCH REPAIR STOCK ----------
   const fetchRepairStock = async () => {
     const res = await axios.get(
       `${BACKEND_SERVER_URL}/api/repair`,
@@ -74,7 +70,6 @@ const RepairStockList = () => {
       }
     );
 
-    // Sort so active repairs appear first
     const sorted = [...(res.data?.repairs || [])].sort(
       (a, b) => (a.status === "InRepair" ? -1 : 1)
     );
@@ -83,7 +78,6 @@ const RepairStockList = () => {
     setPage(0);
   };
 
-  // ---------- FETCH GOLDSMITHS ----------
   const fetchGoldsmiths = async () => {
     const res = await axios.get(`${BACKEND_SERVER_URL}/api/goldsmith`);
     setGoldsmiths(res.data || []);
@@ -92,7 +86,6 @@ const RepairStockList = () => {
   const safeFixed = (v, d = 3) =>
     isNaN(parseFloat(v)) ? "0.000" : parseFloat(v).toFixed(d);
 
-  // ---------- PAGINATION ----------
   const paginated = repairList.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -120,7 +113,6 @@ const RepairStockList = () => {
     setOpenReceiveDialog(true);
   };
 
-  // ---------- FINAL CONFIRM ----------
   const handleReceive = async () => {
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/return`, {
       repairId: selectedRepair.id,
@@ -139,7 +131,6 @@ const RepairStockList = () => {
     <div className="stock-container">
       <h2 className="stock-heading">Repair Stock</h2>
 
-      {/* FILTER BAR */}
       <div style={{ marginBottom: "15px" }}>
         <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
 
@@ -168,7 +159,6 @@ const RepairStockList = () => {
             <MenuItem value="">All</MenuItem>
             <MenuItem value="InRepair">In Repair</MenuItem>
             <MenuItem value="Returned">Returned</MenuItem>
-            <MenuItem value="Completed">Completed</MenuItem>
           </TextField>
 
           <TextField
@@ -218,7 +208,6 @@ const RepairStockList = () => {
         </div>
       </div>
 
-      {/* TABLE */}
       <div className="stock-table-container">
         {paginated.length ? (
           <table className="stock-table">
@@ -296,7 +285,6 @@ const RepairStockList = () => {
         />
       </div>
 
-      {/* CONFIRM 1 */}
       <Dialog
         open={openReceiveDialog}
         onClose={() => setOpenReceiveDialog(false)}

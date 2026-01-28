@@ -191,7 +191,7 @@ function JobCardDetails() {
     const payload = {
       description,
       givenGold: givenGold.filter((item, _) => item.isEdit === true),
-      itemDelivery: itemDelivery.filter((item, _) => item.isEdit === true),
+      itemDelivery: itemDelivery,
       receiveSection: receivedMetalReturns.filter(
         (item, _) => item.isEdit === true
       ),

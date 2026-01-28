@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Routes, Route, Navigate, NavLink } from "react-router-dom";
 import MasterCustomer from "./Mastercustomer";
 import Mastergoldsmith from "./Mastergoldsmith";
 import Masteradditems from "./Masteradditems";
@@ -15,14 +15,8 @@ import PurchaseStock from "./PurchaseStock";
 import PurchaseReport from "./PurchaseReport";
 
 const Master = () => {
-  const [activeTab, setActiveTab] = useState("customer");
-  const [openPurchaseMenu, setOpenPurchaseMenu] = useState(false); // NEW
+  const [openPurchaseMenu, setOpenPurchaseMenu] = useState(false);
   const navigate = useNavigate();
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setOpenPurchaseMenu(false); // close dropdown when selecting
-  };
 
   const handleLogout = () => {
     navigate("/");
@@ -32,82 +26,79 @@ const Master = () => {
     navigate("/customer");
   };
 
-  const getNavButtonStyle = (tab) => ({
+  const getNavStyle = ({ isActive }) => ({
     ...navButton,
-    color: activeTab === tab ? "#fff" : "rgba(255, 255, 255, 0.8)",
-    fontWeight: activeTab === tab ? 600 : 500,
+    color: isActive ? "#fff" : "rgba(255,255,255,0.8)",
+    fontWeight: isActive ? 700 : 500,
+    textDecoration: "none",
   });
 
   return (
     <div style={containerStyle}>
       <div style={navContainer}>
         <div style={navLeft}>
+          <button onClick={handleBack} style={navButton}>Home</button>
 
-          <button onClick={handleBack} style={getNavButtonStyle("home")}>
-            Home
-          </button>
-
-          <button onClick={() => handleTabChange("customer")} style={getNavButtonStyle("customer")}>
+          <NavLink to="/master/customer" style={getNavStyle}>
             Customer
-          </button>
+          </NavLink>
 
-          <button onClick={() => handleTabChange("goldsmith")} style={getNavButtonStyle("goldsmith")}>
+          <NavLink to="/master/goldsmith" style={getNavStyle}>
             Goldsmith Info
-          </button>
+          </NavLink>
 
-          <button onClick={() => handleTabChange("items")} style={getNavButtonStyle("items")}>
+          <NavLink to="/master/items" style={getNavStyle}>
             Items
-          </button>
+          </NavLink>
 
-          {/* --------------------- NEW DROPDOWN MENU --------------------- */}
           <div
             style={{ position: "relative" }}
             onMouseEnter={() => setOpenPurchaseMenu(true)}
             onMouseLeave={() => setOpenPurchaseMenu(false)}
           >
-            <button style={getNavButtonStyle("purchase")}>
-              Purchase ▾
-            </button>
+            <button style={navButton}>Purchase ▾</button>
 
             {openPurchaseMenu && (
               <div style={dropdownMenuStyle}>
-                <div
+                <NavLink
+                  to="/master/supplier"
                   style={dropdownItemStyle}
-                  onClick={() => handleTabChange("suppliermanagement")}
                 >
                   Supplier Management
-                </div>
-                <div
+                </NavLink>
+
+                <NavLink
+                  to="/master/purchase-entry"
                   style={dropdownItemStyle}
-                  onClick={() => handleTabChange("purchaseentry")}
                 >
                   Purchase Entry
-                </div>
-                <div
+                </NavLink>
+
+                <NavLink
+                  to="/master/purchase-report"
                   style={{ ...dropdownItemStyle, borderBottom: "none" }}
-                  onClick={() => handleTabChange("purchasestockreport")}
                 >
                   Purchase Stock Report
-                </div>
-            </div>
-          )}
-        </div>
-        {/* ------------------------------------------------------------- */}
-          <button onClick={() => handleTabChange("cashgold")} style={getNavButtonStyle("cashgold")}>
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          <NavLink to="/master/cashgold" style={getNavStyle}>
             Cash / Gold
-          </button>
+          </NavLink>
 
-          <button onClick={() => handleTabChange("wastagevalue")} style={getNavButtonStyle("wastagevalue")}>
+          <NavLink to="/master/wastagevalue" style={getNavStyle}>
             Wastage Value
-          </button>
+          </NavLink>
 
-          <button onClick={() => handleTabChange("touchentries")} style={getNavButtonStyle("touchentries")}>
+          <NavLink to="/master/touchentries" style={getNavStyle}>
             Touch Entries
-          </button>
+          </NavLink>
 
-          <button onClick={() => handleTabChange("bullion")} style={getNavButtonStyle("bullion")}>
+          <NavLink to="/master/bullion" style={getNavStyle}>
             Bullion
-          </button>
+          </NavLink>
         </div>
 
         <button onClick={handleLogout} style={logoutButton}>
@@ -117,26 +108,26 @@ const Master = () => {
       </div>
 
       <div style={contentContainer}>
-        {activeTab === "customer" && <MasterCustomer />}
-        {activeTab === "goldsmith" && <Mastergoldsmith />}
-        {activeTab === "items" && <Masteradditems />}
-        {activeTab === "stock" && <Masterjewelstock />}
-        {activeTab === "cashgold" && <Cashgold />}
-        {activeTab === "touchentries" && <Touchentry />}
-        {activeTab === "bullion" && <MasterBullion />}
-        {activeTab === "wastagevalue" && <MasterWastageVal />}
-        {activeTab === "suppliermanagement" && <SupplierManagement />}
-        {activeTab === "purchaseentry" && <PurchaseEntry />}
-        {activeTab === "purchasestock" && <PurchaseStock />}
-        {activeTab === "purchasestockreport" && <PurchaseReport />}
+        <Routes>
+          <Route path="/" element={<Navigate to="customer" />} />
+          <Route path="customer" element={<MasterCustomer />} />
+          <Route path="goldsmith" element={<Mastergoldsmith />} />
+          <Route path="items" element={<Masteradditems />} />
+          <Route path="stock" element={<Masterjewelstock />} />
+          <Route path="cashgold" element={<Cashgold />} />
+          <Route path="touchentries" element={<Touchentry />} />
+          <Route path="bullion" element={<MasterBullion />} />
+          <Route path="wastagevalue" element={<MasterWastageVal />} />
+
+          <Route path="supplier" element={<SupplierManagement />} />
+          <Route path="purchase-entry" element={<PurchaseEntry />} />
+          <Route path="purchase-stock" element={<PurchaseStock />} />
+          <Route path="purchase-report" element={<PurchaseReport />} />
+        </Routes>
       </div>
     </div>
   );
 };
-
-// ------------------------------------
-// STYLES
-// ------------------------------------
 
 const containerStyle = {
   fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
@@ -178,6 +169,7 @@ const navButton = {
   border: "none",
   position: "relative",
   margin: "0 4px",
+  color: "#fff",
 };
 
 const logoutButton = {
@@ -193,7 +185,6 @@ const logoutButton = {
   alignItems: "center",
 };
 
-// NEW DROPDOWN STYLES
 const dropdownMenuStyle = {
   position: "absolute",
   top: "40px",
@@ -202,16 +193,18 @@ const dropdownMenuStyle = {
   borderRadius: "6px",
   overflow: "hidden",
   boxShadow: "0 4px 10px rgba(0,0,0,0.25)",
-  minWidth: "180px",
+  minWidth: "200px",
   zIndex: 1000,
 };
 
 const dropdownItemStyle = {
+  display: "block",
   padding: "12px 16px",
   color: "#fff",
   cursor: "pointer",
   fontSize: "0.95rem",
   borderBottom: "1px solid rgba(255,255,255,0.1)",
+  textDecoration: "none",
 };
 
 const contentContainer = {
