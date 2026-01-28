@@ -17,7 +17,6 @@ export default function PurchaseReport() {
   const [supplierId, setSupplierId] = useState("");
   const [rows, setRows] = useState([]);
 
-  // Fetch suppliers
   useEffect(() => {
     axios
       .get(`${BACKEND_SERVER_URL}/api/supplier`)
@@ -25,12 +24,15 @@ export default function PurchaseReport() {
       .catch((err) => console.error(err));
   }, []);
 
-  // Fetch report data
   const fetchReport = useCallback(async () => {
     const q = [];
     if (from) q.push(`from=${encodeURIComponent(from)}`);
     if (to) q.push(`to=${encodeURIComponent(to)}`);
-    if (supplierId) q.push(`supplierId=${supplierId}`);
+    if (supplierId=="all") 
+    {}
+    else if (supplierId)
+      q.push(`supplierId=${encodeURIComponent(supplierId)}`);
+      
 
     const url = `${BACKEND_SERVER_URL}/api/purchase-report/entries-report${
       q.length ? "?" + q.join("&") : ""
@@ -44,7 +46,6 @@ export default function PurchaseReport() {
     }
   }, [from, to, supplierId]);
 
-  // ✅ AUTO LOAD DATA ON PAGE LOAD
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
@@ -60,24 +61,23 @@ export default function PurchaseReport() {
 
       <div className="filter-section no-wrap">
         <div className="filter-group">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          From : <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </div>
 
         <div className="filter-group">
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          To : <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
 
         <div className="filter-group">
           <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-            <option value="">All</option>
+            <option disabled value="">-- Select Supplier --</option>
+            <option value="all">All</option>
             {suppliers.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
         </div>
-
-        <button className="btn-primary" onClick={fetchReport}>Search</button>
-        <button className="btn-secondary" onClick={() => window.print()}>Print</button>
+          <button className="btn-primary" onClick={fetchReport}>Search</button>
       </div>
 
       <table className="purchase-table">

@@ -18,14 +18,12 @@ import {
 const Stock = () => {
   const [stockData, setStockData] = useState([]);
 
-  const [page, setPage] = useState(0); // main table page
+  const [page, setPage] = useState(0); 
   const [rowsPerPage, setRowsPerPage] = useState(50);
 
-  // NEW: mini-table pagination for grouped-by-touch table
   const [groupPage, setGroupPage] = useState(0);
   const [groupRowsPerPage, setGroupRowsPerPage] = useState(5);
 
-  // NEW: mini-table pagination for per-item final purity table
   const [purityPage, setPurityPage] = useState(0);
   const [purityRowsPerPage, setPurityRowsPerPage] = useState(5);
 
@@ -127,7 +125,6 @@ const Stock = () => {
     }
   };
 
-  // ---------- new helper: group by touch ----------
   const groupByTouch = (stock) => {
     const map = {};
     stock.forEach((item) => {
@@ -196,10 +193,8 @@ const computeFinalPurityForItem = (item) => {
   return Number(finalPurity.toFixed(3));
 };
 
-// ---------- new helper: group by touch ----------
 const grouped = groupByTouch(stockData);
 
-// --------------- NEW: paginated sources for mini-tables ----------------
 const groupedPaginated = grouped.slice(
   groupPage * groupRowsPerPage,
   groupPage * groupRowsPerPage + groupRowsPerPage
@@ -210,7 +205,6 @@ const purityPaginated = stockData.slice(
   purityPage * purityRowsPerPage + purityRowsPerPage
 );
 
-// --------------- PAGINATED TOTALS (page-wise) ----------------
 const groupedPaginatedTotal = groupedPaginated.reduce(
   (acc, g) => acc + Number(g.netPurity ?? 0),
   0
@@ -221,7 +215,6 @@ const purityPaginatedTotal = purityPaginated.reduce(
   0
 );
 
-// --------------- GRAND TOTALS (all data) ----------------
 const groupedNetPurityTotal = grouped.reduce(
   (acc, g) => acc + (g.netPurity ?? 0),
   0
@@ -232,7 +225,6 @@ const totalFinalPurity = stockData.reduce(
   0
 );
 
-// --------------- HANDLERS ----------------
 const handleGroupChangePage = (event, newPage) => {
   setGroupPage(newPage);
 };
@@ -260,7 +252,6 @@ const openAddWeightPopup = async (product) => {
       `${BACKEND_SERVER_URL}/api/purchase-stock/touch/${product.touch}`
     );
 
-    // show only available stocks
     const available = res.data.filter(ps => ps.netWeight > 0);
     setPurchaseStocks(available);
   } catch (err) {
@@ -298,9 +289,6 @@ const handleSaveAddWeight = async () => {
   return (
     <div className="stock-container">
       <h2 className="stock-heading">Stock Dashboard</h2>
-      {/* <div className="stock-summary">
-        
-        </div> */}
       <div className="stock-summary">
         <div 
         style={{
@@ -309,7 +297,6 @@ const handleSaveAddWeight = async () => {
           borderRadius: "8px",
           boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
         }} 
-        // className="stock-card"
         >
           <p className="stock-label">Total Item's Count</p>
           <p className="stock-value">
@@ -327,7 +314,6 @@ const handleSaveAddWeight = async () => {
         <div className="stock-card">
           <p className="stock-label">Total Weight</p>
         
-          {/* --- mini-table: grouped by touch --- */}
           <div className="mini-table-wrapper">
             <table className="mini-table">
               <thead>
@@ -377,7 +363,6 @@ const handleSaveAddWeight = async () => {
               </tfoot>
             </table>
 
-            {/* NEW: pagination for grouped mini-table */}
             {grouped.length > 0 && (
               <TablePagination
                 component="div"
@@ -387,7 +372,6 @@ const handleSaveAddWeight = async () => {
                 rowsPerPage={groupRowsPerPage}
                 onRowsPerPageChange={handleGroupChangeRowsPerPage}
                 rowsPerPageOptions={[5, 10, 25]}
-                // keep density small to avoid CSS shift
                 sx={{ "& .MuiTablePagination-toolbar": { padding: "0 8px" } }}
               />
             )}
@@ -406,7 +390,6 @@ const handleSaveAddWeight = async () => {
           borderRadius: "8px",
           boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
          }}
-        // className="stock-card"
          >
           <p className="stock-label">Total Wastage </p>
           <p className="stock-value">{calculatewastgePure(stockData)}</p>
@@ -415,7 +398,6 @@ const handleSaveAddWeight = async () => {
         <div className="stock-card">
           <p className="stock-label">Total Purity</p>
 
-          {/* --- mini-table: per item final purity using wastage value --- */}
           <div className="mini-table-wrapper">
             <table className="mini-table">
               <thead>
@@ -459,7 +441,6 @@ const handleSaveAddWeight = async () => {
               </tfoot>
             </table>
 
-            {/* NEW: pagination for per-item final purity mini-table */}
             {stockData.length > 0 && (
               <TablePagination
                 component="div"
@@ -503,7 +484,6 @@ const handleSaveAddWeight = async () => {
                   <td>{index + 1}</td>
                   <td>{item.itemName}</td>
 
-                  {/* NOTE: DON'T call handlers during render. See suggested fix below. */}
                   <td>
                     {safeFixed(item.itemWeight)}
                   </td>
