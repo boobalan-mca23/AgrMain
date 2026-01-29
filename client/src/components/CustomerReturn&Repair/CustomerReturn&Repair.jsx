@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import "./Customer.css";
@@ -36,13 +37,14 @@ const modalStyle = {
 };
 
 const CustomerReturn = () => {
+  const navigate = useNavigate();
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // pagination
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   // filters
   const [search, setSearch] = useState("");
@@ -67,6 +69,7 @@ const CustomerReturn = () => {
     wastagePure: 0,
     netWeight: 0,
     finalPurity: 0,
+    finalWeight: 0,
   });
   //send to repair popup
   const [openSendDialog, setOpenSendDialog] = useState(false);
@@ -82,27 +85,27 @@ const CustomerReturn = () => {
   }
 }, [openSendDialog]);
 
-useEffect(() => {
-  const net =
-    Number(returnQC.itemWeight || 0) -
-    Number(returnQC.stoneWeight || 0) -
-    Number(returnQC.wastageValue || 0);
+// useEffect(() => {
+//   const net =
+//     Number(returnQC.itemWeight || 0) -
+//     Number(returnQC.stoneWeight || 0) -
+//     Number(returnQC.wastageValue || 0);
 
-  const wastagePure =
-    (Number(returnQC.wastageValue || 0) *
-      Number(returnQC.finalPurity || 0)) / 100;
+//   const wastagePure =
+//     (Number(returnQC.wastageValue || 0) *
+//       Number(returnQC.finalPurity || 0)) / 100;
 
-  setReturnQC(q => ({
-    ...q,
-    netWeight: net,
-    wastagePure
-  }));
-}, [
-  returnQC.itemWeight,
-  returnQC.stoneWeight,
-  returnQC.wastageValue,
-  returnQC.finalPurity
-]);
+//   setReturnQC(q => ({
+//     ...q,
+//     netWeight: net,
+//     wastagePure
+//   }));
+// }, [
+//   returnQC.itemWeight,
+//   returnQC.stoneWeight,
+//   returnQC.wastageValue,
+//   returnQC.finalPurity
+// ]);
 
 const openRepairPopup = (item) => {
   setSelectedProduct(item);
@@ -113,7 +116,7 @@ const openRepairPopup = (item) => {
 
 const openReturnPopup = (item) => {
   setSelectedProduct(item);
-
+  console.log("item",item);
   setReturnQC({
     itemWeight: item.weight || 0,
     touch: item.touch || item.percentage || 0,
@@ -123,6 +126,7 @@ const openReturnPopup = (item) => {
     wastagePure: item.wastagePure || 0,
     netWeight: item.netWeight || 0,
     finalPurity: item.finalPurity || 0,
+    finalWeight: item.finalWeight || 0,
   });
 
   setReturnReason("");
@@ -249,6 +253,7 @@ const confirmReturn = async () => {
     `${BACKEND_SERVER_URL}/api/returns/customer-item-return`,
     {
       billId: selectedBill.id,
+      currentHallmark: selectedBill.hallMark || 0,
       orderItemId: selectedProduct.id,
       reason: returnReason,
       ...returnQC
@@ -270,43 +275,43 @@ const confirmReturn = async () => {
   fetchSoldBills();
 };
   // ================= RETURN ENTIRE BILL =================
-  const returnEntireBill = async () => {
-    if (!window.confirm(`Return entire Bill #${selectedBill.id}?`)) return;
+  // const returnEntireBill = async () => {
+  //   if (!window.confirm(`Return entire Bill #${selectedBill.id}?`)) return;
 
-    const hasRepairItems = selectedBill.orders?.some(
-      item => item.repairStatus === "IN_REPAIR"
-    );
+  //   const hasRepairItems = selectedBill.orders?.some(
+  //     item => item.repairStatus === "IN_REPAIR"
+  //   );
 
-    if (hasRepairItems) {
-      toast.error("Cannot return bill while items are in repair");
-      return;
-    }
+  //   if (hasRepairItems) {
+  //     toast.error("Cannot return bill while items are in repair");
+  //     return;
+  //   }
 
 
-    try {
-      setLoading(true);
+  //   try {
+  //     setLoading(true);
 
       
-      const res = await fetch(`${BACKEND_SERVER_URL}/api/returns/customer-bill-return`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          billId: selectedBill.id,
-          reason: "Full bill return",
-        }),
-      });
+  //     const res = await fetch(`${BACKEND_SERVER_URL}/api/returns/customer-bill-return`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         billId: selectedBill.id,
+  //         reason: "Full bill return",
+  //       }),
+  //     });
 
-      if (!res.ok) throw new Error();
+  //     if (!res.ok) throw new Error();
 
-      toast.success("Entire bill returned");
-      setSelectedBill(null);
-      fetchSoldBills();
-    } catch {
-      toast.error("Failed to return bill");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     toast.success("Entire bill returned");
+  //     setSelectedBill(null);
+  //     fetchSoldBills();
+  //   } catch {
+  //     toast.error("Failed to return bill");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   //sned to repair
 const handleSend = async () => {
@@ -335,7 +340,7 @@ const handleSend = async () => {
     setReason("");
     setSelectedProduct(null);
     fetchSoldBills();
-
+  
   } catch (err) {
     toast.error(err.response?.data?.error || "Failed to send to repair");
   } finally {
@@ -343,7 +348,7 @@ const handleSend = async () => {
   }
 };
 
-const repairEntireBill = async () => {
+const repairEntireBill = async () => { 
   if (!window.confirm(`Send entire Bill #${selectedBill.id} to repair?`)) return;
 
   try {
@@ -434,6 +439,7 @@ const allReturned = selectedBill?.orders?.every(
         <TableCell className="BillTable-th-td">Bill No</TableCell>
         <TableCell className="BillTable-th-td">Customer</TableCell>
         <TableCell className="BillTable-th-td">Date</TableCell>
+        <TableCell className="BillTable-th-td"></TableCell>
         <TableCell className="BillTable-th-td">Action</TableCell>
       </TableRow>
     </TableHead>
@@ -452,6 +458,14 @@ const allReturned = selectedBill?.orders?.every(
               {bill.date
                 ? new Date(bill.date).toLocaleDateString("en-IN")
                 : "-"}
+            </TableCell>
+            <TableCell className="BillTable-tb-td">
+              <Button
+                variant="outlined"
+                onClick={() => navigate(`/bill-view/${bill.id}`)}
+              >
+                View Bill
+              </Button>
             </TableCell>
             <TableCell className="BillTable-tb-td">
               <Button
@@ -555,7 +569,7 @@ const allReturned = selectedBill?.orders?.every(
                   </TableBody>
                 </Table>
 
-                {!hasRepairItems && selectedBill?.orders?.some(
+                {/* {!hasRepairItems && selectedBill?.orders?.some(
                   item => item.repairStatus !== "RETURNED"
                 ) && (
 
@@ -569,7 +583,7 @@ const allReturned = selectedBill?.orders?.every(
                 >
                   Return Entire Bill
                 </Button>
-              )}
+              )} */}
 
               </>
             )}
@@ -591,6 +605,7 @@ const allReturned = selectedBill?.orders?.every(
                   </TableHead>
 
                   <TableBody>
+                  {console.log("selectedBill",selectedBill)}
                     {selectedBill.orders
                       ?.filter(item => item.repairStatus === "NONE")
                       .map((item) => (
@@ -610,7 +625,7 @@ const allReturned = selectedBill?.orders?.every(
                     ))}
                   </TableBody>
                 </Table>
-                <Button
+                {/* <Button
                   fullWidth
                   sx={{ mt: 2 }}
                   variant="contained"
@@ -619,7 +634,7 @@ const allReturned = selectedBill?.orders?.every(
                   onClick={repairEntireBill}
                 >
                   Repair Entire Bill
-                </Button>
+                </Button> */}
 
               </>
             )}
@@ -658,17 +673,23 @@ const allReturned = selectedBill?.orders?.every(
           }}
         >
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: "8px" }}>
-            <div><b>Touch</b></div>
-            <div>{safeFixed(selectedProduct?.touch)}</div>
-
+            <div><b>Item Weight (g)</b></div>
+            <div>{safeFixed(selectedProduct?.weight)}</div>
+            
             <div><b>Stone Weight (g)</b></div>
             <div>{safeFixed(selectedProduct?.stoneWeight)}</div>
 
             <div><b>Net Weight (g)</b></div>
             <div>{safeFixed(selectedProduct?.afterWeight)}</div>
 
+            <div><b>Touch</b></div>
+            <div>{safeFixed(selectedProduct?.touch)}</div>          
+            
+            {/* <div><b>Wastage Type (g)</b></div>
+            <div>{selectedProduct?.wastageType || "-"}</div> */}
+
             <div><b>Wastage Value (g)</b></div>
-            <div>{safeFixed(selectedProduct?.wastageValue)}</div>
+            <div>{selectedProduct?.wastageValue}</div>
 
             <div><b>Wastage Pure (g)</b></div>
             <div>{safeFixed(selectedProduct?.wastagePure)}</div>
@@ -696,7 +717,6 @@ const allReturned = selectedBill?.orders?.every(
             ))}
           </TextField>
 
-          {/* ⭐ REASON INPUT */}
           <TextField
             fullWidth
             label="Repair Reason"
@@ -726,14 +746,20 @@ const allReturned = selectedBill?.orders?.every(
       <DialogTitle>Confirm Customer Return</DialogTitle>
 
       <DialogContent>
-        <h4 >Item name{" "}:{" "}{selectedProduct?.productName}</h4>
+        {/* <h4 >Item name{" "}:{" "}{selectedProduct?.productName}</h4> */}
 
-        <table style={{ width: "100%", fontSize: 13 }}>
+        <table style={{ width: "100%", fontSize: '1rem' }}>
           <tbody>
             <tr>
-              <td>Item Weight (g)</td>
+              <td><b>Item name</b></td>
               <td>
-                <b>{returnQC.itemWeight}</b>
+                {selectedProduct?.productName}
+              </td>
+            </tr>
+            <tr>
+              <td><b>Item Weight (g)</b></td>
+              <td>
+                {returnQC.itemWeight}
                 {/* <TextField
                   size="small"
                   type="number"
@@ -746,9 +772,9 @@ const allReturned = selectedBill?.orders?.every(
             </tr>
 
             <tr>
-              <td>Count</td>
+              <td><b>Count</b></td>
               <td>
-                <b>{returnQC.count}</b>
+                {returnQC.count}
                 {/* <TextField
                   size="small"
                   type="number"
@@ -761,9 +787,9 @@ const allReturned = selectedBill?.orders?.every(
             </tr>
 
             <tr>
-              <td>Stone Weight (g)</td>
+              <td><b>Stone Weight (g)</b></td>
               <td>
-                <b>{returnQC.stoneWeight}</b>
+                {returnQC.stoneWeight}
                 {/* <TextField
                   size="small"
                   type="number"
@@ -776,9 +802,23 @@ const allReturned = selectedBill?.orders?.every(
             </tr>
 
             <tr>
-              <td>Wastage (g)</td>
+              <td><b>Net Weight (g)</b></td>
+              <td>{returnQC.netWeight}</td>
+            </tr>
+
+            <tr>
+              <td><b>Touch</b></td>
+              <td>{returnQC.touch || "N/A"}</td>
+            </tr>
+
+             {/* <tr>
+              <td>Actual Purity</td>
+              <td><b>{returnQC.actualPurity || "N/A"}</b></td>
+            </tr> */}
+            <tr>
+              <td><b>Wastage Value %</b></td>
               <td>
-              <b>{returnQC.wastageValue}</b>
+              {returnQC.wastageValue}
                 {/* <TextField
                   size="small"
                   type="number"
@@ -789,20 +829,13 @@ const allReturned = selectedBill?.orders?.every(
                 /> */}
               </td>
             </tr>
-
             <tr>
-              <td>Wastage Pure (g)</td>
-              <td><b>{returnQC.wastagePure}</b></td>
+              <td><b>Wastage Pure (g)</b></td>
+              <td>{returnQC.wastagePure.toFixed(3)}</td>
             </tr>
-
             <tr>
-              <td>Net Weight (g)</td>
-              <td><b>{returnQC.netWeight}</b></td>
-            </tr>
-
-            <tr>
-              <td>Final Purity</td>
-              <td><b>{returnQC.finalPurity}</b></td>
+              <td><b>Final Purity</b></td>
+              <td>{returnQC.finalPurity.toFixed(3)}</td>
             </tr>
           </tbody>
         </table>
