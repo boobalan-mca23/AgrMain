@@ -1,4 +1,4 @@
-generator client {
+ generator client {
   provider = "prisma-client-js"
 }
 
@@ -438,6 +438,7 @@ model OrderItems {
   count       Int?
   weight      Float?
   stoneWeight Float?
+  enteredStoneWeight Float?
   afterWeight Float?
   percentage  Float?
   finalWeight Float?
@@ -446,6 +447,7 @@ model OrderItems {
 
   stockId       Int?
   touch         Float?
+  actualPurity  Float?
   netWeight     Float?
   wastageValue  Float?
   wastagePure   Float?
