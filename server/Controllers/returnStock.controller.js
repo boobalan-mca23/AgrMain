@@ -65,6 +65,7 @@ const returnCustomerItem = async (req, res) => {
     billId,
     orderItemId,
     reason,
+    currentHallmark,
     itemWeight,
     touch,
     count,
@@ -72,10 +73,12 @@ const returnCustomerItem = async (req, res) => {
     wastageValue,
     wastagePure,
     netWeight,
-    finalPurity
+    finalPurity,
+    finalWeight,
   } = req.body;
 
   try {
+    console.log("hi Return Request Body:", req.body);
     await prisma.$transaction(async (tx) => {
 
       const item = await tx.orderItems.findUnique({
@@ -83,10 +86,41 @@ const returnCustomerItem = async (req, res) => {
       });
 
       if (!item) throw new Error("Item not found");
+
+      const bill = await tx.bill.findUnique({
+        where: { id: Number(billId) },
+        select: { customer_id: true }
+      });
+
+      if (!bill) throw new Error("Bill not found");
+
+      const customerBalance = await tx.customerBillBalance.findUnique({
+        where: { customer_id: bill.customer_id }
+      });
+
+      if (customerBalance) {
+        await tx.customerBillBalance.update({
+          where: { customer_id: bill.customer_id },
+          data: {
+            balance: customerBalance.balance - Number(finalWeight),
+            hallMarkBal: customerBalance.hallMarkBal - Number(currentHallmark)
+          }
+        });
+      } else {
+        await tx.customerBillBalance.create({
+          data: {
+            customer_id: bill.customer_id,
+            balance: Number(finalWeight),
+            initialBalance: Number(finalWeight)
+          }
+        });
+      }
+
+
       if (item.repairStatus === "IN_REPAIR")
         throw new Error("Item is in repair");
 
-      // ✅ CREATE PRODUCT STOCK USING QC VALUES
+      //  CREATE PRODUCT STOCK USING QC VALUES
       const product = await tx.productStock.create({
         data: {
           itemName: item.productName,
@@ -104,13 +138,13 @@ const returnCustomerItem = async (req, res) => {
         }
       });
 
-      // ✅ UPDATE ORDER ITEM
+      //  UPDATE ORDER ITEM
       await tx.orderItems.update({
         where: { id: item.id },
         data: { repairStatus: "RETURNED" }
       });
 
-      // ✅ RETURN LOG
+      //  RETURN LOG
       await tx.returnLogs.create({
         data: {
           billId: Number(billId),

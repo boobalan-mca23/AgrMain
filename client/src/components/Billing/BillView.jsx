@@ -126,7 +126,9 @@ const BillView = () => {
             productName: item.productName,
             count: item.count?.toString() || "",
             wt: item.weight?.toString() || "",
-            stWt: item.stoneWeight?.toString() || "",
+            aStWt: item.stoneWeight?.toString() || "0.000",
+            // stWt: item.stoneWeight?.toString() || "",
+            eStWt: item.enteredStoneWeight?.toString() || "0.000",
             awt: item.afterWeight?.toString() || "",
             percent: item.percentage?.toString() || "",
             fwt: item.finalWeight?.toString() || "",
@@ -208,7 +210,8 @@ const BillView = () => {
           productName: row.productName,
           count: row.count,
           weight: row.wt,
-          stoneWeight: row.stWt,
+          stoneWeight: row.aStWt,
+          enteredStoneWeight: row.eStWt,
           afterWeight: row.awt,
           percentage: row.percent,
           finalWeight: row.fwt,
@@ -379,7 +382,8 @@ const BillView = () => {
                 <TableCell className="th" style={{textAlign:'center'}}>Product Name</TableCell>
                 <TableCell className="th" style={{textAlign:'center'}}>Count</TableCell>
                 <TableCell className="th" style={{textAlign:'center'}}>Wt</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>St.WT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Entered St.WT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Actual St.WT</TableCell>
                 <TableCell className="th" style={{textAlign:'center'}}>AWT</TableCell>
                 <TableCell className="th" style={{textAlign:'center'}}>%</TableCell>
                 <TableCell className="th" style={{textAlign:'center'}}>FWT</TableCell>
@@ -389,7 +393,7 @@ const BillView = () => {
             <TableBody>
               {billDetailRows.length > 0 ? (
                 billDetailRows.map((row, index) => (
-                  <TableRow key={row.id}>
+                  <TableRow key={row.id} style={{backgroundColor:""}}>
                     <TableCell className="td">{index + 1}</TableCell>
                     <TableCell className="td">
                       <TextField
@@ -423,7 +427,16 @@ const BillView = () => {
                       <TextField
                         size="small"
                         type="text"
-                        value={row.stWt}
+                        value={row.eStWt}
+                        disabled
+                        inputProps={{ style: inputStyle }}
+                      />
+                    </TableCell>
+                    <TableCell className="td">
+                      <TextField
+                        size="small"
+                        type="text"
+                        value={row.aStWt}
                         disabled
                         inputProps={{ style: inputStyle }}
                       />
@@ -455,6 +468,7 @@ const BillView = () => {
                         inputProps={{ style: inputStyle }}
                       />
                     </TableCell>
+                    
                   </TableRow>
                 ))
               ) : (
