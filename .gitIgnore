@@ -27,7 +27,7 @@ Thumbs.db
 
 # Prisma
 server/prisma/.env
-server/prisma/migrations/*
+# server/prisma/migrations/*
 
 # Others
 *.log
