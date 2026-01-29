@@ -56,7 +56,7 @@ function JobCardDetails() {
   const [openingBalance, setOpeningBalance] = useState(0);
   const [edit, setEdit] = useState(false);
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [loading,setLoading]=useState(true)
   const [isFinished, setIsFinished] = useState("");
   const [saveDisable,setSaveDisable]=useState(false)
