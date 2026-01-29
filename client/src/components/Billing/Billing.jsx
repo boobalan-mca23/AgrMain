@@ -361,8 +361,9 @@ const Billing = () => {
         // }
       }
     }
-    const stWt = toNumber(currentRow.stWt);
-      if (field === 'stWt' && currentRow.productId) {
+
+    const eStWt = toNumber(currentRow.eStWt);
+      if (field === 'eStWt' && currentRow.productId) {
       const productStock = availableProducts?.allStock?.find(
         p => (p.id || p._id) === currentRow.productId
       );
@@ -377,6 +378,31 @@ const Billing = () => {
         }
       }
     }
+
+    const aStWt = toNumber(currentRow.aStWt);
+    //   if (field === 'aStWt' && currentRow.productId) {
+    //   const productStock = availableProducts?.allStock?.find(
+    //     p => (p.id || p._id) === currentRow.productId
+    //   );
+    //   if (productStock) {
+    //     const remaining = getRemainingStone(currentRow.productId, productStock.stoneWeight)
+    //       + toNumber(stoneAllocations[currentRow.productId]?.[currentRow.id] || 0); 
+    //     // allow current row’s existing allocation
+    //     if (toNumber(value) > remaining) {
+    //       toast.error(`Entered weight (${value}) exceeds remaining stone weight (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
+    //       alert(`Entered weight (${value}) exceeds remaining stone weight (${remaining.toFixed(3)}) for ${currentRow.productName}`);
+    //       return; // abort update
+    //     }
+    //   }
+    // }
+    if (field === "aStWt") {
+      if (toNumber(value) > toNumber(currentRow.eStWt)) {
+        toast.error("Actual stone cannot exceed expected stone");
+        alert("Actual stone cannot exceed expected stone");
+        return;
+      }
+    }
+
 
     const count = toNumber(currentRow.count);
       if (field === 'count' && currentRow.productId) {
@@ -397,7 +423,7 @@ const Billing = () => {
 
     const percent = toNumber(currentRow.percent);
     // awt and fwt always re-calculated
-    const awt = wt - stWt;
+    const awt = wt - aStWt;
     currentRow.awt = awt ? toFixedStr(awt, 3) : "0.000";
     currentRow.fwt = percent ? toFixedStr((awt * percent) / 100, 3) : "0.000";
 
@@ -416,10 +442,10 @@ const Billing = () => {
       }
 
       // stone
-      if (field === "stWt" || field === "productName") {
+      if (field === "eStWt" || field === "productName") {
         const newStone = { ...stoneAllocations };
         if (!newStone[productId]) newStone[productId] = {};
-        newStone[productId][currentRow.id] = toNumber(currentRow.stWt);
+        newStone[productId][currentRow.id] = toNumber(currentRow.eStWt);
         setStoneAllocations(newStone);
       }
 
@@ -471,7 +497,7 @@ const Billing = () => {
 
         const newS = { ...stoneAllocations };
         if (!newS[updated[index].productId]) newS[updated[index].productId] = {};
-        newS[updated[index].productId][currentRow.id] = toNumber(currentRow.stWt);
+        newS[updated[index].productId][currentRow.id] = toNumber(currentRow.eStWt);
         setStoneAllocations(newS);
 
         const newC = { ...countAllocations };
@@ -600,7 +626,8 @@ const Billing = () => {
       productName: product.itemName,
       count: product.count.toString(),
       wt: toFixedStr(product.itemWeight, 3),
-      stWt: toFixedStr(stWtValue, 3),
+      eStWt: toFixedStr(stWtValue, 3), // from stock (read-only)
+      aStWt: "0.000",
       awt: toFixedStr(awtVal, 3),
       percent: '',
       // fwt: toFixedStr(fwtVal, 3),
@@ -615,7 +642,7 @@ const Billing = () => {
 
     setStoneAllocations((prev) => ({
       ...prev,
-      [productId]: { ...(prev[productId] || {}), [newRow.id]: toNumber(newRow.stWt) },
+      [productId]: { ...(prev[productId] || {}), [newRow.id]: toNumber(newRow.eStWt) },
     }));
 
     setCountAllocations((prev) => ({
@@ -632,42 +659,41 @@ const Billing = () => {
   };
 
   // Creates any touch values present in rows but missing from `touch` master list.
-// Throws if creation fails (so handleSave can abort).
-const createMissingTouches = async () => {
-  try {
-    const existingSet = new Set((touch || []).map((t) => t.touch?.toString()));
-    // collect unique non-empty touch strings from rows
-    const rowTouches = Array.from(
-      new Set(
-        (rows || [])
-          .map((r) => (r.touch || "").toString().trim())
-          .filter((v) => v !== "")
-      )
-    );
+  // Throws if creation fails (so handleSave can abort).
+  const createMissingTouches = async () => {
+    try {
+      const existingSet = new Set((touch || []).map((t) => t.touch?.toString()));
+      // collect unique non-empty touch strings from rows
+      const rowTouches = Array.from(
+        new Set(
+          (rows || [])
+            .map((r) => (r.touch || "").toString().trim())
+            .filter((v) => v !== "")
+        )
+      );
 
-    const missing = rowTouches.filter((tVal) => !existingSet.has(tVal));
-    if (missing.length === 0) return;
+      const missing = rowTouches.filter((tVal) => !existingSet.has(tVal));
+      if (missing.length === 0) return;
 
-    // create all missing touches in parallel
-    await Promise.all(
-      missing.map((tVal) =>
-        axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, { touch: tVal })
-      )
-    );
+      // create all missing touches in parallel
+      await Promise.all(
+        missing.map((tVal) =>
+          axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, { touch: tVal })
+        )
+      );
 
-    // refresh master-touch list after creating
-    const refresh = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
-    setTouch(Array.isArray(refresh.data) ? refresh.data : []);
+      // refresh master-touch list after creating
+      const refresh = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+      setTouch(Array.isArray(refresh.data) ? refresh.data : []);
 
-    toast.success(`${missing.length} new touch(es) added`);
-  } catch (err) {
-    console.error("Error creating missing touches:", err);
-    toast.error("Failed to create new touch values. Please try again.");
-    // rethrow so handleSave can abort the save if needed
-    throw err;
-  }
-};
-
+      toast.success(`${missing.length} new touch(es) added`);
+    } catch (err) {
+      console.error("Error creating missing touches:", err);
+      toast.error("Failed to create new touch values. Please try again.");
+      // rethrow so handleSave can abort the save if needed
+      throw err;
+    }
+  };
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -707,7 +733,8 @@ const createMissingTouches = async () => {
         billTotal: FWT,
         hallMark: toNumber(billHallmark) || 0,
         pureBalance: toFixedStr(pureBalance, 3),
-        hallmarkBalance: toNumber(hallmarkBalance) + toNumber(prevHallmark),
+        hallmarkBalance: toNumber(hallmarkBalance),                  
+        //  + toNumber(prevHallmark),
         prevHallmark:prevHallmark,
         prevBalance:previousBalance,
         billDetailsprofit:billDetailsProfit,
@@ -733,15 +760,21 @@ const createMissingTouches = async () => {
         );
         {console.log("bill check 1",productStock)}
         const wt = toNumber(row.wt);
-        const stWt = toNumber(row.stWt);
+        const stWt = toNumber(row.aStWt);
+        const eStWt = toNumber(row.eStWt);
         const awt = wt - stWt;
 
         const touch = toNumber(productStock?.touch || 0);
         const wastageValue = toNumber(productStock?.wastageValue || 0);
+        //wastage value and wastage is completely different
+        // starts here
+        const wastage = (awt * wastageValue) / 100;
 
-        const wastagePure = (awt * wastageValue) / 100;
-        const finalPurity = (awt * touch) / 100;
+        const wastagePure = (wastage * touch) / 100;
 
+        const actualPurity = (awt * touch) / 100;
+        // change this later below is the og final purity and above is actual purity
+        const finalPurity = actualPurity + wastagePure
         return {
           stockId: row.productId,
           productName: row.productName,
@@ -749,7 +782,11 @@ const createMissingTouches = async () => {
           // bill data
           count: toNumber(row.count || 0),
           weight: wt,
+          //actuall billed value
           stoneWeight: stWt,
+          // expected stone weight enter
+          enteredStoneWeight: eStWt,
+
           afterWeight: awt,
           percentage: toNumber(row.percent),
           finalWeight: toNumber(row.fwt),
@@ -759,6 +796,7 @@ const createMissingTouches = async () => {
           netWeight: awt,
           wastageValue,
           wastagePure,
+          actualPurity,
           finalPurity,
         };
       }),
@@ -828,6 +866,8 @@ const createMissingTouches = async () => {
       // if (!productStock) alert('no products available');
       const awt = toNumber(row.awt);
       const fwt = toNumber(row.fwt);
+      const enteredStoneWt = toNumber(row.eStWt);
+      const actualStoneWt   = toNumber(row.aStWt); 
       // const enteredStoneWt = toNumber(row.stWt);
       const enteredPercentage = toNumber(row.percent);
       // console.log('AWT:', awt, 'FWT:', fwt, 'Stone WT:', enteredStoneWt, 'Entered %:', enteredPercentage);
@@ -839,11 +879,13 @@ const createMissingTouches = async () => {
         const purityFromWastage = (awt * wastageValue) / 100;
         const rowBillProfit =  fwt - purityFromWastage;
         detailsProfit += rowBillProfit;
-        // Stone Profit: stockremaing wieght × product.touch%
-        const remainingStone = getRemainingStone(row.productId, productStock.stoneWeight);
+        // Stone Profit: Stone Profit = (expectedStoneWeight − actualStoneWeight) × touch / 100
+        // const remainingStone = getRemainingStone(row.productId, productStock.stoneWeight);
         const touchValue = toNumber(productStock.touch) || 0;
         // const rowStoneProfit = (enteredStoneWt * touchValue) / 100;
-        const rowStoneProfit = (toNumber(remainingStone) * touchValue) / 100;
+        // const rowStoneProfit = (toNumber(enteredStoneWt) * touchValue) / 100;
+        const stoneDifference = Math.max(0, enteredStoneWt - actualStoneWt);
+        const rowStoneProfit  = (stoneDifference * touchValue) / 100;
         stoneProfitCalc += rowStoneProfit;
       } else {
         console.log('Product stock not found for productId:', row.productId);
@@ -885,7 +927,6 @@ const createMissingTouches = async () => {
 
   const filteredStock = useMemo(() => {
     if (!availableProducts?.allStock) return [];
-
     if (stockSource === "ALL") return availableProducts.allStock;
 
     return availableProducts.allStock.filter(
@@ -993,6 +1034,8 @@ const createMissingTouches = async () => {
         productName: item.productName,
         count: item.count?.toString() || 0,
         wt: item.weight?.toString() || "",
+        eStWt: item.enteredStoneWeight?.toString() || "0.000",
+        aStWt: item.stoneWeight?.toString() || "0.000",
         stWt: item.stoneWeight?.toString() || "",
         awt: item.afterWeight?.toString() || "",
         percent: item.percentage?.toString() || "",
@@ -1122,17 +1165,17 @@ const createMissingTouches = async () => {
     }
   };  
 
-    const fetchCustomers = async () => {
-      try {
-        const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        setCustomers(data);
-      } catch (error) {
-        console.error("Error fetching customers:", error);
-      }
-    };
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setCustomers(data);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -1335,16 +1378,36 @@ const createMissingTouches = async () => {
     <Box className="billing-wrapper">
       {/* Left panel */}
       <Box className="left-panel" 
-      style={{ maxwidth:'65%',
+      style={{ maxWidth:'65%',
          position: viewMode ? 'absolute' : '',
          left:viewMode ? '15%' : '',
         }}
       >
-        <Tooltip title="View Bills" arrow placement="right">
-          <Box onClick={() => setIsModal(true)} sx={sidebarButtonSX}>
-            <ReceiptLongIcon /><span>View</span>
-          </Box>
-      </Tooltip>
+         <Tooltip title="View Bills" arrow placement="right">
+        <Box
+          onClick={() => setIsModal(true)}
+          style={{
+             zIndex: 10,
+             position: "relative",
+             display: "flex",
+             color: "white",
+             backgroundColor: "#0a4c9a",
+             gap: "10px",
+             cursor: "pointer",
+             padding: "8px 12px",
+             borderRadius: "8px",
+             width: 80,
+          }}
+        >
+         
+            <Box sx={{ display: "flex", gap: "10px" }}>
+              <ReceiptLongIcon />
+              <span>View</span>
+            </Box>
+          
+        </Box>
+        </Tooltip>
+
 
       <Box  style={{
           display: "flex",
@@ -1473,7 +1536,8 @@ const createMissingTouches = async () => {
                 <TableCell className="th">Product Name</TableCell>
                 <TableCell className="th">Count</TableCell>
                 <TableCell className="th">Wt</TableCell>
-                <TableCell className="th">St.WT</TableCell>
+                <TableCell className="th">Entered St.WT</TableCell>
+                <TableCell className="th">Actual St.WT</TableCell>
                 <TableCell className="th">AWT</TableCell>
                 <TableCell className="th">%</TableCell>
                 <TableCell className="th">FWT</TableCell>
@@ -1526,9 +1590,21 @@ const createMissingTouches = async () => {
                       <TextField
                         size="small"
                         type="text"
-                        value={row.stWt}
+                        value={row.eStWt}
                         disabled={viewMode}
-                        onChange={(e) =>handleNumericInput(e, (ev) => handleBillDetailChange(index,"stWt",ev.target.value))}
+                        onChange={(e) =>handleNumericInput(e, (ev) => handleBillDetailChange(index,"eStWt",ev.target.value))}
+                        inputProps={{ style: inputStyle }}
+                        error={!!fieldErrors[`billDetail_${index}_stWt`]}
+                        helperText={ fieldErrors[`billDetail_${index}_stWt`] || "" }
+                      />
+                    </TableCell>
+                    <TableCell className="td">
+                      <TextField
+                        size="small"
+                        type="text"
+                        value={row.aStWt}
+                        disabled={viewMode}
+                        onChange={(e) =>handleNumericInput(e, (ev) => handleBillDetailChange(index,"aStWt",ev.target.value))}
                         inputProps={{ style: inputStyle }}
                         error={!!fieldErrors[`billDetail_${index}_stWt`]}
                         helperText={ fieldErrors[`billDetail_${index}_stWt`] || "" }
@@ -1581,7 +1657,7 @@ const createMissingTouches = async () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="no-products-message">
+                  <TableCell colSpan={10} className="no-products-message">
                     No Bill details added
                   </TableCell>
                 </TableRow>
@@ -1817,7 +1893,7 @@ const createMissingTouches = async () => {
                       )}
 
                       {/* {showTouchColumn && (
-                        <TableCell className="td">
+                        < TableCell className="td">
                           {(row.type === "" || row.type === "Gold") && (
                             <TextField
                               size="small"
@@ -2077,12 +2153,12 @@ const createMissingTouches = async () => {
                   <TableCell className="th" style={{ textAlign: "center" }}>Item Name</TableCell>
              {/*  <TableCell className="th" style={{ textAlign: "center" }}>Original WT</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Remaining WT</TableCell> */}
-                   <TableCell className="th" style={{ textAlign: "center" }}>Item WT</TableCell>
-                   <TableCell className="th" style={{ textAlign: "center" }}>Stone WT</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Item WT</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Stone WT</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Count </TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Wastage</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
-                   <TableCell className="th" style={{ textAlign: "center" }}>Status</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
