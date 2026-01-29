@@ -120,6 +120,7 @@ const RepairStockList = () => {
       stoneWeight: qc.stoneWeight,
       netWeight,
       wastagePure: updatedWastagePure,
+      wastageDelta: qc.wastageDelta,
       finalPurity
     });
 

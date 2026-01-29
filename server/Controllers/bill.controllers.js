@@ -39,16 +39,18 @@ const createBill = async (req, res) => {
         .status(400)
         .json({ msg: "At least one order item is required" });
     }
- 
+    console.log("orderItems", orderItems);
     const modifiyOrders = orderItems.map((item) => ({
       productName: item.productName,
       count: item.count ? parseInt(item.count) : undefined,
       weight: item.weight ? parseFloat(item.weight) : undefined,
       stoneWeight: item.stoneWeight ? parseFloat(item.stoneWeight) : undefined,
+      enteredStoneWeight: item.enteredStoneWeight ? parseFloat(item.enteredStoneWeight) : undefined,
       afterWeight: item.afterWeight ? parseFloat(item.afterWeight) : undefined,
       percentage: item.percentage ? parseFloat(item.percentage) : undefined,
       finalWeight: item.finalWeight ? parseFloat(item.finalWeight) : undefined,
 
+      actualPurity  : item.actualPurity ? parseFloat(item.actualPurity) : undefined,
       touch         : item.touch ? parseFloat(item.touch) : undefined,
       netWeight     : item.netWeight ? parseFloat(item.netWeight) : undefined,
       wastageValue  : item.wastageValue ? parseFloat(item.wastageValue) : undefined,

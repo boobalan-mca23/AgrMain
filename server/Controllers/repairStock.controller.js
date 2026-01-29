@@ -115,12 +115,27 @@ const sendToRepair = async (req, res) => {
         }
       });
 
+      const goldsmith = await tx.goldsmith.findUnique({
+        where: { id: goldsmithId }
+      });
+
+      // console.log("goldsmith-Details", goldsmith,"goldsmith-balnce", goldsmith.balance);
+
+        await tx.goldsmith.update({
+          where: { id: goldsmithId },
+          data: {
+            balance: goldsmith.balance + Number(product.finalPurity),
+          }
+        });
+      
+
       return repair;
     });
 
     res.json({ success: true, repair: result });
 
   } catch (err) {
+    console.error(err.message);
     res.status(400).json({ error: err.message });
   }
 };
@@ -130,7 +145,8 @@ const returnFromRepair = async (req, res) => {
     repairId,
     itemWeight,
     stoneWeight,
-    wastagePure,   
+    wastagePure,
+    wastageDelta,   
     finalPurity    
   } = req.body;
 
@@ -147,7 +163,7 @@ const returnFromRepair = async (req, res) => {
       if (!repair) throw new Error("Repair not found");
       if (repair.status !== "InRepair")
         throw new Error("Already returned");
-
+      console.log("repair-details",repair);
       const product = repair.product;
 
       const itemWt = Number(itemWeight);
@@ -196,6 +212,38 @@ const returnFromRepair = async (req, res) => {
           action: "RETURNED_WITH_RECALCULATION"
         }
       });
+
+      const goldsmith = await tx.goldsmith.findUnique({
+        where: { id: repair.goldsmithId }
+      });
+
+      if (wastageDelta > 0 ) {
+        const updatedBalance = goldsmith.balance - wastageDelta;
+        console.log("goldsmith.balance:",goldsmith.balance,"wastageDelta:",wastageDelta,"final-updated-balance", updatedBalance,"computedFinalPurity:",computedFinalPurity,"result", updatedBalance - computedFinalPurity);
+        await tx.goldsmith.update({
+          where: { id: repair.goldsmithId },
+          data: {
+            balance: updatedBalance - computedFinalPurity,
+          }
+        });
+      } else if (wastageDelta < 0) {
+        const updatedBalance = goldsmith.balance + Math.abs(wastageDelta);
+        console.log("goldsmith.balance:",goldsmith.balance,"wastageDelta:",wastageDelta,"final-updated-balance", updatedBalance,"computedFinalPurity:",computedFinalPurity,"result",updatedBalance - computedFinalPurity);
+        await tx.goldsmith.update({
+          where: { id: repair.goldsmithId },
+          data: {
+            balance: updatedBalance - computedFinalPurity,
+          }
+        });
+      } else{
+        console.log("no-change-in-wastage:","goldsmith.balance:",goldsmith.balance,"finalPurit + delta):",computedFinalPurity,"final result:",goldsmith.balance - computedFinalPurity);
+        await tx.goldsmith.update({
+          where: { id: repair.goldsmithId },
+          data: {
+           balance: goldsmith.balance - computedFinalPurity,
+          }
+        });
+      }
 
       return tx.repairStock.findUnique({
         where: { id: repair.id },
@@ -279,6 +327,19 @@ const sendCustomerItemToRepair = async (req, res) => {
           note: reason || null
         }
       });
+
+      const goldsmith = await tx.goldsmith.findUnique({
+        where: { id: goldsmithId }
+      });
+
+      // console.log("goldsmith-Details", goldsmith,"goldsmith-balnce", goldsmith.balance);
+
+        await tx.goldsmith.update({
+          where: { id: goldsmithId },
+          data: {
+            balance: goldsmith.balance + Number(productStock.finalPurity),
+          }
+        });
 
       return repair;
     });
