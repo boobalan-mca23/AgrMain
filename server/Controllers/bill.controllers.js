@@ -23,7 +23,6 @@ const createBill = async (req, res) => {
     cashBalance,
     hallmarkQty,
 
- 
   } = req.body;
   console.log("req  body in bill", req.body);
   try {
@@ -54,6 +53,7 @@ const createBill = async (req, res) => {
       touch         : item.touch ? parseFloat(item.touch) : undefined,
       netWeight     : item.netWeight ? parseFloat(item.netWeight) : undefined,
       wastageValue  : item.wastageValue ? parseFloat(item.wastageValue) : undefined,
+      wastageType   : item.wastageType,
       wastagePure   : item.wastagePure ? parseFloat(item.wastagePure) : undefined,
       finalPurity   : item.finalPurity ? parseFloat(item.finalPurity) : undefined,
     }));
@@ -111,35 +111,59 @@ const createBill = async (req, res) => {
         const stock=await prisma.productStock.findMany({where:{
           id:item.stockId
         },
-          select:{
-           itemWeight:true,
-           touch:true,
-           wastageValue:true,
-          }},)
+          // select:{
+          //  itemWeight:true,
+          //  touch:true,
+          //  wastageValue:true,
+          // }
+        },)
 
          const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
          const decStoneWeight = isNaN(parseFloat(item.stoneWeight)) ? 0 : parseFloat(item.stoneWeight);
          const decCount = item.count ? (isNaN(parseInt(item.count)) ? 0 : parseInt(item.count)) : 0;
          const remainWt=stock[0].itemWeight-decProductWt
-         const wastagePure=((remainWt*stock[0].touch)/100) - ((remainWt*stock[0].wastageValue)/100)
-         const finalPurity=(remainWt*stock[0].wastageValue)/100 
-        
-        await prisma.productStock.update({
-          where: { id: parseInt(item.stockId) },
-          data: {
-            itemWeight:remainWt||0,
-            // decrement stoneWeight if present
-            stoneWeight: decStoneWeight ? { decrement: decStoneWeight } : undefined,
-            // decrement count if present
-            count: decCount ? { decrement: decCount } : undefined,
-            wastagePure:wastagePure||0,
-            // if you also store finalWeight total on stock, adjust this too
-            finalPurity:finalPurity||0,
-            isBillProduct:true,
-          },
-        });
+         const prevNetWeight = parseFloat(stock[0].netWeight) || 0;
+         const billNetWeight = parseFloat(item.netWeight) || 0;
+         const netWeight = prevNetWeight - billNetWeight;
+
+         const actualPurity = (netWeight * stock[0].touch) / 100;
+
+          let wastagePure = 0;
+          let finalPurity = 0;
+
+          if (stock[0].wastageType === "Touch") {
+            finalPurity = (netWeight * stock[0].wastageValue) / 100;
+            wastagePure = finalPurity - actualPurity;
+
+          } else if (stock[0].wastageType === "%") {
+            const wastageWeight = (netWeight * stock[0].wastageValue) / 100;
+            const finalWastewt = netWeight + wastageWeight;
+            finalPurity = (finalWastewt * stock[0].touch) / 100;
+            wastagePure = finalPurity - actualPurity;
+
+          } else if (stock[0].wastageType === "+") {
+            const wastageWeight = netWeight + stock[0].wastageValue;
+            finalPurity = (wastageWeight * stock[0].touch) / 100;
+            wastagePure = finalPurity - actualPurity;
+          }
+
+          await prisma.productStock.update({
+            where: { id: parseInt(item.stockId) },
+            data: {
+              itemWeight: remainWt,
+              stoneWeight: decStoneWeight ? { decrement: decStoneWeight } : undefined,
+              count: decCount ? { decrement: decCount } : undefined,
+
+              netWeight,
+              wastagePure,
+              finalPurity,
+              wastageType: stock[0].wastageType,
+              isBillProduct: true,
+            },
+          });
+        }
       }
-    }
+
  
  
     await prisma.customerBillBalance.upsert({
