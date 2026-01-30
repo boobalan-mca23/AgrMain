@@ -444,7 +444,7 @@ model OrderItems {
   finalWeight Float?
   createdAt   DateTime @default(now())
   bill        Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
-
+  wastageType   String?
   stockId       Int?
   touch         Float?
   actualPurity  Float?
