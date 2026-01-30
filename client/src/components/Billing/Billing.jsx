@@ -758,7 +758,6 @@ const Billing = () => {
         const productStock = availableProducts?.allStock?.find(
           p => (p.id || p._id) === row.productId
         );
-        {console.log("bill check 1",productStock)}
         const wt = toNumber(row.wt);
         const stWt = toNumber(row.aStWt);
         const eStWt = toNumber(row.eStWt);
@@ -769,7 +768,8 @@ const Billing = () => {
         //wastage value and wastage is completely different
         // starts here
         const wastage = (awt * wastageValue) / 100;
-
+        const wastageType = productStock?.wastageType || "None";
+        console.log("testing type coming or not",wastageType)
         const wastagePure = (wastage * touch) / 100;
 
         const actualPurity = (awt * touch) / 100;
@@ -790,8 +790,7 @@ const Billing = () => {
           afterWeight: awt,
           percentage: toNumber(row.percent),
           finalWeight: toNumber(row.fwt),
-
-          // ⭐ SNAPSHOT DATA (THIS FIXES EVERYTHING)
+          wastageType: wastageType,
           touch,
           netWeight: awt,
           wastageValue,
