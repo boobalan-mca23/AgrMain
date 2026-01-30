@@ -41,6 +41,8 @@ const CustomerReturn = () => {
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [returnLoading, setReturnLoading] = useState(false);
+const [repairLoading, setRepairLoading] = useState(false);
 
   // pagination
   const [page, setPage] = useState(0);
@@ -251,6 +253,9 @@ const openReturnPopup = (item) => {
   // };
 
 const confirmReturn = async () => {
+   try {
+    setReturnLoading(true);
+
   await axios.post(
     `${BACKEND_SERVER_URL}/api/returns/customer-item-return`,
     {
@@ -275,6 +280,11 @@ const confirmReturn = async () => {
   setOpenReturnDialog(false);
   setSelectedBill(null);
   fetchSoldBills();
+  } catch (err) {
+    toast.error("Failed to return item");
+  } finally {
+    setReturnLoading(false);
+  }
 };
   // ================= RETURN ENTIRE BILL =================
   // const returnEntireBill = async () => {
@@ -318,6 +328,7 @@ const confirmReturn = async () => {
   //sned to repair
 const handleSend = async () => {
   try {
+    setRepairLoading(true);
     setLoading(true);
 
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/customer-send`, {
@@ -347,6 +358,7 @@ const handleSend = async () => {
   } catch (err) {
     toast.error(err.response?.data?.error || "Failed to send to repair");
   } finally {
+    setRepairLoading(false);
     setLoading(false);
   }
 };
@@ -647,7 +659,7 @@ const allReturned = selectedBill?.orders?.every(
     </Modal>
 
     {/* SEND TO REPAIR POPUP */}
-      <Dialog open={openSendDialog} onClose={() => setOpenSendDialog(false)}>
+      <Dialog open={openSendDialog} onClose={repairLoading ? null : () => setOpenSendDialog(false)}>
         <DialogTitle>Send Product to Repair</DialogTitle>
 
         <DialogContent>
@@ -736,16 +748,17 @@ const allReturned = selectedBill?.orders?.every(
           {/* disable until filled (optional) */}
           <Button
             variant="contained"
-            disabled={!selectedGoldsmith || !reason}
+            disabled={!selectedGoldsmith || !reason || repairLoading}
             onClick={handleSend}
           >
-            Confirm
+            {repairLoading ? "Sending..." : "Confirm"}
           </Button>
+
         </DialogActions>
       </Dialog>
 
       {/* RETURN POPUP */}
-      <Dialog open={openReturnDialog} onClose={() => setOpenReturnDialog(false)}>
+      <Dialog open={openReturnDialog} onClose={returnLoading ? null : () => setOpenReturnDialog(false)}>
       <DialogTitle>Confirm Customer Return</DialogTitle>
 
       <DialogContent>
@@ -861,10 +874,10 @@ const allReturned = selectedBill?.orders?.every(
         <Button
           variant="contained"
           color="success"
-          disabled={!returnReason || loading}
+          disabled={!returnReason || returnLoading}
           onClick={confirmReturn}
         >
-          Confirm Return
+          {returnLoading ? "Processing..." : "Confirm Return"}
         </Button>
       </DialogActions>
     </Dialog>
