@@ -70,6 +70,7 @@ const returnCustomerItem = async (req, res) => {
     touch,
     count,
     stoneWeight,
+    wastageType,
     wastageValue,
     wastagePure,
     netWeight,
@@ -120,6 +121,27 @@ const returnCustomerItem = async (req, res) => {
       if (item.repairStatus === "IN_REPAIR")
         throw new Error("Item is in repair");
 
+         const actualPurityDelta = (netWeight * touch) / 100;
+
+          let wastagePureDelta = 0;
+          let finalPurityDelta = 0;
+
+          if (wastageType === "Touch") {
+            finalPurityDelta = (netWeight * wastageValue) / 100;
+            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+
+          } else if (wastageType === "%") {
+            const wastageWeight = (netWeight * wastageValue) / 100;
+            const finalWastewt = netWeight + wastageWeight;
+            finalPurityDelta = (finalWastewt * touch) / 100;
+            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+
+          } else if (wastageType === "+") {
+            const wastageWeight = netWeight + wastageValue;
+            finalPurityDelta = (wastageWeight * touch) / 100;
+            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+          }
+
       //  CREATE PRODUCT STOCK USING QC VALUES
       const product = await tx.productStock.create({
         data: {
@@ -129,10 +151,11 @@ const returnCustomerItem = async (req, res) => {
           count: Number(count) || 1,
           stoneWeight: Number(stoneWeight) || 0,
           wastageValue: Number(wastageValue) || 0,
-          wastagePure: Number(wastagePure) || 0,
+          wastageType: item.wastageType || null,
           netWeight: Number(netWeight),
-          finalPurity: Number(finalPurity),
-          isBillProduct: true,
+          wastagePure: Number(wastagePureDelta) || 0,
+          finalPurity: Number(finalPurityDelta),
+          isBillProduct: false,
           isActive: true,
           source: "CUSTOMER_RETURN",
         }
