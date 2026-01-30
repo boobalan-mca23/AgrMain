@@ -66,6 +66,7 @@ const CustomerReturn = () => {
     count: 1,
     stoneWeight: 0,
     wastageValue: 0,
+    wastageType: null,
     wastagePure: 0,
     netWeight: 0,
     finalPurity: 0,
@@ -123,6 +124,7 @@ const openReturnPopup = (item) => {
     count: item.count || 0,
     stoneWeight: item.stoneWeight || 0,
     wastageValue: item.wastageValue || 0,
+    wastageType: item.wastageType || null,
     wastagePure: item.wastagePure || 0,
     netWeight: item.netWeight || 0,
     finalPurity: item.finalPurity || 0,
@@ -324,7 +326,7 @@ const handleSend = async () => {
       orderItemId: selectedProduct.id,
       reason
     });
-
+    console.log("data to send",selectedProduct)
     toast.success("Item sent to repair");
 
     setSelectedBill(prev => ({
@@ -815,6 +817,10 @@ const allReturned = selectedBill?.orders?.every(
               <td>Actual Purity</td>
               <td><b>{returnQC.actualPurity || "N/A"}</b></td>
             </tr> */}
+            <tr>
+              <td><b>Wastage Type</b></td>
+              <td>{returnQC.wastageType || "-"}</td>
+            </tr>
             <tr>
               <td><b>Wastage Value %</b></td>
               <td>
