@@ -281,19 +281,41 @@ const sendCustomerItemToRepair = async (req, res) => {
       if (!orderItem) throw new Error("Order item not found");
 
       {console.log("selected order item",orderItem)}
+
+          const actualPurityDelta = (orderItem.netWeight * orderItem.touch) / 100;
+
+          let wastagePureDelta = 0;
+          let finalPurityDelta = 0;
+
+          if (orderItem.wastageType === "Touch") {
+            finalPurityDelta = (orderItem.netWeight * orderItem.wastageValue) / 100;
+            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+
+          } else if (orderItem.wastageType === "%") {
+            const wastageWeight = (orderItem.netWeight * orderItem.wastageValue) / 100;
+            const finalWastewt = orderItem.netWeight + wastageWeight;
+            finalPurityDelta = (finalWastewt * orderItem.touch) / 100;
+            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+
+          } else if (orderItem.wastageType === "+") {
+            const wastageWeight = orderItem.netWeight + orderItem.wastageValue;
+            finalPurityDelta = (wastageWeight * orderItem.touch) / 100;
+            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+          }
+
       const productStock = await tx.productStock.create({
         data: {
           itemName: orderItem.productName,
           itemWeight: orderItem.weight,
           stoneWeight: orderItem.stoneWeight,
           netWeight: orderItem.afterWeight || orderItem.weight,
-          finalPurity: orderItem.finalPurity,
+          finalPurity: finalPurityDelta,
           count: orderItem.count||0,
           touch         : orderItem.touch,
-          
+          wastageType : orderItem.wastageType,
           wastageValue  : orderItem.wastageValue,
           
-          wastagePure   : orderItem.wastagePure,
+          wastagePure   : wastagePureDelta,
       
           isBillProduct: true,
           isActive: false, 

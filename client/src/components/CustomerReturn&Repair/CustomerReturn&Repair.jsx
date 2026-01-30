@@ -324,6 +324,7 @@ const handleSend = async () => {
       billId: selectedBill.id,
       goldsmithId: selectedGoldsmith, 
       orderItemId: selectedProduct.id,
+      repairProduct: selectedProduct,
       reason
     });
     console.log("data to send",selectedProduct)
@@ -687,8 +688,8 @@ const allReturned = selectedBill?.orders?.every(
             <div><b>Touch</b></div>
             <div>{safeFixed(selectedProduct?.touch)}</div>          
             
-            {/* <div><b>Wastage Type (g)</b></div>
-            <div>{selectedProduct?.wastageType || "-"}</div> */}
+            <div><b>Wastage Type (g)</b></div>
+            <div>{selectedProduct?.wastageType || "-"}</div>
 
             <div><b>Wastage Value (g)</b></div>
             <div>{selectedProduct?.wastageValue}</div>
