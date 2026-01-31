@@ -1671,7 +1671,7 @@ const Billing = () => {
                           }}
                         >
                           {row.repairStatus === "IN_REPAIR"
-                            ? "In Repair"
+                            ? "Repair"
                             : row.repairStatus === "RETURNED"
                             ? "Returned"
                             : "Sold"}
