@@ -1659,7 +1659,6 @@ const Billing = () => {
                             padding: "4px 8px",
                             borderRadius: "4px",
                             fontSize: "12px",
-                            fontWeight: "500",
                             fontWeight: "bold",
                             backgroundColor:
                               row.repairStatus === "IN_REPAIR"
