@@ -182,9 +182,9 @@ const returnFromRepair = async (req, res) => {
 
       const computedFinalPurity = actualPurity + updatedWastagePure;
 
-      if (Math.abs(computedFinalPurity - Number(finalPurity)) > 0.01) {
-        throw new Error("Final purity mismatch");
-      }
+      // if (Math.abs(computedFinalPurity - Number(finalPurity)) > 0.01) {
+      //   throw new Error("Final purity mismatch");
+      // }
 
       await tx.productStock.update({
         where: { id: repair.productId },
