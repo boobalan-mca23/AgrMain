@@ -1039,6 +1039,7 @@ const Billing = () => {
         awt: item.afterWeight?.toString() || "",
         percent: item.percentage?.toString() || "",
         fwt: item.finalWeight?.toString() || "",
+        repairStatus: item.repairStatus || "sold",
       }))
     );
     
@@ -1540,7 +1541,7 @@ const Billing = () => {
                 <TableCell className="th">AWT</TableCell>
                 <TableCell className="th">%</TableCell>
                 <TableCell className="th">FWT</TableCell>
-                <TableCell className="th no-print">Action</TableCell>
+                <TableCell className="th no-print"> {!viewMode ? "Action" : "Status"}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1639,7 +1640,7 @@ const Billing = () => {
                         inputProps={{ style: inputStyle }}
                       />
                     </TableCell>
-                    <TableCell className="td no-print">
+                    {!viewMode ? <TableCell className="td no-print">
                       <IconButton
                         onClick={() => handleDeleteBillDetailRow(index)}
                         disabled={viewMode}
@@ -1651,7 +1652,34 @@ const Billing = () => {
                           }}
                         />
                       </IconButton>
-                    </TableCell>
+                    </TableCell> 
+                      : <TableCell className="td">
+                         <span
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            fontWeight: "bold",
+                            backgroundColor:
+                              row.repairStatus === "IN_REPAIR"
+                                ? "#ff9800"
+                                : row.repairStatus === "RETURNED"
+                                ? "#4caf50"
+                                : "#9e9e9e",
+                            color: "white",
+                          }}
+                        >
+                          {row.repairStatus === "IN_REPAIR"
+                            ? "In Repair"
+                            : row.repairStatus === "RETURNED"
+                            ? "Returned"
+                            : "Sold"}
+                        </span>
+                      </TableCell>
+                      }
+                      
+                    
                   </TableRow>
                 ))
               ) : (
