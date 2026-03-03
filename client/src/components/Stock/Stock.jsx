@@ -32,6 +32,7 @@ const Stock = () => {
   const [purchaseStocks, setPurchaseStocks] = useState([]);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [addNetWeight, setAddNetWeight] = useState("");
+  const [groupedBCPurity, setGroupedBCPurity] = useState([]);
 
   const paginatedData = stockData.slice(
     page * rowsPerPage,
@@ -60,7 +61,20 @@ const Stock = () => {
 
   useEffect(() => {
     fetchProductStock();
+    fetchPuritySummary();
   }, []);
+
+  const fetchPuritySummary = async () => {
+
+    const res =
+      await axios.get(
+        `${BACKEND_SERVER_URL}/api/purchase-entry/purity-summary`
+      );
+
+    setGroupedBCPurity(res.data);
+
+  };
+
   const fetchProductStock = async () => {
     const res = await axios.get(`${BACKEND_SERVER_URL}/api/productStock`);
     const activeOnly = res.data.allStock.filter((item) => item.isActive);
@@ -458,7 +472,71 @@ const handleSaveAddWeight = async () => {
             <span className="stock-value">{safeFixed(totalFinalPurity)}</span>
   
         </div>
+        <div className="stock-card">
+
+          <p className="stock-label">
+            Available BC Purchase
+          </p>
+
+          <div className="mini-table-wrapper">
+
+            <table className="mini-table">
+
+              <thead>
+                <tr>
+                  <th>SNo</th>
+                  <th>Touch (%)</th>
+                  <th>Net Weight (g)</th>
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {groupedBCPurity.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" style={{ textAlign: "center" }}>
+                      No Data
+                    </td>
+                  </tr>
+                ) : (
+                  groupedBCPurity.map((item, index) => (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td>{item.touch}</td>
+                      <td>{safeFixed(item.netWeight)}</td>
+                    </tr>
+                  ))
+                )}
+
+              </tbody>
+
+              <tfoot>
+                <tr>
+                  <td colSpan="2" style={{ textAlign: "right" }}>
+                    <strong>Total</strong>
+                  </td>
+                  <td>
+                    <strong>
+                      {safeFixed(
+                        groupedBCPurity.reduce(
+                          (acc, item) =>
+                            acc + Number(item.netWeight || 0),
+                          0
+                        )
+                      )}
+                    </strong>
+                  </td>
+                </tr>
+              </tfoot>
+
+            </table>
+
+          </div>
+
+        </div>
       </div>
+      
+
 
       <div className="stock-table-container">
         {paginatedData.length >= 1 ? (
@@ -505,7 +583,7 @@ const handleSaveAddWeight = async () => {
                           onClick={() => openAddWeightPopup(item)}
                           sx={{ mr: 1 }}
                         >
-                          Add
+                          Add BC
                         </Button>
                   
 
@@ -564,7 +642,7 @@ const handleSaveAddWeight = async () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Add Net Weight</DialogTitle>
+        <DialogTitle>Add BC Weight</DialogTitle>
 
         <DialogContent>
           <p><strong>Product:</strong> {selectedProduct?.itemName}</p>
@@ -585,14 +663,14 @@ const handleSaveAddWeight = async () => {
           >
             {purchaseStocks.map(ps => (
               <MenuItem key={ps.id} value={ps.id}>
-                {ps.jewelName} — Available {ps.netWeight} g
+                {ps.jewelName} — Available {safeFixed(ps.netWeight)} g
               </MenuItem>
             ))}
           </TextField>
 
           <TextField
             fullWidth
-            label="Add Net Weight (g)"
+            label="Add BC Weight (g)"
             type="number"
             margin="normal"
             value={addNetWeight}
@@ -602,7 +680,7 @@ const handleSaveAddWeight = async () => {
 
           {selectedPurchase && (
             <p style={{ color: "gray" }}>
-              Available: {selectedPurchase.netWeight} g
+              Available: {safeFixed(selectedPurchase.netWeight)} g
             </p>
           )}
         </DialogContent>

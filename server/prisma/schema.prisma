@@ -1,4 +1,4 @@
- generator client {
+generator client {
   provider = "prisma-client-js"
 }
 
@@ -390,9 +390,9 @@ model ProductStock {
   createdAt     DateTime      @default(now())
   itemDelivery  itemDelivery? @relation(fields: [deliveryId], references: [id])
   jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
-  repairStock RepairStock[] @relation("ProductRepairRelation")
-  returnLogs  returnLogs[]
-  source        StockSource @default(NORMAL)
+  repairStock   RepairStock[] @relation("ProductRepairRelation")
+  returnLogs    returnLogs[]
+  source        StockSource   @default(NORMAL)
 
   @@index([deliveryId], map: "ProductStock_deliveryId_fkey")
   @@index([jobcardId], map: "ProductStock_jobcardId_fkey")
@@ -404,7 +404,6 @@ enum StockSource {
   CUSTOMER_RETURN
   REPAIR_RETURN
 }
-
 
 model Bill {
   id                Int            @id @default(autoincrement())
@@ -432,29 +431,29 @@ model Bill {
 }
 
 model OrderItems {
-  id          Int      @id @default(autoincrement())
-  billId      Int
-  productName String
-  count       Int?
-  weight      Float?
-  stoneWeight Float?
+  id                 Int      @id @default(autoincrement())
+  billId             Int
+  productName        String
+  count              Int?
+  weight             Float?
+  stoneWeight        Float?
   enteredStoneWeight Float?
-  afterWeight Float?
-  percentage  Float?
-  finalWeight Float?
-  createdAt   DateTime @default(now())
-  bill        Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
-  wastageType   String?
-  stockId       Int?
-  touch         Float?
-  actualPurity  Float?
-  netWeight     Float?
-  wastageValue  Float?
-  wastagePure   Float?
-  finalPurity   Float?
+  afterWeight        Float?
+  percentage         Float?
+  finalWeight        Float?
+  createdAt          DateTime @default(now())
+  bill               Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
 
- repairStatus String       @default("NONE")
- returnLogs   returnLogs[]
+  stockId      Int?
+  touch        Float?
+  actualPurity Float?
+  netWeight    Float?
+  wastageValue Float?
+  wastagePure  Float?
+  finalPurity  Float?
+
+  repairStatus String       @default("NONE")
+  returnLogs   returnLogs[]
 
   @@index([billId], map: "OrderItems_billId_fkey")
 }
@@ -523,8 +522,9 @@ model Supplier {
   updatedAt       DateTime @updatedAt
 
   // relations
-  purchaseEntries PurchaseEntry[]
-  purchaseStocks  PurchaseStock[]
+  purchaseEntries     PurchaseEntry[]
+  purchaseStocks      PurchaseStock[]
+  itemPurchaseEntries ItemPurchaseEntry[]
 
   @@map("suppliers")
 }
@@ -535,13 +535,17 @@ model PurchaseEntry {
   supplierId   Int
   supplierName String?
 
-  jewelName   String
+  // NEW
+  advanceGold Float @default(0)
+  goldBalance Float @default(0)
+
+  jewelName String
 
   grossWeight Float
   stoneWeight Float
   netWeight   Float
 
-  touch       Float
+  touch Float
 
   wastageType String
   wastage     Float
@@ -550,14 +554,57 @@ model PurchaseEntry {
   actualPure  Float
   finalPurity Float
 
-  moveTo      String
+  moveTo String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   supplier Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   stock    PurchaseStock[]
+
   @@map("purchase_entries")
+}
+
+model ItemPurchaseEntry {
+
+  id Int @id @default(autoincrement())
+
+  supplierId   Int
+  supplierName String?
+
+  advanceGold Float @default(0)
+
+  itemName String
+
+  grossWeight Float
+  stoneWeight Float
+  netWeight   Float
+
+  touch Float
+
+  wastageType String
+  wastage     Float
+  wastagePure Float
+
+  actualPure  Float
+  finalPurity Float
+
+  goldBalance Float @default(0)
+
+  moveTo String @default("item")
+
+  isSold Boolean @default(false)   
+
+  soldAt DateTime?                 
+
+  isBilled Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@map("item_purchase_entries")
+
 }
 
 model PurchaseStock {
@@ -566,7 +613,7 @@ model PurchaseStock {
   entryId    Int?
   supplierId Int
 
-  jewelName   String
+  jewelName String
 
   grossWeight Float
   stoneWeight Float
@@ -585,6 +632,7 @@ model PurchaseStock {
 
   purchaseEntry PurchaseEntry? @relation(fields: [entryId], references: [id], onDelete: Cascade)
   supplier      Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
   @@map("purchase_stock")
 }
 
