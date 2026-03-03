@@ -132,6 +132,7 @@ const BillView = () => {
             awt: item.afterWeight?.toString() || "",
             percent: item.percentage?.toString() || "",
             fwt: item.finalWeight?.toString() || "",
+            repairStatus: item.repairStatus || "SOLD",
           }))
         );
 
@@ -387,6 +388,7 @@ const BillView = () => {
                 <TableCell className="th" style={{textAlign:'center'}}>AWT</TableCell>
                 <TableCell className="th" style={{textAlign:'center'}}>%</TableCell>
                 <TableCell className="th" style={{textAlign:'center'}}>FWT</TableCell>
+                <TableCell className="th" style={{textAlign:'center'}}>Status</TableCell>
                 {/* <TableCell className="th no-print">Action</TableCell> */}
               </TableRow>
             </TableHead>
@@ -468,6 +470,31 @@ const BillView = () => {
                         inputProps={{ style: inputStyle }}
                       />
                     </TableCell>
+
+                    <TableCell className="td">
+                      <span
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        fontSize: "12px",
+                        fontWeight: "500",
+                        fontWeight: "bold",
+                        backgroundColor:
+                          row.repairStatus === "IN_REPAIR"
+                            ? "#ff9800"
+                            : row.repairStatus === "RETURNED"
+                            ? "#4caf50"
+                            : "#9e9e9e",
+                        color: "white",
+                      }}
+                    >
+                      {row.repairStatus === "IN_REPAIR"
+                        ? "Repair"
+                        : row.repairStatus === "RETURNED"
+                        ? "Return"
+                        : "Sold"}
+                    </span>
+                  </TableCell>
                     
                   </TableRow>
                 ))

@@ -758,7 +758,6 @@ const Billing = () => {
         const productStock = availableProducts?.allStock?.find(
           p => (p.id || p._id) === row.productId
         );
-        {console.log("bill check 1",productStock)}
         const wt = toNumber(row.wt);
         const stWt = toNumber(row.aStWt);
         const eStWt = toNumber(row.eStWt);
@@ -769,7 +768,8 @@ const Billing = () => {
         //wastage value and wastage is completely different
         // starts here
         const wastage = (awt * wastageValue) / 100;
-
+        const wastageType = productStock?.wastageType || "None";
+        console.log("testing type coming or not",wastageType)
         const wastagePure = (wastage * touch) / 100;
 
         const actualPurity = (awt * touch) / 100;
@@ -790,8 +790,7 @@ const Billing = () => {
           afterWeight: awt,
           percentage: toNumber(row.percent),
           finalWeight: toNumber(row.fwt),
-
-          // ⭐ SNAPSHOT DATA (THIS FIXES EVERYTHING)
+          wastageType: wastageType,
           touch,
           netWeight: awt,
           wastageValue,
@@ -1040,6 +1039,7 @@ const Billing = () => {
         awt: item.afterWeight?.toString() || "",
         percent: item.percentage?.toString() || "",
         fwt: item.finalWeight?.toString() || "",
+        repairStatus: item.repairStatus || "sold",
       }))
     );
     
@@ -1541,7 +1541,7 @@ const Billing = () => {
                 <TableCell className="th">AWT</TableCell>
                 <TableCell className="th">%</TableCell>
                 <TableCell className="th">FWT</TableCell>
-                <TableCell className="th no-print">Action</TableCell>
+                <TableCell className="th no-print"> {!viewMode ? "Action" : "Status"}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1640,7 +1640,7 @@ const Billing = () => {
                         inputProps={{ style: inputStyle }}
                       />
                     </TableCell>
-                    <TableCell className="td no-print">
+                    {!viewMode ? <TableCell className="td no-print">
                       <IconButton
                         onClick={() => handleDeleteBillDetailRow(index)}
                         disabled={viewMode}
@@ -1652,7 +1652,33 @@ const Billing = () => {
                           }}
                         />
                       </IconButton>
-                    </TableCell>
+                    </TableCell> 
+                      : <TableCell className="td">
+                         <span
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            backgroundColor:
+                              row.repairStatus === "IN_REPAIR"
+                                ? "#ff9800"
+                                : row.repairStatus === "RETURNED"
+                                ? "#4caf50"
+                                : "#9e9e9e",
+                            color: "white",
+                          }}
+                        >
+                          {row.repairStatus === "IN_REPAIR"
+                            ? "Repair"
+                            : row.repairStatus === "RETURNED"
+                            ? "Returned"
+                            : "Sold"}
+                        </span>
+                      </TableCell>
+                      }
+                      
+                    
                   </TableRow>
                 ))
               ) : (

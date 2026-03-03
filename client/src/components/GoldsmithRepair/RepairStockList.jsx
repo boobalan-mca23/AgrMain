@@ -121,7 +121,8 @@ const RepairStockList = () => {
       netWeight,
       wastagePure: updatedWastagePure,
       wastageDelta: qc.wastageDelta,
-      finalPurity
+      finalPurity,
+      ...qc
     });
 
     setOpenReceiveDialog(false);
