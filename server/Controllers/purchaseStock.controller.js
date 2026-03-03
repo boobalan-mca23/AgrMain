@@ -43,21 +43,58 @@ module.exports = {
   // ⭐ NEW: GET ALL PURCHASE STOCK ENTRIES BY TOUCH VALUE
   // ------------------------------------
   getByTouch: async (req, res) => {
-    try {
-      const touch = Number(req.params.touch);
 
-      const list = await prisma.purchaseStock.findMany({
-        where: { touch },
-        include: { supplier: true, purchaseEntry: true },
-        orderBy: { createdAt: "desc" }
-      });
+  try {
 
-      res.json(list);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: "Server error", error: err.message });
-    }
-  },
+    const touch = Number(req.params.touch);
+
+    const list = await prisma.purchaseStock.findMany({
+
+      where: {
+
+        touch: touch,
+
+        finalPurity: {
+          gt: 0   // ✅ only fetch remaining purity
+        }
+
+      },
+
+      include: {
+
+        supplier: true,
+
+        purchaseEntry: true
+
+      },
+
+      orderBy: {
+
+        createdAt: "desc"
+
+      }
+
+    });
+
+    res.json(list);
+
+  }
+
+  catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+
+      msg: "Server error",
+
+      error: err.message
+
+    });
+
+  }
+
+},
 
   // ------------------------------------
   // ⭐ NEW: GET TOTAL WASTAGE FOR A TOUCH VALUE

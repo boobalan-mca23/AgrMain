@@ -26,7 +26,7 @@ import "./Masteradditems.css";
 
 const initialForm = {
   advanceGold: "",
-  jewelName: "",
+  itemName: "",
   grossWeight: "",
   stoneWeight: "",
   netWeight: "",
@@ -43,7 +43,7 @@ const round3 = (num) =>
   Number.isFinite(num) ? Number(num.toFixed(3)) : 0;
 
 
-function PurchaseEntry() {
+function ItemPurchaseEntry() {
 
   const { supplierId } = useParams();
 
@@ -53,7 +53,7 @@ function PurchaseEntry() {
 
   const [filteredEntries, setFilteredEntries] = useState([]);
 
-  const [jewelFilter, setJewelFilter] = useState("");
+  const [itemFilter, setItemFilter] = useState("");
 
   const [touchFilter, setTouchFilter] = useState("");
 
@@ -69,56 +69,81 @@ function PurchaseEntry() {
 
   const [supplierName, setSupplierName] = useState("");
 
+  const [saving, setSaving] = useState(false);
+
 
   useEffect(() => {
+
     fetchSupplierName();
+
     fetchEntries();
+
   }, [supplierId]);
 
 
   useEffect(() => {
+
     generateFilterOptions();
+
     applyFilters();
-  }, [entries, jewelFilter, touchFilter]);
+
+  }, [entries, itemFilter, touchFilter]);
 
 
   const fetchSupplierName = async () => {
+
     try {
+
       const res = await axios.get(
         `${BACKEND_SERVER_URL}/api/supplier/${supplierId}`
       );
+
       setSupplierName(res.data.name);
+
     } catch {
+
       toast.error("Failed to load supplier");
+
     }
+
   };
 
 
   const fetchEntries = async () => {
-    try {
-      const res = await axios.get(
-        `${BACKEND_SERVER_URL}/api/purchase-entry?supplierId=${supplierId}`
-      );
-      setEntries(res.data);
-    } catch {
-      toast.error("Failed to load entries");
-    }
-  };
 
+    try {
+
+      const res = await axios.get(
+        `${BACKEND_SERVER_URL}/api/item-purchase?supplierId=${supplierId}`
+      );
+
+      setEntries(res.data);
+
+    } catch {
+
+      toast.error("Failed to load entries");
+
+    }
+
+  };
 
   const generateFilterOptions = () => {
-    const touches = [...new Set(entries.map(e => e.touch))];
-    setTouchOptions(touches);
-  };
 
+    const touches = [...new Set(entries.map(e => e.touch))];
+
+    setTouchOptions(touches);
+
+  };
 
   const applyFilters = () => {
 
     let filtered = [...entries];
 
-    if (jewelFilter)
+    if (itemFilter)
       filtered = filtered.filter(e =>
-        e.jewelName.toLowerCase().includes(jewelFilter.toLowerCase())
+        e.itemName.toLowerCase().includes(
+          itemFilter.toLowerCase()
+        )
       );
 
     if (touchFilter)
@@ -127,21 +152,29 @@ function PurchaseEntry() {
       );
 
     setFilteredEntries(filtered);
+
   };
 
 
   const clearFilters = () => {
-    setJewelFilter("");
+
+    setItemFilter("");
+
     setTouchFilter("");
+
   };
 
 
   const recalc = (obj) => {
 
     const gross = round3(Number(obj.grossWeight) || 0);
+
     const stone = round3(Number(obj.stoneWeight) || 0);
+
     const touch = round3(Number(obj.touch) || 0);
+
     const wastage = round3(Number(obj.wastage) || 0);
+
     const advance = round3(Number(obj.advanceGold) || 0);
 
     const netWeight = round3(gross - stone);
@@ -156,9 +189,11 @@ function PurchaseEntry() {
     if (obj.wastageType === "%") {
 
       const A = round3((netWeight * wastage) / 100);
+
       const B = round3(A + netWeight);
 
       finalPurity = round3((B * touch) / 100);
+
     }
 
     if (obj.wastageType === "+") {
@@ -166,41 +201,65 @@ function PurchaseEntry() {
       const A = round3(netWeight + wastage);
 
       finalPurity = round3((A * touch) / 100);
+
     }
 
     const wastagePure = round3(finalPurity - actualPure);
 
-    // ✅ ONLY calculate goldBalance when finalPurity exists
+    // ✅ FIX: calculate only when finalPurity exists
     let goldBalance = obj.goldBalance;
 
-    if (finalPurity > 0) {
+    if (finalPurity > 0)
       goldBalance = round3(advance - finalPurity);
-    }
 
     return {
+
       netWeight,
+
       wastagePure,
+
       finalPurity,
-      goldBalance,
+
+      goldBalance
+
     };
 
   };
+
 
   const handleChange = (field, value) => {
 
     const updated = { ...form, [field]: value };
 
-    Object.assign(updated, recalc(updated));
+    const calculated = recalc(updated);
 
-    setForm(updated);
+    setForm({
+
+      ...updated,
+
+      netWeight: calculated.netWeight,
+
+      wastagePure: calculated.wastagePure,
+
+      finalPurity: calculated.finalPurity,
+
+      // ✅ do NOT overwrite manually entered goldBalance unless purity exists
+      goldBalance:
+        calculated.finalPurity > 0
+          ? calculated.goldBalance
+          : updated.goldBalance
+
+    });
+
   };
 
 
   const openAddDialog = () => {
 
     setIsEdit(false);
-    setSelectedId(null);
+
     setForm(initialForm);
+
     setOpenDialog(true);
 
   };
@@ -209,15 +268,20 @@ function PurchaseEntry() {
   const openEditDialog = (entry) => {
 
     setIsEdit(true);
+
     setSelectedId(entry.id);
+
     setForm(entry);
+
     setOpenDialog(true);
 
   };
 
 
   const closeDialog = () => {
+
     setOpenDialog(false);
+
   };
 
 
@@ -229,7 +293,7 @@ function PurchaseEntry() {
 
       advanceGold: Number(form.advanceGold || 0),
 
-      jewelName: form.jewelName,
+      itemName: form.itemName,
 
       grossWeight: Number(form.grossWeight),
 
@@ -249,8 +313,6 @@ function PurchaseEntry() {
 
       goldBalance: Number(form.goldBalance),
 
-      moveTo: "purchase"
-
     };
 
     try {
@@ -258,20 +320,20 @@ function PurchaseEntry() {
       if (isEdit) {
 
         await axios.put(
-          `${BACKEND_SERVER_URL}/api/purchase-entry/${selectedId}`,
+          `${BACKEND_SERVER_URL}/api/item-purchase/${selectedId}`,
           payload
         );
 
-        toast.success("Updated");
+        toast.success("Updated successfully");
 
       } else {
 
         await axios.post(
-          `${BACKEND_SERVER_URL}/api/purchase-entry/create`,
+          `${BACKEND_SERVER_URL}/api/item-purchase/create`,
           payload
         );
 
-        toast.success("Added");
+        toast.success("Added successfully");
 
       }
 
@@ -283,6 +345,10 @@ function PurchaseEntry() {
 
       toast.error("Failed");
 
+    } finally {
+
+      setSaving(false);
+
     }
 
   };
@@ -290,16 +356,20 @@ function PurchaseEntry() {
 
   const handleDelete = async (id) => {
 
-    if (!window.confirm("Are you sure you want to delete this purchase entry?"))
-      return;
+    const confirmDelete =
+      window.confirm(
+        "Are you sure you want to delete this Item Purchase?"
+      );
+
+    if (!confirmDelete) return;
 
     try {
 
       await axios.delete(
-        `${BACKEND_SERVER_URL}/api/purchase-entry/${id}`
+        `${BACKEND_SERVER_URL}/api/item-purchase/${id}`
       );
 
-      toast.success("Deleted");
+      toast.success("Deleted successfully");
 
       fetchEntries();
 
@@ -318,7 +388,10 @@ function PurchaseEntry() {
 
       <ToastContainer />
 
-      <h2>BC Purchase Entry - {supplierName}</h2>
+
+      <h2>
+        Item Purchase Entry - {supplierName}
+      </h2>
 
 
       <div style={{
@@ -329,7 +402,9 @@ function PurchaseEntry() {
 
         <Button
           variant="outlined"
-          onClick={() => navigate("/master/purchase-entry")}
+          onClick={() =>
+            navigate("/master/item-purchase")
+          }
         >
           Back
         </Button>
@@ -339,7 +414,7 @@ function PurchaseEntry() {
           variant="contained"
           onClick={openAddDialog}
         >
-          Add BC Purchase
+          Add Item Purchase
         </Button>
 
       </div>
@@ -351,18 +426,29 @@ function PurchaseEntry() {
 
         <div style={{ display: "flex", gap: 20 }}>
 
+          {/* Item Name textbox */}
+
           <TextField
-            label="Filter by Jewel Name"
-            value={jewelFilter}
-            onChange={(e) => setJewelFilter(e.target.value)}
+            label="Filter by Item Name"
+            value={itemFilter}
+            onChange={(e) =>
+              setItemFilter(e.target.value)
+            }
+            variant="outlined"
+            style={{ minWidth: 200 }}
           />
 
+
+          {/* Touch dropdown */}
 
           <TextField
             select
             value={touchFilter}
-            onChange={(e) => setTouchFilter(e.target.value)}
+            onChange={(e) =>
+              setTouchFilter(e.target.value)
+            }
             SelectProps={{ native: true }}
+            style={{ minWidth: 200 }}
           >
 
             <option value="">Filter by Touch</option>
@@ -382,7 +468,6 @@ function PurchaseEntry() {
 
       </Paper>
 
-
       {/* TABLE */}
 
       <Paper style={{ overflowX: "auto", marginTop: "60px", marginLeft: "60px", position: "absolute" }}>
@@ -394,31 +479,18 @@ function PurchaseEntry() {
           <thead>
 
             <tr>
-
               <th>S.No</th>
-
-              <th>Jewel</th>
-
-              <th>Gross wt. (g)</th>
-
-              <th>Stone wt. (g)</th>
-
-              <th>Net wt. (g)</th>
-
+              <th>Item</th>
+              <th>Gross Wt. (g)</th>
+              <th>Stone Wt. (g)</th>
+              <th>Net Wt. (g)</th>
               <th>Touch</th>
-
-              <th>Wastage Value (g)</th>
-
+              <th>Wastage Value</th>
               <th>Wastage Pure (g)</th>
-
               <th>Final Purity (g)</th>
-
               <th>Advance Gold (g)</th>
-
               <th>Gold Balance (g)</th>
-
               <th>Action</th>
-
             </tr>
 
           </thead>
@@ -432,7 +504,7 @@ function PurchaseEntry() {
 
                 <td>{i + 1}</td>
 
-                <td>{e.jewelName}</td>
+                <td>{e.itemName}</td>
 
                 <td>{e.grossWeight}</td>
 
@@ -482,7 +554,7 @@ function PurchaseEntry() {
       <Dialog open={openDialog} fullWidth>
 
         <DialogTitle>
-          {isEdit ? "Edit Purchase Entry" : "Add Purchase Entry"}
+          {isEdit ? "Edit Item Purchase" : "Add Item Purchase"}
         </DialogTitle>
 
 
@@ -504,15 +576,17 @@ function PurchaseEntry() {
             }
           />
 
+
           <TextField
-            label="Jewel Name"
+            label="Item Name"
             fullWidth
             margin="dense"
-            value={form.jewelName}
+            value={form.itemName}
             onChange={(e) =>
-              handleChange("jewelName", e.target.value)
+              handleChange("itemName", e.target.value)
             }
           />
+
 
           <TextField
             label="Gross Weight (g)"
@@ -530,6 +604,7 @@ function PurchaseEntry() {
             }
           />
 
+
           <TextField
             label="Stone Weight (g)"
             fullWidth
@@ -546,6 +621,7 @@ function PurchaseEntry() {
             }
           />
 
+
           <TextField
             label="Net Weight (g)"
             fullWidth
@@ -553,6 +629,7 @@ function PurchaseEntry() {
             value={form.netWeight}
             InputProps={{ readOnly: true }}
           />
+
 
           <TextField
             label="Touch"
@@ -570,29 +647,26 @@ function PurchaseEntry() {
             }
           />
 
-          {/* ✅ Wastage Type */}
+
           <TextField
             select
             label="Wastage Type"
             fullWidth
             margin="dense"
+            SelectProps={{ native: true }}
             value={form.wastageType}
             onChange={(e) =>
               handleChange("wastageType", e.target.value)
             }
-            SelectProps={{ native: true }}
           >
             <option value="%">%</option>
             <option value="Touch">Touch</option>
             <option value="+">+</option>
           </TextField>
 
+
           <TextField
-            label={
-              form.wastageType === "%"
-                ? "Wastage (%)"
-                : "Wastage (g)"
-            }
+            label="Wastage"
             fullWidth
             margin="dense"
             value={form.wastage}
@@ -603,7 +677,7 @@ function PurchaseEntry() {
               if (/^\d*\.?\d*$/.test(value)) {
               handleChange("wastage", e.target.value)
               }
-              }
+            }
             }
           />
 
@@ -623,26 +697,28 @@ function PurchaseEntry() {
             InputProps={{ readOnly: true }}
           />
 
+
           <TextField
             label="Gold Balance (g)"
             fullWidth
             margin="dense"
             value={form.goldBalance}
             onChange={(e) =>
-            {
+              {
               const value = e.target.value;
 
               if (/^\d*\.?\d*$/.test(value)) {
               setForm({
                 ...form,
-                goldBalance: value
+                goldBalance: e.target.value
               })
             }
-            }
+          }
             }
           />
 
         </DialogContent>
+
 
         <DialogActions>
 
@@ -650,8 +726,10 @@ function PurchaseEntry() {
             Cancel
           </Button>
 
-
-          <Button variant="contained" onClick={handleSubmit}>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+          >
             Save
           </Button>
 
@@ -665,4 +743,4 @@ function PurchaseEntry() {
 
 }
 
-export default PurchaseEntry;
+export default ItemPurchaseEntry;

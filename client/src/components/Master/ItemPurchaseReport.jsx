@@ -3,7 +3,7 @@ import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import "./PurchaseReport.css";
 
-export default function BCPurchaseReport() {
+export default function ItemPurchaseReport() {
 
   const [suppliers, setSuppliers] = useState([]);
 
@@ -11,19 +11,19 @@ export default function BCPurchaseReport() {
   const todayStr = today.toISOString().slice(0, 10);
 
   // ✅ Last 15 days default
-  const last15Days = new Date();
-  last15Days.setDate(today.getDate() - 15);
-  const last15DaysStr = last15Days.toISOString().slice(0, 10);
+  const last15 = new Date();
+  last15.setDate(today.getDate() - 15);
+  const last15Str = last15.toISOString().slice(0, 10);
 
-  const [from, setFrom] = useState(last15DaysStr);
+  const [from, setFrom] = useState(last15Str);
   const [to, setTo] = useState(todayStr);
   const [supplierId, setSupplierId] = useState("all");
 
   const [rows, setRows] = useState([]);
 
-  // ===============================
+  // ============================
   // FETCH SUPPLIERS
-  // ===============================
+  // ============================
 
   useEffect(() => {
 
@@ -33,9 +33,9 @@ export default function BCPurchaseReport() {
 
   }, []);
 
-  // ===============================
+  // ============================
   // FETCH REPORT
-  // ===============================
+  // ============================
 
   const fetchReport = useCallback(async () => {
 
@@ -48,7 +48,7 @@ export default function BCPurchaseReport() {
       q.push(`supplierId=${supplierId}`);
 
     const url =
-      `${BACKEND_SERVER_URL}/api/purchase-report/entries-report`
+      `${BACKEND_SERVER_URL}/api/item-purchase/report`
       + (q.length ? "?" + q.join("&") : "");
 
     try {
@@ -71,16 +71,16 @@ export default function BCPurchaseReport() {
 
   }, [fetchReport]);
 
-  // ===============================
+  // ============================
   // FORMATTER
-  // ===============================
+  // ============================
 
   const format3 = (v) =>
     v ? Number(v).toFixed(3) : "0.000";
 
-  // ===============================
-  // TOTAL CALCULATIONS
-  // ===============================
+  // ============================
+  // TOTALS
+  // ============================
 
   const totals = useMemo(() => {
 
@@ -97,18 +97,16 @@ export default function BCPurchaseReport() {
     });
 
     return {
-
       totalNet,
       totalWastagePure,
       totalFinalPurity
-
     };
 
   }, [rows]);
 
-  // ===============================
-  // TOTAL SUPPLIERS COUNT
-  // ===============================
+  // ============================
+  // TOTAL SUPPLIERS
+  // ============================
 
   const totalSuppliers = useMemo(() => {
 
@@ -125,9 +123,9 @@ export default function BCPurchaseReport() {
 
   }, [rows]);
 
-  // ===============================
+  // ============================
   // PRINT
-  // ===============================
+  // ============================
 
   const handlePrint = () => {
 
@@ -139,11 +137,14 @@ export default function BCPurchaseReport() {
     win.document.write(`
       <html>
       <head>
-      <title>BC Purchase Report</title>
+      <title>Item Purchase Report</title>
 
       <style>
 
-      body { font-family: Arial; padding:20px }
+      body {
+        font-family: Arial;
+        padding:20px;
+      }
 
       table {
         width:100%;
@@ -166,7 +167,7 @@ export default function BCPurchaseReport() {
 
       <body>
 
-      <h2>BC Purchase Report</h2>
+      <h2>Item Purchase Report</h2>
 
       ${content}
 
@@ -180,15 +181,15 @@ export default function BCPurchaseReport() {
 
   };
 
-  // ===============================
+  // ============================
   // UI
-  // ===============================
+  // ============================
 
   return (
 
     <div className="purchase-container">
 
-      <h2>BC Purchase Report</h2>
+      <h2>Item Purchase Report</h2>
 
       {/* FILTER */}
 
@@ -207,17 +208,17 @@ export default function BCPurchaseReport() {
           value={to}
           onChange={e => setTo(e.target.value)}
         />
-
         <div className="filter-group">
-
           <select
             value={supplierId}
-            onChange={(e) => setSupplierId(e.target.value)}
+            onChange={e => setSupplierId(e.target.value)}
           >
 
-            <option value="all">All Suppliers</option>
+            <option value="all">
+              All Suppliers
+            </option>
 
-            {suppliers.map((s) => (
+            {suppliers.map(s => (
 
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -226,7 +227,6 @@ export default function BCPurchaseReport() {
             ))}
 
           </select>
-
         </div>
 
         <button className="btn-primary" onClick={fetchReport}>
@@ -267,7 +267,7 @@ export default function BCPurchaseReport() {
 
               <th>#</th>
               <th>Supplier</th>
-              <th>Jewel</th>
+              <th>Item</th>
               <th>Gross wt. (g)</th>
               <th>Stone wt. (g)</th>
               <th>Net wt. (g)</th>
@@ -300,7 +300,7 @@ export default function BCPurchaseReport() {
 
                 <td>{r.supplier?.name}</td>
 
-                <td>{r.jewelName}</td>
+                <td>{r.itemName}</td>
 
                 <td>{format3(r.grossWeight)}</td>
 

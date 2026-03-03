@@ -1,23 +1,89 @@
-import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom"; // ✅ added useLocation
 import { FiLogOut, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import NotificationBell from "../Notification/Notification";
 import logo from "../../Assets/agrLogo.png";
+
 const Navbar = () => {
+
   const navigate = useNavigate();
+
+  // ✅ NEW: detect current URL
+  const location = useLocation();
+
   const [showReports, setShowReports] = useState(false);
   const [activeLink, setActiveLink] = useState("");
   const [activeReport, setActiveReport] = useState("");
   const [hoveredItem, setHoveredItem] = useState(null);
   const reportsRef = useRef(null);
+
   const [showStock, setShowStock] = useState(false);
   const [activeStock, setActiveStock] = useState("");
+
   const [showVoucher, setShowVoucher] = useState(false);
   const [activeVoucher, setActiveVoucher] = useState("");
+
   const [showRepair, setShowRepair] = useState(false);
   const [showReturn, setShowReturn] = useState(false);
+
   const [activeRepair, setActiveRepair] = useState("");
   const [activeReturn, setActiveReturn] = useState("");
+
+  // ✅ NEW: automatically set active menu on page load / refresh
+  useEffect(() => {
+
+    const path = location.pathname;
+
+    setActiveLink(path);
+
+    // report menus
+    if (
+      path === "/report" ||
+      path === "/customerreport" ||
+      path === "/jobcardReport" ||
+      path === "/orderreport" ||
+      path === "/receiptreport" ||
+      path === "/overallreport"
+    ) {
+      setActiveReport(path);
+    }
+
+    // stock menus
+    if (
+      path === "/productstock" ||
+      path === "/itempurchasestock" ||
+      path === "/rawgoldstock"
+    ) {
+      setActiveStock(path);
+    }
+
+    // voucher menus
+    if (
+      path === "/receiptvoucher" ||
+      path === "/expensevoucher"
+    ) {
+      setActiveVoucher(path);
+    }
+
+    // repair menus
+    if (
+      path === "/repairgoldsmith" ||
+      path === "/repairstocklist"
+    ) {
+      setActiveRepair(path);
+    }
+
+    // return menus
+    if (
+      path === "/customerreturn" ||
+      path === "/returnstocklist"
+    ) {
+      setActiveReturn(path);
+    }
+
+  }, [location.pathname]);
+
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     window.location.href = "/";
@@ -51,7 +117,7 @@ const Navbar = () => {
   const toggleReturn = (e) => {
     e.stopPropagation();
     setShowReturn(!showReturn);
-  }
+  };
 
   const handleStockClick = (path) => {
     setActiveStock(path);
@@ -83,45 +149,67 @@ const Navbar = () => {
   };
 
   const getNavLinkStyle = (path) => ({
+
     ...navLink,
-    color: activeLink === path ? "#fff" : "rgba(255, 255, 255, 0.8)",
+
+    // ✅ added location check also
+    color:
+      activeLink === path || location.pathname === path
+        ? "#fff"
+        : "rgba(255, 255, 255, 0.8)",
+
     backgroundColor:
-      activeLink === path
+      activeLink === path || location.pathname === path
         ? "rgba(255, 255, 255, 0.15)"
         : hoveredItem === path
         ? "rgba(255, 255, 255, 0.1)"
         : "transparent",
-    fontWeight: activeLink === path ? 600 : 500,
+
+    fontWeight:
+      activeLink === path || location.pathname === path
+        ? 600
+        : 500,
+
     transform: hoveredItem === path ? "translateY(-1px)" : "translateY(0)",
-    boxShadow: hoveredItem === path ? "0 2px 5px rgba(0,0,0,0.1)" : "none",
+
+    boxShadow:
+      hoveredItem === path ? "0 2px 5px rgba(0,0,0,0.1)" : "none",
+
   });
 
   const getReportItemStyle = (path) => ({
     ...dropdownItem,
     backgroundColor:
-      activeReport === path
+      activeReport === path || location.pathname === path
         ? "#f1f3f5"
         : hoveredItem === path
         ? "#f8f9fa"
         : "#fff",
-    fontWeight: activeReport === path ? 600 : 400,
+    fontWeight:
+      activeReport === path || location.pathname === path
+        ? 600
+        : 400,
     transform: hoveredItem === path ? "translateX(2px)" : "translateX(0)",
   });
 
   const getDropdownItemStyle = (path, activeState) => ({
     ...dropdownItem,
     backgroundColor:
-      activeState === path
+      activeState === path || location.pathname === path
         ? "#f1f3f5"
         : hoveredItem === path
         ? "#f8f9fa"
         : "#fff",
-    fontWeight: activeState === path ? 600 : 400,
+    fontWeight:
+      activeState === path || location.pathname === path
+        ? 600
+        : 400,
     transform: hoveredItem === path ? "translateX(2px)" : "translateX(0)",
   });
 
   return (
     <div style={navContainer}>
+
       <div style={navLeft}>
         <div style={logoContainer}>
           <img style={logoImg} src={logo} alt="Agrlogo"></img>
@@ -241,6 +329,7 @@ const Navbar = () => {
             >
               {[
                 ["Product Stock", "/productstock"],
+                ["Item Purchase Stock", "/itempurchasestock"],
                 ["Raw Gold Stock", "/rawgoldstock"],
               ].map(([name, path]) => (
                 <a
