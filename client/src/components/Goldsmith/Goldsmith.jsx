@@ -44,7 +44,7 @@ const Goldsmith = () => {
       touch: "",
       deduction: [{ type: "", weight: "" }],
       netWeight: "",
-      wastageType: "",
+      wastageType: "%",
       wastageValue: "",
       finalPurity: "",
       isEdit: false,
@@ -64,7 +64,7 @@ const Goldsmith = () => {
   const [isFinished, setIsFinished] = useState("");
   const [openingBalance, setOpeningBalance] = useState(0);
   const [rawGoldStock, setRawGoldStock] = useState([]);
-  const [saveDisable,setSaveDisable]=useState(false)
+  const [saveDisable, setSaveDisable] = useState(false)
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState(false);
   const [lastJobCard, setLastJobCard] = useState({});
@@ -134,7 +134,7 @@ const Goldsmith = () => {
     setDescription("");
     setGivenGold([]);
     setItemDelivery([]);
-   
+
     setReceivedMetalReturns([]);
   };
 
@@ -173,13 +173,13 @@ const Goldsmith = () => {
           },
         }
       );
-     
-     
-      const index=goldsmith.findIndex(item=>item.id===response.data.goldSmithInfo.id)
-      const copy=[...goldsmith]
-      copy.splice(index, 1,response.data.goldSmithInfo);
+
+
+      const index = goldsmith.findIndex(item => item.id === response.data.goldSmithInfo.id)
+      const copy = [...goldsmith]
+      copy.splice(index, 1, response.data.goldSmithInfo);
       setGoldsmith(copy)
-      
+
       handleCloseJobcard();
       setSaveDisable(false)
       alert(response.data.message);
@@ -316,7 +316,7 @@ const Goldsmith = () => {
                   <TableCell align="center">{index + 1}</TableCell>
                   <TableCell align="center">{goldsmith.name}</TableCell>
                   <TableCell align="center">{goldsmith.phone}</TableCell>
-                  <TableCell align="center" style={{color:goldsmith.balance<0?"red":goldsmith.balance>0?"green":""}}><b>{Number(goldsmith.balance).toFixed(3)}</b></TableCell>
+                  <TableCell align="center" style={{ color: goldsmith.balance < 0 ? "red" : goldsmith.balance > 0 ? "green" : "" }}><b>{Number(goldsmith.balance).toFixed(3)}</b></TableCell>
                   <TableCell align="center">{goldsmith.address}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="View Jobcard">
