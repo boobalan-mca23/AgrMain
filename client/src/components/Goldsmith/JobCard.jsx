@@ -36,7 +36,7 @@ function JobCardDetails() {
       touch: "",
       deduction: [],
       netWeight: "",
-      wastageType: "",
+      wastageType: "%",
       wastageValue: "",
       wastagePure: "",
       finalPurity: "",
@@ -57,9 +57,9 @@ function JobCardDetails() {
   const [edit, setEdit] = useState(false);
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [loading,setLoading]=useState(true)
+  const [loading, setLoading] = useState(true)
   const [isFinished, setIsFinished] = useState("");
-  const [saveDisable,setSaveDisable]=useState(false)
+  const [saveDisable, setSaveDisable] = useState(false)
   const paginatedData = jobCards.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -73,7 +73,7 @@ function JobCardDetails() {
     },
     { givenWt: 0, itemWt: 0, receive: 0 } // Initial accumulator
   );
-  
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -118,7 +118,7 @@ function JobCardDetails() {
     setGivenGold([]);
     setItemDelivery([]);
     setReceivedMetalReturns([]);
-    
+
     console.log("rawGoldStock", rawGoldStock);
   };
 
@@ -158,7 +158,7 @@ function JobCardDetails() {
       },
     };
     try {
-       setSaveDisable(true)
+      setSaveDisable(true)
       const response = await axios.post(
         `${BACKEND_SERVER_URL}/api/assignments/create`,
         payload,
@@ -174,10 +174,10 @@ function JobCardDetails() {
       setJobCardLength(response.data.jobCardLength);
       alert("JobCard Created");
       setSaveDisable(false)
-      
+
     } catch (err) {
       toast.error(err.response.data.error);
-       setSaveDisable(false)
+      setSaveDisable(false)
     }
   };
 
@@ -218,7 +218,7 @@ function JobCardDetails() {
         }
       );
       handleCloseJobcard();
-     
+
       setJobCards(response.data.allJobCards);
       setJobCardLength(response.data.jobCardLength);
       console.log("update response", response);
@@ -237,7 +237,7 @@ function JobCardDetails() {
   useEffect(() => {
     const fetchJobCards = async () => {
       try {
-        
+
         const res = await axios.get(
           `${BACKEND_SERVER_URL}/api/assignments/${id}` // this is GoldSmith Id from useParams
         );
@@ -248,7 +248,7 @@ function JobCardDetails() {
       } catch (err) {
         alert(err.message);
         toast.error("Something went wrong.");
-      }finally{
+      } finally {
         setLoading(false)
       }
     };
@@ -305,7 +305,7 @@ function JobCardDetails() {
                 <b>Name:</b> {name}
               </Typography>
             </Box>
-           {/* balance section */}
+            {/* balance section */}
             <Box
               sx={{
                 fontSize: "20px",
@@ -315,60 +315,60 @@ function JobCardDetails() {
                 <div>
 
                   {
-                    jobCards.at(-1).total[0].balanceOption? (
-                      
-                     jobCards.at(-1).total[0].goldSmithBalance > 0 ? (
-                    <p style={{ color: "green", fontWeight: "bolder" }}>
-                      Gold Smith Should Given{" "}
-                      <span className="goldSmithBalance">
-                        {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))}g
-                      </span>
-                    </p>
-                  ) : jobCards.at(-1).total[0].goldSmithBalance < 0 ? (
-                    <p style={{ color: "red", fontWeight: "bolder" }}>
-                      Owner Should Given{" "}
-                      <span className="goldSmithBalance">
-                        {" "}
-                        {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))} g
-                      </span>
-                    </p>
-                  ) : (
-                    <p style={{ color: "black", fontWeight: "bolder" }}>
-                      Balance Nill:{" "}
-                      <span className="goldSmithBalance">
-                        {" "}
-                        {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))} g
-                      </span>
-                    </p>
-                  )
-                    ):(
-                         jobCards.at(-1).total[0].jobCardBalance   > 0 ? (
-                    <p style={{ color: "green", fontWeight: "bolder" }}>
-                      Gold Smith Should Given{" "}
-                      <span className="goldSmithBalance">
-                        {(Number(jobCards.at(-1).total[0]?.jobCardBalance).toFixed(3))}g
-                      </span>
-                    </p>
-                  ) : jobCards.at(-1).total[0]. jobCardBalance   < 0 ? (
-                    <p style={{ color: "red", fontWeight: "bolder" }}>
-                      Owner Should Given{" "}
-                      <span className="goldSmithBalance">
-                        {" "}
-                        {(Number(jobCards.at(-1).total[0]?.jobCardBalance  ).toFixed(3))} g
-                      </span>
-                    </p>
-                  ) : (
-                    <p style={{ color: "black", fontWeight: "bolder" }}>
-                      Balance Nill:{" "}
-                      <span className="goldSmithBalance">
-                        {" "}
-                        {(Number(jobCards.at(-1).total[0]?.jobCardBalance).toFixed(3))} g
-                      </span>
-                    </p>
-                  )
+                    jobCards.at(-1).total[0].balanceOption ? (
+
+                      jobCards.at(-1).total[0].goldSmithBalance > 0 ? (
+                        <p style={{ color: "green", fontWeight: "bolder" }}>
+                          Gold Smith Should Given{" "}
+                          <span className="goldSmithBalance">
+                            {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))}g
+                          </span>
+                        </p>
+                      ) : jobCards.at(-1).total[0].goldSmithBalance < 0 ? (
+                        <p style={{ color: "red", fontWeight: "bolder" }}>
+                          Owner Should Given{" "}
+                          <span className="goldSmithBalance">
+                            {" "}
+                            {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))} g
+                          </span>
+                        </p>
+                      ) : (
+                        <p style={{ color: "black", fontWeight: "bolder" }}>
+                          Balance Nill:{" "}
+                          <span className="goldSmithBalance">
+                            {" "}
+                            {(Number(jobCards.at(-1).total[0]?.goldSmithBalance).toFixed(3))} g
+                          </span>
+                        </p>
+                      )
+                    ) : (
+                      jobCards.at(-1).total[0].jobCardBalance > 0 ? (
+                        <p style={{ color: "green", fontWeight: "bolder" }}>
+                          Gold Smith Should Given{" "}
+                          <span className="goldSmithBalance">
+                            {(Number(jobCards.at(-1).total[0]?.jobCardBalance).toFixed(3))}g
+                          </span>
+                        </p>
+                      ) : jobCards.at(-1).total[0].jobCardBalance < 0 ? (
+                        <p style={{ color: "red", fontWeight: "bolder" }}>
+                          Owner Should Given{" "}
+                          <span className="goldSmithBalance">
+                            {" "}
+                            {(Number(jobCards.at(-1).total[0]?.jobCardBalance).toFixed(3))} g
+                          </span>
+                        </p>
+                      ) : (
+                        <p style={{ color: "black", fontWeight: "bolder" }}>
+                          Balance Nill:{" "}
+                          <span className="goldSmithBalance">
+                            {" "}
+                            {(Number(jobCards.at(-1).total[0]?.jobCardBalance).toFixed(3))} g
+                          </span>
+                        </p>
+                      )
                     )
                   }
-               
+
                 </div>
               )}
             </Box>
@@ -396,215 +396,215 @@ function JobCardDetails() {
               New Job Card
             </Button>
           </Box>
-         {
-          loading ? (<Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "10vh",
-                  fontSize: "1.5rem",
-                  fontWeight: "bold",
-                }}
-              >
-                {" "}
-                 Loading JobCards...
-                <CircularProgress />
-              </Box>):(
-                  <>
-                  {paginatedData.length === 0 ? (
-            <Paper elevation={0} sx={{ p: 4, textAlign: "center" }}>
-              <Typography variant="h6" color="textSecondary">
-                No job cards found for this goldsmith
-              </Typography>
-             
-            </Paper>
-          ) : (
-            <Paper className="jobCardTableContainer">
-               
-              <table className="jobcardTable">
-                <thead className="jobCardThead">
-                  <tr>
-                    <td rowSpan={2}>S.No</td>
-                    <td rowSpan={2}>Date</td>
-                    <td rowSpan={2}>Id</td>
-                    <td colSpan={4}>Given Gold</td>
-                    <td colSpan={10}>Itm Delivery</td>
-                    <td colSpan={3}>Received</td>
-                    <td rowSpan={2}>Total</td>
-                    <td rowSpan={2}>Balance</td>
-                    <td rowSpan={2}>IsFinished</td>
-                    <td rowSpan={2}>Action</td>
-                  </tr>
-                  <tr>
-                    <td>ItemDate</td>
-                    <td>Wt</td>
-                    <td>Touch</td>
-                    <td>Purity</td>
-                    <td>DlyDate</td>
-                    <td>Name</td>
-                    <td>Wt</td>
-                    <td>count</td>
-                    <td>tch</td>
-                    <td>stoneWt</td>
-                    <td>NetWt</td>
-                    {/* <td>wastageTyp</td> */}
-                    <td>w.Value</td>
-                    <td>w.Pure</td>
-                    <td>FinalPurity</td>
-                    <td>weight</td>
-                    <td>touch</td>
-                    <td>purity</td>
-                  </tr>
-                </thead>
-                <tbody className="jobCardTbody">
-                  {paginatedData.map((job, jobIndex) => {
-                    const given = job.givenGold;
-                    const deliveries = job.deliveries;
-                    const received = job.received;
+          {
+            loading ? (<Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "10vh",
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+              }}
+            >
+              {" "}
+              Loading JobCards...
+              <CircularProgress />
+            </Box>) : (
+              <>
+                {paginatedData.length === 0 ? (
+                  <Paper elevation={0} sx={{ p: 4, textAlign: "center" }}>
+                    <Typography variant="h6" color="textSecondary">
+                      No job cards found for this goldsmith
+                    </Typography>
 
-                    const maxRows =
-                      Math.max(
-                        given?.length,
-                        deliveries?.length,
-                        received?.length
-                      ) || 1;
+                  </Paper>
+                ) : (
+                  <Paper className="jobCardTableContainer">
 
-                    return [...Array(maxRows)].map((_, i) => {
-                      const g = given?.[i] || {};
-                      const d = deliveries?.[i] || {};
-                      const r = received?.[i] || {};
+                    <table className="jobcardTable">
+                      <thead className="jobCardThead">
+                        <tr>
+                          <td rowSpan={2}>S.No</td>
+                          <td rowSpan={2}>Date</td>
+                          <td rowSpan={2}>Id</td>
+                          <td colSpan={4}>Given Gold</td>
+                          <td colSpan={10}>Itm Delivery</td>
+                          <td colSpan={3}>Received</td>
+                          <td rowSpan={2}>Total</td>
+                          <td rowSpan={2}>Balance</td>
+                          <td rowSpan={2}>IsFinished</td>
+                          <td rowSpan={2}>Action</td>
+                        </tr>
+                        <tr>
+                          <td>ItemDate</td>
+                          <td>Wt</td>
+                          <td>Touch</td>
+                          <td>Purity</td>
+                          <td>DlyDate</td>
+                          <td>Name</td>
+                          <td>Wt</td>
+                          <td>count</td>
+                          <td>tch</td>
+                          <td>stoneWt</td>
+                          <td>NetWt</td>
+                          {/* <td>wastageTyp</td> */}
+                          <td>w.Value</td>
+                          <td>w.Pure</td>
+                          <td>FinalPurity</td>
+                          <td>weight</td>
+                          <td>touch</td>
+                          <td>purity</td>
+                        </tr>
+                      </thead>
+                      <tbody className="jobCardTbody">
+                        {paginatedData.map((job, jobIndex) => {
+                          const given = job.givenGold;
+                          const deliveries = job.deliveries;
+                          const received = job.received;
 
-                      const total = job.total?.[0];
+                          const maxRows =
+                            Math.max(
+                              given?.length,
+                              deliveries?.length,
+                              received?.length
+                            ) || 1;
 
-                      return (
-                        <tr key={`${job.id}-${i}`}>
-                          {i === 0 && (
-                            <>
-                              <td rowSpan={maxRows}> {jobIndex + 1}</td>
-                              <td rowSpan={maxRows}>
-                                {new Date(job.createdAt).toLocaleDateString(
-                                  "en-GB",
-                                  {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                  }
+                          return [...Array(maxRows)].map((_, i) => {
+                            const g = given?.[i] || {};
+                            const d = deliveries?.[i] || {};
+                            const r = received?.[i] || {};
+
+                            const total = job.total?.[0];
+
+                            return (
+                              <tr key={`${job.id}-${i}`}>
+                                {i === 0 && (
+                                  <>
+                                    <td rowSpan={maxRows}> {jobIndex + 1}</td>
+                                    <td rowSpan={maxRows}>
+                                      {new Date(job.createdAt).toLocaleDateString(
+                                        "en-GB",
+                                        {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric",
+                                        }
+                                      )}
+                                    </td>
+                                    <td rowSpan={maxRows}>{job.id}</td>
+                                  </>
                                 )}
-                              </td>
-                              <td rowSpan={maxRows}>{job.id}</td>
-                            </>
-                          )}
 
-                          <td>
-                            {g?.createdAt
-                              ? new Date(g?.createdAt).toLocaleDateString(
-                                  "en-GB",
-                                  {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                  }
-                                )
-                              : "-"}
-                          </td>
+                                <td>
+                                  {g?.createdAt
+                                    ? new Date(g?.createdAt).toLocaleDateString(
+                                      "en-GB",
+                                      {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      }
+                                    )
+                                    : "-"}
+                                </td>
 
-                          <td>{g?.weight || "-"}</td>
-                          {/* {i === 0 && (
+                                <td>{g?.weight || "-"}</td>
+                                {/* {i === 0 && (
                             <td rowSpan={maxRows}>{total?.givenWt || "-"}</td>
                           )} */}
-                          <td>{g?.touch || "-"}</td>
-                          <td>{g?.purity || "-"}</td>
-                          <td>
-                            {d?.createdAt
-                              ? new Date(d?.createdAt).toLocaleDateString(
-                                  "en-GB",
-                                  {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                  }
-                                )
-                              : "-"}
-                          </td>
-                          <td>{d?.itemName || "-"}</td>
-                          <td>{d?.itemWeight || "-"}</td>
-                          <td>{d?.count || "0"}</td>
-                          <td>{d?.touch || "-"}</td>
+                                <td>{g?.touch || "-"}</td>
+                                <td>{g?.purity || "-"}</td>
+                                <td>
+                                  {d?.createdAt
+                                    ? new Date(d?.createdAt).toLocaleDateString(
+                                      "en-GB",
+                                      {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      }
+                                    )
+                                    : "-"}
+                                </td>
+                                <td>{d?.itemName || "-"}</td>
+                                <td>{d?.itemWeight || "-"}</td>
+                                <td>{d?.count || "0"}</td>
+                                <td>{d?.touch || "-"}</td>
 
-                          <td>{d?.deduction && totalStoneWt(d?.deduction)}</td>
-                          <td>{d?.netWeight || "0"}</td>
-                          {/* <td>{d?.wastageType || "-"}</td> */}
-                          <td>{d?.wastageValue || "0"}</td>
-                          <td>{d?.wastagePure || "0"}</td>
-                          <td>{d?.finalPurity || "0"}</td>
+                                <td>{d?.deduction && totalStoneWt(d?.deduction)}</td>
+                                <td>{d?.netWeight || "0"}</td>
+                                {/* <td>{d?.wastageType || "-"}</td> */}
+                                <td>{d?.wastageValue || "0"}</td>
+                                <td>{d?.wastagePure || "0"}</td>
+                                <td>{d?.finalPurity || "0"}</td>
 
-                          <td>{r?.weight || "0"}</td>
-                          <td>{r?.touch || "0"}</td>
-                          <td>{r?.purity || "0"}</td>
-                          {i === 0 && (
-                            <>
-                              <td rowSpan={maxRows}>
-                                {total?.receivedTotal || "-"}
-                              </td>
-                              <td rowSpan={maxRows}>
-                                {(total?.jobCardBalance).toFixed(3) ?? "-"}
-                              </td>
-                            </>
-                          )}
-                          {i === 0 && (
-                            <>
-                              <td rowSpan={maxRows}>
-                                {total?.isFinished === "true" ? (
-                                  <FaCheck />
-                                ) : (
-                                  <GrFormSubtract size={30} />
+                                <td>{r?.weight || "0"}</td>
+                                <td>{r?.touch || "0"}</td>
+                                <td>{r?.purity || "0"}</td>
+                                {i === 0 && (
+                                  <>
+                                    <td rowSpan={maxRows}>
+                                      {total?.receivedTotal || "-"}
+                                    </td>
+                                    <td rowSpan={maxRows}>
+                                      {(total?.jobCardBalance).toFixed(3) ?? "-"}
+                                    </td>
+                                  </>
                                 )}
-                              </td>
+                                {i === 0 && (
+                                  <>
+                                    <td rowSpan={maxRows}>
+                                      {total?.isFinished === "true" ? (
+                                        <FaCheck />
+                                      ) : (
+                                        <GrFormSubtract size={30} />
+                                      )}
+                                    </td>
 
-                              <td rowSpan={maxRows}>
-                                <button
-                                  className="jobCardBtn"
-                                  onClick={() =>
-                                    handleFilterJobCard(job.id, jobIndex)
-                                  }
-                                >
-                                  View
-                                </button>
-                              </td>
-                            </>
-                          )}
+                                    <td rowSpan={maxRows}>
+                                      <button
+                                        className="jobCardBtn"
+                                        onClick={() =>
+                                          handleFilterJobCard(job.id, jobIndex)
+                                        }
+                                      >
+                                        View
+                                      </button>
+                                    </td>
+                                  </>
+                                )}
+                              </tr>
+                            );
+                          });
+                        })}
+                      </tbody>
+                      <tfoot className="totalOfJobCard">
+                        <tr>
+                          <td colSpan={6}>
+                            <b>Total</b>
+                          </td>
+                          <td>
+                            <b> {currentPageTotal.givenWt?.toFixed(3)}</b>
+                          </td>
+                          <td colSpan={9}></td>
+                          <td>
+                            <b>{currentPageTotal?.itemWt?.toFixed(3)}</b>
+                          </td>
+
+                          <td colSpan={3}></td>
+                          <td>
+                            <b>{currentPageTotal?.receive?.toFixed(3)}</b>
+                          </td>
+                          <td colSpan={4}></td>
                         </tr>
-                      );
-                    });
-                  })}
-                </tbody>
-                <tfoot className="totalOfJobCard">
-                  <tr>
-                    <td colSpan={6}>
-                      <b>Total</b>
-                    </td>
-                    <td>
-                      <b> {currentPageTotal.givenWt?.toFixed(3)}</b>
-                    </td>
-                    <td colSpan={9}></td>
-                    <td>
-                      <b>{currentPageTotal?.itemWt?.toFixed(3)}</b>
-                    </td>
+                      </tfoot>
+                    </table>
+                  </Paper>
+                )}
+              </>)
+          }
 
-                    <td colSpan={3}></td>
-                    <td>
-                      <b>{currentPageTotal?.receive?.toFixed(3)}</b>
-                    </td>
-                    <td colSpan={4}></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </Paper>
-          )}
-                  </>)
-         }
-          
         </Paper>
         {jobCards.length >= 1 && (
           <TablePagination
@@ -644,7 +644,7 @@ function JobCardDetails() {
         // lastIsFinish={jobCards?.at(-1)?.total[0]?.isFinished}
         isFinished={isFinished}
         saveDisable={saveDisable}
-       
+
       />
     </>
   );
