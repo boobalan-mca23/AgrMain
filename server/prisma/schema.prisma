@@ -448,6 +448,7 @@ model OrderItems {
   touch        Float?
   actualPurity Float?
   netWeight    Float?
+  wastageType  String?
   wastageValue Float?
   wastagePure  Float?
   finalPurity  Float?
@@ -645,7 +646,7 @@ model RepairStock {
   sentDate     DateTime  @default(now())
   receivedDate DateTime?
   status       String    @default("InRepair")
-
+  wastageType  String?
   itemName    String?
   grossWeight Float?
   netWeight   Float?
