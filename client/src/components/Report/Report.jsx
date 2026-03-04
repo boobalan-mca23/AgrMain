@@ -30,8 +30,8 @@ const DailySalesReport = () => {
   const [date, setDate] = useState("");
 
   // use dayjs objects for pickers
-  const [fromDate, setFromDate] = useState(null); // dayjs or null
-  const [toDate, setToDate] = useState(null); // dayjs or null
+  const [fromDate, setFromDate] = useState(dayjs().subtract(15, 'day')); // default to 15 days ago
+  const [toDate, setToDate] = useState(dayjs()); // default to today
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -70,7 +70,6 @@ const DailySalesReport = () => {
             0
           ) || 0;
 
-        const pureBalance = bill.customers?.customerBillBalance?.balance || 0;
         const totalTotalProfit = bill.Totalprofit || 0;
 
         const previousBalance = bill.PrevBalance || 0;
@@ -78,8 +77,10 @@ const DailySalesReport = () => {
           previousBalance > 0
             ? FWT + previousBalance
             : previousBalance < 0
-            ? FWT - Math.abs(previousBalance)
-            : FWT;
+              ? FWT - Math.abs(previousBalance)
+              : FWT;
+
+        const pureBalance = TotalFWT - totalReceivedPurity;
 
         const dbCashBalance =
           typeof bill.cashBalance !== "undefined"
@@ -190,7 +191,7 @@ const DailySalesReport = () => {
       {/* Filters: MUI DatePickers (Dayjs) */}
       <Box className="filter-controls" style={{ alignItems: "center" }}>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
             <div className="date-input-group" style={{ display: "flex", flexDirection: "column" }}>
               <label style={{ marginBottom: 6, fontWeight: 600 }}>From Date</label>
               <DatePicker
@@ -228,17 +229,17 @@ const DailySalesReport = () => {
       <>
         <Box className="summary-cards">
           <Typography className="summary-item">
+            <b>Number of Bills:</b> {visibleBills.length}
+          </Typography>
+          <Typography className="summary-item">
             <b>Total Weight:</b> {totalsVisible.totalWeight.toFixed(3)} g
           </Typography>
           <Typography className="summary-item">
             <b>Total FWT:</b> {totalsVisible.totalFWT.toFixed(3)} g
           </Typography>
-          <Typography className="summary-item">
+          {/* <Typography className="summary-item">
             <b>Pure Received:</b> {totalsVisible.totalReceivedPurity.toFixed(3)} g
-          </Typography>
-          <Typography className="summary-item">
-            <b>Number of Bills:</b> {visibleBills.length}
-          </Typography>
+          </Typography> */}
         </Box>
 
         <TableContainer component={Paper} className="table-container">
@@ -271,8 +272,8 @@ const DailySalesReport = () => {
                     previousBalance > 0
                       ? FWT + previousBalance
                       : previousBalance < 0
-                      ? FWT - Math.abs(previousBalance)
-                      : FWT;
+                        ? FWT - Math.abs(previousBalance)
+                        : FWT;
                   const pureBalance = TotalFWT - totalReceivedPurity;
                   const lastGoldRate =
                     [...(bill.billReceive || [])].reverse().find((row) => row.goldRate)?.goldRate || 0;
