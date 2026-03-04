@@ -1,4 +1,4 @@
-generator client {
+ generator client {
   provider = "prisma-client-js"
 }
 
@@ -645,7 +645,7 @@ model RepairStock {
   sentDate     DateTime  @default(now())
   receivedDate DateTime?
   status       String    @default("InRepair")
-  wastageType  String?
+
   itemName    String?
   grossWeight Float?
   netWeight   Float?
