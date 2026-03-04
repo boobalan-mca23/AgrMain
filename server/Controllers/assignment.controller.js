@@ -2,9 +2,9 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const reduceGold = require("../Utils/reduceRawGold");
 const addRawGold = require("../Utils/addRawGoldStock");
-const {getGoldSmithBalance,updateGoldSmithBalance}=require('../Utils/updateGoldSmithBalance')
-const {directWatageValue}=require('../Utils/directWastageValue')
-const {directTouchJobReceive}=require('../Utils/directTouch')
+const { getGoldSmithBalance, updateGoldSmithBalance } = require('../Utils/updateGoldSmithBalance')
+const { directWatageValue } = require('../Utils/directWastageValue')
+const { directTouchJobReceive } = require('../Utils/directTouch')
 
 
 const moveToItemDelivery = async (itemDelivery, jobcardId, goldSmithId) => {
@@ -35,9 +35,9 @@ const moveToItemDelivery = async (itemDelivery, jobcardId, goldSmithId) => {
       const stoneWeightTotal =
         Array.isArray(item.deduction)
           ? item.deduction.reduce(
-              (acc, d) => acc + (parseFloat(d.weight) || 0),
-              0
-            )
+            (acc, d) => acc + (parseFloat(d.weight) || 0),
+            0
+          )
           : 0;
 
       const existingStock =
@@ -86,7 +86,7 @@ const moveToItemDelivery = async (itemDelivery, jobcardId, goldSmithId) => {
         }
       }
 
-    } 
+    }
     else {
       let deductionArr = [];
 
@@ -177,7 +177,7 @@ const createJobcard = async (req, res) => {
     if (givenGold.length < 1) {
       return res.status(400).json({ error: "Given gold data is required" });
     }
-      
+
 
     const jobCardTotal = {
       goldsmithId: parseInt(goldSmithId),
@@ -186,8 +186,8 @@ const createJobcard = async (req, res) => {
       stoneTotalWt: 0,
       jobCardBalance: parseFloat(total?.jobCardBalance) || 0,
       openingBalance: parseFloat(total?.openingBalance) || 0,
-      balanceOption:false,
-      goldSmithBalance:await getGoldSmithBalance(goldSmithId),
+      balanceOption: false,
+      goldSmithBalance: await getGoldSmithBalance(goldSmithId),
       receivedTotal: 0,
       isFinished: "false",
     };
@@ -202,7 +202,7 @@ const createJobcard = async (req, res) => {
       },
     });
     await reduceGold.reduceRawGold(givenGold, newJobcard.id, goldSmithId); // we need to reduce rawGold stock
-     
+
     await updateGoldSmithBalance(goldSmithId) // side by side goldSmith Balance also we need to change
     const allJobCards = await prisma.jobcard.findMany({
       where: {
@@ -213,7 +213,7 @@ const createJobcard = async (req, res) => {
         deliveries: {
           include: {
             deduction: true,
-            productStock:true,
+            productStock: true,
           },
         },
         received: true,
@@ -430,7 +430,7 @@ const getJobCardById = async (req, res) => {
         deliveries: {
           include: {
             deduction: true,
-            productStock:true,
+            productStock: true,
           },
         },
         received: true,
@@ -468,10 +468,10 @@ const getPreviousJobCardBal = async (req, res) => {
 
       res
         .status(200)
-        .json({ status: "balance", balance:jobCard.balanceOption? jobCard.goldSmithBalance : jobCard.jobCardBalance });
+        .json({ status: "balance", balance: jobCard.balanceOption ? jobCard.goldSmithBalance : jobCard.jobCardBalance });
     } else {
-     
-      res.status(200).json({ status: "nobalance", balance:await getGoldSmithBalance(id)});
+
+      res.status(200).json({ status: "nobalance", balance: await getGoldSmithBalance(id) });
     }
   } catch (err) {
     console.error("Previous Balance Error:", err);
@@ -482,6 +482,7 @@ const getPreviousJobCardBal = async (req, res) => {
 
 // main controllers
 const formatDate = (dateString) => {
+  if (dateString.includes("-")) return dateString; // Already YYYY-MM-DD
   const [day, month, year] = dateString.split("/");
   return `${year}-${month}-${day}`;
 };
@@ -523,7 +524,12 @@ const jobCardFilter = async (req, res) => {
       include: {
         goldsmith: true,
         givenGold: true,
-        deliveries: true,
+        deliveries: {
+          include: {
+            deduction: true,
+            productStock: true,
+          }
+        },
         received: true,
         total: true,
       },
@@ -544,5 +550,5 @@ module.exports = {
   getJobCardById,
   getPreviousJobCardBal,
   jobCardFilter,
-  
+
 };
