@@ -1,348 +1,426 @@
- .jobcard-dialog-paper{
-    min-width: 1500px;
-}
- .jobcardhead{
-  background-color: cadetblue;
-  color: white;
+ .jobcard-dialog-paper {
+   min-width: 1500px;
  }
-.tableCell{
-  border: 1px solid black !important;
-}
 
-.section {
-    padding:12px;
-    background-color: #fefefe;
-    border: 1px solid #212a30;
-   }
-  .section-title {
-    margin-top: 2px;
-    color: #2c3e50;
-   }
-  .jobCardFlex {
+ .jobcardhead {
+   background-color: cadetblue;
+   color: white;
+ }
+
+ .tableCell {
+   border: 1px solid black !important;
+ }
+
+ .section {
+   padding: 12px;
+   background-color: #fefefe;
+   border: 1px solid #212a30;
+ }
+
+ .section-title {
+   margin-top: 2px;
+   color: #2c3e50;
+ }
+
+ .jobCardFlex {
    display: grid;
    grid-template-columns: 2fr 1fr;
    gap: 20px;
    border: 2px solid #212a30;
    padding: 3px;
-  }
-  .touchGroup{
-    max-height: 460px;   /* control vertical size */
-    overflow-y: auto;    /* scroll vertically */
-    overflow-x: auto;    /* scroll horizontally if needed */
-    border: 1px solid #101010;
-    
-    }
-  .jobCardTouchTable{
-     border-collapse: collapse;
-     width: 100%;
-     text-align: center;
-     
-  }
-  .jobCardTouchTableRow th{
-     position: sticky;
-     top: 0;
-     background-color: cadetblue;
-     color: white;
-     z-index: 2;
-     border: 1px solid black;
-  }
-  .jobCardTouchTableBody td{
-    border: 1px solid black;
-  }
- .dialogTitle{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
+ }
 
-.jobCardheader{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
-.row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 7px;
-  }
-  .label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #555;
-  }
-  
-  .textarea {
-    width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    resize: vertical;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease;
-  }
-  
-  .textarea:focus {
-    border-color: #3498db;
-    outline: none;
-  }
-   .input {
-   
-    padding: 10px 12px;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    width: 100px;
-    transition: border-color 0.3s ease;
-  }
-  
-  .input:focus {
-    border-color: #3498db;
-    outline: none;
-  }
-  
-  .operator {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #777;
-  }
-  
-  .input-read-only {
- 
-    padding: 10px 12px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: 1px solid #e0e0e0;
-    background-color: #f5f5f5;
-    color: #666;
-    cursor: not-allowed;
-    box-sizing: border-box;
-    width: 110px;
-  }
-  
-  .circle-button {
-    font-size: 1.3rem;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    border: none;
-    background-color: #3498db;
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .circle-button:hover {
-    background-color: #2980b9;
-    transform: scale(1.05);
-  }
-  
-  .circle-button:active {
-    background-color: #2471a3;
-    transform: scale(1.0);
-  }
-  .delIcon{
-    cursor: pointer;
-  }
-   .givenGold {
+ .touchGroup {
+   max-height: 460px;
+   /* control vertical size */
+   overflow-y: auto;
+   /* scroll vertically */
+   overflow-x: auto;
+   /* scroll horizontally if needed */
+   border: 1px solid #101010;
+
+ }
+
+ .jobCardTouchTable {
+   border-collapse: collapse;
+   width: 100%;
+   text-align: center;
+
+ }
+
+ .jobCardTouchTableRow th {
+   position: sticky;
+   top: 0;
+   background-color: cadetblue;
+   color: white;
+   z-index: 2;
+   border: 1px solid black;
+ }
+
+ .jobCardTouchTableBody td {
+   border: 1px solid black;
+ }
+
+ .dialogTitle {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+ }
+
+ .jobCardheader {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   margin-bottom: 5px;
+   padding-bottom: 10px;
+   border-bottom: 2px solid #f0f0f0;
+ }
+
+ .row {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   gap: 7px;
+ }
+
+ .label {
+   display: block;
+   margin-bottom: 8px;
+   font-weight: bold;
+   color: #555;
+ }
+
+ .textarea {
+   width: 100%;
+   padding: 12px;
+   font-size: 1rem;
+   border-radius: 6px;
+   border: 1px solid #ccc;
+   resize: vertical;
+   box-sizing: border-box;
+   transition: border-color 0.3s ease;
+ }
+
+ .textarea:focus {
+   border-color: #3498db;
+   outline: none;
+ }
+
+ .input {
+
+   padding: 10px 12px;
+   font-size: 0.9rem;
+   border-radius: 6px;
+   border: 1px solid #ccc;
+   box-sizing: border-box;
+   width: 100px;
+   transition: border-color 0.3s ease;
+ }
+
+ .input:focus {
+   border-color: #3498db;
+   outline: none;
+ }
+
+ .operator {
+   font-size: 1.2rem;
+   font-weight: bold;
+   color: #777;
+ }
+
+ .input-read-only {
+
+   padding: 10px 12px;
+   font-size: 1rem;
+   border-radius: 6px;
+   border: 1px solid #e0e0e0;
+   background-color: #f5f5f5;
+   color: #666;
+   cursor: not-allowed;
+   box-sizing: border-box;
+   width: 110px;
+ }
+
+ .circle-button {
+   font-size: 1.3rem;
+   border-radius: 50%;
+   width: 20px;
+   height: 20px;
+   border: none;
+   background-color: #3498db;
+   color: #fff;
+   cursor: pointer;
+   transition: background-color 0.3s ease, transform 0.2s ease;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   margin-top: 10px;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+ }
+
+ .circle-button:hover {
+   background-color: #2980b9;
+   transform: scale(1.05);
+ }
+
+ .circle-button:active {
+   background-color: #2471a3;
+   transform: scale(1.0);
+ }
+
+ .delIcon {
+   cursor: pointer;
+ }
+
+ .givenGold {
    display: grid;
-   grid-template-columns: 1fr 1fr; /* 8 columns */
+   grid-template-columns: 1fr 1fr;
+   /* 8 columns */
    gap: 15px;
    align-items: center;
-}
+ }
 
-.auto-complete{
-    width: 120px;
-    padding: 5px 8px;
-    margin-top: 25px;
-    
-}
-.select-small {
-    width: 100px;
-    padding: 10px 8px;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    background-color: #fff;
-    cursor: pointer;
-    box-sizing: border-box;
-    text-align-last: center;
-    transition: border-color 0.3s ease;
-  }
-  .icon-button{
-    background-color: transparent;
-    border: none;
-  }
-  .select-small:focus,.auto-complete:focus {
-    border-color: #3498db;
-    outline: none;
-  }
-  .total-purity-container {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
-  }
-  
-  .total-purity-label {
-    font-weight: bold;
-    color: #555;
-  }
-   .balance-block {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    /* margin-top: 10px; */
-  }
-  .balance-display-row {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 300px;
-    /* margin-bottom: 8px; */
-  }
-  .balance-label {
-    font-weight: bold;
-    color: #555;
-    margin-right: 15px;
-  }
-  
-  .balance-value {
-    font-weight: bold;
-    color: #2c3e50;
-    font-size: 1rem;
-  }
-  .received-section-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 2px;
-    margin-bottom: 15px;
-}
+ .input-wrapper {
+   display: flex;
+   flex-direction: column;
+   position: relative;
+   align-items: center;
+   /* Center input inside the wrapper */
+ }
 
-.received-section-header {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 10px;
-  font-weight: bold;
-  padding: 5px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-  min-width: 400px; 
-  white-space: nowrap;
-}
+ .error-container {
+   position: absolute;
+   top: 100%;
+   /* Push below the input */
+   left: 0;
+   width: 100%;
+   text-align: center;
+   min-height: 20px;
+   margin-top: 2px;
+   font-size: 0.8rem;
+ }
 
-.received-section-row {
-  display: grid;
-  grid-template-columns: min-content 1fr min-content 1fr min-content 1fr min-content;
-  gap: 1px;
-  align-items: center;
-  min-width: 400px; 
-}
+ .auto-complete {
+   width: 120px;
+   padding: 5px 8px;
+   margin-top: 25px;
+ }
 
-.input-small {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box; 
-}
+ .auto-complete-small .MuiInputBase-root {
+   height: 38px;
+   padding: 0px;
+   padding-right: 35px !important;
+   background-color: #fff;
+   border-radius: 6px;
+ }
 
-.input-read-only {
-  background-color: #e9ecef;
-  cursor: not-allowed;
-  color: #495057;
-}
-.actionButton{
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  font-size: 2rem !important;
-}
-.itemInput{
-  width:90px;
-}
+ .auto-complete-small .MuiOutlinedInput-input {
+   padding: 0px 10px !important;
+   height: 100%;
+   box-sizing: border-box;
+   font-size: 0.9rem;
+ }
 
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
+ .auto-complete-small {
+   transform: translateY(1.5px);
+   margin: 0 !important;
+   display: flex;
+   align-items: center;
+ }
 
-input[type=number] {
-  -moz-appearance: textfield;
-}
+ .select-small {
+   width: 100px;
+   padding: 10px 8px;
+   font-size: 0.9rem;
+   border-radius: 6px;
+   border: 1px solid #ccc;
+   background-color: #fff;
+   cursor: pointer;
+   box-sizing: border-box;
+   text-align-last: center;
+   transition: border-color 0.3s ease;
+ }
+
+ .icon-button {
+   background-color: transparent;
+   border: none;
+ }
+
+ .select-small:focus,
+ .auto-complete:focus {
+   border-color: #3498db;
+   outline: none;
+ }
+
+ .total-purity-container {
+   display: flex;
+   justify-content: space-between;
+   margin-top: 15px;
+   padding-top: 10px;
+   border-top: 1px solid #eee;
+ }
+
+ .total-purity-label {
+   font-weight: bold;
+   color: #555;
+ }
+
+ .balance-block {
+   display: flex;
+   flex-direction: column;
+   align-items: flex-end;
+   /* margin-top: 10px; */
+ }
+
+ .balance-display-row {
+   display: flex;
+   justify-content: space-between;
+   width: 100%;
+   max-width: 300px;
+   /* margin-bottom: 8px; */
+ }
+
+ .balance-label {
+   font-weight: bold;
+   color: #555;
+   margin-right: 15px;
+ }
+
+ .balance-value {
+   font-weight: bold;
+   color: #2c3e50;
+   font-size: 1rem;
+ }
+
+ .received-section-container {
+   display: grid;
+   grid-template-columns: 1fr 1fr 1fr;
+   gap: 2px;
+   margin-bottom: 15px;
+ }
+
+ .received-section-header {
+   display: grid;
+   grid-template-columns: 1fr 1fr 1fr 1fr;
+   gap: 10px;
+   font-weight: bold;
+   padding: 5px;
+   background-color: #f0f0f0;
+   border-radius: 4px;
+   min-width: 400px;
+   white-space: nowrap;
+ }
+
+ .received-section-row {
+   display: grid;
+   grid-template-columns: min-content 1fr min-content 1fr min-content 1fr min-content;
+   gap: 1px;
+   align-items: center;
+   min-width: 400px;
+ }
+
+ .input-small {
+   width: 100%;
+   padding: 8px;
+   border: 1px solid #ccc;
+   border-radius: 4px;
+   box-sizing: border-box;
+ }
+
+ .input-read-only {
+   background-color: #e9ecef;
+   cursor: not-allowed;
+   color: #495057;
+ }
+
+ .actionButton {
+   display: flex !important;
+   justify-content: center !important;
+   align-items: center !important;
+   font-size: 2rem !important;
+ }
+
+ .itemInput {
+   width: 90px;
+ }
+
+ input::-webkit-outer-spin-button,
+ input::-webkit-inner-spin-button {
+   -webkit-appearance: none;
+   margin: 0;
+ }
+
+ input[type=number] {
+   -moz-appearance: textfield;
+ }
 
  .balance-text-owner {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #ea1801;
-     
-  }
+   font-size: 1.5rem;
+   font-weight: bold;
+   color: #ea1801;
 
-  .balance-text-goldsmith {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #27ae60; 
-    }
-   
-  .balanceNill {
-    font-size: 1.5rem;
-    font-weight:bold;
-    color: rgb(236, 172, 33);
-  } 
-  .balance-amount{
-    color: black;
-  }
-  .error{
-    color: red;
-  }
-  .itemTitleSection {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* push title left, button right */
-  margin-bottom: 8px;
-  }
-  
-  .itemTitlebtn {
-  border: none;
-  color: white;
-  background-color: #27ae60;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
+ }
 
-.itemTitlebtn:hover {
-  background-color: #219150;
-  transform: translateY(-1px);
-  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.15);
-}
-.jobCardSaveBtn,.jobCardPrintBtn{
-  padding: 5px !important;
-  border: none !important;
-  border-radius: 2px !important;
-  cursor: pointer !important;
-  font-size: medium !important;
-}
-.jobCardSaveBtn{
-  background-color: green !important;
-  color: white !important;
-}
-.jobCardPrintBtn{
-  background-color: rgb(212, 69, 69) !important;
-  color: white !important ;
-}
+ .balance-text-goldsmith {
+   font-size: 1.5rem;
+   font-weight: bold;
+   color: #27ae60;
+ }
+
+ .balanceNill {
+   font-size: 1.5rem;
+   font-weight: bold;
+   color: rgb(236, 172, 33);
+ }
+
+ .balance-amount {
+   color: black;
+ }
+
+ .error {
+   color: red;
+ }
+
+ .itemTitleSection {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   /* push title left, button right */
+   margin-bottom: 8px;
+ }
+
+ .itemTitlebtn {
+   border: none;
+   color: white;
+   background-color: #27ae60;
+   border-radius: 6px;
+   padding: 6px 12px;
+   font-size: 13px;
+   cursor: pointer;
+   transition: all 0.2s ease-in-out;
+ }
+
+ .itemTitlebtn:hover {
+   background-color: #219150;
+   transform: translateY(-1px);
+   box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.15);
+ }
+
+ .jobCardSaveBtn,
+ .jobCardPrintBtn {
+   padding: 5px !important;
+   border: none !important;
+   border-radius: 2px !important;
+   cursor: pointer !important;
+   font-size: medium !important;
+ }
+
+ .jobCardSaveBtn {
+   background-color: green !important;
+   color: white !important;
+ }
+
+ .jobCardPrintBtn {
+   background-color: rgb(212, 69, 69) !important;
+   color: white !important;
+ }
