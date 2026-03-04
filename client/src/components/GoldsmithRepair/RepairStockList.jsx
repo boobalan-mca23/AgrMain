@@ -36,14 +36,14 @@ const RepairStockList = () => {
     stoneWeight: 0,
     netWeight: 0,
     touch: 0,
-    wastageType: "",
+    wastageType: "%",
     wastageValue: 0,
-    originalWastagePure: 0, 
-    wastageDelta: 0,       
+    originalWastagePure: 0,
+    wastageDelta: 0,
     finalPurity: 0
   });
 
-  const netWeight = Math.max(0,Number(qc.itemWeight || 0) - Number(qc.stoneWeight || 0));
+  const netWeight = Math.max(0, Number(qc.itemWeight || 0) - Number(qc.stoneWeight || 0));
 
   const actualPurity = (netWeight * Number(qc.touch || 0)) / 100;
 
@@ -94,7 +94,7 @@ const RepairStockList = () => {
   const openReceivePopup = (repair) => {
     const p = repair.product;
     setSelectedRepair(repair);
-    console.log("checking p",p)
+    console.log("checking p", p)
     setQc({
       itemWeight: p?.itemWeight ?? 0,
       count: p?.count ?? 1,
@@ -104,8 +104,8 @@ const RepairStockList = () => {
       wastageType: p?.wastageType ?? "",
       wastageValue: p?.wastageValue ?? 0,
 
-      originalWastagePure: p?.wastagePure ?? 0, 
-      wastageDelta: 0,                          
+      originalWastagePure: p?.wastagePure ?? 0,
+      wastageDelta: 0,
 
       finalPurity: p?.finalPurity ?? 0
     });
@@ -301,7 +301,7 @@ const RepairStockList = () => {
               width: "100%",
               fontSize: 15,
               borderCollapse: "collapse",
-              tableLayout: "fixed"  
+              tableLayout: "fixed"
             }}
           >
 
