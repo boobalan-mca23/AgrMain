@@ -27,7 +27,7 @@ const getAllRepairStock = async (req, res) => {
     if (from || to) {
       const range = {};
       if (from) range.gte = new Date(from + "T00:00:00");
-      if (to)   range.lte = new Date(to + "T23:59:59");
+      if (to) range.lte = new Date(to + "T23:59:59");
       where.AND.push({ sentDate: range });
     }
 
@@ -121,13 +121,13 @@ const sendToRepair = async (req, res) => {
 
       // console.log("goldsmith-Details", goldsmith,"goldsmith-balnce", goldsmith.balance);
 
-        await tx.goldsmith.update({
-          where: { id: goldsmithId },
-          data: {
-            balance: goldsmith.balance + Number(product.finalPurity),
-          }
-        });
-      
+      await tx.goldsmith.update({
+        where: { id: goldsmithId },
+        data: {
+          balance: goldsmith.balance + Number(product.finalPurity),
+        }
+      });
+
 
       return repair;
     });
@@ -146,8 +146,8 @@ const returnFromRepair = async (req, res) => {
     itemWeight,
     stoneWeight,
     wastagePure,
-    wastageDelta,   
-    finalPurity    
+    wastageDelta,
+    finalPurity
   } = req.body;
 
   try {
@@ -163,7 +163,7 @@ const returnFromRepair = async (req, res) => {
       if (!repair) throw new Error("Repair not found");
       if (repair.status !== "InRepair")
         throw new Error("Already returned");
-      console.log("repair-details",repair);
+      console.log("repair-details", repair);
       const product = repair.product;
 
       const itemWt = Number(itemWeight);
@@ -217,9 +217,9 @@ const returnFromRepair = async (req, res) => {
         where: { id: repair.goldsmithId }
       });
 
-      if (wastageDelta > 0 ) {
+      if (wastageDelta > 0) {
         const updatedBalance = goldsmith.balance - wastageDelta;
-        console.log("goldsmith.balance:",goldsmith.balance,"wastageDelta:",wastageDelta,"final-updated-balance", updatedBalance,"computedFinalPurity:",computedFinalPurity,"result", updatedBalance - computedFinalPurity);
+        console.log("goldsmith.balance:", goldsmith.balance, "wastageDelta:", wastageDelta, "final-updated-balance", updatedBalance, "computedFinalPurity:", computedFinalPurity, "result", updatedBalance - computedFinalPurity);
         await tx.goldsmith.update({
           where: { id: repair.goldsmithId },
           data: {
@@ -228,19 +228,19 @@ const returnFromRepair = async (req, res) => {
         });
       } else if (wastageDelta < 0) {
         const updatedBalance = goldsmith.balance + Math.abs(wastageDelta);
-        console.log("goldsmith.balance:",goldsmith.balance,"wastageDelta:",wastageDelta,"final-updated-balance", updatedBalance,"computedFinalPurity:",computedFinalPurity,"result",updatedBalance - computedFinalPurity);
+        console.log("goldsmith.balance:", goldsmith.balance, "wastageDelta:", wastageDelta, "final-updated-balance", updatedBalance, "computedFinalPurity:", computedFinalPurity, "result", updatedBalance - computedFinalPurity);
         await tx.goldsmith.update({
           where: { id: repair.goldsmithId },
           data: {
             balance: updatedBalance - computedFinalPurity,
           }
         });
-      } else{
-        console.log("no-change-in-wastage:","goldsmith.balance:",goldsmith.balance,"finalPurit + delta):",computedFinalPurity,"final result:",goldsmith.balance - computedFinalPurity);
+      } else {
+        console.log("no-change-in-wastage:", "goldsmith.balance:", goldsmith.balance, "finalPurit + delta):", computedFinalPurity, "final result:", goldsmith.balance - computedFinalPurity);
         await tx.goldsmith.update({
           where: { id: repair.goldsmithId },
           data: {
-           balance: goldsmith.balance - computedFinalPurity,
+            balance: goldsmith.balance - computedFinalPurity,
           }
         });
       }
@@ -264,6 +264,7 @@ const sendCustomerItemToRepair = async (req, res) => {
     billId,
     orderItemId,
     goldsmithId,
+    repairProduct,
     reason
   } = req.body;
 
@@ -280,45 +281,43 @@ const sendCustomerItemToRepair = async (req, res) => {
 
       if (!orderItem) throw new Error("Order item not found");
 
-      {console.log("selected order item",orderItem)}
+      { console.log("selected order item", orderItem) }
 
-          const actualPurityDelta = (orderItem.netWeight * orderItem.touch) / 100;
+      const actualPurityDelta = (orderItem.netWeight * orderItem.touch) / 100;
 
-          let wastagePureDelta = 0;
-          let finalPurityDelta = 0;
+      let wastagePureDelta = 0;
+      let finalPurityDelta = 0;
 
-          if (orderItem.wastageType === "Touch") {
-            finalPurityDelta = (orderItem.netWeight * orderItem.wastageValue) / 100;
-            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+      if (orderItem.wastageType === "Touch") {
+        finalPurityDelta = (orderItem.netWeight * orderItem.wastageValue) / 100;
+        wastagePureDelta = finalPurityDelta - actualPurityDelta;
 
-          } else if (orderItem.wastageType === "%") {
-            const wastageWeight = (orderItem.netWeight * orderItem.wastageValue) / 100;
-            const finalWastewt = orderItem.netWeight + wastageWeight;
-            finalPurityDelta = (finalWastewt * orderItem.touch) / 100;
-            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+      } else if (orderItem.wastageType === "%") {
+        const wastageWeight = (orderItem.netWeight * orderItem.wastageValue) / 100;
+        const finalWastewt = orderItem.netWeight + wastageWeight;
+        finalPurityDelta = (finalWastewt * orderItem.touch) / 100;
+        wastagePureDelta = finalPurityDelta - actualPurityDelta;
 
-          } else if (orderItem.wastageType === "+") {
-            const wastageWeight = orderItem.netWeight + orderItem.wastageValue;
-            finalPurityDelta = (wastageWeight * orderItem.touch) / 100;
-            wastagePureDelta = finalPurityDelta - actualPurityDelta;
-          }
+      } else if (orderItem.wastageType === "+") {
+        const wastageWeight = orderItem.netWeight + orderItem.wastageValue;
+        finalPurityDelta = (wastageWeight * orderItem.touch) / 100;
+        wastagePureDelta = finalPurityDelta - actualPurityDelta;
+      }
 
       const productStock = await tx.productStock.create({
         data: {
-          itemName: orderItem.productName,
-          itemWeight: orderItem.weight,
-          stoneWeight: orderItem.stoneWeight,
-          netWeight: orderItem.afterWeight || orderItem.weight,
+          itemName: repairProduct.productName,
+          itemWeight: Number(repairProduct.weight),
+          stoneWeight: Number(repairProduct.stoneWeight),
+          netWeight: Number(repairProduct.netWeight) || Number(repairProduct.weight),
           finalPurity: finalPurityDelta,
-          count: orderItem.count||0,
-          touch         : orderItem.touch,
-          wastageType : orderItem.wastageType,
-          wastageValue  : orderItem.wastageValue,
-          
-          wastagePure   : wastagePureDelta,
-      
+          count: Number(repairProduct.count) || 0,
+          touch: Number(repairProduct.touch),
+          wastageType: repairProduct.wastageType,
+          wastageValue: Number(repairProduct.wastageValue),
+          wastagePure: wastagePureDelta,
           isBillProduct: true,
-          isActive: false, 
+          isActive: false,
           source: "REPAIR_RETURN",
         }
       });
@@ -336,10 +335,80 @@ const sendCustomerItemToRepair = async (req, res) => {
         }
       });
 
-     await tx.orderItems.update({
-        where: { id: Number(orderItemId) },
-        data: { repairStatus: "IN_REPAIR" }
-      });
+      // Split logic to support partial repairs
+      const originalWeight = Number(orderItem.weight) || 0;
+      const sentWeight = Number(repairProduct.weight) || 0;
+      let repairOrderItemId = orderItem.id;
+
+      if (originalWeight > sentWeight) {
+        // Partial Repair: Deduct from original
+        const remainingWeight = originalWeight - sentWeight;
+        const remainingStoneWeight = (Number(orderItem.stoneWeight) || 0) - (Number(repairProduct.stoneWeight) || 0);
+        const remainingNetWeight = (Number(orderItem.netWeight) || 0) - (Number(repairProduct.netWeight) || 0);
+        const remainingCount = (Number(orderItem.count) || 0) - (Number(repairProduct.count) || 0);
+
+        // Recalculate purities for the remaining item
+        const remActualPurity = (remainingNetWeight * Number(orderItem.touch || 0)) / 100;
+        let remWastagePure = 0;
+        let remFinalPurity = 0;
+
+        if (orderItem.wastageType === "Touch") {
+          remFinalPurity = (remainingNetWeight * Number(orderItem.wastageValue || 0)) / 100;
+          remWastagePure = remFinalPurity - remActualPurity;
+        } else if (orderItem.wastageType === "%") {
+          const wWeight = (remainingNetWeight * Number(orderItem.wastageValue || 0)) / 100;
+          remFinalPurity = ((remainingNetWeight + wWeight) * Number(orderItem.touch || 0)) / 100;
+          remWastagePure = remFinalPurity - remActualPurity;
+        } else if (orderItem.wastageType === "+") {
+          remFinalPurity = ((remainingNetWeight + Number(orderItem.wastageValue || 0)) * Number(orderItem.touch || 0)) / 100;
+          remWastagePure = remFinalPurity - remActualPurity;
+        }
+
+        // 1. Update original item remaining values
+        await tx.orderItems.update({
+          where: { id: Number(orderItemId) },
+          data: {
+            weight: remainingWeight,
+            stoneWeight: remainingStoneWeight,
+            netWeight: remainingNetWeight,
+            count: remainingCount,
+            actualPurity: remActualPurity,
+            wastagePure: remWastagePure,
+            finalPurity: remFinalPurity,
+            finalWeight: remainingNetWeight // assuming finalWeight correlates here
+          }
+        });
+
+        // 2. Create the repair line item
+        const newRepairItem = await tx.orderItems.create({
+          data: {
+            billId: Number(billId),
+            productName: orderItem.productName,
+            count: Number(repairProduct.count) || 0,
+            weight: sentWeight,
+            stoneWeight: Number(repairProduct.stoneWeight) || 0,
+            afterWeight: Number(repairProduct.netWeight) || 0,
+            netWeight: Number(repairProduct.netWeight) || 0,
+            touch: Number(repairProduct.touch),
+            wastageType: repairProduct.wastageType,
+            wastageValue: Number(repairProduct.wastageValue),
+            actualPurity: (Number(repairProduct.netWeight) * Number(repairProduct.touch)) / 100, // Derived
+            wastagePure: wastagePureDelta,
+            finalPurity: finalPurityDelta,
+            percentage: finalPurityDelta,
+            repairStatus: "IN_REPAIR"
+          }
+        });
+
+        repairOrderItemId = newRepairItem.id;
+
+      } else {
+        // Full Repair
+        await tx.orderItems.update({
+          where: { id: Number(orderItemId) },
+          data: { repairStatus: "IN_REPAIR" }
+        });
+      }
 
 
       await tx.repairLogs.create({
@@ -356,12 +425,12 @@ const sendCustomerItemToRepair = async (req, res) => {
 
       // console.log("goldsmith-Details", goldsmith,"goldsmith-balnce", goldsmith.balance);
 
-        await tx.goldsmith.update({
-          where: { id: goldsmithId },
-          data: {
-            balance: goldsmith.balance + Number(productStock.finalPurity),
-          }
-        });
+      await tx.goldsmith.update({
+        where: { id: goldsmithId },
+        data: {
+          balance: goldsmith.balance + Number(productStock.finalPurity),
+        }
+      });
 
       return repair;
     });
