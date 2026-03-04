@@ -35,7 +35,7 @@ function MasterCustomer() {
     phone: "",
     address: "",
     balance: "",
-    hallMarkBal:"",
+    hallMarkBal: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -116,66 +116,66 @@ function MasterCustomer() {
     return nameValid && phoneValid;
   };
 
-const handleSaveCustomer = async () => {
-  if (saving) return; // prevent double click
+  const handleSaveCustomer = async () => {
+    if (saving) return; // prevent double click
 
-  setSubmitted(true); 
-  if (!validateForm()) {
-    if (!customerName.trim()) {
-      nameRef.current?.focus();
-    } else if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) {
-      phoneRef.current?.focus();
-    }
-    return;
-  }
-
-  if (!validName.test(customerName.trim())) {
-    toast.warn("Special characters are not allowed.", { autoClose: 2000 });
-    return;
-  }
-
-  const customerData = {
-    name: customerName.trim(),
-    phone: phoneNumber.trim(),
-    address: address.trim(),
-    balance:
-    balance !== ""
-      ? parseFloat(Number(balance).toFixed(3))
-      : null,
-  hallMarkBal:
-    hallMarkBal !== ""
-      ? parseFloat(Number(hallMarkBal).toFixed(3))
-      : null,
-  };
-
-  try {
-    setSaving(true);
-    
-    const response = await fetch(
-      `${BACKEND_SERVER_URL}/api/customers/create`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(customerData),
+    setSubmitted(true);
+    if (!validateForm()) {
+      if (!customerName.trim()) {
+        nameRef.current?.focus();
+      } else if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) {
+        phoneRef.current?.focus();
       }
-    );
-
-    if (response.ok) {
-      const newCustomer = await response.json();
-      setCustomers((prev) => [...prev, newCustomer]);
-      toast.success("Customer added successfully!");
-      closeModal();
-    } else {
-      const err = await response.json();
-      toast.error(err.message);
+      return;
     }
-  } catch (error) {
-    console.error("Error saving customer:", error);
-    toast.error(error.response?.data?.message || "Error saving customer", { autoClose: 1000 });
-  } finally {
-    setSaving(false); // re-enable button
-  }
-};
+
+    if (!validName.test(customerName.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
+
+    const customerData = {
+      name: customerName.trim(),
+      phone: phoneNumber.trim(),
+      address: address.trim(),
+      balance:
+        balance !== ""
+          ? parseFloat(Number(balance).toFixed(3))
+          : null,
+      hallMarkBal:
+        hallMarkBal !== ""
+          ? parseFloat(Number(hallMarkBal).toFixed(3))
+          : null,
+    };
+
+    try {
+      setSaving(true);
+
+      const response = await fetch(
+        `${BACKEND_SERVER_URL}/api/customers/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(customerData),
+        }
+      );
+
+      if (response.ok) {
+        const newCustomer = await response.json();
+        setCustomers((prev) => [...prev, newCustomer]);
+        toast.success("Customer added successfully!");
+        closeModal();
+      } else {
+        const err = await response.json();
+        toast.error(err.message);
+      }
+    } catch (error) {
+      console.error("Error saving customer:", error);
+      toast.error(error.response?.data?.message || "Error saving customer", { autoClose: 1000 });
+    } finally {
+      setSaving(false); // re-enable button
+    }
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this customer?")) {
@@ -224,7 +224,7 @@ const handleSaveCustomer = async () => {
       toast.error("Phone number must be 10 digits.");
       return;
     }
-   
+
     if (!validName.test(editedData.name.trim())) {
       toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
@@ -243,27 +243,27 @@ const handleSaveCustomer = async () => {
       return;
     }
 
-      if (editedData.balance === "-" || editedData.balance === "." || editedData.balance === "-.") {
-        toast.error("Invalid balance value");
-        return;
-      }
-      if (editedData.hallMarkBal === "-" || editedData.hallMarkBal === "." || editedData.hallMarkBal === "-.") {
-        toast.error("Invalid hallmark value");
-        return;
-      }
-      const payload = {
-  name: editedData.name.trim(),
-  phone: editedData.phone.trim(),
-  address: editedData.address.trim(),
-  balance:
-    editedData.balance !== ""
-      ? parseFloat(Number(editedData.balance).toFixed(3))
-      : null,
-  hallMarkBal:
-    editedData.hallMarkBal !== ""
-      ? parseFloat(Number(editedData.hallMarkBal).toFixed(3))
-      : null,
-};
+    if (editedData.balance === "-" || editedData.balance === "." || editedData.balance === "-.") {
+      toast.error("Invalid balance value");
+      return;
+    }
+    if (editedData.hallMarkBal === "-" || editedData.hallMarkBal === "." || editedData.hallMarkBal === "-.") {
+      toast.error("Invalid hallmark value");
+      return;
+    }
+    const payload = {
+      name: editedData.name.trim(),
+      phone: editedData.phone.trim(),
+      address: editedData.address.trim(),
+      balance:
+        editedData.balance !== ""
+          ? parseFloat(Number(editedData.balance).toFixed(3))
+          : null,
+      hallMarkBal:
+        editedData.hallMarkBal !== ""
+          ? parseFloat(Number(editedData.hallMarkBal).toFixed(3))
+          : null,
+    };
 
 
 
@@ -289,11 +289,11 @@ const handleSaveCustomer = async () => {
     } catch (error) {
       console.error("Error updating customer:", error);
       toast.error("Error updating customer.");
-    }finally {
-    setSaving(false);
-  }
+    } finally {
+      setSaving(false);
+    }
   };
-  
+
   console.log("Customer:", customers);
 
   return (
@@ -449,32 +449,32 @@ const handleSaveCustomer = async () => {
             <Button onClick={closeModal} color="secondary">
               Cancel
             </Button>
-            <Button 
-                onClick={handleSaveCustomer} 
-                color="primary" 
-                disabled={saving}
-              >
-                {saving ? "Saving..." : "Save"}
-              </Button>
+            <Button
+              onClick={handleSaveCustomer}
+              color="primary"
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save"}
+            </Button>
           </DialogActions>
         </Dialog>
 
-        {customers.length > 0 && (
-          <Paper>
-            <table width="100%" className="customer-table">
-              <thead>
-                <tr className="customer-tablehead">
-                  <th>S.no</th>
-                  <th>Customer Name</th>
-                  <th>Phone Number</th>
-                  <th>Balance</th>
-                  <th>Hallmark Balance</th>
-                  <th>Address</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody className="customer-tablebody">
-                {customers.map((customer, index) => (
+        <Paper>
+          <table width="100%" className="customer-table">
+            <thead>
+              <tr className="customer-tablehead">
+                <th>S.no</th>
+                <th>Customer Name</th>
+                <th>Phone Number</th>
+                <th>Balance</th>
+                <th>Hallmark Balance</th>
+                <th>Address</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody className="customer-tablebody">
+              {customers.length > 0 ? (
+                customers.map((customer, index) => (
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td>{customer.name}</td>
@@ -485,8 +485,8 @@ const handleSaveCustomer = async () => {
                           customer?.customerBillBalance?.balance < 0
                             ? "red"
                             : customer?.customerBillBalance?.balance > 0
-                            ? "green"
-                            : "black",
+                              ? "green"
+                              : "black",
                         fontWeight: "500",
                       }}
                     >
@@ -500,8 +500,8 @@ const handleSaveCustomer = async () => {
                           customer?.customerBillBalance?.hallMarkBal < 0
                             ? "red"
                             : customer?.customerBillBalance?.hallMarkBal > 0
-                            ? "green"
-                            : "black",
+                              ? "green"
+                              : "black",
                         fontWeight: "500",
                       }}
                     >
@@ -524,11 +524,15 @@ const handleSaveCustomer = async () => {
                       </Tooltip>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </Paper>
-        )}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: "center" }}>No details found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Paper>
       </div>
 
       <Dialog open={!!editCustomer} onClose={() => setEditCustomer(null)}>
@@ -554,32 +558,32 @@ const handleSaveCustomer = async () => {
             margin="normal"
           />
           <TextField
-              label="Balance"
-              value={editedData.balance}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (/^-?\d*\.?\d{0,3}$/.test(value)) {
-                  setEditedData((prev) => ({ ...prev, balance: value }));
-                }
-              }}
-              fullWidth
-              margin="normal"
-              inputProps={{ inputMode: "decimal", pattern: "-?[0-9]*[.,]?[0-9]*" }}
-            />
+            label="Balance"
+            value={editedData.balance}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^-?\d*\.?\d{0,3}$/.test(value)) {
+                setEditedData((prev) => ({ ...prev, balance: value }));
+              }
+            }}
+            fullWidth
+            margin="normal"
+            inputProps={{ inputMode: "decimal", pattern: "-?[0-9]*[.,]?[0-9]*" }}
+          />
 
           <TextField
-              label="HallMark Balance"
-              value={editedData.hallMarkBal}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (/^-?\d*\.?\d{0,3}$/.test(value)) {
-                  setEditedData((prev) => ({ ...prev, hallMarkBal: value }));
-                }
-              }}
-              fullWidth
-              margin="normal"
-              inputProps={{ inputMode: "decimal", pattern: "-?[0-9]*[.,]?[0-9]*" }}
-            />
+            label="HallMark Balance"
+            value={editedData.hallMarkBal}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^-?\d*\.?\d{0,3}$/.test(value)) {
+                setEditedData((prev) => ({ ...prev, hallMarkBal: value }));
+              }
+            }}
+            fullWidth
+            margin="normal"
+            inputProps={{ inputMode: "decimal", pattern: "-?[0-9]*[.,]?[0-9]*" }}
+          />
           <TextField
             label="Address"
             value={editedData.address}
@@ -593,8 +597,8 @@ const handleSaveCustomer = async () => {
         <DialogActions>
           <Button onClick={() => setEditCustomer(null)}>Cancel</Button>
           <Button onClick={handleUpdate} variant="contained" color="primary" disabled={saving}>
-                {saving ? "Updating..." : "Update"}
-            
+            {saving ? "Updating..." : "Update"}
+
           </Button>
         </DialogActions>
       </Dialog>
