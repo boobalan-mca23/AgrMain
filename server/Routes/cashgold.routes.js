@@ -5,5 +5,6 @@ const entryController = require("../Controllers/cashgold.controller");
 
 router.get("/", entryController.getAllEntries);
 router.post("/", entryController.createEntry);
+router.put("/:id", entryController.updateEntry);
 
 module.exports = router;
