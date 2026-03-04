@@ -22,14 +22,14 @@ function Mastergoldsmith() {
   const [goldsmithName, setGoldsmithName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [balance,setBalance]=useState("");
+  const [balance, setBalance] = useState("");
   const [goldsmith, setGoldsmith] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     address: "",
-    balance:"",
-    balanceisEdited:false
+    balance: "",
+    balanceisEdited: false
   });
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState(null);
@@ -41,7 +41,7 @@ function Mastergoldsmith() {
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
-  const balanceRef=useRef(null);
+  const balanceRef = useRef(null);
 
   useEffect(() => {
     fetchGoldsmiths();
@@ -75,43 +75,43 @@ function Mastergoldsmith() {
   };
 
   // Generic add-field validation (used by Add modal)
-const validateField = (field, value) => {
-  let error = "";
+  const validateField = (field, value) => {
+    let error = "";
 
-  if (field === "name") {
-    if (!value.trim()) {
-      error = "Goldsmith name is required.";
-    } else if (!validName.test(value.trim())) {
-      error = "Special characters are not allowed.";
-    } else if (
-      goldsmith.some((g) => g.name.toLowerCase() === value.trim().toLowerCase())
-    ) {
-      error = "Goldsmith name already exists.";
-    }
-  }
-
-  if (field === "phone") {
-    const v = value.trim();
-
-    // Only validate if phone is entered
-    if (v) {
-      if (!/^\d{10}$/.test(v)) {
-        error = "Phone number must be 10 digits.";
+    if (field === "name") {
+      if (!value.trim()) {
+        error = "Goldsmith name is required.";
+      } else if (!validName.test(value.trim())) {
+        error = "Special characters are not allowed.";
       } else if (
-        goldsmith.some(
-          (g) => g.phone && String(g.phone).trim() === v
-        )
+        goldsmith.some((g) => g.name.toLowerCase() === value.trim().toLowerCase())
       ) {
-        error = "Goldsmith phone number already exists.";
+        error = "Goldsmith name already exists.";
       }
     }
 
-    // If empty, no error — since phone is optional
-  }
+    if (field === "phone") {
+      const v = value.trim();
 
-  setErrors((prev) => ({ ...prev, [field]: error }));
-  return error === "";
-};
+      // Only validate if phone is entered
+      if (v) {
+        if (!/^\d{10}$/.test(v)) {
+          error = "Phone number must be 10 digits.";
+        } else if (
+          goldsmith.some(
+            (g) => g.phone && String(g.phone).trim() === v
+          )
+        ) {
+          error = "Goldsmith phone number already exists.";
+        }
+      }
+
+      // If empty, no error — since phone is optional
+    }
+
+    setErrors((prev) => ({ ...prev, [field]: error }));
+    return error === "";
+  };
 
 
   const handleBlur = (field, value) => {
@@ -126,11 +126,11 @@ const validateField = (field, value) => {
       if (field === "name") {
         phoneRef.current?.focus();
       } else if (field === "phone") {
-         balanceRef.current?.focus();
+        balanceRef.current?.focus();
       } else if (field === "balance") {
-         addressRef.current?.focus();
-        } else if(field ==="address"){
-         if (typeof submitFn === "function") submitFn();
+        addressRef.current?.focus();
+      } else if (field === "address") {
+        if (typeof submitFn === "function") submitFn();
       }
     }
   };
@@ -151,7 +151,7 @@ const validateField = (field, value) => {
       nameError = "Goldsmith name is required.";
     } else if (!validName.test(nameVal.trim())) {
       nameError = "Special characters are not allowed.";
-    } 
+    }
     // else if (
     //   goldsmith.some(
     //     (g) =>
@@ -203,7 +203,7 @@ const validateField = (field, value) => {
       name: goldsmithName.trim(),
       phonenumber: phoneNumber.trim() ? phoneNumber.trim() : null,
       address: address.trim() || null,
-      balance:balance !== "" ? parseFloat(Number(balance).toFixed(3)) : null
+      balance: balance !== "" ? parseFloat(Number(balance).toFixed(3)) : null
     };
 
     try {
@@ -233,8 +233,8 @@ const validateField = (field, value) => {
       name: item.name || "",
       phone: item.phone || "",
       address: item.address || "",
-      balance:item.balance != null ? Number(item.balance).toFixed(3) : "",
-      balanceisEdited:item.balanceisEdited||""
+      balance: item.balance != null ? Number(item.balance).toFixed(3) : "",
+      balanceisEdited: item.balanceisEdited || ""
     });
     setErrors({ name: "", phone: "" });
     setTouched({ name: false, phone: false });
@@ -267,8 +267,8 @@ const validateField = (field, value) => {
       name: formData.name.trim(),
       phone: formData.phone ? formData.phone.trim() : null,
       address: formData.address ? formData.address.trim() : null,
-      balance:formData.balance !== "" ? parseFloat(Number(formData.balance).toFixed(3)) : null,
-      balanceisEdited:formData.balanceisEdited? formData.balanceisEdited:false
+      balance: formData.balance !== "" ? parseFloat(Number(formData.balance).toFixed(3)) : null,
+      balanceisEdited: formData.balanceisEdited ? formData.balanceisEdited : false
     };
 
     try {
@@ -305,7 +305,7 @@ const validateField = (field, value) => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Cannot delete this goldsmith. It may be linked to other records.",
+        "Cannot delete this goldsmith. It may be linked to other records.",
         { autoClose: 2500 }
       );
     }
@@ -365,7 +365,7 @@ const validateField = (field, value) => {
             helperText={(touched.phone || submitted) ? errors.phone : ""}
             onKeyDown={(e) => handleKeyDown(e, "phone", handleSaveGoldsmith)}
           />
-          
+
           <TextField
             inputRef={balanceRef}
             margin="dense"
@@ -403,7 +403,7 @@ const validateField = (field, value) => {
             onKeyDown={(e) => handleKeyDown(e, "address", handleSaveGoldsmith)}
           />
 
-       
+
         </DialogContent>
         <DialogActions>
           <Button onClick={closeModal} color="secondary">
@@ -417,27 +417,27 @@ const validateField = (field, value) => {
 
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
 
-      {goldsmith.length > 0 && (
-        <Paper>
-          <table className="goldSmith-table" width="100%">
-            <thead>
-              <tr className="goldSmith-tablehead">
-                <th>S.no</th>
-                <th>Goldsmith Name</th>
-                <th>Phone Number</th>
-                <th>Address</th>
-                <th>Balance</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody className="goldSmith-tablebody">
-              {goldsmith.map((item, index) => (
+      <Paper>
+        <table className="goldSmith-table" width="100%">
+          <thead>
+            <tr className="goldSmith-tablehead">
+              <th>S.no</th>
+              <th>Goldsmith Name</th>
+              <th>Phone Number</th>
+              <th>Address</th>
+              <th>Balance</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody className="goldSmith-tablebody">
+            {goldsmith.length > 0 ? (
+              goldsmith.map((item, index) => (
                 <tr key={index}>
                   <td>{index + 1}</td>
                   <td>{item.name}</td>
                   <td>{item.phone || "-"}</td>
                   <td>{item.address || "-"}</td>
-                  <td  style={{color:item.balance<0?"red":item.balance>0?"green":""}}><b>{Number(item.balance).toFixed(3)}</b></td>
+                  <td style={{ color: item.balance < 0 ? "red" : item.balance > 0 ? "green" : "" }}><b>{Number(item.balance).toFixed(3)}</b></td>
                   <td>
                     <EditIcon
                       style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
@@ -449,11 +449,15 @@ const validateField = (field, value) => {
                     />
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </Paper>
-      )}
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" style={{ textAlign: "center" }}>No details found</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </Paper>
 
       <Dialog
         open={openEditDialog}
@@ -480,7 +484,7 @@ const validateField = (field, value) => {
             }}
             error={(touched.name || submitted) && !!errors.name}
             helperText={(touched.name || submitted) ? errors.name : ""}
-            /* removed onKeyDown for Edit per your request */
+          /* removed onKeyDown for Edit per your request */
           />
           <TextField
             inputRef={phoneRef}
@@ -498,7 +502,7 @@ const validateField = (field, value) => {
             }}
             error={(touched.phone || submitted) && !!errors.phone}
             helperText={(touched.phone || submitted) ? errors.phone : ""}
-            /* removed onKeyDown for Edit per your request */
+          /* removed onKeyDown for Edit per your request */
           />
           <TextField
             label="Balance"
@@ -528,9 +532,9 @@ const validateField = (field, value) => {
             rows={4}
             margin="normal"
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            /* removed onKeyDown for Edit per your request */
+          /* removed onKeyDown for Edit per your request */
           />
-           
+
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
