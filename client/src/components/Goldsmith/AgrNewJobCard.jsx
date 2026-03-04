@@ -82,7 +82,7 @@ function AgrNewJobCard({
     "Antic",
   ];
   const symbolOptions = ["Touch", "%", "+"];
-  
+
   const recalculateWastagePurity = (item) => {
     const totalItemDeductions = item.deduction.reduce(
       (sum, deduction) => sum + parseFloat(deduction.weight || 0),
@@ -224,7 +224,7 @@ function AgrNewJobCard({
     if (field === "weight") {
       updated[itemIndex]["netWeight"] = format(
         updated[itemIndex]["itemWeight"] -
-          Number(totalDeduction(itemIndex, updated))
+        Number(totalDeduction(itemIndex, updated))
       );
       // updated[itemIndex]["wastagePure"] = (
       //   (updated[itemIndex]["netWeight"] * updated[itemIndex].wastageValue) /
@@ -234,7 +234,7 @@ function AgrNewJobCard({
     }
     updated[itemIndex]["netWeight"] = format(
       updated[itemIndex]["itemWeight"] -
-        Number(totalDeduction(itemIndex, updated))
+      Number(totalDeduction(itemIndex, updated))
     );
     const { wastagePure, finalPurity } = recalculateWastagePurity(
       updated[itemIndex]
@@ -303,8 +303,8 @@ function AgrNewJobCard({
   };
 
   const totalGivenToGoldsmith = openingBalance + totalInputPurityGiven;
-  console.log('itemDelivery',itemDelivery);
-  
+  console.log('itemDelivery', itemDelivery);
+
   const totalFinishedPurity = itemDelivery.reduce(
     (sum, item) => sum + parseFloat(item.finalPurity || 0),
     0
@@ -327,7 +327,7 @@ function AgrNewJobCard({
     const existStock = checkAvailabilityStock(rawGoldStock);
 
     const doUpdate = () => {
-      
+
 
       handleUpdateJobCard(
         totalInputPurityGiven,
@@ -336,13 +336,13 @@ function AgrNewJobCard({
         jobBalance,
         openingBalance
       );
-       
+
     };
 
     const doSave = () => {
-      
+
       handleSaveJobCard(totalInputPurityGiven, jobBalance, openingBalance);
-       
+
     };
     if (edit) {
       const itemIsTrue = itemValidation(itemDelivery, setItemDeliveryErrors);
@@ -361,7 +361,7 @@ function AgrNewJobCard({
 
       if (print === "print") {
         handlePrint();
-        
+
         if (isFinished === "false") {
           doUpdate();
         }
@@ -508,8 +508,8 @@ function AgrNewJobCard({
                 <div className="givenGold">
                   {givenGold.map((row, i) => (
                     <div key={row.id || `gold-${i}`} className="row">
-                      <strong>{i + 1})</strong>
-                      <div>
+                      <strong>{i + 1}</strong>
+                      <div className="input-wrapper">
                         <input
                           disabled={row.id ? true : false}
                           type="number"
@@ -521,48 +521,65 @@ function AgrNewJobCard({
                           className="input"
                           onWheel={(e) => e.target.blur()}
                         />
-                        <br></br>
-                        {givenGoldErrors[i]?.weight && (
-                          <span className="error">
-                            {givenGoldErrors[i]?.weight}
-                          </span>
-                        )}
+                        <div className="error-container">
+                          {givenGoldErrors[i]?.weight && (
+                            <span className="error">
+                              {givenGoldErrors[i]?.weight}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className="operator">x</span>
 
-                      <div>
-                        <select
+                      <div className="input-wrapper">
+                        <Autocomplete
+                          freeSolo
+                          forcePopupIcon
+                          options={dropDownItems.touchList.map((item) =>
+                            item.touch.toString()
+                          )}
+                          value={row.touch?.toString() || ""}
+                          onChange={(event, newValue) => {
+                            handleGoldRowChange(i, "touch", newValue || "");
+                          }}
+                          onInputChange={(event, newInputValue) => {
+                            handleGoldRowChange(
+                              i,
+                              "touch",
+                              newInputValue || ""
+                            );
+                          }}
+                          noOptionsText=""
                           disabled={row.id ? true : false}
-                          value={row.touch}
-                          onChange={(e) =>
-                            handleGoldRowChange(i, "touch", e.target.value)
-                          }
-                          className="select-small"
-                          // disabled={isLoading || !isItemDeliveryEnabled}
-                        >
-                          <option value="">Select</option>
-                          {dropDownItems.touchList.map((option) => (
-                            <option key={option.id} value={option.touch}>
-                              {option.touch}
-                            </option>
-                          ))}
-                        </select>
-                        <br></br>
-                        {givenGoldErrors[i]?.touch && (
-                          <span className="error">
-                            {givenGoldErrors[i]?.touch}
-                          </span>
-                        )}
+                          className="auto-complete-small"
+                          sx={{ width: 120 }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              placeholder="Touch"
+                              size="small"
+                            />
+                          )}
+                        />
+                        <div className="error-container">
+                          {givenGoldErrors[i]?.touch && (
+                            <span className="error">
+                              {givenGoldErrors[i]?.touch}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <span className="operator">=</span>
-                      <input
-                        type="text"
-                        readOnly
-                        placeholder="Purity"
-                        value={format(row.purity)}
-                        className="input-read-only"
-                      />
+                      <div className="input-wrapper">
+                        <input
+                          type="text"
+                          readOnly
+                          placeholder="Purity"
+                          value={format(row.purity)}
+                          className="input-read-only"
+                        />
+                      </div>
                       {!row.id && (
                         <MdDeleteForever
                           className="delIcon"
@@ -755,7 +772,7 @@ function AgrNewJobCard({
                               )
                             }
                             className="select-small"
-                            // disabled={isLoading || !isItemDeliveryEnabled}
+                          // disabled={isLoading || !isItemDeliveryEnabled}
                           >
                             <option value="">Select</option>
                             {dropDownItems.masterItems.map((option) => (
@@ -837,7 +854,28 @@ function AgrNewJobCard({
                           rowSpan={item?.deduction.length || 1}
                           className="tableCell"
                         >
-                          <select
+                          <Autocomplete
+                            freeSolo
+                            forcePopupIcon
+                            options={dropDownItems.touchList.map((opt) =>
+                              opt.touch.toString()
+                            )}
+                            value={item?.touch?.toString() || ""}
+                            onChange={(event, newValue) => {
+                              handleChangeDeliver(
+                                newValue || "",
+                                "touch",
+                                index
+                              );
+                            }}
+                            onInputChange={(event, newInputValue) => {
+                              handleChangeDeliver(
+                                newInputValue || "",
+                                "touch",
+                                index
+                              );
+                            }}
+                            noOptionsText=""
                             disabled={
                               edit
                                 ? isFinished === "true"
@@ -845,24 +883,16 @@ function AgrNewJobCard({
                                   : false
                                 : true
                             }
-                            value={item?.touch}
-                            onChange={(e) =>
-                              handleChangeDeliver(
-                                e.target.value,
-                                "touch",
-                                index
-                              )
-                            }
-                            className="select-small"
-                            // disabled={isLoading || !isItemDeliveryEnabled}
-                          >
-                            <option value="">Select</option>
-                            {dropDownItems.touchList.map((option) => (
-                              <option key={option.id} value={option.touch}>
-                                {option.touch}
-                              </option>
-                            ))}
-                          </select>
+                            className="auto-complete-small"
+                            sx={{ width: 110 }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                placeholder="Touch"
+                                size="small"
+                              />
+                            )}
+                          />
                           <br></br>
                           {itemDeliveryErrors[index]?.touch && (
                             <span className="error">
@@ -915,7 +945,7 @@ function AgrNewJobCard({
                                   )
                                 }
                                 className="select-small"
-                                // disabled={isLoading || !isItemDeliveryEnabled}
+                              // disabled={isLoading || !isItemDeliveryEnabled}
                               >
                                 <option value="">Select</option>
                                 {stoneOptions.map((option) => (
@@ -1015,7 +1045,7 @@ function AgrNewJobCard({
                               )
                             }
                             className="select-small"
-                            // disabled={isLoading || !isItemDeliveryEnabled}
+                          // disabled={isLoading || !isItemDeliveryEnabled}
                           >
                             <option value="">Select</option>
                             {symbolOptions.map((symbol) => (
@@ -1141,7 +1171,7 @@ function AgrNewJobCard({
                                     )
                                   }
                                   className="select-small"
-                                  // disabled={isLoading || !isItemDeliveryEnabled}
+                                // disabled={isLoading || !isItemDeliveryEnabled}
                                 >
                                   <option value="">Select</option>
                                   {stoneOptions.map((option) => (
@@ -1224,7 +1254,7 @@ function AgrNewJobCard({
                     touch: "",
                     deduction: [],
                     netWeight: "",
-                    wastageType: "",
+                    wastageType: "%",
                     wastageValue: "",
                     wastagePure: "",
                     finalPurity: "",
@@ -1353,7 +1383,7 @@ function AgrNewJobCard({
                 ])
               }
               className="circle-button"
-              // disabled={isLoading || !isReceivedSectionEnabled}
+            // disabled={isLoading || !isReceivedSectionEnabled}
             >
               +
             </button>
@@ -1412,11 +1442,11 @@ function AgrNewJobCard({
                 ? isFinished === "true"
                   ? true
                   : saveDisable
+                    ? true
+                    : false
+                : saveDisable
                   ? true
                   : false
-                : saveDisable
-                ? true
-                : false
             }
             style={{ color: saveDisable ? "grey" : "#fff" }}
           >
@@ -1425,8 +1455,8 @@ function AgrNewJobCard({
                 ? "Job Card Updating ..."
                 : "Update"
               : saveDisable
-              ? "Job Card Saving ..."
-              : "Save"}
+                ? "Job Card Saving ..."
+                : "Save"}
           </Button>
           <Button
             autoFocus
