@@ -82,8 +82,8 @@ function MasterBullion() {
       const v = value.trim();
       if (!/^\d{10}$/.test(v)) error = "Phone number must be 10 digits.";
       else if (bullions.some((b) => String(b.phone).trim() === v))
-      error = "Bullion phone number already exists.";
-  }
+        error = "Bullion phone number already exists.";
+    }
 
     setErrors((prev) => ({ ...prev, [field]: error }));
     return error === "";
@@ -153,44 +153,44 @@ function MasterBullion() {
     setOpenEditDialog(true);
   };
 
-const handleEditSubmit = async () => {
-  if (saving) return; // prevent multiple clicks
+  const handleEditSubmit = async () => {
+    if (saving) return; // prevent multiple clicks
 
-  const phoneTrimmed = formData.phone.trim();
-  if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
-    toast.error("Phone number must be 10 digits.");
-    return;
-  }
-
-  if (!validName.test(formData.name.trim())) {
-    toast.warn("Special characters are not allowed.", { autoClose: 2000 });
-    return;
-  }
-
-  try {
-    setSaving(true); // start saving
-    const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/${selectedBullion.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    if (response.ok) {
-      toast.success("Bullion updated successfully");
-      setBullions((prev) =>
-        prev.map((b) => (b.id === selectedBullion.id ? { ...b, ...formData } : b))
-      );
-      setOpenEditDialog(false);
-    } else {
-      toast.error("Failed to update bullion");
+    const phoneTrimmed = formData.phone.trim();
+    if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
+      toast.error("Phone number must be 10 digits.");
+      return;
     }
-  } catch (error) {
-    console.error("Update error:", error);
-    toast.error("Error updating bullion");
-  } finally {
-    setSaving(false); // done saving
-  }
-};
+
+    if (!validName.test(formData.name.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
+
+    try {
+      setSaving(true); // start saving
+      const response = await fetch(`${BACKEND_SERVER_URL}/api/master-bullion/${selectedBullion.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success("Bullion updated successfully");
+        setBullions((prev) =>
+          prev.map((b) => (b.id === selectedBullion.id ? { ...b, ...formData } : b))
+        );
+        setOpenEditDialog(false);
+      } else {
+        toast.error("Failed to update bullion");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Error updating bullion");
+    } finally {
+      setSaving(false); // done saving
+    }
+  };
 
 
   const handleDeleteClick = async (id) => {
@@ -313,22 +313,22 @@ const handleEditSubmit = async () => {
           </DialogActions>
         </Dialog>
 
-        {bullions.length > 0 && (
-          <Paper >
-            <table className="bullion-table" width="100%">
-              <thead>
-                <tr className="bullion-tablehead">
-                  <th>S.no</th>
-                  <th>Bullion Name</th>
-                  <th>Phone Number</th>
-                  <th>Address</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody className="bullion-tablebody">
-                {bullions.map((b, i) => (
+        <Paper >
+          <table className="bullion-table" width="100%">
+            <thead>
+              <tr className="bullion-tablehead">
+                <th>S.no</th>
+                <th>Bullion Name</th>
+                <th>Phone Number</th>
+                <th>Address</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody className="bullion-tablebody">
+              {bullions.length > 0 ? (
+                bullions.map((b, i) => (
                   <tr key={i}>
-                    <td>{i+1}</td>
+                    <td>{i + 1}</td>
                     <td>{b.name}</td>
                     <td>{b.phone}</td>
                     <td>{b.address || "-"}</td>
@@ -343,45 +343,49 @@ const handleEditSubmit = async () => {
                       />
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </Paper>
-        )}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: "center" }}>No details found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Paper>
 
         <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} fullWidth maxWidth="sm">
-  <DialogTitle>Edit Bullion</DialogTitle>
-  <DialogContent>
-    <TextField
-      label="Name"
-      fullWidth
-      margin="normal"
-      value={formData.name}
-      disabled
-      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-    />
-    <TextField
-      label="Phone"
-      fullWidth
-      margin="normal"
-      value={formData.phone}
-      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-    />
-    <TextField
-      label="Address"
-      fullWidth
-      margin="normal"
-      value={formData.address}
-      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-    />
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
-    <Button onClick={handleEditSubmit} variant="contained" color="primary" disabled={saving}>
-      {saving ? "Saving..." : "Save"}
-    </Button>
-    </DialogActions>
-  </Dialog>
+          <DialogTitle>Edit Bullion</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Name"
+              fullWidth
+              margin="normal"
+              value={formData.name}
+              disabled
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+            <TextField
+              label="Phone"
+              fullWidth
+              margin="normal"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+            <TextField
+              label="Address"
+              fullWidth
+              margin="normal"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+            <Button onClick={handleEditSubmit} variant="contained" color="primary" disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
       </div>
     </>
