@@ -15,29 +15,35 @@ function Cashgold() {
   const [goldRate, setGoldRate] = useState(0);
   const [masterTouch, setMasterTouch] = useState([]);
   const [formData, setFormData] = useState({
+    id: null,
+    logId: null,
     date: formattedToday,
     type: "Select",
     cashAmount: "",
     goldValue: "",
     touch: "",
     purity: "",
+    pureGold: "",
   });
   const [goldCashError, setGoldCashError] = useState({});
   const [saveDiasable, setSaveDisable] = useState(false);
 
-  const handleClose=()=>{
-   setShowFormPopup(false)
-   setFormData({
-    date: formattedToday,
-    type: "Select",
-    cashAmount: "",
-    goldValue: "",
-    touch: "",
-    purity: "",
-  })
-  setGoldCashError({})
-  }
-
+  const handleClose = () => {
+    setShowFormPopup(false);
+    setFormData({
+      id: null,
+      logId: null,
+      date: formattedToday,
+      type: "Select",
+      cashAmount: "",
+      goldValue: "",
+      touch: "",
+      purity: "",
+      pureGold: "",
+    });
+    setGoldRate(0);
+    setGoldCashError({});
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,19 +69,24 @@ function Cashgold() {
     if (formData.type === "Cash") {
       const cashAmount = parseFloat(formData.cashAmount);
       const rate = parseFloat(goldRate);
+      const touch = parseFloat(formData.touch);
+      let calculatedPurity = "";
+      let calculatedPureGold = "";
+
       if (!isNaN(cashAmount) && cashAmount > 0 && !isNaN(rate) && rate > 0) {
-        setFormData((prevFormData) => ({
-          ...prevFormData,
-          purity: (cashAmount / rate).toFixed(3),
-        }));
-      } else {
-        setFormData((prevFormData) => ({
-          ...prevFormData,
-          purity: "",
-        }));
+        calculatedPurity = (cashAmount / rate).toFixed(3);
+        if (!isNaN(touch) && touch > 0) {
+          calculatedPureGold = ((parseFloat(calculatedPurity) / touch) * 100).toFixed(3);
+        }
       }
+
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        purity: calculatedPurity,
+        pureGold: calculatedPureGold,
+      }));
     }
-  }, [formData.cashAmount, goldRate, formData.type]);
+  }, [formData.cashAmount, goldRate, formData.type, formData.touch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,13 +99,15 @@ function Cashgold() {
     }
 
     const payload = {
+      id: formData.id,
+      logId: formData.logId,
       date: formData.date,
       type: formData.type,
       cashAmount:
         formData.type === "Cash" ? parseFloat(formData.cashAmount) : null,
       goldValue:
         formData.type === "Gold" ? parseFloat(formData.goldValue) : null,
-      touch: formData.type === "Gold" ? parseFloat(formData.touch) : null,
+      touch: parseFloat(formData.touch) || null,
       purity: parseFloat(calculatedPurity),
       goldRate: formData.type === "Cash" ? parseFloat(goldRate) : null,
     };
@@ -106,29 +119,51 @@ function Cashgold() {
     if (Object.keys(isValidationIsTrue).length === 0) {
       try {
         setSaveDisable(true);
-        const response = await axios.post(
-          `${BACKEND_SERVER_URL}/api/entries`,
-          payload
-        );
-        toast.success("Value added successfully!");
-        setEntries((prev) => [response.data, ...prev]);
-        setFormData({
-          date: formattedToday,
-          type: "Select",
-          cashAmount: "",
-          goldValue: "",
-          touch: "",
-          purity: "",
-        });
-        setGoldRate(0);
-        setShowFormPopup(false);
+        if (formData.id) {
+          // Edit
+          const response = await axios.put(
+            `${BACKEND_SERVER_URL}/api/entries/${formData.id}`,
+            payload
+          );
+          toast.success("Entry updated successfully!");
+          setEntries((prev) =>
+            prev.map((entry) => (entry.id === response.data.id ? response.data : entry))
+          );
+        } else {
+          // Create
+          const response = await axios.post(
+            `${BACKEND_SERVER_URL}/api/entries`,
+            payload
+          );
+          toast.success("Value added successfully!");
+          setEntries((prev) => [response.data, ...prev]);
+        }
+
+        handleClose();
         setSaveDisable(false);
+        fetchTouch(); // Refresh touch generic options
       } catch (err) {
         setSaveDisable(false);
-        toast.error("Failed to add entry. Please try again.");
+        toast.error("Failed to save entry. Please try again.");
         console.error("Error submitting entry:", err);
       }
     }
+  };
+
+  const handleEdit = (entry) => {
+    setFormData({
+      id: entry.id,
+      logId: entry.logId,
+      date: new Date(entry.date).toISOString().split("T")[0],
+      type: entry.type,
+      cashAmount: entry.cashAmount || "",
+      goldValue: entry.goldValue || "",
+      touch: entry.touch || "",
+      purity: entry.purity || "",
+      pureGold: entry.type === "Cash" && entry.touch && entry.purity ? ((parseFloat(entry.purity) / parseFloat(entry.touch)) * 100).toFixed(3) : "",
+    });
+    setGoldRate(entry.goldRate || 0);
+    setShowFormPopup(true);
   };
 
   const calculateTotalPurity = () => {
@@ -174,10 +209,10 @@ function Cashgold() {
       {showFormPopup && (
         <div className="popup-overlay">
           <div className="popup-cont">
-            <h3>Enter Cash or Gold Details</h3>
+            <h3>{formData.id ? "Edit Cash or Gold Details" : "Enter Cash or Gold Details"}</h3>
             <button
               className="close-btn"
-              onClick={() =>handleClose()}
+              onClick={() => handleClose()}
             >
               ×
             </button>
@@ -237,12 +272,63 @@ function Cashgold() {
                       <p style={{ color: "red" }}>{goldCashError.goldRate}</p>
                     )}
                   </div>
+                  <div className="direct-Touch">
+                    <label>Touch (%):</label>
+                    <Autocomplete
+                      freeSolo
+                      forcePopupIcon
+                      options={masterTouch.map((item) => item.touch.toString())}
+                      value={formData.touch ? formData.touch.toString() : ""}
+                      onChange={(event, newValue) => {
+                        handleChange({
+                          target: {
+                            name: "touch",
+                            value: newValue || "",
+                          },
+                        });
+                      }}
+                      noOptionsText=""
+                      sx={{
+                        width: 400,
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "2px !important",
+                        },
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          name="touch"
+                          required
+                          size="small"
+                          onChange={(e) => handleChange(e)}
+                          inputProps={{
+                            ...params.inputProps,
+                            style: { padding: "8px" },
+                          }}
+                        />
+                      )}
+                    />
+                    {goldCashError.touch && (
+                      <p style={{ color: "red" }}>{goldCashError.touch}</p>
+                    )}
+                  </div>
                   <div className="form-group">
                     <label>Purity (g):</label>
                     <input
                       type="number"
                       name="purity"
                       value={formData.purity}
+                      readOnly
+                      className="read-only"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Pure Gold (g):</label>
+                    <input
+                      type="number"
+                      name="pureGold"
+                      value={formData.pureGold}
                       readOnly
                       className="read-only"
                     />
@@ -273,7 +359,7 @@ function Cashgold() {
                       freeSolo
                       forcePopupIcon
                       options={masterTouch.map((item) => item.touch.toString())}
-                      value={formData.touch || ""}
+                      value={formData.touch ? formData.touch.toString() : ""}
                       onChange={(event, newValue) => {
                         handleChange({
                           target: {
@@ -329,7 +415,7 @@ function Cashgold() {
                   disabled={saveDiasable ? true : false}
                   style={{ background: saveDiasable ? "grey" : "green" }}
                 >
-                  {saveDiasable ? "CashOrGold is Saving.." : "Save"}
+                  {saveDiasable ? "Saving.." : "Save"}
                 </button>
               </div>
             </form>
@@ -339,22 +425,23 @@ function Cashgold() {
 
       <div className="entries-section">
         <h3>Entries</h3>
-        {entries.length === 0 ? (
-          <p>No entries yet. </p>
-        ) : (
-          <>
-            <table className="entries-table">
-              <thead>
-                <tr>
-                  <th>Sl. No.</th>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Amount/Value</th>
-                  <th>Touch/Rate</th>
-                  <th>Purity (g)</th>
-                </tr>
-              </thead>
-              <tbody>
+        <table className="entries-table">
+          <thead>
+            <tr>
+              <th>Sl. No.</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Amount/Value</th>
+              <th>Touch</th>
+              <th>Rate</th>
+              <th>Purity (g)</th>
+              <th>Pure Gold (g)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.length > 0 ? (
+              <>
                 {entries.map((entry, index) => (
                   <tr key={entry.id}>
                     <td>{index + 1}</td>
@@ -366,26 +453,42 @@ function Cashgold() {
                         : `${parseFloat(entry.goldValue).toFixed(3)}g`}
                     </td>
                     <td>
+                      {entry.touch ? `${entry.touch}%` : "-"}
+                    </td>
+                    <td>
                       {entry.type === "Cash"
                         ? `₹${parseFloat(entry.goldRate).toFixed(2)}/g`
-                        : `${entry.touch}%`}
+                        : `-`}
                     </td>
                     <td>{parseFloat(entry.purity).toFixed(3)}</td>
+                    <td>
+                      {entry.type === "Cash" && entry.touch && entry.purity
+                        ? ((parseFloat(entry.purity) / parseFloat(entry.touch)) * 100).toFixed(3)
+                        : "-"}
+                    </td>
+                    <td>
+                      <button className="edit-icon-btn" onClick={() => handleEdit(entry)}>Edit</button>
+                    </td>
                   </tr>
                 ))}
 
                 <tr className="totals-row">
-                  <td colSpan="5">
+                  <td colSpan="6">
                     <strong>Total Purity</strong>
                   </td>
                   <td>
                     <strong>{calculateTotalPurity()}g</strong>
                   </td>
+                  <td colSpan="2"></td>
                 </tr>
-              </tbody>
-            </table>
-          </>
-        )}
+              </>
+            ) : (
+              <tr>
+                <td colSpan="9" style={{ textAlign: "center" }}>No details found</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
