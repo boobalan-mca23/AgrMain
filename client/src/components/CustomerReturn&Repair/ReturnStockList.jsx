@@ -20,6 +20,15 @@ const RepairStockList = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  const [fromDate, setFromDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 15);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  });
+  const [toDate, setToDate] = useState(() => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  });
 
   useEffect(() => {
     fetchReturnedStock();
@@ -36,10 +45,43 @@ const RepairStockList = () => {
     }
   };
 
-  const filteredReturns = returns.filter((r) =>
-    r.productName?.toLowerCase().includes(search.toLowerCase()) ||
-    r.bill?.id?.toString().includes(search)
-  );
+  const filteredReturns = returns.filter((r) => {
+    const searchValue = search.toLowerCase();
+
+    // Safety check for search
+    const matchesSearch =
+      !search ||
+      (r.productName && r.productName.toLowerCase().includes(searchValue)) ||
+      (r.bill?.id && r.bill.id.toString().includes(searchValue));
+
+    const itemDate = r.createdAt ? new Date(r.createdAt) : null;
+
+    // Helper to parse DD/MM/YYYY to Date object
+    const parseDDMMYYYY = (dateStr) => {
+      if (!dateStr || dateStr.length !== 10) return null;
+      const [day, month, year] = dateStr.split('/');
+      if (!day || !month || !year) return null;
+      return new Date(`${year}-${month}-${day}T00:00:00`);
+    };
+
+    // Normalize bounds
+    const from = parseDDMMYYYY(fromDate);
+    if (from) from.setHours(0, 0, 0, 0);
+
+    const to = parseDDMMYYYY(toDate);
+    if (to) to.setHours(23, 59, 59, 999);
+
+    const matchesFrom = !from || (itemDate && itemDate >= from);
+    const matchesTo = !to || (itemDate && itemDate <= to);
+
+    return matchesSearch && matchesFrom && matchesTo;
+  }).sort((a, b) => {
+    if (fromDate || toDate) {
+      return new Date(a.createdAt) - new Date(b.createdAt); // Ascending
+    } else {
+      return new Date(b.createdAt) - new Date(a.createdAt); // Descending
+    }
+  });
 
   const paginatedData = filteredReturns.slice(
     page * rowsPerPage,
@@ -61,7 +103,31 @@ const RepairStockList = () => {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <Button variant="outlined" onClick={() => setSearch("")}>
+        <TextField
+          type="text"
+          size="small"
+          label="From (DD/MM/YYYY)"
+          InputLabelProps={{ shrink: true }}
+          placeholder="DD/MM/YYYY"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+        />
+
+        <TextField
+          type="text"
+          size="small"
+          label="To (DD/MM/YYYY)"
+          InputLabelProps={{ shrink: true }}
+          placeholder="DD/MM/YYYY"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+        />
+
+        <Button variant="outlined" onClick={() => {
+          setSearch("");
+          setFromDate("");
+          setToDate("");
+        }}>
           Reset
         </Button>
       </Box>
@@ -98,7 +164,7 @@ const RepairStockList = () => {
                 <TableCell className="BillTable-tb-td">{item.count}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.reason || "-"}</TableCell>
               </TableRow>
-            )) 
+            ))
           ) : (
             <TableRow>
               <TableCell colSpan={8} align="center">
