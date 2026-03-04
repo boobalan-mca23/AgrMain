@@ -37,8 +37,8 @@ const CustReport = () => {
   const [showInitialNegative, setShowInitialNegative] = useState(false);
 
   const navigate = useNavigate();
-  
-  const paginatedData =billInfo.slice(
+
+  const paginatedData = billInfo.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -46,8 +46,8 @@ const CustReport = () => {
 
   // Calculate totals for current page
 
-  const handlePrint =  () => {
-   const printContent = (
+  const handlePrint = () => {
+    const printContent = (
       < CustomerReportPrint
         fromDate={fromDate ? fromDate.format("DD/MM/YYYY") : ""}
         toDate={toDate ? toDate.format("DD/MM/YYYY") : ""}
@@ -81,20 +81,20 @@ const CustReport = () => {
     const printWindow = window.open("", "_blank", "width=1000,height=800");
     printWindow.document.write(printHtml);
     printWindow.document.close();
-    
+
   };
 
 
   const currentPageTotal = paginatedData.reduce(
     (acc, bill) => {
-      if(bill.type === "bill"){
-        acc.billAmount+=bill.info.billAmount
-      }else{
-        acc.billReceive+=bill.info.purity 
+      if (bill.type === "bill") {
+        acc.billAmount += bill.info.billAmount
+      } else {
+        acc.billReceive += bill.info.purity
       }
       return acc;
     },
-    { billReceive: 0, billAmount: 0} // Initial accumulator
+    { billReceive: 0, billAmount: 0 } // Initial accumulator
   );
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -113,32 +113,35 @@ const CustReport = () => {
 
   };
 
-  const handleCustomer = (newValue) => {
-    if (!newValue || newValue === null) {
+  useEffect(() => {
+    if (!selectedCustomer || !selectedCustomer.id) {
+      setBillInfo([]);
+      setOverAllBalance({});
       return;
     }
-    setSelectedCustomer(newValue);
-    console.log(newValue);
-
     const fetchBillInfo = async () => {
       try {
         const from = fromDate ? fromDate.format("YYYY-MM-DD") : "";
         const to = toDate ? toDate.format("YYYY-MM-DD") : "";
 
         const response = await axios.get(
-          `${BACKEND_SERVER_URL}/api/bill/customerReport/${newValue.id}`,
+          `${BACKEND_SERVER_URL}/api/bill/customerReport/${selectedCustomer.id}`,
           { params: { fromDate: from, toDate: to } }
         );
         console.log("data", response.data.data);
-        setBillInfo(response.data.data);
-        setOverAllBalance(response.data.overallBal);
+        setBillInfo(response.data.data || []);
+        setOverAllBalance(response.data.overallBal || {});
+        setPage(0);
       } catch (error) {
-        console.error("Error fetching goldsmith data:", error);
+        console.error("Error fetching customer data:", error);
       }
     };
     fetchBillInfo();
-  };
+  }, [fromDate, toDate, selectedCustomer]);
 
+  const handleCustomer = (newValue) => {
+    setSelectedCustomer(newValue || {});
+  };
 
 
   useEffect(() => {
@@ -154,7 +157,7 @@ const CustReport = () => {
     };
     fetchCustomer();
     const today = dayjs();
-    setFromDate(today);
+    setFromDate(today.subtract(15, 'day'));
     setToDate(today);
   }, []);
 
@@ -198,33 +201,33 @@ const CustReport = () => {
               )}
             />
 
+            <Button
+              id="clear"
+              className="clr noprint customerReportBtn"
+              onClick={handleDateClear}
+            >
+              Clear
+            </Button>
+
+
+            <div className="noprint">
               <Button
-                id="clear"
-                className="clr noprint customerReportBtn"
-                onClick={handleDateClear}
+                id="print"
+                onClick={() => {
+                  handlePrint();
+                }}
+                className="customerReportBtn"
               >
-                Clear
+                Print
               </Button>
-            
-  
-              <div className="noprint">
-                <Button
-                  id="print"
-                  onClick={() => {
-                    handlePrint();
-                  }}
-                  className="customerReportBtn"
-                >
-                  Print
-                </Button>
-              </div>
-       
+            </div>
+
           </div>
         </div>
 
         <div className="customerReportContainer">
           {paginatedData.length >= 1 ? (
-            <table  className="customerReportTable">
+            <table className="customerReportTable">
               <thead id="customerReportHead">
                 <tr>
                   <th>S.no</th>
@@ -240,7 +243,7 @@ const CustReport = () => {
                 {paginatedData.map((bill, index) => (
                   <tr key={index + 1}>
                     <td>{index + 1}</td>
-                    <td>{bill.type==="bill"?bill.info.id:"-"}</td>
+                    <td>{bill.type === "bill" ? bill.info.id : "-"}</td>
                     <td>
                       {new Date(bill.info.createdAt).toLocaleDateString(
                         "en-GB"
@@ -266,7 +269,7 @@ const CustReport = () => {
                             <tbody className="orderTableTbody">
                               {bill.info.orders.map((item, index) => (
                                 <tr key={index + 1}>
-                                  <td>{bill.type||""}</td>
+                                  <td>{bill.type || ""}</td>
                                   <td>
                                     {new Date(
                                       item.createdAt
@@ -300,8 +303,8 @@ const CustReport = () => {
                             </tr>
                           </thead>
                           <tbody className="receiveTableBody">
-                            <tr key={index+1}>
-                              <td>{bill.type||""}</td>
+                            <tr key={index + 1}>
+                              <td>{bill.type || ""}</td>
                               <td>
                                 {new Date(
                                   bill.info.createdAt
@@ -312,7 +315,7 @@ const CustReport = () => {
                               <td>{bill.info.touch}</td>
                               <td>{bill.info.purity}</td>
                               <td>{bill.info.amount}</td>
-                              <td>{bill.info.receiveHallMark||0}</td>
+                              <td>{bill.info.receiveHallMark || 0}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -320,11 +323,13 @@ const CustReport = () => {
                     </td>
                     <td>
                       {bill.type === "bill" ? (
-                      <IconButton color="primary" onClick={() => {console.log(
-                      `Navigating to bill-view/${bill.info.id}`
-                      ),navigate(`/bill-view/${bill.info.id}`)}}>
-                        <VisibilityIcon />
-                      </IconButton>):(<p>-</p>)}
+                        <IconButton color="primary" onClick={() => {
+                          console.log(
+                            `Navigating to bill-view/${bill.info.id}`
+                          ), navigate(`/bill-view/${bill.info.id}`)
+                        }}>
+                          <VisibilityIcon />
+                        </IconButton>) : (<p>-</p>)}
 
                     </td>
 
@@ -341,8 +346,8 @@ const CustReport = () => {
                     )}
                   </tr>
                 ))}
-               
-                 <tr   className="custRepTfoot" >
+
+                <tr className="custRepTfoot" >
                   <td colSpan={5}></td>
 
                   <td className="customerTotal">
@@ -354,7 +359,7 @@ const CustReport = () => {
                     <strong> Total bill Amount:{(currentPageTotal.billAmount).toFixed(3)} gr</strong>
                   </td>
                 </tr>
-               
+
               </tbody>
             </table>
           ) : (
@@ -370,103 +375,103 @@ const CustReport = () => {
             </p>
           )}
 
-        
+
         </div>
-         <TablePagination
-               
-                component="div"
-                count={billInfo.length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[5, 10, 25]}
-              />
+        <TablePagination
+
+          component="div"
+          count={billInfo.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25]}
+        />
       </div>
-        <div className="overAllBalance">
-          {/* Excess Balance (Negative) */}
-          <div className="balanceCard balance-negative">
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <span>
-                Excess Balance:{" "}
-                {overAllBalance.balance < 0
-                  ? overAllBalance.balance.toFixed(3)
-                  : 0.0}{" "}
-                gr
-              </span>
-              {overAllBalance.initialBalance < 0 && (
-                <IconButton
-                  onClick={() =>
-                    setShowInitialNegative((prev) => !prev)
-                  }
-                  size="small"
-                  color="inherit"
-                >
-                  {showInitialNegative ? (
-                    <ExpandLessIcon />
-                  ) : (
-                    <ExpandMoreIcon />
-                  )}
-                </IconButton>
-              )}
-            </div>
-
-            {showInitialNegative && overAllBalance.initialBalance < 0 && (
-              <div className="balanceDetails">
-                <p>Initial Value: {overAllBalance.initialBalance}</p>
-              </div>
+      <div className="overAllBalance">
+        {/* Excess Balance (Negative) */}
+        <div className="balanceCard balance-negative">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>
+              Excess Balance:{" "}
+              {overAllBalance.balance < 0
+                ? overAllBalance.balance.toFixed(3)
+                : 0.0}{" "}
+              gr
+            </span>
+            {overAllBalance.initialBalance < 0 && (
+              <IconButton
+                onClick={() =>
+                  setShowInitialNegative((prev) => !prev)
+                }
+                size="small"
+                color="inherit"
+              >
+                {showInitialNegative ? (
+                  <ExpandLessIcon />
+                ) : (
+                  <ExpandMoreIcon />
+                )}
+              </IconButton>
             )}
           </div>
 
-          {/* Positive Balance */}
-          <div className="balanceCard balance-positive">
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <span>
-                Balance:{" "}
-                {overAllBalance.balance >= 0
-                  ? overAllBalance.balance.toFixed(3)
-                  : 0.0}{" "}
-                gr
-              </span>
-              {overAllBalance.initialBalance >= 0 && (
-                <IconButton
-                  onClick={() =>
-                    setShowInitialPositive((prev) => !prev)
-                  }
-                  size="small"
-                  color="inherit"
-                >
-                  {showInitialPositive ? (
-                    <ExpandLessIcon />
-                  ) : (
-                    <ExpandMoreIcon />
-                  )}
-                </IconButton>
-              )}
+          {showInitialNegative && overAllBalance.initialBalance < 0 && (
+            <div className="balanceDetails">
+              <p>Initial Value: {overAllBalance.initialBalance}</p>
             </div>
-
-            {showInitialPositive && overAllBalance.initialBalance >= 0 && (
-              <div className="balanceDetails">
-                <p>Initial Value: {overAllBalance.initialBalance}</p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
+        {/* Positive Balance */}
+        <div className="balanceCard balance-positive">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>
+              Balance:{" "}
+              {overAllBalance.balance >= 0
+                ? overAllBalance.balance.toFixed(3)
+                : 0.0}{" "}
+              gr
+            </span>
+            {overAllBalance.initialBalance >= 0 && (
+              <IconButton
+                onClick={() =>
+                  setShowInitialPositive((prev) => !prev)
+                }
+                size="small"
+                color="inherit"
+              >
+                {showInitialPositive ? (
+                  <ExpandLessIcon />
+                ) : (
+                  <ExpandMoreIcon />
+                )}
+              </IconButton>
+            )}
+          </div>
 
-           
+          {showInitialPositive && overAllBalance.initialBalance >= 0 && (
+            <div className="balanceDetails">
+              <p>Initial Value: {overAllBalance.initialBalance}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+
+
     </>
   );
 };
