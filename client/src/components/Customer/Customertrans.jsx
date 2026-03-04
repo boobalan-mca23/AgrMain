@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./Customertrans.css";
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from "@mui/material/TextField";
+import {
+  Autocomplete,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
+} from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
@@ -32,6 +41,7 @@ const Customertrans = () => {
     goldRate: "",
     touch: "",
     purity: "",
+    pureGold: "",
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -67,14 +77,23 @@ const Customertrans = () => {
     const { name, value } = e.target;
     const updatedTransaction = { ...newTransaction, [name]: value };
 
-    if (name === "amount" && updatedTransaction.type === "Cash") {
-      updatedTransaction.value = value;
-      if (goldRate) {
-        const cash = parseFloat(value);
-        const rate = parseFloat(goldRate);
-        if (!isNaN(cash) && !isNaN(rate) && rate > 0) {
-          updatedTransaction.purity = (cash / rate).toFixed(3);
+    if (updatedTransaction.type === "Cash") {
+      if (name === "amount") updatedTransaction.value = value;
+
+      const cash = parseFloat(updatedTransaction.amount);
+      const rate = parseFloat(goldRate);
+      const touch = parseFloat(updatedTransaction.touch);
+
+      if (!isNaN(cash) && !isNaN(rate) && rate > 0) {
+        updatedTransaction.purity = (cash / rate).toFixed(3);
+        if (!isNaN(touch) && touch > 0) {
+          updatedTransaction.pureGold = ((parseFloat(updatedTransaction.purity) / touch) * 100).toFixed(3);
+        } else {
+          updatedTransaction.pureGold = "";
         }
+      } else {
+        updatedTransaction.purity = "";
+        updatedTransaction.pureGold = "";
       }
     } else if (name === "gold" && updatedTransaction.type === "Gold") {
       updatedTransaction.value = value;
@@ -105,8 +124,8 @@ const Customertrans = () => {
         throw new Error("Date and transaction type are required");
       }
       if (newTransaction.type === "Cash") {
-        if (!newTransaction.amount || !goldRate) {
-          throw new Error("Cash value and goldRate are required");
+        if (!newTransaction.amount || !goldRate || !newTransaction.touch) {
+          throw new Error("Cash value, goldRate, and touch are required");
         }
       }
 
@@ -128,8 +147,7 @@ const Customertrans = () => {
         purity: parseFloat(newTransaction.purity),
         customerId: parseInt(customerId),
         goldRate: newTransaction.type === "Cash" ? parseFloat(goldRate) : 0,
-        touch:
-          newTransaction.type === "Gold" ? parseFloat(newTransaction.touch) : 0,
+        touch: parseFloat(newTransaction.touch) || 0,
       };
       let isTrue = checkTransaction(transactionData, setGoldCashError);
       if (Object.keys(isTrue).length === 0) {
@@ -146,7 +164,7 @@ const Customertrans = () => {
     } catch (error) {
       console.error("Error adding transaction:", error);
       toast.error(error.message || "Error adding transaction");
-    }finally {
+    } finally {
       setIsSaving(false);
     }
   };
@@ -160,6 +178,7 @@ const Customertrans = () => {
       goldRate: "",
       touch: "",
       purity: "",
+      pureGold: "",
     });
     setError("");
     setGoldRate("");
@@ -215,22 +234,21 @@ const Customertrans = () => {
       </button>
 
       {showPopup && (
-        <div className="popup">
-          <div className="popup-content">
-            <span
-              className="popup-close"
+        <div className="popup-overlay">
+          <div className="popup-cont">
+            <h3>Add Transaction</h3>
+            <button
+              className="close-btn"
               onClick={() => {
                 resetForm();
                 setShowPopup(false);
               }}
             >
               ×
-            </span>
-
-            <h3>Add Transaction</h3>
+            </button>
             <form>
-              <label>
-                Date:
+              <div className="form-group">
+                <label>Date:</label>
                 <input
                   type="date"
                   name="date"
@@ -238,10 +256,10 @@ const Customertrans = () => {
                   onChange={handleChange}
                   required
                 />
-              </label>
+              </div>
 
-              <label>
-                Type:
+              <div className="form-group">
+                <label>Type:</label>
                 <select
                   name="type"
                   value={newTransaction.type}
@@ -252,12 +270,12 @@ const Customertrans = () => {
                   <option value="Cash">Cash</option>
                   <option value="Gold">Gold</option>
                 </select>
-              </label>
+              </div>
 
               {newTransaction.type === "Cash" && (
                 <>
-                  <label>
-                    Cash Amount (₹):
+                  <div className="form-group">
+                    <label>Cash Amount (₹):</label>
                     <input
                       type="number"
                       name="amount"
@@ -269,25 +287,28 @@ const Customertrans = () => {
                     {goldCashError.amount && (
                       <p style={{ color: "red" }}>{goldCashError.amount}</p>
                     )}
-                  </label>
-                  <label>
-                    Gold Rate (₹/gram):
+                  </div>
+                  <div className="form-group">
+                    <label>Gold Rate (₹/gram):</label>
                     <input
                       type="number"
                       value={goldRate}
                       onChange={(e) => {
                         setGoldRate(e.target.value);
-                        if (newTransaction.amount) {
-                          const cash = parseFloat(newTransaction.amount);
-                          const rate = parseFloat(e.target.value);
-                          if (!isNaN(cash) && !isNaN(rate) && rate > 0) {
-                            const updatedTransaction = { ...newTransaction };
-                            updatedTransaction.purity = (cash / rate).toFixed(
-                              3
-                            );
-                            setNewTransaction(updatedTransaction);
+                        const cash = parseFloat(newTransaction.amount);
+                        const rate = parseFloat(e.target.value);
+                        const touch = parseFloat(newTransaction.touch);
+                        const updatedTransaction = { ...newTransaction };
+                        if (!isNaN(cash) && !isNaN(rate) && rate > 0) {
+                          updatedTransaction.purity = (cash / rate).toFixed(3);
+                          if (!isNaN(touch) && touch > 0) {
+                            updatedTransaction.pureGold = ((parseFloat(updatedTransaction.purity) / touch) * 100).toFixed(3);
                           }
+                        } else {
+                          updatedTransaction.purity = "";
+                          updatedTransaction.pureGold = "";
                         }
+                        setNewTransaction(updatedTransaction);
                       }}
                       step="0.01"
                       required
@@ -295,23 +316,75 @@ const Customertrans = () => {
                     {goldCashError.goldRate && (
                       <p style={{ color: "red" }}>{goldCashError.goldRate}</p>
                     )}
-                  </label>
-                  <label>
-                    Purity (grams):
+                  </div>
+                  <div className="direct-Touch">
+                    <label>Touch (%):</label>
+                    <Autocomplete
+                      freeSolo
+                      forcePopupIcon
+                      options={masterTouch.map((item) => item.touch.toString())}
+                      value={newTransaction.touch ? newTransaction.touch.toString() : ""}
+                      onChange={(event, newValue) => {
+                        handleChange({
+                          target: {
+                            name: "touch",
+                            value: newValue || "",
+                          },
+                        });
+                      }}
+                      noOptionsText=""
+                      sx={{
+                        width: 400,
+                        "& .MuiInputBase-root": {
+                          height: 40,
+                          padding: "2px !important",
+                        },
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          name="touch"
+                          required
+                          size="small"
+                          onChange={(e) => handleChange(e)}
+                          inputProps={{
+                            ...params.inputProps,
+                            style: { padding: "8px" },
+                          }}
+                        />
+                      )}
+                    />
+                    {goldCashError.touch && (
+                      <p style={{ color: "red" }}>{goldCashError.touch}</p>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label>Purity (grams):</label>
                     <input
                       type="number"
                       name="purity"
                       value={newTransaction.purity || ""}
                       readOnly
+                      className="read-only"
                     />
-                  </label>
+                  </div>
+                  <div className="form-group">
+                    <label>Pure Gold (grams):</label>
+                    <input
+                      type="number"
+                      name="pureGold"
+                      value={newTransaction.pureGold || ""}
+                      readOnly
+                      className="read-only"
+                    />
+                  </div>
                 </>
               )}
 
               {newTransaction.type === "Gold" && (
                 <>
-                  <label>
-                    Gold Value (grams):
+                  <div className="form-group">
+                    <label>Gold Value (grams):</label>
                     <input
                       type="number"
                       name="gold"
@@ -323,14 +396,14 @@ const Customertrans = () => {
                     {goldCashError.gold && (
                       <p style={{ color: "red" }}>{goldCashError.gold}</p>
                     )}
-                  </label>
-                  <label>
-                    Touch (%):
+                  </div>
+                  <div className="direct-Touch">
+                    <label>Touch (%):</label>
                     <Autocomplete
                       freeSolo
                       forcePopupIcon
                       options={masterTouch.map((item) => item.touch.toString())}
-                      value={newTransaction.touch || ""}
+                      value={newTransaction.touch ? newTransaction.touch.toString() : ""}
                       onChange={(event, newValue) => {
                         handleChange({
                           target: {
@@ -341,10 +414,10 @@ const Customertrans = () => {
                       }}
                       noOptionsText=""
                       sx={{
-                        width: 300,
+                        width: 400,
                         "& .MuiInputBase-root": {
-                          height: 40, // same height as your other input
-                          padding: "4px !important",
+                          height: 40,
+                          padding: "2px !important",
                         },
                       }}
                       renderInput={(params) => (
@@ -354,15 +427,9 @@ const Customertrans = () => {
                           required
                           size="small"
                           onChange={(e) => handleChange(e)}
-                          variant="standard" 
-                          InputProps={{
-                            ...params.InputProps,
-                            disableUnderline: true, 
-                            style: { padding: "0px" },
-                          }}
                           inputProps={{
                             ...params.inputProps,
-                            style: { padding: "12px" },
+                            style: { padding: "8px" },
                           }}
                         />
                       )}
@@ -370,34 +437,44 @@ const Customertrans = () => {
                     {goldCashError.touch && (
                       <p style={{ color: "red" }}>{goldCashError.touch}</p>
                     )}
-                  </label>
-                  <label>
-                    Purity (grams):
+                  </div>
+                  <div className="form-group">
+                    <label>Purity (grams):</label>
                     <input
                       type="number"
                       name="purity"
                       value={newTransaction.purity}
                       readOnly
+                      className="read-only"
                     />
-                  </label>
+                  </div>
                 </>
               )}
 
-              <div className="form-actions">
+              <div className="button-group">
                 <button
                   type="button"
-                  className="save-btn"
+                  className="submit-btn"
                   onClick={addTransaction}
                   disabled={isSaving}
+                  style={{ background: isSaving ? "grey" : "#1DA3A3", marginRight: "10px" }}
                 >
-                  {isSaving ? "Saving transaction..." : "Save"}
+                  {isSaving ? "Saving..." : "Save"}
                 </button>
                 <button
                   type="button"
-                  className="cancel-btn"
                   onClick={() => {
                     resetForm();
                     setShowPopup(false);
+                  }}
+                  style={{
+                    backgroundColor: "white",
+                    color: "red",
+                    border: "1px solid red",
+                    padding: "10px 15px",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "14px",
                   }}
                 >
                   Cancel
@@ -408,34 +485,57 @@ const Customertrans = () => {
         </div>
       )}
 
-      <table className="customerTrantable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Gold Rate</th>
-            <th>Gold</th>
-            <th>Purity (grams)</th>
-            <th>Amount</th>
-            <th>Touch</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredTransactions.map((transaction) => (
-            <tr key={transaction.id}>
-              <td>{new Date(transaction.date).toLocaleDateString("en-GB")}</td>
-              <td>{transaction.type}</td>
-              <td>{transaction.goldRate}</td>
-              <td>{transaction.gold}gr</td>
-              <td>{transaction.purity.toFixed(3)}</td>
-              <td> {transaction.amount}</td>
-              <td>
-                {transaction.type === "Gold" ? `${transaction.touch}%` : "-"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <TableContainer component={Paper} elevation={3} sx={{ mt: 3 }}>
+        <Table className="customerTrantable">
+          <TableHead
+            sx={{
+              backgroundColor: "#e3f2fd",
+              "& th": {
+                color: "#0d47a1",
+                fontWeight: "bold",
+                fontSize: "1rem",
+              },
+            }}
+          >
+            <TableRow>
+              <TableCell align="center">Date</TableCell>
+              <TableCell align="center">Type</TableCell>
+              <TableCell align="center">Gold Rate</TableCell>
+              <TableCell align="center">Gold</TableCell>
+              <TableCell align="center">Purity (grams)</TableCell>
+              <TableCell align="center">Pure Gold (grams)</TableCell>
+              <TableCell align="center">Amount</TableCell>
+              <TableCell align="center">Touch</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredTransactions.length > 0 ? (
+              filteredTransactions.map((transaction) => (
+                <TableRow key={transaction.id} hover>
+                  <TableCell align="center">{new Date(transaction.date).toLocaleDateString("en-GB")}</TableCell>
+                  <TableCell align="center">{transaction.type}</TableCell>
+                  <TableCell align="center">{transaction.goldRate}</TableCell>
+                  <TableCell align="center">{transaction.type === "Cash" ? "-" : `${transaction.gold}gr`}</TableCell>
+                  <TableCell align="center">{transaction.purity.toFixed(3)}</TableCell>
+                  <TableCell align="center">
+                    {transaction.type === "Cash" && transaction.touch && transaction.purity
+                      ? ((parseFloat(transaction.purity) / parseFloat(transaction.touch)) * 100).toFixed(3)
+                      : "-"}
+                  </TableCell>
+                  <TableCell align="center">{transaction.amount}</TableCell>
+                  <TableCell align="center">
+                    {transaction.touch ? `${transaction.touch}%` : "-"}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} align="center">No details available</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {totals.totalPurity > 0 && (
         <div className="transaction-totals">
