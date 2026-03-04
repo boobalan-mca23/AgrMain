@@ -91,28 +91,32 @@ const ReceiptReport = () => {
     setReceipt([]);
   };
 
-  const handleCustomer = (newValue) => {
-    if (!newValue || newValue === null) {
+  useEffect(() => {
+    if (!selectedCustomer || !selectedCustomer.id) {
+      setReceipt([]);
       return;
     }
-    setSelectedCustomer(newValue);
-
     const fetchReceipts = async () => {
       try {
         const from = fromDate ? fromDate.format("YYYY-MM-DD") : "";
         const to = toDate ? toDate.format("YYYY-MM-DD") : "";
 
         const response = await axios.get(
-          `${BACKEND_SERVER_URL}/api/receipt/${newValue.id}/report`,
+          `${BACKEND_SERVER_URL}/api/receipt/${selectedCustomer.id}/report`,
           { params: { fromDate: from, toDate: to } }
         );
         console.log("data", response.data);
-        setReceipt(response.data);
+        setReceipt(response.data || []);
+        setPage(0);
       } catch (error) {
         console.error("Error fetching receipt data:", error);
       }
     };
     fetchReceipts();
+  }, [fromDate, toDate, selectedCustomer]);
+
+  const handleCustomer = (newValue) => {
+    setSelectedCustomer(newValue || {});
   };
 
   useEffect(() => {
@@ -128,7 +132,7 @@ const ReceiptReport = () => {
     };
     fetchCustomers();
     const today = dayjs();
-    setFromDate(today);
+    setFromDate(today.subtract(15, 'day'));
     setToDate(today);
   }, []);
 
@@ -192,13 +196,13 @@ const ReceiptReport = () => {
               </Button>
             </div>
           </div>
-          <p style={{ display: "flex", alignItems: "center", gap: "10px"}}>
+          <p style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <strong>
               {selectedCustomer?.customerBillBalance?.balance > 0
                 ? "Old Balance: "
                 : selectedCustomer?.customerBillBalance?.balance < 0
-                ? "Excess  Balance: "
-                : " Balance "}
+                  ? "Excess  Balance: "
+                  : " Balance "}
               {Number(
                 selectedCustomer?.customerBillBalance?.balance || 0
               ).toFixed(3)}
@@ -236,7 +240,7 @@ const ReceiptReport = () => {
                   {paginatedData.map((item, index) => (
                     <tr key={index + 1}>
                       <td>{index + 1}</td>
-                      <td>{item.date}</td>
+                      <td>{item.date ? dayjs(item.date).format("DD-MM-YYYY") : "-"}</td>
                       <td>{item.type}</td>
                       <td>{item.goldRate}</td>
                       <td>{item.gold}</td>
