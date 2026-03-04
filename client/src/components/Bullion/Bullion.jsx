@@ -177,59 +177,60 @@ const Bullion = () => {
     }
   };
 
-const handleSave = async () => {
-  try {
-    const currentRate = parseFloat(rate);
-    const amountVal = parseFloat(newGivenAmount);
-    const touchVal = parseFloat(newGivenTouch);
+  const handleSave = async () => {
+    try {
+      const currentRate = parseFloat(rate);
+      const amountVal = parseFloat(newGivenAmount);
+      const touchVal = parseFloat(newGivenTouch);
 
-    let finalGivenEntries = [...givenEntries];
-    if (
-      !isNaN(amountVal) &&
-      !isNaN(touchVal) &&
-      !isNaN(currentRate) &&
-      currentRate > 0 &&
-      touchVal > 0
-    ) {
-      const gramsForEntry = amountVal / currentRate;
-      const purityForEntry = (gramsForEntry * touchVal) / 100; 
-      finalGivenEntries.push({
-        amount: amountVal,
-        grams: gramsForEntry,
-        touch: touchVal,
-        purity: purityForEntry,
-      });
-    }
-
-    if (!editId) {
-      await axios.post(`${BACKEND_SERVER_URL}/api/bullion-purchase/create`, {
-        bullionId: selectedNameId,
-        grams: parseFloat(grams),
-        rate: parseFloat(rate),
-        amount: parseFloat(totalPurchaseAmount.toFixed(2)),
-        givenDetails: finalGivenEntries,
-      });
-      toast.success("Bullion purchase created successfully");
-    } else {
-      const newEntries = finalGivenEntries.slice(givenEntries.length);
-      if (newEntries.length > 0) {
-        await axios.put(
-          `${BACKEND_SERVER_URL}/api/bullion-purchase/given-details/${editId}`,
-          { givenDetails: newEntries }
-        );
-        toast.success("Installments updated successfully");
-      } else {
-        toast.info("No new installments to update");
+      let finalGivenEntries = [...givenEntries];
+      if (
+        !isNaN(amountVal) &&
+        amountVal > 0 &&
+        !isNaN(touchVal) &&
+        touchVal > 0 &&
+        !isNaN(currentRate) &&
+        currentRate > 0
+      ) {
+        const gramsForEntry = amountVal / currentRate;
+        const purityForEntry = (gramsForEntry * touchVal) / 100;
+        finalGivenEntries.push({
+          amount: amountVal,
+          grams: gramsForEntry,
+          touch: touchVal,
+          purity: purityForEntry,
+        });
       }
-    }
 
-    fetchAll();
-    closeDialog();
-  } catch (err) {
-    console.error("Failed to save bullion purchase", err);
-    toast.error("Failed to save purchase");
-  }
-};
+      if (!editId) {
+        await axios.post(`${BACKEND_SERVER_URL}/api/bullion-purchase/create`, {
+          bullionId: selectedNameId,
+          grams: parseFloat(grams),
+          rate: parseFloat(rate),
+          amount: parseFloat(totalPurchaseAmount.toFixed(2)),
+          givenDetails: finalGivenEntries,
+        });
+        toast.success("Bullion purchase created successfully");
+      } else {
+        const newEntries = finalGivenEntries.slice(givenEntries.length);
+        if (newEntries.length > 0) {
+          await axios.put(
+            `${BACKEND_SERVER_URL}/api/bullion-purchase/given-details/${editId}`,
+            { givenDetails: newEntries }
+          );
+          toast.success("Installments updated successfully");
+        } else {
+          toast.info("No new installments to update");
+        }
+      }
+
+      fetchAll();
+      closeDialog();
+    } catch (err) {
+      console.error("Failed to save bullion purchase", err);
+      toast.error("Failed to save purchase");
+    }
+  };
 
 
   const handleDelete = async (id) => {

@@ -13,7 +13,7 @@ import {
   Button,
   TextField,
   TablePagination,
-  } from "@mui/material";
+} from "@mui/material";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import axios from "axios";
 
@@ -31,14 +31,10 @@ const JobCardReport = () => {
     page * rowsPerPage + rowsPerPage
   );
 
-  
-
- 
-
   // Calculate totals for current page
 
   const handlePrint = async () => {
-      const printContent = (
+    const printContent = (
       <JobCardPrintLayout
         fromDate={fromDate ? fromDate.format("DD/MM/YYYY") : ""}
         toDate={toDate ? toDate.format("DD/MM/YYYY") : ""}
@@ -88,28 +84,32 @@ const JobCardReport = () => {
     setJobCard([])
   };
 
-  const handleGoldSmith = (newValue) => {
-    if (!newValue || newValue === null) {
+  useEffect(() => {
+    if (!selectedGoldSmith || !selectedGoldSmith.id) {
+      setJobCard([]);
       return;
     }
-    setSelectedGoldSmith(newValue);
-
     const fetchJobCards = async () => {
       try {
         const from = fromDate ? fromDate.format("YYYY-MM-DD") : "";
         const to = toDate ? toDate.format("YYYY-MM-DD") : "";
 
         const response = await axios.get(
-          `${BACKEND_SERVER_URL}/api/assignments/${newValue.id}/report`,
+          `${BACKEND_SERVER_URL}/api/assignments/${selectedGoldSmith.id}/report`,
           { params: { fromDate: from, toDate: to } }
         );
         console.log("data", response.data);
         setJobCard(response.data);
+        setPage(0); // reset pagination when filters change
       } catch (error) {
         console.error("Error fetching goldsmith data:", error);
       }
     };
     fetchJobCards();
+  }, [fromDate, toDate, selectedGoldSmith]);
+
+  const handleGoldSmith = (newValue) => {
+    setSelectedGoldSmith(newValue || {});
   };
 
   useEffect(() => {
@@ -125,7 +125,7 @@ const JobCardReport = () => {
     };
     fetchGoldsmiths();
     const today = dayjs();
-    setFromDate(today);
+    setFromDate(today.subtract(15, 'day'));
     setToDate(today);
   }, []);
 
@@ -170,28 +170,28 @@ const JobCardReport = () => {
               )}
             />
 
-            
+
+            <Button
+              id="clear"
+              className="clr noprint reportBtn"
+              onClick={handleDateClear}
+            >
+              Clear
+            </Button>
+
+
+            <div className="noprint">
               <Button
-                id="clear"
-                className="clr noprint reportBtn"
-                onClick={handleDateClear}
+                id="print"
+                onClick={() => {
+                  handlePrint();
+                }}
+                className="reportBtn"
               >
-                Clear
+                Print
               </Button>
-          
-     
-              <div className="noprint">
-                <Button
-                  id="print"
-                  onClick={() => {
-                    handlePrint();
-                  }}
-                  className="reportBtn"
-                >
-                  Print
-                </Button>
-              </div>
-          
+            </div>
+
 
             {jobCard.length > 0 && jobCard.at(-1)?.total?.length > 0 ? (
               <div className="jobInfo">
@@ -222,7 +222,7 @@ const JobCardReport = () => {
         <div className="jobReportTable">
           {jobCard.length >= 1 ? (
             <div className="reportContainer">
-              <JobCardRepTable paginatedData={paginatedData}  />
+              <JobCardRepTable paginatedData={paginatedData} />
               <TablePagination
                 component="div"
                 count={jobCard.length}

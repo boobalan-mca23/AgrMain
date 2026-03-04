@@ -34,7 +34,7 @@ const Master = () => {
 
   const navigate = useNavigate();
 
-  // ✅ NEW: detect active route
+  // NEW: detect active route
   const location = useLocation();
 
   const isPurchaseActive =
@@ -97,7 +97,7 @@ const Master = () => {
             onMouseEnter={() => setOpenPurchaseMenu(true)}
           >
 
-            {/* ✅ UPDATED BUTTON */}
+            {/* UPDATED BUTTON */}
             <button
               style={{
                 ...navButton,
@@ -155,32 +155,26 @@ const Master = () => {
                 >
                   Item Purchase Report
                 </NavLink>
-
               </div>
-
             )}
-
           </div>
-
 
           <NavLink to="/master/cashgold" style={getNavStyle}>
             Cash / Gold
           </NavLink>
 
-          <NavLink to="/master/wastagevalue" style={getNavStyle}>
+          {/* <NavLink to="/master/wastagevalue" style={getNavStyle}>
             Wastage Value
           </NavLink>
 
           <NavLink to="/master/touchentries" style={getNavStyle}>
             Touch Entries
-          </NavLink>
+          </NavLink> */}
 
           <NavLink to="/master/bullion" style={getNavStyle}>
             Bullion
           </NavLink>
-
         </div>
-
 
         <button onClick={handleLogout} style={logoutButton}>
           <FiLogOut size={18} />
@@ -188,15 +182,11 @@ const Master = () => {
             Logout
           </span>
         </button>
-
       </div>
-
 
       {/* PAGE CONTENT */}
       <div style={contentContainer}>
-
         <Routes>
-
           <Route path="/" element={<Navigate to="customer" />} />
 
           <Route path="customer" element={<MasterCustomer />} />

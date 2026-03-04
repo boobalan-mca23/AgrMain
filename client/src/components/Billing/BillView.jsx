@@ -32,7 +32,7 @@ const toFixedStr = (v, d = 3) => {
     Math.round((toNumber(v) + Number.EPSILON) * Math.pow(10, d)) /
     Math.pow(10, d)
   ).toFixed(d);
-}; 
+};
 
 const BillView = () => {
   const { billId } = useParams();
@@ -66,7 +66,7 @@ const BillView = () => {
     fontSize: "13px",
     height: "32px",
     boxSizing: "border-box",
-    textAlign:'center'
+    textAlign: 'center'
   };
 
   const modalStyle = {
@@ -169,24 +169,24 @@ const BillView = () => {
     fetchBill();
   }, [billId]);
 
-  const FWT = useMemo(() =>billDetailRows.reduce((total, row) => total + (toNumber(row.fwt) || 0),0),[billDetailRows]);
-  
+  const FWT = useMemo(() => billDetailRows.reduce((total, row) => total + (toNumber(row.fwt) || 0), 0), [billDetailRows]);
+
   const totalReceivedPurity = useMemo(
     () => rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0),
     [rows]
   );
 
   const TotalFWT = previousBalance > 0
-      ? toNumber(FWT) + toNumber(previousBalance)
-      : previousBalance < 0
+    ? toNumber(FWT) + toNumber(previousBalance)
+    : previousBalance < 0
       ? toNumber(FWT) - Math.abs(toNumber(previousBalance))
       : toNumber(FWT);
 
   const hallmarkAmount = useMemo(() => toNumber(hallmarkQty) * toNumber(billHallmark), [hallmarkQty, billHallmark]);
   const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
   const pureBalance = TotalFWT - totalReceivedPurity;
-  const totalBillHallmark =  toNumber(hallmarkQty) * toNumber(billHallmark) + toNumber(prevHallmark);
-  const totalReceivedHallmark = rows.reduce((total, row) => total + (toNumber(row.hallmark) || 0),0);
+  const totalBillHallmark = toNumber(hallmarkQty) * toNumber(billHallmark) + toNumber(prevHallmark);
+  const totalReceivedHallmark = rows.reduce((total, row) => total + (toNumber(row.hallmark) || 0), 0);
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
   const hasCash = rows.some(r => r.type === "Cash");
   const hasGold = rows.some(r => r.type === "Gold");
@@ -196,71 +196,71 @@ const BillView = () => {
   const showTouchColumn = hasGold;
   const showAmountColumn = hasCash;
 
-  const visibleReceivedCols = 1/*S.No*/+ 1/*Date*/+ 1/*Type*/+(showGoldRateColumn ? 1 : 0) + (showGivenGoldColumn ? 1 : 0) /*Purity*/+ (showAmountColumn ? 1 : 0) + 1/*Hallmark*/+1;/*Action*/
+  const visibleReceivedCols = 1/*S.No*/ + 1/*Date*/ + 1/*Type*/ + (showGoldRateColumn ? 1 : 0) + (showGivenGoldColumn ? 1 : 0) /*Purity*/ + (showAmountColumn ? 1 : 0) + 1/*Hallmark*/ + 1;/*Action*/
   // const visibleReceivedCols = 1/*S.No*/+ 1/*Date*/+ 1/*Type*/+(showGoldRateColumn ? 1 : 0) + (showGivenGoldColumn ? 1 : 0) + (showTouchColumn ? 1 : 0) + 1/*Purity*/ /*Hallmark*/+1;/*Action*/
 
-    const handlePrint = () => {
-      const billData = {
-        billNo: currentBill?.id,
-        date:currentBill?.date  ? new Date(currentBill.date).toLocaleDateString("en-IN")  : date,
-        time: currentBill?.time  ? new Date(currentBill.time).toLocaleTimeString("en-IN", {  hour: "2-digit",  minute: "2-digit",  hour12: true,  })  : time,
-        selectedCustomer:currentBill.customername,
-  
-        // bill details
-        billItems: billDetailRows.map((row) => ({
-          productName: row.productName,
-          count: row.count,
-          weight: row.wt,
-          stoneWeight: row.aStWt,
-          enteredStoneWeight: row.eStWt,
-          afterWeight: row.awt,
-          percentage: row.percent,
-          finalWeight: row.fwt,
-        })),
-  
-        // received details
-        rows: rows.map((row) => ({
-          date: row.date,
-          gold: row.givenGold,
-          cash: row.cash,
-          goldRate: row.goldRate,
-          touch: row.touch,
-          purity: row.purityWeight,
-          amount: row.amount,
-          receiveHallMark: row.hallmark,
-        })),
-  
-        // balances
-        pureBalance,
-        hallmarkBalance,
-        cashBalance,
-        prevHallmark,
-        //
-        hallmarkAmount,
-        totalHallmark,
-        FWT,
-        TotalFWT,
-        //
-        prevBalance: previousBalance, 
-        hallMark: toNumber(billHallmark) || 0,
-        hallmarkQty,
-        totalBillHallmark,
-        // profits
-        billDetailsprofit: BillDetailsProfit, 
-        Stoneprofit: StoneProfit,        
-        Totalprofit: TotalBillProfit,
-      };
-  
-      console.log("Printing bill data:", billData);
-      const printContent = (
-        <PrintableBill
-          {...billData}
-          viewMode={true}
-          selectedBill={billData}
-        />
-      );
-  
-      const printHtml = `
+  const handlePrint = () => {
+    const billData = {
+      billNo: currentBill?.id,
+      date: currentBill?.date ? new Date(currentBill.date).toLocaleDateString("en-IN") : date,
+      time: currentBill?.time ? new Date(currentBill.time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, }) : time,
+      selectedCustomer: currentBill.customername,
+
+      // bill details
+      billItems: billDetailRows.map((row) => ({
+        productName: row.productName,
+        count: row.count,
+        weight: row.wt,
+        stoneWeight: row.aStWt,
+        enteredStoneWeight: row.eStWt,
+        afterWeight: row.awt,
+        percentage: row.percent,
+        finalWeight: row.fwt,
+      })),
+
+      // received details
+      rows: rows.map((row) => ({
+        date: row.date,
+        gold: row.givenGold,
+        cash: row.cash,
+        goldRate: row.goldRate,
+        touch: row.touch,
+        purity: row.purityWeight,
+        amount: row.amount,
+        receiveHallMark: row.hallmark,
+      })),
+
+      // balances
+      pureBalance,
+      hallmarkBalance,
+      cashBalance,
+      prevHallmark,
+      //
+      hallmarkAmount,
+      totalHallmark,
+      FWT,
+      TotalFWT,
+      //
+      prevBalance: previousBalance,
+      hallMark: toNumber(billHallmark) || 0,
+      hallmarkQty,
+      totalBillHallmark,
+      // profits
+      billDetailsprofit: BillDetailsProfit,
+      Stoneprofit: StoneProfit,
+      Totalprofit: TotalBillProfit,
+    };
+
+    console.log("Printing bill data:", billData);
+    const printContent = (
+      <PrintableBill
+        {...billData}
+        viewMode={true}
+        selectedBill={billData}
+      />
+    );
+
+    const printHtml = `
         <!DOCTYPE html>
         <html>
           <head>
@@ -280,11 +280,11 @@ const BillView = () => {
           </body>
         </html>
       `;
-  
-      const printWindow = window.open("", "_blank", "width=1000,height=800");
-      printWindow.document.write(printHtml);
-      printWindow.document.close();
-    };
+
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  };
 
 
   if (loading) return <p>Loading bill details...</p>;
@@ -295,16 +295,9 @@ const BillView = () => {
       {/* Left panel */}
       <Box
         className="left-panel"
-        style={{ maxwidth: "65%", position: "absolute", left: "15%" }}
+        style={{ maxWidth: "65%", margin: "0 auto" }}
       >
-        <Box style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "flex-end",
-            marginTop: -45,
-            gap: "10px",
-          }}
-        ></Box>
+
         <h1 className="heading">Estimate Only</h1>
 
         {/*<Box onClick={()=> window.history.back()} style={sidebarButtonSX}>
@@ -322,10 +315,10 @@ const BillView = () => {
                 <br /> <strong>Time:</strong>{" "}
                 {bill.time
                   ? new Date(bill.time).toLocaleTimeString("en-IN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                    })
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
                   : ""}{" "}
               </p>
             </Box>
@@ -348,13 +341,13 @@ const BillView = () => {
           />
         </Box>
 
-        <Box className="customer-details">
+        {/* <Box className="customer-details">
           <h3 className="no-print">Customer Details:</h3>
           <p>
             {" "}
             <strong>Name:</strong> {bill.customername || null}{" "}
           </p>
-        </Box>
+        </Box> */}
 
         {/* Bill details table */}
         <Box className="items-section">
@@ -379,23 +372,23 @@ const BillView = () => {
           >
             <TableHead>
               <TableRow>
-                <TableCell className="th" style={{textAlign:'center'}}>S.No</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>Product Name</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>Count</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>Wt</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>Entered St.WT</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>Actual St.WT</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>AWT</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>%</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>FWT</TableCell>
-                <TableCell className="th" style={{textAlign:'center'}}>Status</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>S.No</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>Product Name</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>Count</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>Wt</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>Entered St.WT</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>Actual St.WT</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>AWT</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>Touch</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>FWT</TableCell>
+                <TableCell className="th" style={{ textAlign: 'center' }}>Status</TableCell>
                 {/* <TableCell className="th no-print">Action</TableCell> */}
               </TableRow>
             </TableHead>
             <TableBody>
               {billDetailRows.length > 0 ? (
                 billDetailRows.map((row, index) => (
-                  <TableRow key={row.id} style={{backgroundColor:""}}>
+                  <TableRow key={row.id} style={{ backgroundColor: "" }}>
                     <TableCell className="td">{index + 1}</TableCell>
                     <TableCell className="td">
                       <TextField
@@ -473,29 +466,29 @@ const BillView = () => {
 
                     <TableCell className="td">
                       <span
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        fontWeight: "500",
-                        fontWeight: "bold",
-                        backgroundColor:
-                          row.repairStatus === "IN_REPAIR"
-                            ? "#ff9800"
-                            : row.repairStatus === "RETURNED"
-                            ? "#4caf50"
-                            : "#9e9e9e",
-                        color: "white",
-                      }}
-                    >
-                      {row.repairStatus === "IN_REPAIR"
-                        ? "Repair"
-                        : row.repairStatus === "RETURNED"
-                        ? "Return"
-                        : "Sold"}
-                    </span>
-                  </TableCell>
-                    
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          fontWeight: "500",
+                          // fontWeight: "bold",
+                          backgroundColor:
+                            row.repairStatus === "IN_REPAIR"
+                              ? "#ff9800"
+                              : row.repairStatus === "RETURNED"
+                                ? "#4caf50"
+                                : "#9e9e9e",
+                          color: "white",
+                        }}
+                      >
+                        {row.repairStatus === "IN_REPAIR"
+                          ? "Repair"
+                          : row.repairStatus === "RETURNED"
+                            ? "Return"
+                            : "Sold"}
+                      </span>
+                    </TableCell>
+
                   </TableRow>
                 ))
               ) : (
@@ -526,12 +519,12 @@ const BillView = () => {
                 {prevHallmark > 0 ? (
                   <>
                     <p>Opening Hallmark Balance:{" "}{prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}</p>
-                
+
                   </>
                 ) : prevHallmark < 0 ? (
                   <>
                     <p>Excess Hallmark Balance:{" "}{prevHallmark ? toFixedStr(prevHallmark, 3) : "000.000"}</p>{" "}
-                    
+
                   </>
                 ) : (
                   <p>Hallmark Balance: 0.000</p>
@@ -555,7 +548,7 @@ const BillView = () => {
                   label="Current Hallmark"
                   value={billHallmark}
                   disabled
-                  sx={{ width: 150 }}               
+                  sx={{ width: 150 }}
                 />
                 <p>=</p>
                 <TextField
@@ -604,7 +597,7 @@ const BillView = () => {
           </Box>
 
           {/* Received Details */}
-          <Box className="items-section" sx={{ marginTop: 2 }}>
+          {/* <Box className="items-section" sx={{ marginTop: 2 }}>
             <div
               style={{
                 display: "flex",
@@ -761,7 +754,7 @@ const BillView = () => {
                 )}
               </TableBody>
             </Table>
-          </Box>
+          </Box> */}
           <div
             style={{
               display: "flex",
@@ -793,24 +786,22 @@ const BillView = () => {
 
           <Box className="closing-balance">
             <div className="flex">
-              <strong>
+              {/* <strong>
                 Cash Balance: ₹
                 {Number(cashBalance ?? 0).toLocaleString("en-IN", {
-                  /*{ minimumFractionDigits: 3,// maximumFractionDigits: 3,}*/
+                  // minimumFractionDigits: 3,// maximumFractionDigits: 3,
                 })}
+              </strong> */}
+
+              <strong>{hallmarkBalance >= 0
+                ? `Hallmark Balance:${toFixedStr(hallmarkBalance, 3)}`
+                : `Excess Hallmark Balance:${toFixedStr(hallmarkBalance, 3)}`}
               </strong>
 
               <strong>
                 {pureBalance >= 0
                   ? `Pure Balance: ${toFixedStr(pureBalance, 3)}`
                   : `Excess Balance: ${toFixedStr(pureBalance, 3)}`}
-              </strong>
-
-              <strong>
-                <strong>{hallmarkBalance >=0
-                        ?`Hallmark Balance:${toFixedStr(hallmarkBalance, 3)}`
-                        :`Excess Hallmark Balance:${toFixedStr(hallmarkBalance, 3)}`}
-                        </strong>
               </strong>
             </div>
           </Box>
@@ -826,7 +817,7 @@ const BillView = () => {
             <Button
               variant="contained"
               color="primary"
-              onClick={()=> window.history.back()}
+              onClick={() => window.history.back()}
               className="save-button no-print"
             >
               Exit{" "}

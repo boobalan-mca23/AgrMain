@@ -1,10 +1,10 @@
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
-const addRawGold=require('../Utils/addRawGoldStock')
+const addRawGold = require('../Utils/addRawGoldStock')
 const createReceipt = async (req, res) => {
 
-  const {customerId, received,pureBalance,hallmarkBalance} = req.body;
+  const { customerId, received, pureBalance, hallmarkBalance } = req.body;
 
   try {
     // check customer
@@ -21,11 +21,11 @@ const createReceipt = async (req, res) => {
         .status(400)
         .json({ msg: "At least one received item is required" });
     }
-       // receipt voucher time we need to add rawGold stock
-    
-    await addRawGold.receiptMoveToRawGold(received,customerId) 
+    // receipt voucher time we need to add rawGold stock
 
-   await prisma.customerBillBalance.upsert({
+    await addRawGold.receiptMoveToRawGold(received, customerId)
+
+    await prisma.customerBillBalance.upsert({
       where: { customer_id: parseInt(customerId) },
       update: {
         balance: pureBalance,
@@ -37,7 +37,7 @@ const createReceipt = async (req, res) => {
         hallMarkBal: hallmarkBalance,
       },
     });
- 
+
 
     res.status(201).json({ message: "Receipt Created successfully" });
   } catch (err) {
@@ -50,7 +50,7 @@ const getReceiptByCustomerId = async (req, res) => {
   try {
     const { customerId } = req.params;
 
-      console.log('customerid',customerId)
+    console.log('customerid', customerId)
 
     if (!customerId) {
       return res.status(400).json({ error: "Customer ID is required" });
@@ -60,7 +60,7 @@ const getReceiptByCustomerId = async (req, res) => {
       where: { customerId: parseInt(customerId) },
       orderBy: { id: "desc" },
     });
-     console.log(receipt)
+    console.log(receipt)
 
     res.status(200).json(receipt);
   } catch (error) {
@@ -70,6 +70,7 @@ const getReceiptByCustomerId = async (req, res) => {
 };
 
 const formatDate = (dateString) => {
+  if (dateString.includes("-")) return dateString; // Already YYYY-MM-DD
   const [day, month, year] = dateString.split("/");
   return `${year}-${month}-${day}`;
 };
@@ -108,15 +109,15 @@ const receiptFilter = async (req, res) => {
     // If both id = null and dates = null → whereCondition = {} (fetch all)
     const filterReceipts = await prisma.receiptVoucher.findMany({
       where: whereCondition,
-      select:{
-        date:true,
-        type:true,
-        goldRate:true,
-        gold:true,
-        touch:true,
-        purity:true,
-        amount:true,
-        receiveHallMark:true
+      select: {
+        date: true,
+        type: true,
+        goldRate: true,
+        gold: true,
+        touch: true,
+        purity: true,
+        amount: true,
+        receiveHallMark: true
       }
     });
 
@@ -127,8 +128,8 @@ const receiptFilter = async (req, res) => {
   }
 };
 module.exports = {
-    createReceipt ,
-    getReceiptByCustomerId,
-    receiptFilter
-  
+  createReceipt,
+  getReceiptByCustomerId,
+  receiptFilter
+
 };

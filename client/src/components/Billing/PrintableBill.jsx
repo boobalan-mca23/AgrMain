@@ -57,7 +57,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
       marginTop: "5px",
       // fontSize: "12px",
     },
-    flexChild: { flex: 1, margin: "5px", textAlign: "center",fontSize: "12px", fontWeight: "bold", },
+    flexChild: { flex: 1, margin: "5px", textAlign: "center", fontSize: "12px", fontWeight: "bold", },
   };
   const toFixedStr = (v, d = 3) => {
     return (
@@ -66,9 +66,9 @@ const PrintableBill = React.forwardRef((props, ref) => {
     ).toFixed(d);
   };
   const toNumber = (v) => {
-  const n = parseFloat(v);
-  return isNaN(n) ? 0 : n;
-};
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  };
 
   return (
     <div style={styles.printableBill} ref={ref}>
@@ -81,7 +81,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
               <strong>Bill No:</strong> {billNo}
             </p>
             <p style={styles.billInfoItem}>
-              <strong>Customer Name:</strong> {selectedCustomer.name|| "null"}
+              <strong>Customer Name:</strong> {selectedCustomer.name || selectedCustomer ||"null"}
             </p>
           </div>
           <div>
@@ -105,7 +105,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
               <th style={styles.th}>Wt</th>
               <th style={styles.th}>St.Wt</th>
               <th style={styles.th}>AWT</th>
-              <th style={styles.th}>%</th>
+              <th style={styles.th}>Touch</th>
               <th style={styles.th}>FWT</th>
             </tr>
           </thead>
@@ -182,81 +182,20 @@ const PrintableBill = React.forwardRef((props, ref) => {
                 Opening Hallmark Balance: 0.000
               </p>
             )}
-           
+            <div style={{ display: "flex", }}>
+              <p
+                style={{ fontSize: "12px", margin: "0", }}
+              ><b>Qty:</b>{hallmarkQty || "0.000"} X</p>
 
-            {/* <table
-              style={{
-                borderCollapse: "collapse",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                overflow: "hidden",
-                fontSize: "12px",
-                width: "50%",
-                minWidth: "200px",
-              }}
-            >
-              <thead>
-                <tr>
-                  <th
-                    style={{
-                      backgroundColor: "#f2f2f2",
-                      border: "1px solid #ccc",
-                      padding: "3px 6px",
-                      textAlign: "center",
-                    }}
-                  >
-                    Qty
-                  </th>
-                  <th
-                    style={{
-                      backgroundColor: "#f2f2f2",
-                      border: "1px solid #ccc",
-                      padding: "3px 6px",
-                      textAlign: "center",
-                    }}
-                  >
-                    Current Hallmark
-                  </th>
-                  <th
-                    style={{
-                      backgroundColor: "#f2f2f2",
-                      border: "1px solid #ccc",
-                      padding: "3px 6px",
-                      textAlign: "center",
-                    }}
-                  >
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ border: "1px solid #ccc", textAlign: "center", padding: "3px 6px" }}>
-                    {hallmarkQty || "0.000"}
-                  </td>
-                  <td style={{ border: "1px solid #ccc", textAlign: "center", padding: "3px 6px" }}>
-                    {hallMark || "0.000"}
-                  </td>
-                  <td style={{ border: "1px solid #ccc", textAlign: "center", padding: "3px 6px" }}>
-                    {hallmarkAmount?.toFixed(3) || "0.000"}
-                  </td>
-                </tr>
-              </tbody>
-            </table> */}
-            <div style={{ display: "flex",}}>
               <p
-              style={{fontSize: "12px",margin: "0",}}
-              ><b>Qty:</b>{hallmarkQty || "0.000"} X</p> 
-              
-              <p
-              style={{fontSize: "12px",margin: "0",}}
+                style={{ fontSize: "12px", margin: "0", }}
               ><b>Rate:</b>{hallMark || "0.000"} =</p>
-              
+
               <p
-              style={{fontSize: "12px",margin: "0",}}
+                style={{ fontSize: "12px", margin: "0", }}
               ><b></b>{hallmarkAmount?.toFixed(3) || "0.000"}</p>
-           
-                </div>
+
+            </div>
             {/* Total Hallmark below table */}
             <p
               style={{
@@ -288,7 +227,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
               <div style={{ color: "#333" }}>
                 <b>Opening Balance:</b> {toFixedStr(prevBalance, 3)}
               </div>
-            )}  
+            )}
             <div>
               <b>FWT:</b> {toFixedStr(FWT, 3)}
             </div>
@@ -297,102 +236,19 @@ const PrintableBill = React.forwardRef((props, ref) => {
             </div>
           </div>
         </div>
-
-
-        {/* Received Details */}
-        {rows.length > 0 && (
-          <div style={{ marginTop: "0px" }}>
-            <h4 style={{ margin: "0px 0" }}>Received Details:</h4>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>S.No</th>
-                  <th style={styles.th}>Date</th>
-                  <th style={styles.th}>Gold Rate (₹)</th>
-                  <th style={styles.th}>Gold (g)</th>
-                  <th style={styles.th}>Touch %</th>
-                  <th style={styles.th}>Purity (g)</th>
-                  <th style={styles.th}>Amount (₹)</th>
-                  <th style={styles.th}>Hallmark</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => (
-                  
-                  <tr key={index}>
-                    <td style={styles.td}>{index + 1}</td>
-                    <td style={styles.td}>{row.date}</td>
-                    <td style={styles.td}>
-                      {row.goldRate || "-"}
-                    </td>
-                    <td style={styles.td}>
-                      {row.gold && row.gold !== 0
-                        ? formatToFixed3Strict(row.gold)
-                        : "-"}
-                    </td>
-                    <td style={styles.td}>{row.touch || "-"}</td>
-                    <td style={styles.td}>
-                      {row.purity && row.purity !== 0
-                        ? formatToFixed3Strict(row.purity)
-                        : "-"}
-                    </td>
-                    <td style={styles.td}>{row.amount || "-"}</td>
-                    <td style={styles.td}>{row.receiveHallMark || "-"}</td>
-                  </tr>
-                ))}
-                {rows.length === 0 && (
-              <tr>
-                <td colSpan={8} style={styles.td}>
-                  No Received details added 
-                </td>
-              </tr>
-            )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Profit Summary */}
-        {/* <div style={{ marginTop: "15px" }}>
-          <h4>Profit Summary:</h4>
-          <div style={styles.flex}>
-          <p style={styles.flexChild}>Bill Details Profit: {selectedBill?.billDetailsprofit || "0.000"}</p>
-          <p style={styles.flexChild}>Stone Profit: {selectedBill?.Stoneprofit || "0.000"}</p>
-          <p style={styles.flexChild}>Total Profit: {selectedBill?.Totalprofit || "0.000"}</p>
-          </div>
-        </div> */}
-
-        {/* Profit Summary */}
-            {/* <div style={{ marginTop: "15px" }}>
-              <h4 style={{ marginBottom: "8px" }}>Profit Summary:</h4>
-              <div style={{ display: "flex", justifyContent: "flex-end", textAlign: "right" }}>
-                <div>
-                  <p>Bill Details Profit: {selectedBill?.billDetailsprofit || "0.000"}</p>
-                  <p>Stone Profit: {selectedBill?.Stoneprofit || "0.000"}</p>
-                    <p>-----------------------------</p>
-                  <p>Total Profit: {selectedBill?.Totalprofit || "0.000"}</p>
-                </div>
-              </div>
-            </div> */}
-
-
-            {/*--------*/}
-             {/* <div style={{ marginTop: "15px" }}>
-          <h4>Profit Summary:</h4>
-          <div>
-              <p>Bill Details Profit: {selectedBill?.billDetailsprofit || "0.000"}</p>
-          <p>Stone Profit: {selectedBill?.Stoneprofit || "0.000"}</p>
-          -------------------------------
-          <p>Total Profit: {selectedBill?.Totalprofit || "0.000"}</p>
-          </div> */}
-      
-        {/* </div>  */}
-        
-        {/* <br/><br/> */}
         {/* Balance Summary */}
-        <div style={{...styles.flex, marginTop: "8px"}}>
+        <div style={{ ...styles.flex, marginTop: "8px" }}>
+
           <p style={styles.flexChild}>
-            <b>Cash Balance: ₹{formatToFixed3Strict(cashBalance)} </b>
+            {hallmarkBalance < 0 ? (
+              <span>
+                <b>Excess Hallmark Balance: {formatToFixed3Strict(hallmarkBalance)} g</b>
+              </span>
+            ) : (
+              <span>
+                <b>Hallmark Balance: {formatToFixed3Strict(hallmarkBalance)} g</b>
+              </span>
+            )}
           </p>
           <p style={styles.flexChild}>
             {
@@ -406,17 +262,6 @@ const PrintableBill = React.forwardRef((props, ref) => {
                 </span>
               )
             }
-          </p>
-          <p style={styles.flexChild}>
-            {hallmarkBalance < 0 ? (
-              <span>
-                <b>Excess Hallmark Balance: {formatToFixed3Strict(hallmarkBalance)} g</b>
-              </span>
-            ) : (
-              <span>
-                <b>Hallmark Balance: {formatToFixed3Strict(hallmarkBalance)} g</b>
-              </span>
-            )} 
           </p>
         </div>
       </div>

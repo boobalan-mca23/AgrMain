@@ -83,18 +83,22 @@ const OverallReportNew = () => {
       );
 
       setReportData([
-        { label: "Cash Balance Total", value: `${cashBalanceTotal.toFixed(2)}` },
-        { label: "Pure Balance Total", value: `${pureBalanceTotal.toFixed(3)} g` },
-        { label: "Hallmark Balance Total", value: `${hallmarkBalanceTotal.toFixed(3)} g` },
+        // { label: "Cash Balance Total", value: `${cashBalanceTotal.toFixed(2)}` },
         { label: "Bill Details Profit", value: `${billDetailsProfit.toFixed(2)}` },
         { label: "Stone Profit", value: `${stoneProfit.toFixed(2)}` },
         { label: "Total Profit", value: `${totalProfit.toFixed(2)}` },
+        { label: "Pure Balance Total", value: `${pureBalanceTotal.toFixed(3)} g` },
+        { label: "Hallmark Balance Total", value: `${hallmarkBalanceTotal.toFixed(3)} g` },
+        { label: "Entries Gold Purity", value: `${totalEntriesPurity.toFixed(3)} g` },
+        { label: "Total Customers", value: `${customersData.length}` },
         {
           label: "Product Stock",
           value: `${totalStockCount} Items (Touch ${totalStockTouch.toFixed(3)})`,
         },
-        { label: "Entries Gold Purity", value: `${totalEntriesPurity.toFixed(3)} g` },
-        { label: "Total Customers", value: `${customersData.length}` },
+        {
+          label: "Purchase Item Stock",
+          value: `${totalStockCount} Items (Touch ${totalStockTouch.toFixed(3)})`,
+        },
       ]);
     } catch (err) {
       console.error("Error fetching report:", err);
@@ -178,7 +182,7 @@ const OverallReportNew = () => {
               <table className="customer-table">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th>S.No</th>
                     <th>Customer Name</th>
                     <th>Phone</th>
                     <th>Pure Balance</th>

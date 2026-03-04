@@ -42,27 +42,46 @@ const CustomerReturn = () => {
   const [selectedBill, setSelectedBill] = useState(null);
   const [loading, setLoading] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
-const [repairLoading, setRepairLoading] = useState(false);
+  const [repairLoading, setRepairLoading] = useState(false);
 
   // pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  // filters
+  // filters (Stored and displayed as DD/MM/YYYY)
   const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 15);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  });
+  const [toDate, setToDate] = useState(() => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  });
 
   // "RETURN" | "REPAIR"
-  const [actionType, setActionType] = useState(null); 
+  const [actionType, setActionType] = useState(null);
 
   // const [openRepairDialog, setOpenRepairDialog] = useState(false);
   // const [repairReason, setRepairReason] = useState("");
   // const [selectedItem, setSelectedItem] = useState(null);
   //return pop up 
-   const [openReturnDialog, setOpenReturnDialog] = useState(false);
+  const [openReturnDialog, setOpenReturnDialog] = useState(false);
   const [returnReason, setReturnReason] = useState("");
   const [returnQC, setReturnQC] = useState({
+    touch: 0,
+    itemWeight: 0,
+    count: 1,
+    stoneWeight: 0,
+    wastageValue: 0,
+    wastageType: null,
+    wastagePure: 0,
+    netWeight: 0,
+    finalPurity: 0,
+    finalWeight: 0,
+  });
+  const [repairQC, setRepairQC] = useState({
     touch: 0,
     itemWeight: 0,
     count: 1,
@@ -83,59 +102,63 @@ const [repairLoading, setRepairLoading] = useState(false);
   const [goldsmiths, setGoldsmiths] = useState([]);
 
   useEffect(() => {
-  if (openSendDialog) {
-    fetchGoldsmiths();
-  }
-}, [openSendDialog]);
+    if (openSendDialog) {
+      fetchGoldsmiths();
+    }
+  }, [openSendDialog]);
 
-// useEffect(() => {
-//   const net =
-//     Number(returnQC.itemWeight || 0) -
-//     Number(returnQC.stoneWeight || 0) -
-//     Number(returnQC.wastageValue || 0);
+  const currentNetWeight = (Number(returnQC.itemWeight) || 0) - (Number(returnQC.stoneWeight) || 0);
+  const currentWastageWeight = (currentNetWeight * (Number(returnQC.wastageValue) || 0)) / 100;
+  const currentTouch = Number(returnQC.touch) || 0;
+  const currentWastagePure = (currentWastageWeight * currentTouch) / 100;
+  const currentActualPurity = (currentNetWeight * currentTouch) / 100;
+  const currentFinalPurity = currentActualPurity + currentWastagePure;
 
-//   const wastagePure =
-//     (Number(returnQC.wastageValue || 0) *
-//       Number(returnQC.finalPurity || 0)) / 100;
+  const currentRepairNetWeight = (Number(repairQC.itemWeight) || 0) - (Number(repairQC.stoneWeight) || 0);
+  const currentRepairWastageWeight = (currentRepairNetWeight * (Number(repairQC.wastageValue) || 0)) / 100;
+  const currentRepairTouch = Number(repairQC.touch) || 0;
+  const currentRepairWastagePure = (currentRepairWastageWeight * currentRepairTouch) / 100;
+  const currentRepairActualPurity = (currentRepairNetWeight * currentRepairTouch) / 100;
+  const currentRepairFinalPurity = currentRepairActualPurity + currentRepairWastagePure;
 
-//   setReturnQC(q => ({
-//     ...q,
-//     netWeight: net,
-//     wastagePure
-//   }));
-// }, [
-//   returnQC.itemWeight,
-//   returnQC.stoneWeight,
-//   returnQC.wastageValue,
-//   returnQC.finalPurity
-// ]);
+  const openRepairPopup = (item) => {
+    setSelectedProduct(item);
+    setSelectedGoldsmith("");
+    setReason("");
+    setRepairQC({
+      itemWeight: item.weight || 0,
+      touch: item.touch || item.percentage || 0,
+      count: item.count || 0,
+      stoneWeight: item.stoneWeight || 0,
+      wastageValue: item.wastageValue || 0,
+      wastageType: item.wastageType || null,
+      wastagePure: item.wastagePure || 0,
+      netWeight: item.netWeight || 0,
+      finalPurity: item.finalPurity || 0,
+      finalWeight: item.finalWeight || 0,
+    });
+    setOpenSendDialog(true);
+  };
 
-const openRepairPopup = (item) => {
-  setSelectedProduct(item);
-  setSelectedGoldsmith("");
-  setReason("");
-  setOpenSendDialog(true);
-};
+  const openReturnPopup = (item) => {
+    setSelectedProduct(item);
+    console.log("item", item);
+    setReturnQC({
+      itemWeight: item.weight || 0,
+      touch: item.touch || item.percentage || 0,
+      count: item.count || 0,
+      stoneWeight: item.stoneWeight || 0,
+      wastageValue: item.wastageValue || 0,
+      wastageType: item.wastageType || null,
+      wastagePure: item.wastagePure || 0,
+      netWeight: item.netWeight || 0,
+      finalPurity: item.finalPurity || 0,
+      finalWeight: item.finalWeight || 0,
+    });
 
-const openReturnPopup = (item) => {
-  setSelectedProduct(item);
-  console.log("item",item);
-  setReturnQC({
-    itemWeight: item.weight || 0,
-    touch: item.touch || item.percentage || 0,
-    count: item.count || 0,
-    stoneWeight: item.stoneWeight || 0,
-    wastageValue: item.wastageValue || 0,
-    wastageType: item.wastageType || null,
-    wastagePure: item.wastagePure || 0,
-    netWeight: item.netWeight || 0,
-    finalPurity: item.finalPurity || 0,
-    finalWeight: item.finalWeight || 0,
-  });
-
-  setReturnReason("");
-  setOpenReturnDialog(true);
-};
+    setReturnReason("");
+    setOpenReturnDialog(true);
+  };
 
 
   // ================= FETCH SOLD BILLS =================
@@ -144,7 +167,7 @@ const openReturnPopup = (item) => {
       const res = await fetch(`${BACKEND_SERVER_URL}/api/bill?status=ACTIVE`);
       const json = await res.json();
       setBills(Array.isArray(json.data) ? json.data : []);
-      console.log("bills",json.data);
+      console.log("bills", json.data);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch bills");
@@ -155,7 +178,7 @@ const openReturnPopup = (item) => {
     fetchSoldBills();
   }, []);
 
-    const fetchGoldsmiths = async () => {
+  const fetchGoldsmiths = async () => {
     const res = await axios.get(`${BACKEND_SERVER_URL}/api/goldsmith`);
     setGoldsmiths(res.data || []);
   };
@@ -168,7 +191,7 @@ const openReturnPopup = (item) => {
 
 
   const filteredBills = bills.filter((bill) => {
-    
+
     const hasActiveItems = bill.orders?.some(
       item => item.repairStatus === "NONE"
     );
@@ -185,17 +208,34 @@ const openReturnPopup = (item) => {
         item.productName?.toLowerCase().includes(searchValue)
       );
 
-    const billDate = bill.date ? new Date(bill.date) : null;
+    const billDateLocal = bill.date ? new Date(bill.date) : null;
 
-    const matchesFrom =
-      !fromDate || (billDate && billDate >= new Date(fromDate));
+    // Helper to parse DD/MM/YYYY to Date object
+    const parseDDMMYYYY = (dateStr) => {
+      if (!dateStr || dateStr.length !== 10) return null;
+      const [day, month, year] = dateStr.split('/');
+      if (!day || !month || !year) return null;
+      return new Date(`${year}-${month}-${day}T00:00:00`);
+    };
 
-    const matchesTo =
-      !toDate || (billDate && billDate <= new Date(toDate));
+    // Normalize bounds to ignore time comparison errors
+    const from = parseDDMMYYYY(fromDate);
+    if (from) from.setHours(0, 0, 0, 0);
+
+    const to = parseDDMMYYYY(toDate);
+    if (to) to.setHours(23, 59, 59, 999);
+
+    const matchesFrom = !from || (billDateLocal && billDateLocal >= from);
+    const matchesTo = !to || (billDateLocal && billDateLocal <= to);
 
     return matchesSearch && matchesFrom && matchesTo;
+  }).sort((a, b) => {
+    if (fromDate || toDate) {
+      return new Date(a.date) - new Date(b.date); // Ascending
+    } else {
+      return new Date(b.date) - new Date(a.date); // Descending
+    }
   });
-
 
 
   // ================= PAGINATION =================
@@ -203,7 +243,7 @@ const openReturnPopup = (item) => {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
-  
+
 
   useEffect(() => {
     setPage(0);
@@ -252,40 +292,44 @@ const openReturnPopup = (item) => {
   //   }
   // };
 
-const confirmReturn = async () => {
-   try {
-    setReturnLoading(true);
+  const confirmReturn = async () => {
+    try {
+      setReturnLoading(true);
 
-  await axios.post(
-    `${BACKEND_SERVER_URL}/api/returns/customer-item-return`,
-    {
-      billId: selectedBill.id,
-      currentHallmark: selectedBill.hallMark || 0,
-      orderItemId: selectedProduct.id,
-      reason: returnReason,
-      ...returnQC
+      await axios.post(
+        `${BACKEND_SERVER_URL}/api/returns/customer-item-return`,
+        {
+          billId: selectedBill.id,
+          currentHallmark: selectedBill.hallMark || 0,
+          orderItemId: selectedProduct.id,
+          reason: returnReason,
+          ...returnQC,
+          netWeight: currentNetWeight,
+          wastagePure: currentWastagePure,
+          finalPurity: currentFinalPurity,
+          actualPurity: currentActualPurity
+        }
+      );
+
+      toast.success("Item returned successfully");
+      //   setSelectedBill(prev => ({
+      //   ...prev,
+      //   orders: prev.orders.map(o =>
+      //     o.id === selectedProduct.id
+      //       ? { ...o, repairStatus: "RETURNED" }
+      //       : o
+      //   )
+      // }));
+
+      setOpenReturnDialog(false);
+      setSelectedBill(null);
+      fetchSoldBills();
+    } catch (err) {
+      toast.error("Failed to return item");
+    } finally {
+      setReturnLoading(false);
     }
-  );
-
-  toast.success("Item returned successfully");
-//   setSelectedBill(prev => ({
-//   ...prev,
-//   orders: prev.orders.map(o =>
-//     o.id === selectedProduct.id
-//       ? { ...o, repairStatus: "RETURNED" }
-//       : o
-//   )
-// }));
-
-  setOpenReturnDialog(false);
-  setSelectedBill(null);
-  fetchSoldBills();
-  } catch (err) {
-    toast.error("Failed to return item");
-  } finally {
-    setReturnLoading(false);
-  }
-};
+  };
   // ================= RETURN ENTIRE BILL =================
   // const returnEntireBill = async () => {
   //   if (!window.confirm(`Return entire Bill #${selectedBill.id}?`)) return;
@@ -303,7 +347,7 @@ const confirmReturn = async () => {
   //   try {
   //     setLoading(true);
 
-      
+
   //     const res = await fetch(`${BACKEND_SERVER_URL}/api/returns/customer-bill-return`, {
   //       method: "POST",
   //       headers: { "Content-Type": "application/json" },
@@ -326,72 +370,84 @@ const confirmReturn = async () => {
   // };
 
   //sned to repair
-const handleSend = async () => {
-  try {
-    setRepairLoading(true);
-    setLoading(true);
+  const handleSend = async () => {
+    try {
+      setRepairLoading(true);
+      setLoading(true);
 
-    await axios.post(`${BACKEND_SERVER_URL}/api/repair/customer-send`, {
-      billId: selectedBill.id,
-      goldsmithId: selectedGoldsmith, 
-      orderItemId: selectedProduct.id,
-      repairProduct: selectedProduct,
-      reason
-    });
-    console.log("data to send",selectedProduct)
-    toast.success("Item sent to repair");
+      await axios.post(`${BACKEND_SERVER_URL}/api/repair/customer-send`, {
+        billId: selectedBill.id,
+        goldsmithId: selectedGoldsmith,
+        orderItemId: selectedProduct.id,
+        repairProduct: {
+          ...selectedProduct,
+          weight: repairQC.itemWeight,
+          count: repairQC.count,
+          stoneWeight: repairQC.stoneWeight,
+          touch: repairQC.touch,
+          wastageValue: repairQC.wastageValue,
+          wastageType: repairQC.wastageType,
+          wastagePure: currentRepairWastagePure,
+          netWeight: currentRepairNetWeight,
+          finalPurity: currentRepairFinalPurity,
+          actualPurity: currentRepairActualPurity,
+        },
+        reason
+      });
+      console.log("data to send", selectedProduct)
+      toast.success("Item sent to repair");
 
-    setSelectedBill(prev => ({
-      ...prev,
-      orders: prev.orders.map(item =>
-        item.id === selectedProduct.id
-          ? { ...item, repairStatus: "IN_REPAIR" }
-          : item
-      )
-    }));
+      setSelectedBill(prev => ({
+        ...prev,
+        orders: prev.orders.map(item =>
+          item.id === selectedProduct.id
+            ? { ...item, repairStatus: "IN_REPAIR" }
+            : item
+        )
+      }));
 
-    setOpenSendDialog(false);
-    setReason("");
-    setSelectedProduct(null);
-    fetchSoldBills();
-  
-  } catch (err) {
-    toast.error(err.response?.data?.error || "Failed to send to repair");
-  } finally {
-    setRepairLoading(false);
-    setLoading(false);
-  }
-};
+      setOpenSendDialog(false);
+      setReason("");
+      setSelectedProduct(null);
+      fetchSoldBills();
 
-const repairEntireBill = async () => { 
-  if (!window.confirm(`Send entire Bill #${selectedBill.id} to repair?`)) return;
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to send to repair");
+    } finally {
+      setRepairLoading(false);
+      setLoading(false);
+    }
+  };
 
-  try {
-    setLoading(true);
+  const repairEntireBill = async () => {
+    if (!window.confirm(`Send entire Bill #${selectedBill.id} to repair?`)) return;
 
-    await axios.post(`${BACKEND_SERVER_URL}/api/repair/customer-bill-send`, {
-      billId: selectedBill.id,
-      reason: "Entire bill repair"
-    });
+    try {
+      setLoading(true);
 
-    toast.success("Entire bill sent to repair");
-    setSelectedBill(null);
-    fetchSoldBills();
+      await axios.post(`${BACKEND_SERVER_URL}/api/repair/customer-bill-send`, {
+        billId: selectedBill.id,
+        reason: "Entire bill repair"
+      });
 
-  } catch (err) {
-    toast.error(err.response?.data?.error || "Failed to repair bill");
-  } finally {
-    setLoading(false);
-  }
-};
+      toast.success("Entire bill sent to repair");
+      setSelectedBill(null);
+      fetchSoldBills();
 
-const hasRepairItems = selectedBill?.orders?.some(
-  item => item.repairStatus === "IN_REPAIR"
-);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to repair bill");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const allReturned = selectedBill?.orders?.every(
-  item => item.repairStatus === "RETURNED"
-);
+  const hasRepairItems = selectedBill?.orders?.some(
+    item => item.repairStatus === "IN_REPAIR"
+  );
+
+  const allReturned = selectedBill?.orders?.every(
+    item => item.repairStatus === "RETURNED"
+  );
 
   const safeFixed = (v, d = 3) =>
     isNaN(parseFloat(v)) ? "0.000" : parseFloat(v).toFixed(d);
@@ -416,19 +472,21 @@ const allReturned = selectedBill?.orders?.every(
         />
 
         <TextField
-          type="date"
+          type="text"
           size="small"
-          label="From Date"
+          label="From (DD/MM/YYYY)"
           InputLabelProps={{ shrink: true }}
+          placeholder="DD/MM/YYYY"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
         />
 
         <TextField
-          type="date"
+          type="text"
           size="small"
-          label="To Date"
+          label="To (DD/MM/YYYY)"
           InputLabelProps={{ shrink: true }}
+          placeholder="DD/MM/YYYY"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
         />
@@ -446,64 +504,64 @@ const allReturned = selectedBill?.orders?.every(
       </Box>
 
 
-  {/* ===== Bills Table ===== */}
-  <Table >
-    <TableHead className="BillTable"> 
-      <TableRow>
-        <TableCell className="BillTable-th-td" style={{width:'10px !important'}}>S.No</TableCell>
-        <TableCell className="BillTable-th-td">Bill No</TableCell>
-        <TableCell className="BillTable-th-td">Customer</TableCell>
-        <TableCell className="BillTable-th-td">Date</TableCell>
-        <TableCell className="BillTable-th-td"></TableCell>
-        <TableCell className="BillTable-th-td">Action</TableCell>
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      {paginatedBills.length > 0 ? (
-        paginatedBills.map((bill, index) => (
-          <TableRow key={bill.id}>
-            <TableCell className="BillTable-tb-td">
-              {page * rowsPerPage + index + 1}
-            </TableCell>
-            <TableCell className="BillTable-tb-td">{bill.id}</TableCell>
-            <TableCell className="BillTable-tb-td">
-              {showValue(bill.customers?.name)}
-            </TableCell>
-            <TableCell className="BillTable-tb-td">
-              {bill.date
-                ? new Date(bill.date).toLocaleDateString("en-IN")
-                : "-"}
-            </TableCell>
-            <TableCell className="BillTable-tb-td">
-              <Button
-                variant="outlined"
-                onClick={() => navigate(`/bill-view/${bill.id}`)}
-              >
-                View Bill
-              </Button>
-            </TableCell>
-            <TableCell className="BillTable-tb-td">
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setSelectedBill(bill)
-                  setActionType("RETURN");
-                }}
-              >
-                Return
-              </Button>{" "}
-              <Button
-                variant="contained"
-                color="error"
-                onClick={() => {
-                  setSelectedBill(bill);
-                  setActionType("REPAIR");
-                }}
-              >
-                Repair
-              </Button>
-            </TableCell>
+      {/* ===== Bills Table ===== */}
+      <Table >
+        <TableHead className="BillTable">
+          <TableRow>
+            <TableCell className="BillTable-th-td" style={{ width: '10px !important' }}>S.No</TableCell>
+            <TableCell className="BillTable-th-td">Bill No</TableCell>
+            <TableCell className="BillTable-th-td">Customer</TableCell>
+            <TableCell className="BillTable-th-td">Date</TableCell>
+            <TableCell className="BillTable-th-td"></TableCell>
+            <TableCell className="BillTable-th-td">Action</TableCell>
           </TableRow>
+        </TableHead>
+        <TableBody>
+          {paginatedBills.length > 0 ? (
+            paginatedBills.map((bill, index) => (
+              <TableRow key={bill.id}>
+                <TableCell className="BillTable-tb-td">
+                  {page * rowsPerPage + index + 1}
+                </TableCell>
+                <TableCell className="BillTable-tb-td">{bill.id}</TableCell>
+                <TableCell className="BillTable-tb-td">
+                  {showValue(bill.customers?.name)}
+                </TableCell>
+                <TableCell className="BillTable-tb-td">
+                  {bill.date
+                    ? new Date(bill.date).toLocaleDateString("en-IN")
+                    : "-"}
+                </TableCell>
+                <TableCell className="BillTable-tb-td">
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate(`/bill-view/${bill.id}`)}
+                  >
+                    View Bill
+                  </Button>
+                </TableCell>
+                <TableCell className="BillTable-tb-td">
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setSelectedBill(bill)
+                      setActionType("RETURN");
+                    }}
+                  >
+                    Return
+                  </Button>{" "}
+                  <Button
+                    variant="contained"
+                    color="error"
+                    onClick={() => {
+                      setSelectedBill(bill);
+                      setActionType("REPAIR");
+                    }}
+                  >
+                    Repair
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))
           ) : (
             <TableRow>
@@ -513,7 +571,7 @@ const allReturned = selectedBill?.orders?.every(
             </TableRow>
           )}
         </TableBody>
-          </Table>
+      </Table>
 
       <TablePagination
         component="div"
@@ -529,62 +587,62 @@ const allReturned = selectedBill?.orders?.every(
 
       {/* ===== Modal ===== */}
       <Modal open={!!selectedBill} onClose={() => {
-      setSelectedBill(null);
-      setActionType(null);
-    }}>
-      <Box sx={modalStyle}>
-        {selectedBill && (
-          <>
-            {/* HEADER */}
-            <div className="model-heading-section">
-              <Typography variant="h6">
-                Bill no: <strong>{selectedBill.id}</strong>
-              </Typography>
+        setSelectedBill(null);
+        setActionType(null);
+      }}>
+        <Box sx={modalStyle}>
+          {selectedBill && (
+            <>
+              {/* HEADER */}
+              <div className="model-heading-section">
+                <Typography variant="h6">
+                  Bill no: <strong>{selectedBill.id}</strong>
+                </Typography>
 
-              <Typography variant="h6">
-                Customer: <strong>{selectedBill.customers?.name}</strong>
-              </Typography>
-            </div>
+                <Typography variant="h6">
+                  Customer: <strong>{selectedBill.customers?.name}</strong>
+                </Typography>
+              </div>
 
-            {/* ================= RETURN MODE ================= */}
-            {actionType === "RETURN" && (
-              <>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell className="BillTable-th-td">Product</TableCell>
-                      <TableCell className="BillTable-th-td">Weight</TableCell>
-                      <TableCell className="BillTable-th-td">Count</TableCell>
-                      <TableCell className="BillTable-th-td">Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-
-                  <TableBody>
-                    {selectedBill.orders
-                      ?.filter(item => item.repairStatus === "NONE")
-                      .map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.productName}</TableCell>
-                        <TableCell>{item.weight}</TableCell>
-                        <TableCell>{item.count}</TableCell>
-                        <TableCell>
-                          <Button
-                            color="error"
-                            variant="outlined"
-                            size="small"
-                            onClick={() => openReturnPopup(item)}
-                            disabled={loading}
-                          >
-                            Return Item
-                          </Button>
-                        </TableCell>
+              {/* ================= RETURN MODE ================= */}
+              {actionType === "RETURN" && (
+                <>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell className="BillTable-th-td">Product</TableCell>
+                        <TableCell className="BillTable-th-td">Weight</TableCell>
+                        <TableCell className="BillTable-th-td">Count</TableCell>
+                        <TableCell className="BillTable-th-td">Action</TableCell>
                       </TableRow>
-                    ))}
-                    
-                  </TableBody>
-                </Table>
+                    </TableHead>
 
-                {/* {!hasRepairItems && selectedBill?.orders?.some(
+                    <TableBody>
+                      {selectedBill.orders
+                        ?.filter(item => item.repairStatus === "NONE")
+                        .map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.productName}</TableCell>
+                            <TableCell>{item.weight}</TableCell>
+                            <TableCell>{item.count}</TableCell>
+                            <TableCell>
+                              <Button
+                                color="error"
+                                variant="outlined"
+                                size="small"
+                                onClick={() => openReturnPopup(item)}
+                                disabled={loading}
+                              >
+                                Return Item
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+
+                    </TableBody>
+                  </Table>
+
+                  {/* {!hasRepairItems && selectedBill?.orders?.some(
                   item => item.repairStatus !== "RETURNED"
                 ) && (
 
@@ -600,47 +658,47 @@ const allReturned = selectedBill?.orders?.every(
                 </Button>
               )} */}
 
-              </>
-            )}
+                </>
+              )}
 
-            {/* ================= REPAIR MODE ================= */}
-            {actionType === "REPAIR" && (
-              <>
-                <Typography variant="h6" sx={{ mt: 2 }}>
-                  Send Items to Repair
-                </Typography>
+              {/* ================= REPAIR MODE ================= */}
+              {actionType === "REPAIR" && (
+                <>
+                  <Typography variant="h6" sx={{ mt: 2 }}>
+                    Send Items to Repair
+                  </Typography>
 
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell className="BillTable-th-td">Product</TableCell>
-                      <TableCell className="BillTable-th-td">Weight</TableCell>
-                      <TableCell className="BillTable-th-td">Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-
-                  <TableBody>
-                  {console.log("selectedBill",selectedBill)}
-                    {selectedBill.orders
-                      ?.filter(item => item.repairStatus === "NONE")
-                      .map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.productName}</TableCell>
-                        <TableCell>{item.weight}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => openRepairPopup(item)}
-                          >
-                            Send to Repair
-                          </Button>
-                        </TableCell>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell className="BillTable-th-td">Product</TableCell>
+                        <TableCell className="BillTable-th-td">Weight</TableCell>
+                        <TableCell className="BillTable-th-td">Action</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {/* <Button
+                    </TableHead>
+
+                    <TableBody>
+                      {console.log("selectedBill", selectedBill)}
+                      {selectedBill.orders
+                        ?.filter(item => item.repairStatus === "NONE")
+                        .map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.productName}</TableCell>
+                            <TableCell>{item.weight}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                onClick={() => openRepairPopup(item)}
+                              >
+                                Send to Repair
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                  {/* <Button
                   fullWidth
                   sx={{ mt: 2 }}
                   variant="contained"
@@ -651,70 +709,173 @@ const allReturned = selectedBill?.orders?.every(
                   Repair Entire Bill
                 </Button> */}
 
-              </>
-            )}
-          </>
-        )}
-      </Box>
-    </Modal>
+                </>
+              )}
+            </>
+          )}
+        </Box>
+      </Modal>
 
-    {/* SEND TO REPAIR POPUP */}
-      <Dialog open={openSendDialog} onClose={repairLoading ? null : () => setOpenSendDialog(false)}>
+      {/* SEND TO REPAIR POPUP */}
+      <Dialog open={openSendDialog} onClose={repairLoading ? null : () => setOpenSendDialog(false)} maxWidth="xl" fullWidth
+        PaperProps={{ sx: { minWidth: 500, maxWidth: 700 } }}>
         <DialogTitle>Send Product to Repair</DialogTitle>
 
-        <DialogContent>
+        <DialogContent sx={{ overflow: 'visible' }}>
           {/* ITEM HEADER */}
-          {console.log("selectedProduct",selectedProduct)}
-        <div
-          style={{
-            borderBottom: "2px solid #ddd",
-            marginBottom: "12px",
-            paddingBottom: "8px"
-          }}
-        >
-          <h3 style={{ margin: 0, color: "#2e7d32" }}>
-           Item Name : {selectedProduct?.productName}
-          </h3>
-        </div>
-
-        {/* ITEM INFO CARD */}
-        <div
-          style={{
-            background: "#f9fafb",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            padding: "12px",
-            marginBottom: "15px"
-          }}
-        >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: "8px" }}>
-            <div><b>Item Weight (g)</b></div>
-            <div>{safeFixed(selectedProduct?.weight)}</div>
-            
-            <div><b>Stone Weight (g)</b></div>
-            <div>{safeFixed(selectedProduct?.stoneWeight)}</div>
-
-            <div><b>Net Weight (g)</b></div>
-            <div>{safeFixed(selectedProduct?.afterWeight)}</div>
-
-            <div><b>Touch</b></div>
-            <div>{safeFixed(selectedProduct?.touch)}</div>          
-            
-            <div><b>Wastage Type (g)</b></div>
-            <div>{selectedProduct?.wastageType || "-"}</div>
-
-            <div><b>Wastage Value (g)</b></div>
-            <div>{selectedProduct?.wastageValue}</div>
-
-            <div><b>Wastage Pure (g)</b></div>
-            <div>{safeFixed(selectedProduct?.wastagePure)}</div>
-
-            <div><b>Final Purity</b></div>
-            <div style={{ fontWeight: "bold", color: "#2e7d32" }}>
-              {safeFixed(selectedProduct?.finalPurity)}
-            </div>
+          {console.log("selectedProduct", selectedProduct)}
+          <div
+            style={{
+              borderBottom: "2px solid #ddd",
+              marginBottom: "12px",
+              paddingBottom: "8px"
+            }}
+          >
+            <h3 style={{ margin: 0, color: "#2e7d32" }}>
+              Item Name : {selectedProduct?.productName}
+            </h3>
           </div>
-        </div>
+
+          {/* ITEM INFO CARD */}
+          <table style={{ width: "100%", fontSize: '0.95rem', borderCollapse: 'collapse', marginBottom: '15px' }}>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Field</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Original</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Edit</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Current Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Item Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.weight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={repairQC.itemWeight}
+                    onChange={(e) =>
+                      setRepairQC({ ...repairQC, itemWeight: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.itemWeight)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Count</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{selectedProduct?.count}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={repairQC.count}
+                    onChange={(e) =>
+                      setRepairQC({ ...repairQC, count: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {repairQC.count}
+                </td>
+              </tr>
+
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Stone Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={repairQC.stoneWeight}
+                    onChange={(e) =>
+                      setRepairQC({ ...repairQC, stoneWeight: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.stoneWeight)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Net Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+                  <b>{safeFixed((Number(selectedProduct?.weight) || 0) - (Number(selectedProduct?.stoneWeight) || 0))}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#888' }}>
+                  -
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
+                  {safeFixed(currentRepairNetWeight)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.touch || selectedProduct?.percentage)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.touch)}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Type</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{selectedProduct?.wastageType || "-"}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {repairQC.wastageType || "-"}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Value %</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.wastageValue)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.wastageValue)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Pure (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.wastagePure)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1976d2', textAlign: 'center' }}>
+                  {safeFixed(currentRepairWastagePure)}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Final Purity</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.finalPurity)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#2e7d32', textAlign: 'center' }}>
+                  {safeFixed(currentRepairFinalPurity)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
           {/* GOLDMSITH SELECT */}
           <TextField
@@ -748,7 +909,7 @@ const allReturned = selectedBill?.orders?.every(
           {/* disable until filled (optional) */}
           <Button
             variant="contained"
-            disabled={!selectedGoldsmith || !reason || repairLoading}
+            disabled={!selectedGoldsmith || repairLoading}
             onClick={handleSend}
           >
             {repairLoading ? "Sending..." : "Confirm"}
@@ -758,129 +919,184 @@ const allReturned = selectedBill?.orders?.every(
       </Dialog>
 
       {/* RETURN POPUP */}
-      <Dialog open={openReturnDialog} onClose={returnLoading ? null : () => setOpenReturnDialog(false)}>
-      <DialogTitle>Confirm Customer Return</DialogTitle>
+      <Dialog open={openReturnDialog} onClose={returnLoading ? null : () => setOpenReturnDialog(false)} maxWidth="xl" fullWidth
+        PaperProps={{ sx: { minWidth: 500, maxWidth: 700 } }}>
+        <DialogTitle>Confirm Customer Return</DialogTitle>
 
-      <DialogContent>
-        {/* <h4 >Item name{" "}:{" "}{selectedProduct?.productName}</h4> */}
+        <DialogContent sx={{ overflow: 'visible' }}>
+          {/* <h4 >Item name{" "}:{" "}{selectedProduct?.productName}</h4> */}
+          <div
+            style={{
+              borderBottom: "2px solid #ddd",
+              marginBottom: "12px",
+              paddingBottom: "8px"
+            }}
+          >
+            <h3 style={{ margin: 0, color: "#2e7d32" }}>
+              Item Name : {selectedProduct?.productName}
+            </h3>
+          </div>
+          <table style={{ width: "100%", fontSize: '0.95rem', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Field</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Original</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Edit</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Current Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Item Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.weight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={returnQC.itemWeight}
+                    onChange={(e) =>
+                      setReturnQC({ ...returnQC, itemWeight: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(returnQC.itemWeight)}
+                </td>
+              </tr>
 
-        <table style={{ width: "100%", fontSize: '1rem' }}>
-          <tbody>
-            <tr>
-              <td><b>Item name</b></td>
-              <td>
-                {selectedProduct?.productName}
-              </td>
-            </tr>
-            <tr>
-              <td><b>Item Weight (g)</b></td>
-              <td>
-                {returnQC.itemWeight}
-                {/* <TextField
-                  size="small"
-                  type="number"
-                  value={returnQC.itemWeight}
-                  onChange={(e) =>
-                    setReturnQC({ ...returnQC, itemWeight: e.target.value })
-                  }
-                /> */}
-              </td>
-            </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Count</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{selectedProduct?.count}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={returnQC.count}
+                    onChange={(e) =>
+                      setReturnQC({ ...returnQC, count: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {returnQC.count}
+                </td>
+              </tr>
 
-            <tr>
-              <td><b>Count</b></td>
-              <td>
-                {returnQC.count}
-                {/* <TextField
-                  size="small"
-                  type="number"
-                  value={returnQC.count}
-                  onChange={(e) =>
-                    setReturnQC({ ...returnQC, count: e.target.value })
-                  }
-                /> */}
-              </td>
-            </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Stone Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={returnQC.stoneWeight}
+                    onChange={(e) =>
+                      setReturnQC({ ...returnQC, stoneWeight: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(returnQC.stoneWeight)}
+                </td>
+              </tr>
 
-            <tr>
-              <td><b>Stone Weight (g)</b></td>
-              <td>
-                {returnQC.stoneWeight}
-                {/* <TextField
-                  size="small"
-                  type="number"
-                  value={returnQC.stoneWeight}
-                  onChange={(e) =>
-                    setReturnQC({ ...returnQC, stoneWeight: e.target.value })
-                  }
-                /> */}
-              </td>
-            </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Net Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+                  <b>{safeFixed((Number(selectedProduct?.weight) || 0) - (Number(selectedProduct?.stoneWeight) || 0))}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#888' }}>
+                  -
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
+                  {safeFixed(currentNetWeight)}
+                </td>
+              </tr>
 
-            <tr>
-              <td><b>Net Weight (g)</b></td>
-              <td>{returnQC.netWeight}</td>
-            </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.touch || selectedProduct?.percentage)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(returnQC.touch)}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Type</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{selectedProduct?.wastageType || "-"}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {returnQC.wastageType || "-"}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Value %</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.wastageValue)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(returnQC.wastageValue)}
+                </td>
+              </tr>
 
-            <tr>
-              <td><b>Touch</b></td>
-              <td>{returnQC.touch || "N/A"}</td>
-            </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Pure (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.wastagePure)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1976d2', textAlign: 'center' }}>
+                  {safeFixed(currentWastagePure)}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Final Purity</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.finalPurity)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#2e7d32', textAlign: 'center' }}>
+                  {safeFixed(currentFinalPurity)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-             {/* <tr>
-              <td>Actual Purity</td>
-              <td><b>{returnQC.actualPurity || "N/A"}</b></td>
-            </tr> */}
-            <tr>
-              <td><b>Wastage Type</b></td>
-              <td>{returnQC.wastageType || "-"}</td>
-            </tr>
-            <tr>
-              <td><b>Wastage Value %</b></td>
-              <td>
-              {returnQC.wastageValue}
-                {/* <TextField
-                  size="small"
-                  type="number"
-                  value={returnQC.wastageValue}
-                  onChange={(e) =>
-                    setReturnQC({ ...returnQC, wastageValue: e.target.value })
-                  }
-                /> */}
-              </td>
-            </tr>
-            <tr>
-              <td><b>Wastage Pure (g)</b></td>
-              <td>{returnQC.wastagePure.toFixed(3)}</td>
-            </tr>
-            <tr>
-              <td><b>Final Purity</b></td>
-              <td>{returnQC.finalPurity.toFixed(3)}</td>
-            </tr>
-          </tbody>
-        </table>
+          <TextField
+            fullWidth
+            label="Return Reason"
+            margin="normal"
+            value={returnReason}
+            onChange={(e) => setReturnReason(e.target.value)}
+          />
+        </DialogContent>
 
-        <TextField
-          fullWidth
-          label="Return Reason"
-          margin="normal"
-          value={returnReason}
-          onChange={(e) => setReturnReason(e.target.value)}
-        />
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={() => setOpenReturnDialog(false)}>Cancel</Button>
-        <Button
-          variant="contained"
-          color="success"
-          disabled={!returnReason || returnLoading}
-          onClick={confirmReturn}
-        >
-          {returnLoading ? "Processing..." : "Confirm Return"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <DialogActions>
+          <Button onClick={() => setOpenReturnDialog(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="success"
+            disabled={returnLoading}
+            onClick={confirmReturn}
+          >
+            {returnLoading ? "Processing..." : "Confirm Return"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
     </Box>
   );

@@ -17,7 +17,7 @@ const setTotalRawGold = async () => {
       where: { id: g.rawGoldStockId },
       data: {
         weight: g._sum.weight || 0, // assumes your stock table has totalWeight column
-        remainingWt:g._sum.weight||0
+        remainingWt: g._sum.weight || 0
       },
     });
   }
@@ -25,41 +25,45 @@ const setTotalRawGold = async () => {
 
 
 
-const createhundredPercentTouch=async()=>{
-// In received section we have goldRate so that time we need to create new touch as 100
-  const ifExist=await prisma.masterTouch.findFirst({
-      where:{
-        touch:100
-      }
-    })
-    
-      if(!ifExist){
-         await prisma.masterTouch.create({
-      data: { touch: 100,
-        rawGoldStock:{
-          create:{
-            weight:0,
-            remainingWt:0,
-            touch:100
-          } }
+const createhundredPercentTouch = async () => {
+  // In received section we have goldRate so that time we need to create new touch as 100
+  const ifExist = await prisma.masterTouch.findFirst({
+    where: {
+      touch: 100
+    }
+  })
+
+  if (!ifExist) {
+    await prisma.masterTouch.create({
+      data: {
+        touch: 100,
+        rawGoldStock: {
+          create: {
+            weight: 0,
+            remainingWt: 0,
+            touch: 100
+          }
+        }
       },
     });
-      }
+  }
 }
 
 
 const moveToRawGoldStock = async (received, billId, customerId) => {
+  if (!received || received.length === 0) return;
+
   await createhundredPercentTouch();
 
   if (received.length >= 1) {
     await prisma.$transaction(async (tx) => {
       for (const receive of received) {
         let data = {
-          date:receive.date,
+          date: receive.date,
           type: receive.type,
           goldRate: parseInt(receive.goldRate) || 0,
-          gold:parseInt(receive.gold) || 0,
-          touch:parseFloat(receive.touch)||0,
+          gold: parseInt(receive.gold) || 0,
+          touch: parseFloat(receive.touch) || 0,
           purity: parseFloat(receive.purity) || 0,
           receiveHallMark: parseFloat(receive.receiveHallMark) || 0,
           amount: parseFloat(receive.amount) || 0,
@@ -70,7 +74,7 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
           await tx.rawGoldLogs.update({
             where: { id: receive.logId },
             data: {
-              weight: data.type === "Cash" ? data.purity :data.gold,
+              weight: data.type === "Cash" ? data.purity : data.gold,
               touch: data.touch,
               purity: data.purity,
             },
@@ -83,7 +87,7 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
         } else {
           // Find stock by touch
           const stock = await tx.rawgoldStock.findFirst({
-            where: { touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0,  },
+            where: { touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0, },
             select: { id: true },
           });
 
@@ -95,8 +99,8 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
           const rawGoldLog = await tx.rawGoldLogs.create({
             data: {
               rawGoldStockId: stock.id,
-              weight: data.type === "Cash"?parseFloat(data.purity): parseFloat(data.gold) || 0,
-              touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0, 
+              weight: data.type === "Cash" ? parseFloat(data.purity) : parseFloat(data.gold) || 0,
+              touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0,
               purity: data.purity,
             },
           });
@@ -118,18 +122,18 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
   await setTotalRawGold();
 };
 
-const receiptMoveToRawGold = async (received,customerId) => {
+const receiptMoveToRawGold = async (received, customerId) => {
   await createhundredPercentTouch();
 
   if (received.length >= 1) {
     await prisma.$transaction(async (tx) => {
       for (const receive of received) {
         let data = {
-          date:receive.date,
+          date: receive.date,
           type: receive.type,
           goldRate: parseInt(receive.goldRate) || 0,
-          gold:parseInt(receive.gold) || 0,
-          touch:parseFloat(receive.touch)||0,
+          gold: parseInt(receive.gold) || 0,
+          touch: parseFloat(receive.touch) || 0,
           purity: parseFloat(receive.purity) || 0,
           receiveHallMark: parseFloat(receive.hallMark) || 0,
           amount: parseFloat(receive.amount) || 0,
@@ -140,9 +144,9 @@ const receiptMoveToRawGold = async (received,customerId) => {
           await tx.rawGoldLogs.update({
             where: { id: receive.logId },
             data: {
-              weight:data.type==="Cash" ? data.purity:data.gold,
-              touch:data.touch,
-              purity:data.purity,
+              weight: data.type === "Cash" ? data.purity : data.gold,
+              touch: data.touch,
+              purity: data.purity,
             },
           });
 
@@ -153,7 +157,7 @@ const receiptMoveToRawGold = async (received,customerId) => {
         } else {
           // Find stock by touch
           const stock = await tx.rawgoldStock.findFirst({
-            where: { touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0,  },
+            where: { touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0, },
             select: { id: true },
           });
 
@@ -165,13 +169,13 @@ const receiptMoveToRawGold = async (received,customerId) => {
           const rawGoldLog = await tx.rawGoldLogs.create({
             data: {
               rawGoldStockId: stock.id,
-              weight:data.type ==="Cash" ?parseFloat(data.purity) :parseFloat(data.gold),
-              touch:data.type ==="Cash" ? 100 : parseFloat(data.touch) || 0, 
+              weight: data.type === "Cash" ? parseFloat(data.purity) : parseFloat(data.gold),
+              touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0,
               purity: parseFloat(data.purity),
             },
           });
 
-        
+
           await tx.receiptVoucher.create({
             data: {
               ...data,
@@ -188,7 +192,7 @@ const receiptMoveToRawGold = async (received,customerId) => {
 };
 const jobCardtoRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => {
   // stock update
-   
+
   if (receiveSection.length >= 1) {
     for (const receive of receiveSection) {
       let data = {
@@ -222,9 +226,9 @@ const jobCardtoRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => 
             id: true, // only return the id
           },
         });
-         if (!stock) {
-            throw new Error(`No stock found for touch: ${data.touch}`);
-          }
+        if (!stock) {
+          throw new Error(`No stock found for touch: ${data.touch}`);
+        }
         const rawGoldLog = await prisma.rawGoldLogs.create({
           data: {
             rawGoldStockId: stock.id,
@@ -243,110 +247,154 @@ const jobCardtoRawGoldStock = async (receiveSection, goldSmithId, jobCardId) => 
   }
   await setTotalRawGold();
 };
-const transactionToRawGold=async( date, type,amount,gold, touch, purity, customerId, goldRate )=>{
-      
-    await createhundredPercentTouch();
+const transactionToRawGold = async (date, type, amount, gold, touch, purity, customerId, goldRate) => {
 
-       const stock = await prisma.rawgoldStock.findFirst({
-             where: { touch: type === "Cash" ? 100 : parseFloat(touch) || 0,  },
-             select: { id: true },
-          });
-         if (!stock) {
-            throw new Error(`No stock found for touch: ${touch}`);
-          }
-         const rawGoldLog = await prisma.rawGoldLogs.create({
-            data: {
-              rawGoldStockId: stock.id,
-              weight:type==="Cash" ? parseFloat(purity) :parseFloat(gold)|| 0,
-              touch: type === "Cash" ? 100 : parseFloat(touch) || 0, 
-              purity:purity||0,
-            },
-          });
+  await createhundredPercentTouch();
 
-  const transaction= await prisma.transaction.create({
-      data: {
-        date: new Date(date),
-        type,
-        amount: parseFloat(amount)||0,
-        goldRate: parseFloat(goldRate)|| 0,
-        gold: parseFloat(gold)||0,
-        purity: parseFloat(purity)||0,
-        touch: type === "Gold" ? parseFloat(touch) : 0,
-        customer: {
-          connect: {
-            id: parseInt(customerId),
-          },
+  const actualTouch = parseFloat(touch) || 0;
+  const stock = await prisma.rawgoldStock.findFirst({
+    where: { touch: actualTouch },
+    select: { id: true },
+  });
+  if (!stock) {
+    throw new Error(`No stock found for touch: ${actualTouch}`);
+  }
+
+  let weight = type === "Cash" ? (parseFloat(purity) / actualTouch) * 100 : parseFloat(gold) || 0;
+
+  const rawGoldLog = await prisma.rawGoldLogs.create({
+    data: {
+      rawGoldStockId: stock.id,
+      weight: weight,
+      touch: actualTouch,
+      purity: parseFloat(purity) || 0,
+    },
+  });
+
+  const transaction = await prisma.transaction.create({
+    data: {
+      date: new Date(date),
+      type,
+      amount: parseFloat(amount) || 0,
+      goldRate: parseFloat(goldRate) || 0,
+      gold: parseFloat(gold) || 0,
+      purity: parseFloat(purity) || 0,
+      touch: actualTouch,
+      customer: {
+        connect: {
+          id: parseInt(customerId),
         },
-         rawGoldLogs: {
-         connect: { id: rawGoldLog.id }  
-       }
+      },
+      rawGoldLogs: {
+        connect: { id: rawGoldLog.id }
+      }
+    },
+  });
+
+
+  await prisma.customerBillBalance.update({ // update customer excess balance
+    where: {
+      id: parseInt(customerId)
+    },
+    data: {
+      balance: {
+        increment: -purity || 0
+      }
+    }
+  })
+
+  await setTotalRawGold(); // we need to add rawGold 
+
+  return transaction;
+}
+const entryToRawGold = async (date, type, amount, gold, touch, purity, goldRate, logId = null) => {
+  await createhundredPercentTouch();
+
+  // For both Cash and Gold, use the provided touch (if Cash, it's the requested custom touch)
+  const actualTouch = parseFloat(touch) || 0;
+  const stock = await prisma.rawgoldStock.findFirst({
+    where: { touch: actualTouch },
+    select: { id: true },
+  });
+
+  if (!stock) {
+    throw new Error(`No stock found for touch: ${actualTouch}`);
+  }
+
+  // Calculate pure weight based on type
+  let weight = type === "Cash" ? (parseFloat(purity) / actualTouch) * 100 : parseFloat(gold) || 0;
+
+  let rawGoldLog;
+
+  if (logId) {
+    // If we're updating
+    rawGoldLog = await prisma.rawGoldLogs.update({
+      where: { id: logId },
+      data: {
+        rawGoldStockId: stock.id,
+        weight: weight,
+        touch: actualTouch,
+        purity: parseFloat(purity) || 0,
+      }
+    });
+  } else {
+    // Creating new
+    rawGoldLog = await prisma.rawGoldLogs.create({
+      data: {
+        rawGoldStockId: stock.id,
+        weight: weight,
+        touch: actualTouch,
+        purity: parseFloat(purity) || 0,
       },
     });
+  }
 
-
-    await prisma.customerBillBalance.update({ // update customer excess balance
-      where:{
-        id:parseInt(customerId)},
-      data:{
-        balance:{
-          increment:-purity||0
-        }
-      }
-    })
-
-    await setTotalRawGold(); // we need to add rawGold 
-
-    return  transaction;
-}
-const entryToRawGold=async(date, type,amount,gold, touch, purity,goldRate)=>{
-      await createhundredPercentTouch();
-
-      const stock = await prisma.rawgoldStock.findFirst({
-             where: { touch: type === "Cash" ? 100 : parseFloat(touch) || 0,  },
-             select: { id: true },
-          });
-         if (!stock) {
-            throw new Error(`No stock found for touch: ${touch}`);
-          }
-         const rawGoldLog = await prisma.rawGoldLogs.create({
-            data: {
-              rawGoldStockId: stock.id,
-              weight:type==="Cash" ? parseFloat(purity) :parseFloat(gold)|| 0,
-              touch: type === "Cash" ? 100 : parseFloat(touch) || 0, 
-              purity:purity||0,
-            },
-          });
-
-   const entry= await prisma.entry.create({
+  let entry;
+  if (logId) {
+    // Update existing entry
+    entry = await prisma.entry.findFirst({ where: { logId } });
+    if (entry) {
+      entry = await prisma.entry.update({
+        where: { id: entry.id },
+        data: {
+          date: new Date(date),
+          type,
+          cashAmount: parseFloat(amount) || 0,
+          goldRate: parseFloat(goldRate) || 0,
+          goldValue: parseFloat(gold) || 0,
+          purity: parseFloat(purity) || 0,
+          touch: actualTouch,
+        },
+      });
+    }
+  } else {
+    // Create new entry
+    entry = await prisma.entry.create({
       data: {
         date: new Date(date),
         type,
-        cashAmount: parseFloat(amount)||0,
-        goldRate: parseFloat(goldRate)|| 0,
-        goldValue: parseFloat(gold)||0,
-        purity: parseFloat(purity)||0,
-        touch: type === "Gold" ? parseFloat(touch) : 0,
-         rawGoldLogs: {
-         connect: { id: rawGoldLog.id }  
-       }
+        cashAmount: parseFloat(amount) || 0,
+        goldRate: parseFloat(goldRate) || 0,
+        goldValue: parseFloat(gold) || 0,
+        purity: parseFloat(purity) || 0,
+        touch: actualTouch,
+        rawGoldLogs: {
+          connect: { id: rawGoldLog.id }
+        }
       },
     });
+  }
 
-    await setTotalRawGold(); // we need to add rawGold 
+  await setTotalRawGold(); // we need to add rawGold 
 
-    return  entry;
+  return entry;
 }
 
-module.exports={
+module.exports = {
   moveToRawGoldStock,
   receiptMoveToRawGold,
   jobCardtoRawGoldStock,
   transactionToRawGold,
   entryToRawGold,
-  
+
 }
-
-
-
-
-

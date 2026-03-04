@@ -171,30 +171,30 @@ const NewJobCard = ({
         mappedItemRows.length > 0
           ? mappedItemRows
           : [
-              {
-                id: null,
-                weight: "",
-                name: "",
-                wastageValue: "",
-                wastageType: "Touch",
-                deductions: [
-                  { id: null, type: "Stone", customType: "", weight: "" },
-                ],
-                finalPurity: 0,
-              },
-            ]
+            {
+              id: null,
+              weight: "",
+              name: "",
+              wastageValue: "",
+              wastageType: "Touch",
+              deductions: [
+                { id: null, type: "Stone", customType: "", weight: "" },
+              ],
+              finalPurity: 0,
+            },
+          ]
       );
       const initialReceivedReturns =
         initialData?.receivedMetalReturns?.length > 0
           ? initialData.receivedMetalReturns
           : initialData?.received?.length > 0
-          ? initialData.received.map((item) => ({
+            ? initialData.received.map((item) => ({
               id: item.id,
               weight: item.weight !== undefined ? String(item.weight) : "",
               touch: item.touch !== undefined ? String(item.touch) : "",
               purity: calculatePurity(item.weight, item.touch),
             }))
-          : [{ id: null, weight: "", touch: "", purity: "" }];
+            : [{ id: null, weight: "", touch: "", purity: "" }];
 
       setReceivedMetalReturns(initialReceivedReturns);
 
@@ -478,8 +478,8 @@ const NewJobCard = ({
     }
   };
 
-  const handleRemoveGoldRow=(i)=>{
-    console.log('gold index',i)
+  const handleRemoveGoldRow = (i) => {
+    console.log('gold index', i)
   }
 
   return (
@@ -573,7 +573,7 @@ const NewJobCard = ({
                   value={format(row.purity)}
                   className="input-read-only"
                 />
-                <MdDeleteForever size={25} onClick={()=>handleRemoveGoldRow(i)} />
+                <MdDeleteForever size={25} onClick={() => handleRemoveGoldRow(i)} />
               </div>
             ))}
             <button

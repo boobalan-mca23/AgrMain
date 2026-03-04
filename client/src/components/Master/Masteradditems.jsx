@@ -14,7 +14,7 @@ const Masteradditems = () => {
   const [editItemId, setEditItemId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
-   // Regex: only letters, numbers, spaces allowed
+  // Regex: only letters, numbers, spaces allowed
   const validName = /^[a-zA-Z0-9\s]+$/;
 
   useEffect(() => {
@@ -32,8 +32,8 @@ const Masteradditems = () => {
 
   const handleAddItem = async () => {
     if (itemName.trim()) {
-     
-     
+
+
 
       if (!validName.test(itemName.trim())) {
         toast.warn("Special characters are not allowed.", { autoClose: 2000 });
@@ -86,10 +86,10 @@ const Masteradditems = () => {
       toast.warn("Item name cannot be empty.");
       return;
     }
-     if (!validName.test(editValue.trim())) {
-        toast.warn("Special characters are not allowed.", { autoClose: 2000 });
-        return;
-      }
+    if (!validName.test(editValue.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
     try {
       await axios.put(`${BACKEND_SERVER_URL}/api/master-items/${id}`, {
         itemName: editValue.trim(),
@@ -101,8 +101,8 @@ const Masteradditems = () => {
     } catch (err) {
       console.error("Failed to update item", err);
       toast.error(err.response?.data?.msg || "Something went wrong", {
-          autoClose: 2000,
-        });
+        autoClose: 2000,
+      });
     }
   };
 
@@ -127,17 +127,17 @@ const Masteradditems = () => {
         {/* Item List */}
         <div className="item-list">
           <h2 style={{ textAlign: "center" }}>Added Items</h2>
-          {items.length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>SI.No</th>
-                  <th>Item Name</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, index) => (
+          <table>
+            <thead>
+              <tr>
+                <th>SI.No</th>
+                <th>Item Name</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length > 0 ? (
+                items.map((item, index) => (
                   <tr key={item.id}>
                     <td>{index + 1}</td>
                     <td>
@@ -153,56 +153,58 @@ const Masteradditems = () => {
                       )}
                     </td>
                     <td>
-                    {editItemId === item.id ? (
-                      <>
-                        <button
-                          style={{
-                            marginRight: "5px",
-                            background: "#4CAF50",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => handleSaveEdit(item.id)}
-                        >
-                          Save
-                        </button>
-                        <button
-                          style={{
-                            background: "#f44336",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                          onClick={handleCancelEdit}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <EditIcon
-                          style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
-                          onClick={() => handleEdit(item.id, item.itemName)}
-                        />
-                        <DeleteIcon
-                          style={{ cursor: "pointer", color: "#d32f2f" }}
-                          onClick={() => handleDelete(item.id)}
-                        />
-                      </>
-                    )}
-                  </td>
+                      {editItemId === item.id ? (
+                        <>
+                          <button
+                            style={{
+                              marginRight: "5px",
+                              background: "#4CAF50",
+                              color: "#fff",
+                              padding: "4px 8px",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => handleSaveEdit(item.id)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            style={{
+                              background: "#f44336",
+                              color: "#fff",
+                              padding: "4px 8px",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                            }}
+                            onClick={handleCancelEdit}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <EditIcon
+                            style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
+                            onClick={() => handleEdit(item.id, item.itemName)}
+                          />
+                          <DeleteIcon
+                            style={{ cursor: "pointer", color: "#d32f2f" }}
+                            onClick={() => handleDelete(item.id)}
+                          />
+                        </>
+                      )}
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>No items added</p>
-          )}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" style={{ textAlign: "center" }}>No details found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </>
