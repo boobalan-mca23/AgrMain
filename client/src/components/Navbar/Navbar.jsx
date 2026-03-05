@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // ✅ added useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import { FiLogOut, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import NotificationBell from "../Notification/Notification";
 import logo from "../../Assets/agrLogo.png";
@@ -8,7 +8,6 @@ const Navbar = () => {
 
   const navigate = useNavigate();
 
-  // ✅ NEW: detect current URL
   const location = useLocation();
 
   const [showReports, setShowReports] = useState(false);
@@ -29,7 +28,6 @@ const Navbar = () => {
   const [activeRepair, setActiveRepair] = useState("");
   const [activeReturn, setActiveReturn] = useState("");
 
-  // ✅ NEW: automatically set active menu on page load / refresh
   useEffect(() => {
 
     const path = location.pathname;
@@ -152,7 +150,6 @@ const Navbar = () => {
 
     ...navLink,
 
-    // ✅ added location check also
     color:
       activeLink === path || location.pathname === path
         ? "#fff"
@@ -162,8 +159,8 @@ const Navbar = () => {
       activeLink === path || location.pathname === path
         ? "rgba(255, 255, 255, 0.15)"
         : hoveredItem === path
-        ? "rgba(255, 255, 255, 0.1)"
-        : "transparent",
+          ? "rgba(255, 255, 255, 0.1)"
+          : "transparent",
 
     fontWeight:
       activeLink === path || location.pathname === path
@@ -183,8 +180,8 @@ const Navbar = () => {
       activeReport === path || location.pathname === path
         ? "#f1f3f5"
         : hoveredItem === path
-        ? "#f8f9fa"
-        : "#fff",
+          ? "#f8f9fa"
+          : "#fff",
     fontWeight:
       activeReport === path || location.pathname === path
         ? 600
@@ -198,8 +195,8 @@ const Navbar = () => {
       activeState === path || location.pathname === path
         ? "#f1f3f5"
         : hoveredItem === path
-        ? "#f8f9fa"
-        : "#fff",
+          ? "#f8f9fa"
+          : "#fff",
     fontWeight:
       activeState === path || location.pathname === path
         ? 600
@@ -229,7 +226,11 @@ const Navbar = () => {
               key={label}
               href={path}
               style={getNavLinkStyle(path)}
-              onClick={() => handleLinkClick(path)}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick(path);
+                navigate(path);
+              }}
               onMouseEnter={() => setHoveredItem(path)}
               onMouseLeave={() => setHoveredItem(null)}
             >
