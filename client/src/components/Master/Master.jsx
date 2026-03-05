@@ -31,6 +31,7 @@ import { FiLogOut } from "react-icons/fi";
 const Master = () => {
 
   const [openPurchaseMenu, setOpenPurchaseMenu] = useState(false);
+  const [hoveredNav, setHoveredNav] = useState(null);
 
   const navigate = useNavigate();
 
@@ -52,15 +53,28 @@ const Master = () => {
     navigate("/customer");
   };
 
-  const getNavStyle = ({ isActive }) => ({
+  const getNavStyle = ({ isActive }, path) => ({
     ...navButton,
     color: isActive ? "#fff" : "rgba(255,255,255,0.8)",
     fontWeight: isActive ? 700 : 500,
     textDecoration: "none",
     backgroundColor: isActive
       ? "rgba(255,255,255,0.15)"
-      : "transparent"
+      : hoveredNav === path
+        ? "rgba(255,255,255,0.1)"
+        : "transparent"
   });
+
+  const HoverNavLink = ({ to, children }) => (
+    <NavLink
+      to={to}
+      style={(props) => getNavStyle(props, to)}
+      onMouseEnter={() => setHoveredNav(to)}
+      onMouseLeave={() => setHoveredNav(null)}
+    >
+      {children}
+    </NavLink>
+  );
 
   return (
 
@@ -74,21 +88,30 @@ const Master = () => {
           onMouseLeave={() => setOpenPurchaseMenu(false)}
         >
 
-          <button onClick={handleBack} style={navButton}>
+          <button
+            onClick={handleBack}
+            style={{
+              ...navButton,
+              backgroundColor: hoveredNav === "home" ? "rgba(255,255,255,0.1)" : "transparent",
+              color: "rgba(255,255,255,0.8)"
+            }}
+            onMouseEnter={() => setHoveredNav("home")}
+            onMouseLeave={() => setHoveredNav(null)}
+          >
             Home
           </button>
 
-          <NavLink to="/master/customer" style={getNavStyle}>
+          <HoverNavLink to="/master/customer">
             Customer
-          </NavLink>
+          </HoverNavLink>
 
-          <NavLink to="/master/goldsmith" style={getNavStyle}>
+          <HoverNavLink to="/master/goldsmith">
             Goldsmith Info
-          </NavLink>
+          </HoverNavLink>
 
-          <NavLink to="/master/items" style={getNavStyle}>
+          <HoverNavLink to="/master/items">
             Items
-          </NavLink>
+          </HoverNavLink>
 
 
           {/* PURCHASE MENU */}
@@ -111,8 +134,12 @@ const Master = () => {
 
                 backgroundColor: isPurchaseActive
                   ? "rgba(255,255,255,0.15)"
-                  : "transparent"
+                  : hoveredNav === "purchase"
+                    ? "rgba(255,255,255,0.1)"
+                    : "transparent"
               }}
+              onMouseEnter={() => setHoveredNav("purchase")}
+              onMouseLeave={() => setHoveredNav(null)}
             >
               Purchase ▾
             </button>
@@ -121,62 +148,47 @@ const Master = () => {
 
               <div style={dropdownMenuStyle}>
 
-                <NavLink
-                  to="/master/supplier"
-                  style={getNavStyle}
-                >
+                <HoverNavLink to="/master/supplier">
                   Supplier Master
-                </NavLink>
+                </HoverNavLink>
 
-                <NavLink
-                  to="/master/purchase-entry"
-                  style={getNavStyle}
-                >
+                <HoverNavLink to="/master/purchase-entry">
                   BC Purchase
-                </NavLink>
+                </HoverNavLink>
 
-                <NavLink
-                  to="/master/item-purchase"
-                  style={getNavStyle}
-                >
+                <HoverNavLink to="/master/item-purchase">
                   Item Purchase
-                </NavLink>
+                </HoverNavLink>
 
-                <NavLink
-                  to="/master/purchase-report"
-                  style={getNavStyle}
-                >
+                <HoverNavLink to="/master/purchase-report">
                   BC Purchase Report
-                </NavLink>
+                </HoverNavLink>
 
-                <NavLink
-                  to="/master/item-purchase-report"
-                  style={getNavStyle}
-                >
+                <HoverNavLink to="/master/item-purchase-report">
                   Item Purchase Report
-                </NavLink>
+                </HoverNavLink>
               </div>
             )}
           </div>
 
-          <NavLink to="/master/cashgold" style={getNavStyle}>
+          <HoverNavLink to="/master/cashgold">
             Cash / Gold
-          </NavLink>
+          </HoverNavLink>
 
-          {/* <NavLink to="/master/wastagevalue" style={getNavStyle}>
-            Wastage Value
-          </NavLink>
-
-          <NavLink to="/master/touchentries" style={getNavStyle}>
-            Touch Entries
-          </NavLink> */}
-
-          <NavLink to="/master/bullion" style={getNavStyle}>
+          <HoverNavLink to="/master/bullion">
             Bullion
-          </NavLink>
+          </HoverNavLink>
         </div>
 
-        <button onClick={handleLogout} style={logoutButton}>
+        <button
+          onClick={handleLogout}
+          style={{
+            ...logoutButton,
+            backgroundColor: hoveredNav === "logout" ? "rgba(255,255,255,0.1)" : "transparent"
+          }}
+          onMouseEnter={() => setHoveredNav("logout")}
+          onMouseLeave={() => setHoveredNav(null)}
+        >
           <FiLogOut size={18} />
           <span style={{ marginLeft: "8px" }}>
             Logout
