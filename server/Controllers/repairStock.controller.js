@@ -47,7 +47,7 @@ const getAllRepairStock = async (req, res) => {
 
     const repairs = await prisma.repairStock.findMany({
       where,
-      include: { product: true, goldsmith: true },
+      include: { product: true,itemPurchase: true, goldsmith: true },
       orderBy: { sentDate: "desc" },
       skip,
       take
@@ -63,200 +63,464 @@ const getAllRepairStock = async (req, res) => {
 
 const sendToRepair = async (req, res) => {
   const { productId, goldsmithId, reason, source } = req.body;
-  console.log("Received sendToRepair:", { productId, goldsmithId, reason, source });
+
   try {
+
     if (!productId) throw new Error("productId is required");
-    if (!source || !["CUSTOMER", "GOLDSMITH"].includes(source))
+
+    if (!source || !["CUSTOMER", "GOLDSMITH", "ITEM_PURCHASE"].includes(source))
       throw new Error("Invalid source");
 
     const result = await prisma.$transaction(async (tx) => {
-      const product = await tx.productStock.findUnique({
-        where: { id: Number(productId) }
-      });
 
-      if (!product) throw new Error("Product not found");
-      if (!product.isActive) throw new Error("Product already in repair");
+      // =================================
+      // PRODUCT STOCK
+      // =================================
 
       if (source === "GOLDSMITH") {
-        const g = await tx.goldsmith.findUnique({
-          where: { id: Number(goldsmithId) }
-        });
+
+        const product =
+          await tx.productStock.findUnique({
+            where: { id: Number(productId) }
+          });
+
+        if (!product) throw new Error("Product not found");
+
+        if (!product.isActive)
+          throw new Error("Product already in repair");
+
+        const g =
+          await tx.goldsmith.findUnique({
+            where: { id: Number(goldsmithId) }
+          });
+
         if (!g) throw new Error("Invalid goldsmith");
+
+        const existing =
+          await tx.repairStock.findFirst({
+            where: { productId: product.id, status: "InRepair" }
+          });
+
+        if (existing)
+          throw new Error("Already in repair");
+
+        await tx.productStock.update({
+          where: { id: product.id },
+          data: { isActive: false }
+        });
+
+        const repair =
+          await tx.repairStock.create({
+
+            data: {
+
+              productId: product.id,
+
+              goldsmithId: Number(goldsmithId),
+
+              source,
+
+              reason: reason || null,
+
+              itemName: product.itemName,
+
+              grossWeight: product.itemWeight,
+
+              netWeight: product.netWeight,
+
+              purity: product.finalPurity
+
+            }
+
+          });
+
+        await tx.repairLogs.create({
+
+          data: {
+
+            repairId: repair.id,
+
+            action: "SENT_TO_REPAIR",
+
+            note: reason || null
+
+          }
+
+        });
+
+        const goldsmith =
+          await tx.goldsmith.findUnique({
+            where: { id: goldsmithId }
+          });
+
+        await tx.goldsmith.update({
+
+          where: { id: goldsmithId },
+
+          data: {
+
+            balance:
+              goldsmith.balance +
+              Number(product.finalPurity)
+
+          }
+
+        });
+
+        return repair;
       }
 
-      const existing = await tx.repairStock.findFirst({
-        where: { productId: product.id, status: "InRepair" }
-      });
-      if (existing) throw new Error("Already in repair");
 
-      await tx.productStock.update({
-        where: { id: product.id },
-        data: { isActive: false }
-      });
+      // =================================
+      // ITEM PURCHASE STOCK
+      // =================================
 
-      const repair = await tx.repairStock.create({
-        data: {
-          productId: product.id,
-          goldsmithId: source === "GOLDSMITH" ? Number(goldsmithId) : null,
-          source,
-          reason: reason || null,
-          itemName: product.itemName,
-          grossWeight: product.itemWeight,
-          netWeight: product.netWeight,
-          purity: product.finalPurity,
-        }
-      });
+      if (source === "ITEM_PURCHASE") {
 
-      await tx.repairLogs.create({
-        data: {
-          repairId: repair.id,
-          action: "SENT_TO_REPAIR",
-          note: reason || null,
-        }
-      });
+        const item =
+          await tx.itemPurchaseEntry.findUnique({
+            where: { id: Number(productId) }
+          });
 
-      const goldsmith = await tx.goldsmith.findUnique({
-        where: { id: goldsmithId }
-      });
+        if (!item)
+          throw new Error("Item purchase entry not found");
 
-      // console.log("goldsmith-Details", goldsmith,"goldsmith-balnce", goldsmith.balance);
+        const g =
+          await tx.goldsmith.findUnique({
+            where: { id: Number(goldsmithId) }
+          });
 
-      await tx.goldsmith.update({
-        where: { id: goldsmithId },
-        data: {
-          balance: goldsmith.balance + Number(product.finalPurity),
-        }
-      });
+        if (!g)
+          throw new Error("Invalid goldsmith");
 
+        const repair =
+          await tx.repairStock.create({
 
-      return repair;
+            data: {
+
+              itemPurchaseId: item.id,
+
+              goldsmithId: Number(goldsmithId),
+
+              source: "ITEM_PURCHASE",
+
+              reason: reason || null,
+
+              itemName: item.itemName,
+
+              grossWeight: item.grossWeight,
+
+              netWeight: item.netWeight,
+
+              purity: item.finalPurity
+
+            }
+
+          });
+
+        await tx.repairLogs.create({
+
+          data: {
+
+            repairId: repair.id,
+
+            action: "ITEM_PURCHASE_SENT_TO_REPAIR",
+
+            note: reason || null
+
+          }
+
+        });
+
+        const goldsmith =
+          await tx.goldsmith.findUnique({
+            where: { id: goldsmithId }
+          });
+
+        await tx.goldsmith.update({
+
+          where: { id: goldsmithId },
+
+          data: {
+
+            balance:
+              goldsmith.balance +
+              Number(item.finalPurity)
+
+          }
+
+        });
+
+        return repair;
+      }
+
     });
 
     res.json({ success: true, repair: result });
 
   } catch (err) {
+
     console.error(err.message);
+
     res.status(400).json({ error: err.message });
+
   }
 };
 
 const returnFromRepair = async (req, res) => {
+
   const {
     repairId,
     itemWeight,
     stoneWeight,
     wastagePure,
-    wastageDelta,
-    finalPurity
+    wastageDelta
   } = req.body;
 
   try {
-    if (!repairId) throw new Error("repairId required");
+
+    if (!repairId)
+      throw new Error("repairId required");
 
     const result = await prisma.$transaction(async (tx) => {
 
-      const repair = await tx.repairStock.findUnique({
-        where: { id: Number(repairId) },
-        include: { product: true }
-      });
+      const repair =
+        await tx.repairStock.findUnique({
 
-      if (!repair) throw new Error("Repair not found");
+          where: { id: Number(repairId) },
+
+          include: {
+            product: true,
+            itemPurchase: true,
+            goldsmith: true
+          }
+
+        });
+
+      if (!repair)
+        throw new Error("Repair not found");
+
       if (repair.status !== "InRepair")
         throw new Error("Already returned");
-      console.log("repair-details", repair);
-      const product = repair.product;
+
 
       const itemWt = Number(itemWeight);
       const stoneWt = Number(stoneWeight);
-      const touch = Number(product.touch);
 
-      if (itemWt < stoneWt) {
+      if (itemWt < stoneWt)
         throw new Error("Item weight cannot be less than stone weight");
-      }
+
 
       const netWeight = itemWt - stoneWt;
 
-      const actualPurity = (netWeight * touch) / 100;
+      const touch =
+        repair.product?.touch ??
+        repair.itemPurchase?.touch ??
+        0;
 
-      const updatedWastagePure = Number(wastagePure);
+      const actualPurity =
+        (netWeight * touch) / 100;
 
-      const computedFinalPurity = actualPurity + updatedWastagePure;
+      const updatedWastagePure =
+        Number(wastagePure);
 
-      // if (Math.abs(computedFinalPurity - Number(finalPurity)) > 0.01) {
-      //   throw new Error("Final purity mismatch");
-      // }
+      const computedFinalPurity =
+        actualPurity + updatedWastagePure;
 
-      await tx.productStock.update({
-        where: { id: repair.productId },
-        data: {
-          itemWeight: itemWt,
-          stoneWeight: stoneWt,
-          netWeight,
-          wastagePure: updatedWastagePure,
-          finalPurity: computedFinalPurity,
-          isActive: true
-        }
-      });
 
-      await tx.repairStock.update({
-        where: { id: repair.id },
-        data: {
-          status: "Returned",
-          receivedDate: new Date()
-        }
-      });
+      // =================================
+      // PRODUCT STOCK RETURN
+      // =================================
 
-      await tx.repairLogs.create({
-        data: {
-          repairId: repair.id,
-          action: "RETURNED_WITH_RECALCULATION"
-        }
-      });
+      if (repair.productId) {
 
-      const goldsmith = await tx.goldsmith.findUnique({
-        where: { id: repair.goldsmithId }
-      });
+        await tx.productStock.update({
 
-      if (wastageDelta > 0) {
-        const updatedBalance = goldsmith.balance - wastageDelta;
-        console.log("goldsmith.balance:", goldsmith.balance, "wastageDelta:", wastageDelta, "final-updated-balance", updatedBalance, "computedFinalPurity:", computedFinalPurity, "result", updatedBalance - computedFinalPurity);
-        await tx.goldsmith.update({
-          where: { id: repair.goldsmithId },
+          where: { id: repair.productId },
+
           data: {
-            balance: updatedBalance - computedFinalPurity,
+
+            itemWeight: itemWt,
+
+            stoneWeight: stoneWt,
+
+            netWeight,
+
+            wastagePure: updatedWastagePure,
+
+            finalPurity: computedFinalPurity,
+
+            isActive: true
+
           }
+
         });
-      } else if (wastageDelta < 0) {
-        const updatedBalance = goldsmith.balance + Math.abs(wastageDelta);
-        console.log("goldsmith.balance:", goldsmith.balance, "wastageDelta:", wastageDelta, "final-updated-balance", updatedBalance, "computedFinalPurity:", computedFinalPurity, "result", updatedBalance - computedFinalPurity);
-        await tx.goldsmith.update({
-          where: { id: repair.goldsmithId },
-          data: {
-            balance: updatedBalance - computedFinalPurity,
-          }
-        });
-      } else {
-        console.log("no-change-in-wastage:", "goldsmith.balance:", goldsmith.balance, "finalPurit + delta):", computedFinalPurity, "final result:", goldsmith.balance - computedFinalPurity);
-        await tx.goldsmith.update({
-          where: { id: repair.goldsmithId },
-          data: {
-            balance: goldsmith.balance - computedFinalPurity,
-          }
-        });
+
       }
 
-      return tx.repairStock.findUnique({
+
+      // =================================
+      // ITEM PURCHASE RETURN
+      // =================================
+
+      if (repair.itemPurchaseId) {
+
+        await tx.itemPurchaseEntry.update({
+
+          where: { id: repair.itemPurchaseId },
+
+          data: {
+
+            grossWeight: itemWt,
+
+            stoneWeight: stoneWt,
+
+            netWeight,
+
+            wastagePure: updatedWastagePure,
+
+            finalPurity: computedFinalPurity
+
+          }
+
+        });
+
+      }
+
+
+      // =================================
+      // UPDATE REPAIR STATUS
+      // =================================
+
+      await tx.repairStock.update({
+
         where: { id: repair.id },
-        include: { product: true, goldsmith: true }
+
+        data: {
+
+          status: "Returned",
+
+          receivedDate: new Date()
+
+        }
+
       });
+
+
+      // =================================
+      // REPAIR LOG
+      // =================================
+
+      await tx.repairLogs.create({
+
+        data: {
+
+          repairId: repair.id,
+
+          action: "RETURNED_WITH_RECALCULATION"
+
+        }
+
+      });
+
+
+      // =================================
+      // GOLDsmith BALANCE UPDATE
+      // =================================
+
+      if (repair.goldsmithId) {
+
+        const goldsmith =
+          await tx.goldsmith.findUnique({
+
+            where: { id: repair.goldsmithId }
+
+          });
+
+        let updatedBalance;
+
+        if (wastageDelta > 0) {
+
+          updatedBalance =
+            goldsmith.balance -
+            wastageDelta -
+            computedFinalPurity;
+
+        }
+
+        else if (wastageDelta < 0) {
+
+          updatedBalance =
+            goldsmith.balance +
+            Math.abs(wastageDelta) -
+            computedFinalPurity;
+
+        }
+
+        else {
+
+          updatedBalance =
+            goldsmith.balance -
+            computedFinalPurity;
+
+        }
+
+        await tx.goldsmith.update({
+
+          where: { id: repair.goldsmithId },
+
+          data: {
+
+            balance: updatedBalance
+
+          }
+
+        });
+
+      }
+
+
+      return tx.repairStock.findUnique({
+
+        where: { id: repair.id },
+
+        include: {
+
+          product: true,
+
+          itemPurchase: true,
+
+          goldsmith: true
+
+        }
+
+      });
+
     });
 
-    res.json({ success: true, repair: result });
 
-  } catch (err) {
-    console.error(err);
-    res.status(400).json({ error: err.message });
+    res.json({
+
+      success: true,
+
+      repair: result
+
+    });
+
   }
+
+  catch (err) {
+
+    console.error(err);
+
+    res.status(400).json({
+
+      error: err.message
+
+    });
+
+  }
+
 };
 
 const sendCustomerItemToRepair = async (req, res) => {

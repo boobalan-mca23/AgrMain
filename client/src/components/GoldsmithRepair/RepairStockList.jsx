@@ -29,6 +29,7 @@ const RepairStockList = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("PRODUCT");
 
   const [qc, setQc] = useState({
     itemWeight: 0,
@@ -86,17 +87,31 @@ const RepairStockList = () => {
   const safeFixed = (v, d = 3) =>
     isNaN(parseFloat(v)) ? "0.000" : parseFloat(v).toFixed(d);
 
-  const paginated = repairList.slice(
+  const filteredRepairs = repairList.filter((r) => {
+
+    if (activeTab === "PRODUCT")
+      return r.productId !== null;
+
+    if (activeTab === "ITEM")
+      return r.itemPurchaseId !== null;
+
+    return true;
+
+  });
+
+  const paginated = filteredRepairs.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
 
   const openReceivePopup = (repair) => {
-    const p = repair.product;
+
+    const p = repair.product || repair.itemPurchase;
+
     setSelectedRepair(repair);
-    console.log("checking p", p)
+
     setQc({
-      itemWeight: p?.itemWeight ?? 0,
+      itemWeight: p?.itemWeight ?? p?.grossWeight ?? 0,
       count: p?.count ?? 1,
       stoneWeight: p?.stoneWeight ?? 0,
       netWeight: p?.netWeight ?? 0,
@@ -210,6 +225,33 @@ const RepairStockList = () => {
         </div>
       </div>
 
+      <div style={{ marginBottom: 15 }}>
+
+        <Button
+          variant={activeTab === "PRODUCT" ? "contained" : "outlined"}
+          onClick={() => setActiveTab("PRODUCT")}
+          style={{ marginRight: 10 }}
+        >
+          Product Stock
+        </Button>
+
+        <Button
+          variant={activeTab === "ITEM" ? "contained" : "outlined"}
+          onClick={() => setActiveTab("ITEM")}
+          style={{ marginRight: 10 }}
+        >
+          Item Purchase Stock
+        </Button>
+
+        {/* <Button
+          variant={activeTab === "ALL" ? "contained" : "outlined"}
+          onClick={() => setActiveTab("ALL")}
+        >
+          All
+        </Button> */}
+
+      </div>
+
       <div className="stock-table-container">
         {paginated.length ? (
           <table className="stock-table">
@@ -233,12 +275,37 @@ const RepairStockList = () => {
               {paginated.map((r, i) => (
                 <tr key={r.id}>
                   <td>{i + 1}</td>
-                  <td>{r.product?.itemName || r.itemName}</td>
+                  <td>
+                    {r.product?.itemName ||
+                    r.itemPurchase?.itemName ||
+                    r.itemName}
+                  </td>
                   <td>{r.goldsmith?.name || "-"}</td>
-                  <td>{safeFixed(r.product?.itemWeight ?? r.itemWeight)}</td>
-                  <td>{safeFixed(r.product?.netWeight ?? r.netWeight)}</td>
-                  <td>{r.product?.touch ?? r.touch}</td>
-                  <td>{safeFixed(r.product?.finalPurity ?? r.purity)}</td>
+                  <td>
+                    {safeFixed(
+                      r.product?.itemWeight ??
+                      r.itemPurchase?.grossWeight ??
+                      r.itemWeight
+                    )}
+                  </td>
+                  <td>
+                    {safeFixed(
+                      r.product?.netWeight ??
+                      r.itemPurchase?.netWeight ??
+                      r.netWeight
+                    )}
+                  </td>
+                  <td>{r.product?.touch ??
+                    r.itemPurchase?.touch ??
+                    r.touch}
+                  </td>
+                  <td>
+                    {safeFixed(
+                      r.product?.finalPurity ??
+                      r.itemPurchase?.finalPurity ??
+                      r.purity
+                    )}
+                  </td>
                   <td>{new Date(r.sentDate).toLocaleDateString()}</td>
                   <td>
                     {r.status === "InRepair" ? (
@@ -276,7 +343,7 @@ const RepairStockList = () => {
 
         <TablePagination
           component="div"
-          count={repairList.length}
+          count={filteredRepairs.length}
           page={page}
           rowsPerPage={rowsPerPage}
           onPageChange={(e, p) => setPage(p)}
@@ -294,7 +361,11 @@ const RepairStockList = () => {
         <DialogTitle>Return Product to Stock</DialogTitle>
 
         <DialogContent>
-          <h4>Item Name : {selectedRepair?.product?.itemName}</h4>
+          <h4>
+          Item Name :
+          {selectedRepair?.product?.itemName ||
+          selectedRepair?.itemPurchase?.itemName}
+          </h4>
 
           <table
             style={{

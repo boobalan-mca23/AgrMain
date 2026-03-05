@@ -1,4 +1,4 @@
- generator client {
+generator client {
   provider = "prisma-client-js"
 }
 
@@ -567,7 +567,6 @@ model PurchaseEntry {
 }
 
 model ItemPurchaseEntry {
-
   id Int @id @default(autoincrement())
 
   supplierId   Int
@@ -594,18 +593,19 @@ model ItemPurchaseEntry {
 
   moveTo String @default("item")
 
-  isSold Boolean @default(false)   
+  isSold Boolean @default(false)
 
-  soldAt DateTime?                 
+  soldAt DateTime?
 
-  isBilled Boolean @default(false)
+  isBilled  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
-  @@map("item_purchase_entries")
+  repairStocks RepairStock[]
 
+  @@map("item_purchase_entries")
 }
 
 model PurchaseStock {
@@ -638,24 +638,35 @@ model PurchaseStock {
 }
 
 model RepairStock {
-  id           Int       @id @default(autoincrement())
-  productId    Int
-  goldsmithId  Int?
-  source       String?
-  reason       String?
+  id Int @id @default(autoincrement())
+
+  productId      Int?
+  itemPurchaseId Int?
+
+  goldsmithId Int?
+  source      String?
+  reason      String?
+
   sentDate     DateTime  @default(now())
   receivedDate DateTime?
-  status       String    @default("InRepair")
-  wastageType  String?
+
+  status String @default("InRepair")
+
+  wastageType String?
+
   itemName    String?
   grossWeight Float?
   netWeight   Float?
   purity      Float?
 
-  product   ProductStock @relation("ProductRepairRelation", fields: [productId], references: [id], onDelete: Cascade)
-  goldsmith Goldsmith?   @relation("GoldsmithRepairRelation", fields: [goldsmithId], references: [id])
+  product ProductStock? @relation("ProductRepairRelation", fields: [productId], references: [id], onDelete: Cascade)
+
+  itemPurchase ItemPurchaseEntry? @relation(fields: [itemPurchaseId], references: [id])
+
+  goldsmith Goldsmith? @relation("GoldsmithRepairRelation", fields: [goldsmithId], references: [id])
 
   @@index([productId])
+  @@index([itemPurchaseId])
   @@index([goldsmithId])
   @@map("repairstock")
 }
