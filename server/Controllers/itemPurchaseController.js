@@ -613,30 +613,75 @@ exports.getItemPurchaseReport = async (req, res) => {
 };
 
 exports.getItemPurchaseStock = async (req, res) => {
+  try {
+
+    const stock = await prisma.itemPurchaseEntry.findMany({
+      where: {
+        isSold: false,
+        isBilled: false,
+
+        netWeight: {
+          gt: 0
+        },
+
+        // exclude items currently in repair
+        repairStocks: {
+          none: {
+            status: "InRepair"
+          }
+        }
+      },
+
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    res.json({ allStock: stock });
+
+  } catch (err) {
+
+    res.status(500).json({
+      msg: "Failed",
+      error: err.message
+    });
+
+  }
+};
+
+exports.itemPurchaseStock = async (req, res) => {
 
   try {
 
-    const stock =
-      await prisma.itemPurchaseEntry.findMany({
+    const stock = await prisma.itemPurchaseEntry.findMany({
 
-        where: {
+      where: {
 
-          netWeight: {
-            gt: 0
-          }
+        isSold: false,
+        isBilled: false,
 
+        netWeight: {
+          gt: 0
         },
 
-        orderBy: {
-          createdAt: "desc"
+        // 🚫 Skip items currently in repair
+        repairStocks: {
+          none: {
+            status: "InRepair"
+          }
         }
 
-      });
+      },
+
+      orderBy: {
+        createdAt: "desc"
+      }
+
+    });
 
     res.json({ allStock: stock });
 
   }
-
   catch (err) {
 
     res.status(500).json({

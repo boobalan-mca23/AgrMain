@@ -115,3 +115,69 @@
   grid-template-columns: 1fr 1fr;
   gap: 2px;
 }
+
+/* Tabs container */
+
+.stock-tabs-wrapper {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 15px;
+  padding: 5px;
+}
+
+/* Individual tab */
+
+.stock-tab {
+  font-weight: 600 !important;
+  text-transform: none !important;
+  font-size: 15px !important;
+}
+
+/* Active tab color */
+
+.MuiTabs-indicator {
+  background-color: #2e7d32 !important;
+}
+
+/* Active tab text */
+
+.Mui-selected {
+  color: #2e7d32 !important;
+}
+
+/* Tabs container */
+
+.stock-tabs-wrapper {
+  background: #f4f8ff;
+  border-radius: 10px;
+  padding: 5px;
+  margin-bottom: 15px;
+}
+
+/* Default tab */
+
+.stock-tab {
+  font-weight: 600 !important;
+  text-transform: none !important;
+  font-size: 17px !important;
+  border-radius: 8px !important;
+  margin: 4px !important;
+  transition: all 0.2s ease;
+  color: #000 !important;
+}
+
+/* Active tab */
+
+.active-tab {
+  background-color: #468ace !important;
+  color: #fff !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  font-weight: bold !important;
+}
+
+/* Hover */
+
+.stock-tab:hover {
+  background-color: #468ace !important;
+}

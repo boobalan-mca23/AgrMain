@@ -17,6 +17,8 @@ router.get("/report", controller.getItemPurchaseReport);
 
 router.get("/stock", controller.getItemPurchaseStock);
 
+router.get("/itemstock", controller.itemPurchaseStock);
+
 router.get("/stock/touch/:touch", controller.getStockByTouch);
 
 router.put("/stock/reduce", controller.reduceStockWeight);
