@@ -1,4 +1,4 @@
-generator client {
+ generator client {
   provider = "prisma-client-js"
 }
 
@@ -448,6 +448,7 @@ model OrderItems {
   touch        Float?
   actualPurity Float?
   netWeight    Float?
+  wastageType  String?
   wastageValue Float?
   wastagePure  Float?
   finalPurity  Float?
