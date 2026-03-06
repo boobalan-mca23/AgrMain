@@ -310,10 +310,11 @@ const ProductStock = () => {
 
           </TextField>
 
+
           <TextField
             fullWidth
             label="Reason for Repair"
-            placeholder="Eg. Stone missing / polish / solder break"
+            placeholder="Eg. Stone missing / polish / etc."
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             margin="normal"
