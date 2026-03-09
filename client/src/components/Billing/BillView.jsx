@@ -216,6 +216,7 @@ const BillView = () => {
         afterWeight: row.awt,
         percentage: row.percent,
         finalWeight: row.fwt,
+        repairStatus: row.repairStatus,
       })),
 
       // received details
@@ -389,7 +390,7 @@ const BillView = () => {
               {billDetailRows.length > 0 ? (
                 billDetailRows.map((row, index) => (
                   <TableRow key={row.id} style={{ backgroundColor: "" }}>
-                    <TableCell className="td">{index + 1}</TableCell>
+                    <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
                     <TableCell className="td">
                       <TextField
                         size="small"
@@ -464,28 +465,35 @@ const BillView = () => {
                       />
                     </TableCell>
 
-                    <TableCell className="td">
+                    <TableCell className="td" style={{ textAlign: "center" }}>
                       <span
                         style={{
                           padding: "4px 8px",
                           borderRadius: "4px",
                           fontSize: "12px",
                           fontWeight: "500",
-                          // fontWeight: "bold",
                           backgroundColor:
                             row.repairStatus === "IN_REPAIR"
                               ? "#ff9800"
-                              : row.repairStatus === "RETURNED"
-                                ? "#4caf50"
-                                : "#9e9e9e",
+                              : row.repairStatus === "PARTIAL_REPAIR"
+                                ? "#ffb74d" // lighter orange
+                                : row.repairStatus === "RETURNED"
+                                  ? "#4caf50"
+                                  : row.repairStatus === "PARTIAL_RETURN"
+                                    ? "#81c784" // lighter green
+                                    : "#9e9e9e",
                           color: "white",
                         }}
                       >
                         {row.repairStatus === "IN_REPAIR"
                           ? "Repair"
-                          : row.repairStatus === "RETURNED"
-                            ? "Return"
-                            : "Sold"}
+                          : row.repairStatus === "PARTIAL_REPAIR"
+                            ? "Partial Repair"
+                            : row.repairStatus === "RETURNED"
+                              ? "Return"
+                              : row.repairStatus === "PARTIAL_RETURN"
+                                ? "Partial Return"
+                                : "Sold"}
                       </span>
                     </TableCell>
 

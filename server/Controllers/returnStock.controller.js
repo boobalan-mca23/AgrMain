@@ -121,26 +121,26 @@ const returnCustomerItem = async (req, res) => {
       if (item.repairStatus === "IN_REPAIR")
         throw new Error("Item is in repair");
 
-         const actualPurityDelta = (netWeight * touch) / 100;
+      const actualPurityDelta = (netWeight * touch) / 100;
 
-          let wastagePureDelta = 0;
-          let finalPurityDelta = 0;
+      let wastagePureDelta = 0;
+      let finalPurityDelta = 0;
 
-          if (wastageType === "Touch") {
-            finalPurityDelta = (netWeight * wastageValue) / 100;
-            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+      if (wastageType === "Touch") {
+        finalPurityDelta = (netWeight * wastageValue) / 100;
+        wastagePureDelta = finalPurityDelta - actualPurityDelta;
 
-          } else if (wastageType === "%") {
-            const wastageWeight = (netWeight * wastageValue) / 100;
-            const finalWastewt = netWeight + wastageWeight;
-            finalPurityDelta = (finalWastewt * touch) / 100;
-            wastagePureDelta = finalPurityDelta - actualPurityDelta;
+      } else if (wastageType === "%") {
+        const wastageWeight = (netWeight * wastageValue) / 100;
+        const finalWastewt = netWeight + wastageWeight;
+        finalPurityDelta = (finalWastewt * touch) / 100;
+        wastagePureDelta = finalPurityDelta - actualPurityDelta;
 
-          } else if (wastageType === "+") {
-            const wastageWeight = netWeight + wastageValue;
-            finalPurityDelta = (wastageWeight * touch) / 100;
-            wastagePureDelta = finalPurityDelta - actualPurityDelta;
-          }
+      } else if (wastageType === "+") {
+        const wastageWeight = netWeight + wastageValue;
+        finalPurityDelta = (wastageWeight * touch) / 100;
+        wastagePureDelta = finalPurityDelta - actualPurityDelta;
+      }
 
       //  CREATE PRODUCT STOCK USING QC VALUES
       const product = await tx.productStock.create({
@@ -161,11 +161,58 @@ const returnCustomerItem = async (req, res) => {
         }
       });
 
-      //  UPDATE ORDER ITEM
-      await tx.orderItems.update({
-        where: { id: item.id },
-        data: { repairStatus: "RETURNED" }
-      });
+      // Split logic to support partial returns
+      const originalWeight = Number(item.weight) || 0;
+      const returnedWeight = Number(itemWeight) || 0;
+
+      if (originalWeight > returnedWeight) {
+        // Partial Return: Deduct from original
+        const remainingWeight = originalWeight - returnedWeight;
+        const remainingStoneWeight = (Number(item.stoneWeight) || 0) - (Number(stoneWeight) || 0);
+        const remainingNetWeight = (Number(item.afterWeight || item.netWeight) || 0) - (Number(netWeight) || 0);
+        const remainingCount = (Number(item.count) || 0) - (Number(count) || 0);
+
+        // Recalculate purities for the remaining item
+        const remActualPurity = (remainingNetWeight * Number(item.touch || 0)) / 100;
+        let remWastagePure = 0;
+        let remFinalPurity = 0;
+
+        if (item.wastageType === "Touch") {
+          remFinalPurity = (remainingNetWeight * Number(item.wastageValue || 0)) / 100;
+          remWastagePure = remFinalPurity - remActualPurity;
+        } else if (item.wastageType === "%") {
+          const wWeight = (remainingNetWeight * Number(item.wastageValue || 0)) / 100;
+          remFinalPurity = ((remainingNetWeight + wWeight) * Number(item.touch || 0)) / 100;
+          remWastagePure = remFinalPurity - remActualPurity;
+        } else if (item.wastageType === "+") {
+          remFinalPurity = ((remainingNetWeight + Number(item.wastageValue || 0)) * Number(item.touch || 0)) / 100;
+          remWastagePure = remFinalPurity - remActualPurity;
+        }
+
+        // 1. Update original item remaining values (keeping to 3 decimal places)
+        await tx.orderItems.update({
+          where: { id: item.id },
+          data: {
+            weight: Number(remainingWeight.toFixed(3)),
+            stoneWeight: Number(remainingStoneWeight.toFixed(3)),
+            netWeight: Number(remainingNetWeight.toFixed(3)),
+            afterWeight: Number(remainingNetWeight.toFixed(3)),
+            count: remainingCount,
+            actualPurity: Number(remActualPurity.toFixed(3)),
+            wastagePure: Number(remWastagePure.toFixed(3)),
+            finalPurity: Number(remFinalPurity.toFixed(3)),
+            finalWeight: Number(remFinalPurity.toFixed(3)),
+            repairStatus: "PARTIAL_RETURN"
+          }
+        });
+
+      } else {
+        // Full Return
+        await tx.orderItems.update({
+          where: { id: item.id },
+          data: { repairStatus: "RETURNED" }
+        });
+      }
 
       //  RETURN LOG
       await tx.returnLogs.create({
@@ -202,7 +249,7 @@ const returnCustomerBill = async (req, res) => {
         throw new Error("No items found for this bill");
       }
 
-     
+
       const hasRepair = items.some(
         item => item.repairStatus === "IN_REPAIR"
       );

@@ -303,9 +303,15 @@ const geAllBill = async (req, res) => {
     //uneven num
     //  const lastBill = allBills[0];
     //   const nextBillNo = lastBill ? (lastBill.billno || lastBill.id) + 1 : 1;
-    const [status] = await prisma.$queryRawUnsafe(
+    let [status] = await prisma.$queryRawUnsafe(
       `SHOW TABLE STATUS LIKE 'Bill'`
     );
+
+    if (!status) {
+      [status] = await prisma.$queryRawUnsafe(
+        `SHOW TABLE STATUS LIKE 'bill'`
+      );
+    }
 
     // Convert BigInt safely to number
     const nextBillNo = Number(status?.Auto_increment) || (allBills[0]?.id + 1) || 1;

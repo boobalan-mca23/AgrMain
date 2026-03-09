@@ -52,7 +52,9 @@ const Billing = () => {
   const [items, setItems] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [availableProducts, setAvailableProducts] = useState(null);
+  const [itemPurchaseProducts, setItemPurchaseProducts] = useState(null);
   const [originalProducts, setOriginalProducts] = useState(null);
+  const [selectedStockType, setSelectedStockType] = useState("PRODUCT");
   const [previousBalance, setPreviousBalance] = useState(0);
   const [prevHallmark, setPrevHallmark] = useState(0);
 
@@ -572,6 +574,61 @@ const Billing = () => {
     }));
   };
 
+  const handleItemPurchaseClick = (product) => {
+    const productId = product.id || product._id;
+
+    const alreadyAdded = billDetailRows.some((row) => row.productId === productId);
+    if (alreadyAdded) {
+      toast.warn(`${product.itemName} is already added to the bill!`);
+      return;
+    }
+
+    if (product.isSold) {
+      toast.warn(`${product.itemName} is already sold.`);
+      return;
+    }
+
+    const grossWt = toNumber(product.grossWeight || 0);
+    const stoneWt = toNumber(product.stoneWeight || 0);
+    const netWt = toNumber(product.netWeight || 0);
+    const countVal = toNumber(product.count || 1);
+
+    const newRow = {
+      id: Date.now() + Math.random(),
+      productId: productId,
+      productName: product.itemName,
+      count: countVal.toString(),
+      wt: toFixedStr(grossWt, 3),
+      eStWt: toFixedStr(stoneWt, 3),
+      aStWt: "0.000",
+      awt: toFixedStr(netWt, 3),
+      percent: "",  // touch NOT pre-filled — user enters manually
+      fwt: "0.000",
+    };
+
+    // Track allocations so getRemainingWeight/Stone/Count updates reactively
+    setWeightAllocations((prev) => ({
+      ...prev,
+      [productId]: { ...(prev[productId] || {}), [newRow.id]: grossWt },
+    }));
+    setStoneAllocations((prev) => ({
+      ...prev,
+      [productId]: { ...(prev[productId] || {}), [newRow.id]: stoneWt },
+    }));
+    setCountAllocations((prev) => ({
+      ...prev,
+      [productId]: { ...(prev[productId] || {}), [newRow.id]: countVal },
+    }));
+
+    setBillDetailRows((prev) => [...prev, newRow]);
+    setSelectedProductCounts((prev) => ({
+      ...prev,
+      [productId]: (prev[productId] || 0) + 1,
+    }));
+
+    toast.success(`${product.itemName} added to bill!`);
+  };
+
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
@@ -694,7 +751,8 @@ const Billing = () => {
       setPrevHallmark(0);
       setPreviousBalance(0);
       // setCashBalance("0.00");
-      setHallmarkQty(0)
+      setHallmarkQty(0);
+      setSelectedProductCounts({});
       //to fecth new bills
       await fetchAllBills();
       await fetchCustomers();
@@ -809,6 +867,7 @@ const Billing = () => {
       setPrevHallmark(0);
       setPreviousBalance(0);
       setHallmarkQty(0);
+      setSelectedProductCounts({});
 
       setIsEditMode(false);
       setEditBillId(null);
@@ -882,6 +941,12 @@ const Billing = () => {
         : toNumber(FWT);
 
   const pureBalance = TotalFWT; // Without Received Details, pureBalance is just TotalFWT
+
+  // Determines if a bill row came from Item Purchase (not in productStock)
+  const isItemPurchaseRow = (row) =>
+    !availableProducts?.allStock?.some(p => (p.id || p._id) === row.productId);
+  // Hide Count column when every row is from Item Purchase
+  const showCountCol = !(billDetailRows.length > 0 && billDetailRows.every(isItemPurchaseRow));
 
   const hallmarkAmount = useMemo(() => toNumber(hallmarkQty) * toNumber(billHallmark), [hallmarkQty, billHallmark]);
   const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
@@ -1152,6 +1217,18 @@ const Billing = () => {
     }
   };
 
+  const fetchItemPurchaseStock = async () => {
+    try {
+      const response = await fetch(`${BACKEND_SERVER_URL}/api/item-purchase/stock`);
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setItemPurchaseProducts(data.allStock || []);
+    } catch (error) {
+      console.error("Error fetching Item Purchase Stock:", error);
+    }
+  };
+
   const fetchCustomers = async () => {
     try {
       const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
@@ -1211,6 +1288,7 @@ const Billing = () => {
     fecthAllEntries();
     fetchAllBills();
     fetchProductStock();
+    fetchItemPurchaseStock();
     fetchItems();
     fetchCustomers();
   }, []);
@@ -1470,7 +1548,7 @@ const Billing = () => {
               <TableRow>
                 <TableCell className="th">S.No</TableCell>
                 <TableCell className="th">Product Name</TableCell>
-                <TableCell className="th">Count</TableCell>
+                {showCountCol && <TableCell className="th">Count</TableCell>}
                 <TableCell className="th">Wt</TableCell>
                 <TableCell className="th">Entered St.WT</TableCell>
                 <TableCell className="th">Actual St.WT</TableCell>
@@ -1497,18 +1575,29 @@ const Billing = () => {
                       />
                     </TableCell>
 
-                    <TableCell className="td">
-                      <TextField
-                        size="small"
-                        type="text"
-                        value={row.count}
-
-                        onChange={(e) => handleNumericInput(e, (ev) => handleBillDetailChange(index, "count", ev.target.value))}
-                        inputProps={{ style: inputStyle }}
-                        error={!!fieldErrors[`billDetail_${index}_wt`]}
-                        helperText={fieldErrors[`billDetSeletail_${index}_wt`] || ""}
-                      />
-                    </TableCell>
+                    {showCountCol && (
+                      <TableCell className="td">
+                        {isItemPurchaseRow(row) ? (
+                          <TextField
+                            size="small"
+                            type="text"
+                            value="-"
+                            disabled
+                            inputProps={{ style: inputStyle }}
+                          />
+                        ) : (
+                          <TextField
+                            size="small"
+                            type="text"
+                            value={row.count}
+                            onChange={(e) => handleNumericInput(e, (ev) => handleBillDetailChange(index, "count", ev.target.value))}
+                            inputProps={{ style: inputStyle }}
+                            error={!!fieldErrors[`billDetail_${index}_wt`]}
+                            helperText={fieldErrors[`billDetSeletail_${index}_wt`] || ""}
+                          />
+                        )}
+                      </TableCell>
+                    )}
 
                     <TableCell className="td">
                       <TextField
@@ -1785,54 +1874,90 @@ const Billing = () => {
 
       {/* Right panel: available products */}
       <Box className="right-panel no-print">
-        <h3 className="heading">Available Products</h3>
+        {/* Stock type toggle – full width */}
+        <Box sx={{ display: "flex", width: "100%", marginBottom: "12px", borderRadius: "8px", overflow: "hidden", border: "1.5px solid #0a4c9a" }}>
+          <Button
+            variant={selectedStockType === "PRODUCT" ? "contained" : "text"}
+            onClick={() => setSelectedStockType("PRODUCT")}
+            sx={{
+              flex: 1,
+              fontWeight: "bold",
+              borderRadius: 0,
+              backgroundColor: selectedStockType === "PRODUCT" ? "#0a4c9a" : "transparent",
+              color: selectedStockType === "PRODUCT" ? "white" : "#0a4c9a",
+              "&:hover": { backgroundColor: selectedStockType === "PRODUCT" ? "#083d7a" : "#e8f0fe" },
+              py: "8px",
+            }}
+          >
+            Product Stock
+          </Button>
+          <Box sx={{ width: "1.5px", backgroundColor: "#0a4c9a", flexShrink: 0 }} />
+          <Button
+            variant={selectedStockType === "ITEM_PURCHASE" ? "contained" : "text"}
+            onClick={() => setSelectedStockType("ITEM_PURCHASE")}
+            sx={{
+              flex: 1,
+              fontWeight: "bold",
+              borderRadius: 0,
+              backgroundColor: selectedStockType === "ITEM_PURCHASE" ? "#0a4c9a" : "transparent",
+              color: selectedStockType === "ITEM_PURCHASE" ? "white" : "#0a4c9a",
+              "&:hover": { backgroundColor: selectedStockType === "ITEM_PURCHASE" ? "#083d7a" : "#e8f0fe" },
+              py: "8px",
+            }}
+          >
+            Item Purchase Stock
+          </Button>
+        </Box>
 
-        <Box sx={{ display: "flex", gap: 1, marginBottom: "10px", alignItems: "center", flexWrap: "wrap" }}>
-          <TextField
-            style={{ width: "12rem" }}
-            label="Search by Name/Touch"
-            variant="outlined"
-            size="small"
-            value={searchTerm}
-            onChange={handleSearch}
-            placeholder="Search name or touch value"
-          />
-          <FormControl size="small" style={{ width: "10rem" }}>
-            <InputLabel>Filter by Product</InputLabel>
-            <Select
-              value={selectedFilter}
-              label="Filter by Product"
-              onChange={handleFilterChange}
+        {/* Filter controls row */}
+        <Box sx={{ display: "flex", gap: "8px", marginBottom: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            <TextField
+              style={{ width: "12rem" }}
+              label="Search by Name/Touch"
+              variant="outlined"
+              size="small"
+              value={searchTerm}
+              onChange={handleSearch}
+              placeholder="Search name or touch value"
+            />
+            <FormControl size="small" style={{ width: "10rem" }}>
+              <InputLabel>Filter by Product</InputLabel>
+              <Select
+                value={selectedFilter}
+                label="Filter by Product"
+                onChange={handleFilterChange}
+              >
+                <MenuItem value="">All Products</MenuItem>
+                {getUniqueProductNames().map((productName) => (
+                  <MenuItem key={productName} value={productName}>{productName}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+          <Box sx={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            <Button
+              size="small"
+              variant={stockSource === "REPAIR_RETURN" ? "contained" : "outlined"}
+              onClick={() => setStockSource("REPAIR_RETURN")}
             >
-              <MenuItem value="">All Products</MenuItem>
-              {getUniqueProductNames().map((productName) => (
-                <MenuItem key={productName} value={productName}>{productName} </MenuItem>))}
-            </Select>
-          </FormControl>
-          {console.log("Available Products:", availableProducts)}
-          <Button
-            size="small"
-            variant={stockSource === "REPAIR_RETURN" ? "contained" : "outlined"}
-            onClick={() => setStockSource("REPAIR_RETURN")}
-          >
-            Show Repaired
-          </Button>
-
-          <Button
-            size="small"
-            variant={stockSource === "CUSTOMER_RETURN" ? "contained" : "outlined"}
-            onClick={() => setStockSource("CUSTOMER_RETURN")}
-          >
-            Show Returned
-          </Button>
-
-          <Button
-            size="small"
-            variant={stockSource === "ALL" ? "contained" : "outlined"}
-            onClick={() => setStockSource("ALL")}
-          >
-            Show All
-          </Button>
+              Repaired
+            </Button>
+            <Button
+              size="small"
+              variant={stockSource === "CUSTOMER_RETURN" ? "contained" : "outlined"}
+              onClick={() => setStockSource("CUSTOMER_RETURN")}
+            >
+              Returned
+            </Button>
+            <Button
+              size="small"
+              variant={stockSource === "ALL" ? "contained" : "outlined"}
+              onClick={() => setStockSource("ALL")}
+            >
+              All
+            </Button>
+          </Box>
         </Box>
 
         <Box className="table-container" sx={{ marginTop: "10px" }}>
@@ -1846,86 +1971,156 @@ const Billing = () => {
                 borderRadius: "10px",
               }}
             >
-              <TableRow>
-                <TableCell className="th" style={{ textAlign: "center" }}>S.No </TableCell>
-                <TableCell className="th" style={{ textAlign: "center" }}>Item Name</TableCell>
-                {/*  <TableCell className="th" style={{ textAlign: "center" }}>Original WT</TableCell>
-                  <TableCell className="th" style={{ textAlign: "center" }}>Remaining WT</TableCell> */}
-                <TableCell className="th" style={{ textAlign: "center" }}>Item WT</TableCell>
-                <TableCell className="th" style={{ textAlign: "center" }}>Stone WT</TableCell>
-                <TableCell className="th" style={{ textAlign: "center" }}>Count </TableCell>
-                <TableCell className="th" style={{ textAlign: "center" }}>Wastage</TableCell>
-                <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
-                <TableCell className="th" style={{ textAlign: "center" }}>Status</TableCell>
-              </TableRow>
+              {selectedStockType === "PRODUCT" ? (
+                <TableRow>
+                  <TableCell className="th" style={{ textAlign: "center" }}>S.No </TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Item Name</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Item WT</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Stone WT</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Count </TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Wastage</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Status</TableCell>
+                </TableRow>
+              ) : (
+                <TableRow>
+                  <TableCell className="th" style={{ textAlign: "center" }}>S.No </TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Item Name</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Item Weight</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Stone WT</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Wastage Pure</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Final Purity</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Status</TableCell>
+                </TableRow>
+              )}
             </TableHead>
             <TableBody>
-              {filteredStock.length > 0 ? (
-                filteredStock.map((prodata, index) => {
-                  const productId = prodata.id || prodata._id;
-                  const remainingWeight = getRemainingWeight(productId, prodata.itemWeight);
-                  const isFullyAllocated = remainingWeight <= 0;
-                  const addedCount = selectedProductCounts[productId] || 0;
-                  const isSelected = addedCount > 0;
+              {selectedStockType === "PRODUCT" ? (
+                filteredStock.length > 0 ? (
+                  filteredStock.map((prodata, index) => {
+                    const productId = prodata.id || prodata._id;
+                    const remainingWeight = getRemainingWeight(productId, prodata.itemWeight);
+                    const isFullyAllocated = remainingWeight <= 0;
+                    const addedCount = selectedProductCounts[productId] || 0;
+                    const isSelected = addedCount > 0;
 
-                  return (
-                    <TableRow
-                      key={index}
-                      hover
-                      style={{
-                        cursor: isFullyAllocated ? "not-allowed" : "pointer",
-                        backgroundColor: isFullyAllocated ? "#f5f5f5" : isSelected ? "#e6f4ff" : "transparent",
-                        borderLeft: isSelected ? "4px solid #0a4c9a" : "none",
-                        opacity: isFullyAllocated ? 0.6 : 1,
-                        textAlign: "center",
-                      }}
-                      onClick={() => {
-                        if (!isFullyAllocated) handleProductClick(prodata);
-                      }}
-                    >
-                      <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
-                      <TableCell className="td" style={{ textAlign: "center", display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
-                        <span>{prodata.itemName}</span>
-                      </TableCell>
-                      <TableCell className="td" style={{ color: remainingWeight <= 0 ? "red" : "green", fontWeight: "bold", textAlign: "center", }}>{toNumber(remainingWeight).toFixed(3)}</TableCell>
-                      <TableCell className="td" style={{ textAlign: "center" }} >
-                        {toNumber(getRemainingStone(productId, prodata.stoneWeight)).toFixed(3)}</TableCell>
-                      <TableCell className="td" style={{ textAlign: "center" }} >
-                        {toNumber(getRemainingCount(productId, prodata.count)).toString()}</TableCell>
-                      <TableCell className="td" style={{ textAlign: "center" }} > {prodata.wastageValue} </TableCell>
-                      <TableCell className="td" style={{ textAlign: "center" }} > {prodata.touch} </TableCell>
-                      <TableCell className="td" style={{ textAlign: "center" }}>
-                        {prodata.source !== "NORMAL" ? (
-                          <span
-                            style={{
-                              padding: "2px 6px",
-                              borderRadius: 6,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              color: "white",
-                              background:
-                                prodata.source === "REPAIR_RETURN"
-                                  ? "#ff9800"
-                                  : "#4caf50"
-                            }}
-                          >
-                            {prodata.source === "REPAIR_RETURN" ? "REPAIR" : "RETURN"}
-                          </span>
-                        ) : "-"}
+                    return (
+                      <TableRow
+                        key={index}
+                        hover
+                        style={{
+                          cursor: isFullyAllocated ? "not-allowed" : "pointer",
+                          backgroundColor: isFullyAllocated ? "#f5f5f5" : isSelected ? "#e6f4ff" : "transparent",
+                          borderLeft: isSelected ? "4px solid #0a4c9a" : "none",
+                          opacity: isFullyAllocated ? 0.6 : 1,
+                          textAlign: "center",
+                        }}
+                        onClick={() => {
+                          if (!isFullyAllocated) handleProductClick(prodata);
+                        }}
+                      >
+                        <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
+                        <TableCell className="td" style={{ textAlign: "center", display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
+                          <span>{prodata.itemName}</span>
+                        </TableCell>
+                        <TableCell className="td" style={{ color: remainingWeight <= 0 ? "red" : "green", fontWeight: "bold", textAlign: "center" }}>{toNumber(remainingWeight).toFixed(3)}</TableCell>
+                        <TableCell className="td" style={{ textAlign: "center" }} >
+                          {toNumber(getRemainingStone(productId, prodata.stoneWeight)).toFixed(3)}</TableCell>
+                        <TableCell className="td" style={{ textAlign: "center" }} >
+                          {toNumber(getRemainingCount(productId, prodata.count)).toString()}</TableCell>
+                        <TableCell className="td" style={{ textAlign: "center" }} > {prodata.wastageValue} </TableCell>
+                        <TableCell className="td" style={{ textAlign: "center" }} > {prodata.touch} </TableCell>
+                        <TableCell className="td" style={{ textAlign: "center" }}>
+                          {prodata.source !== "NORMAL" ? (
+                            <span
+                              style={{
+                                padding: "2px 6px",
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: "white",
+                                background:
+                                  prodata.source === "REPAIR_RETURN"
+                                    ? "#ff9800"
+                                    : "#4caf50"
+                              }}
+                            >
+                              {prodata.source === "REPAIR_RETURN" ? "REPAIR" : "RETURN"}
+                            </span>
+                          ) : "-"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="no-products-message">
+                      {stockSource === "REPAIR_RETURN"
+                        ? "There are no repaired products"
+                        : stockSource === "CUSTOMER_RETURN"
+                          ? "There are no returned products"
+                          : "There are no available products"}
+                    </TableCell>
+                  </TableRow>
+                )
+              ) : (
+                (() => {
+                  const visibleItems = (itemPurchaseProducts || []).filter(p => !p.isSold);
+                  return visibleItems.length > 0 ? (
+                    visibleItems.map((prodata, index) => {
+                      const productId = prodata.id || prodata._id;
+                      const addedCount = selectedProductCounts[productId] || 0;
+                      const isSelected = addedCount > 0;
+                      const remainingWeight = getRemainingWeight(productId, toNumber(prodata.grossWeight));
+                      const remainingStone = getRemainingStone(productId, toNumber(prodata.stoneWeight));
+                      const isFullyAllocated = remainingWeight <= 0;
+
+                      return (
+                        <TableRow
+                          key={index}
+                          hover
+                          style={{
+                            cursor: isFullyAllocated ? "not-allowed" : isSelected ? "default" : "pointer",
+                            backgroundColor: isFullyAllocated ? "#f5f5f5" : isSelected ? "#e6f4ff" : "transparent",
+                            borderLeft: isSelected ? "4px solid #0a4c9a" : "none",
+                            opacity: isFullyAllocated ? 0.6 : 1,
+                            textAlign: "center",
+                          }}
+                          onClick={() => {
+                            if (!isSelected && !isFullyAllocated) handleItemPurchaseClick(prodata);
+                          }}
+                        >
+                          <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
+                          <TableCell className="td" style={{ textAlign: "center" }}>
+                            <span>{prodata.itemName}</span>
+                          </TableCell>
+                          <TableCell className="td" style={{ color: remainingWeight <= 0 ? "red" : "green", fontWeight: "bold", textAlign: "center" }}>{toNumber(remainingWeight).toFixed(3)}</TableCell>
+                          <TableCell className="td" style={{ textAlign: "center" }}>{prodata.touch}</TableCell>
+                          <TableCell className="td" style={{ color: remainingStone <= 0 ? "red" : "inherit", textAlign: "center" }}>{toNumber(remainingStone).toFixed(3)}</TableCell>
+                          <TableCell className="td" style={{ textAlign: "center" }}>{toNumber(prodata.wastagePure).toFixed(3)}</TableCell>
+                          <TableCell className="td" style={{ textAlign: "center" }}>{toNumber(prodata.finalPurity).toFixed(3)}</TableCell>
+                          <TableCell className="td" style={{ textAlign: "center" }}>
+                            {prodata.source === "REPAIR_RETURN" || prodata.source === "CUSTOMER_RETURN" ? (
+                              <span style={{
+                                padding: "2px 6px", borderRadius: 6, fontSize: 11, fontWeight: 600, color: "white",
+                                background: prodata.source === "REPAIR_RETURN" ? "#ff9800" : "#4caf50"
+                              }}>
+                                {prodata.source === "REPAIR_RETURN" ? "REPAIR" : "RETURN"}
+                              </span>
+                            ) : "-"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="no-products-message">
+                        There are no available purchase items.
                       </TableCell>
                     </TableRow>
                   );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={8} className="no-products-message">
-                    {stockSource === "REPAIR_RETURN"
-                      ? "There are no repaired products"
-                      : stockSource === "CUSTOMER_RETURN"
-                        ? "There are no returned products"
-                        : "There are no available products"}
-                  </TableCell>
-                </TableRow>
+                })()
               )}
             </TableBody>
           </Table>

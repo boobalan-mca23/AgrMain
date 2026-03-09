@@ -74,7 +74,8 @@ const Navbar = () => {
     // return menus
     if (
       path === "/customerreturn" ||
-      path === "/returnstocklist"
+      path === "/returnstocklist" ||
+      path === "/customerrepairstocklist"
     ) {
       setActiveReturn(path);
     }
@@ -449,6 +450,7 @@ const Navbar = () => {
               {[
                 ["Customer Return & Repair", "/customerreturn"],
                 ["Return Stock", "/returnstocklist"],
+                ["Repair Stock", "/customerrepairstocklist"],
               ].map(([name, path]) => (
                 <a
                   key={path}

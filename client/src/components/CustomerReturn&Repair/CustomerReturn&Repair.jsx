@@ -107,19 +107,40 @@ const CustomerReturn = () => {
     }
   }, [openSendDialog]);
 
-  const currentNetWeight = (Number(returnQC.itemWeight) || 0) - (Number(returnQC.stoneWeight) || 0);
-  const currentWastageWeight = (currentNetWeight * (Number(returnQC.wastageValue) || 0)) / 100;
-  const currentTouch = Number(returnQC.touch) || 0;
-  const currentWastagePure = (currentWastageWeight * currentTouch) / 100;
-  const currentActualPurity = (currentNetWeight * currentTouch) / 100;
-  const currentFinalPurity = currentActualPurity + currentWastagePure;
+  const calculatePurity = (qc) => {
+    const netWeight = (Number(qc.itemWeight) || 0) - (Number(qc.stoneWeight) || 0);
+    const actualPurity = (netWeight * (Number(qc.touch) || 0)) / 100;
+    let finalPurity = 0;
+    let wastagePure = 0;
 
-  const currentRepairNetWeight = (Number(repairQC.itemWeight) || 0) - (Number(repairQC.stoneWeight) || 0);
-  const currentRepairWastageWeight = (currentRepairNetWeight * (Number(repairQC.wastageValue) || 0)) / 100;
-  const currentRepairTouch = Number(repairQC.touch) || 0;
-  const currentRepairWastagePure = (currentRepairWastageWeight * currentRepairTouch) / 100;
-  const currentRepairActualPurity = (currentRepairNetWeight * currentRepairTouch) / 100;
-  const currentRepairFinalPurity = currentRepairActualPurity + currentRepairWastagePure;
+    if (qc.wastageType === "Touch") {
+      finalPurity = (netWeight * (Number(qc.wastageValue) || 0)) / 100;
+      wastagePure = finalPurity - actualPurity;
+    } else if (qc.wastageType === "%") {
+      const wastageWeight = (netWeight * (Number(qc.wastageValue) || 0)) / 100;
+      finalPurity = ((netWeight + wastageWeight) * (Number(qc.touch) || 0)) / 100;
+      wastagePure = finalPurity - actualPurity;
+    } else if (qc.wastageType === "+") {
+      finalPurity = ((netWeight + (Number(qc.wastageValue) || 0)) * (Number(qc.touch) || 0)) / 100;
+      wastagePure = finalPurity - actualPurity;
+    }
+
+    return { netWeight, actualPurity, finalPurity, wastagePure };
+  };
+
+  const {
+    netWeight: currentNetWeight,
+    actualPurity: currentActualPurity,
+    finalPurity: currentFinalPurity,
+    wastagePure: currentWastagePure,
+  } = calculatePurity(returnQC);
+
+  const {
+    netWeight: currentRepairNetWeight,
+    actualPurity: currentRepairActualPurity,
+    finalPurity: currentRepairFinalPurity,
+    wastagePure: currentRepairWastagePure,
+  } = calculatePurity(repairQC);
 
   const openRepairPopup = (item) => {
     setSelectedProduct(item);
@@ -452,9 +473,60 @@ const CustomerReturn = () => {
   const safeFixed = (v, d = 3) =>
     isNaN(parseFloat(v)) ? "0.000" : parseFloat(v).toFixed(d);
 
-
   const showValue = (v) =>
     v === null || v === undefined || v === "" ? "-" : v;
+
+  const handlePrint = () => {
+    const dateRangeText =
+      fromDate || toDate
+        ? `Date Range: ${fromDate || "—"} to ${toDate || "—"}`
+        : "";
+
+    const tableRows = filteredBills
+      .map(
+        (bill, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${bill.id}</td>
+        <td>${bill.customers?.name || "-"}</td>
+        <td>${bill.date ? new Date(bill.date).toLocaleDateString("en-IN") : "-"}</td>
+      </tr>`
+      )
+      .join("");
+
+    const printHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Customer Return &amp; Repair</title>
+          <style>
+            body { font-family: Arial, sans-serif; font-size: 13px; margin: 20px; }
+            h2 { text-align: center; margin-bottom: 4px; }
+            .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 12px; white-space: nowrap; }
+            th { background: #2c3e50; color: #fff; }
+            tr:nth-child(even) td { background: #f9f9f9; }
+          </style>
+        </head>
+        <body>
+          <h2>Customer Return &amp; Repair</h2>
+          ${dateRangeText ? `<p class="date-range">${dateRangeText}</p>` : ""}
+          <table>
+            <thead>
+              <tr><th>S.No</th><th>Bill No</th><th>Customer</th><th>Date</th></tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </body>
+      </html>`;
+
+    const win = window.open("", "_blank", "width=900,height=700");
+    win.document.write(printHtml);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 400);
+  };
 
   return (
     <Box p={3}>
@@ -500,6 +572,9 @@ const CustomerReturn = () => {
           }}
         >
           Reset
+        </Button>
+        <Button variant="outlined" onClick={handlePrint}>
+          Print
         </Button>
       </Box>
 
