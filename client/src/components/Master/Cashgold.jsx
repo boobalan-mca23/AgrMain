@@ -436,7 +436,7 @@ function Cashgold() {
               <th>Rate</th>
               <th>Purity (g)</th>
               <th>Pure Gold (g)</th>
-              <th>Action</th>
+              {/* <th>Action</th> */}
             </tr>
           </thead>
           <tbody>
@@ -466,9 +466,9 @@ function Cashgold() {
                         ? ((parseFloat(entry.purity) / parseFloat(entry.touch)) * 100).toFixed(3)
                         : "-"}
                     </td>
-                    <td>
+                    {/* <td>
                       <button className="edit-icon-btn" onClick={() => handleEdit(entry)}>Edit</button>
-                    </td>
+                    </td> */}
                   </tr>
                 ))}
 
