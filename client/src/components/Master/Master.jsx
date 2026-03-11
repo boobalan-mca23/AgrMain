@@ -102,7 +102,7 @@ const Master = () => {
           </button>
 
           <HoverNavLink to="/master/customer">
-            Customer
+            Customer Info
           </HoverNavLink>
 
           <HoverNavLink to="/master/goldsmith">

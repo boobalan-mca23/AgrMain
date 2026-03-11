@@ -445,6 +445,7 @@ model OrderItems {
   bill               Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
 
   stockId      Int?
+  stockType    String?      @default("PRODUCT")
   touch        Float?
   actualPurity Float?
   netWeight    Float?
@@ -597,13 +598,16 @@ model ItemPurchaseEntry {
 
   soldAt DateTime?
 
-  isBilled  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isBilled    Boolean  @default(false)
+  isInRepair  Boolean  @default(false)
+  source      String?  @default("PURCHASE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   repairStocks RepairStock[]
+  returnLogs   returnLogs[]
 
   @@map("item_purchase_entries")
 }
@@ -685,10 +689,12 @@ model returnLogs {
   billId         Int?
   orderItemId    Int?
   productStockId Int?
+  itemPurchaseId Int?
 
-  bill      Bill?         @relation(fields: [billId], references: [id])
-  orderItem OrderItems?   @relation(fields: [orderItemId], references: [id])
-  product   ProductStock? @relation(fields: [productStockId], references: [id])
+  bill         Bill?              @relation(fields: [billId], references: [id])
+  orderItem    OrderItems?        @relation(fields: [orderItemId], references: [id])
+  product      ProductStock?      @relation(fields: [productStockId], references: [id])
+  itemPurchase ItemPurchaseEntry? @relation(fields: [itemPurchaseId], references: [id])
 
   productName String
   weight      Float

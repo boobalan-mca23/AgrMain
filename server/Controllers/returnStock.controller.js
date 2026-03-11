@@ -142,24 +142,53 @@ const returnCustomerItem = async (req, res) => {
         wastagePureDelta = finalPurityDelta - actualPurityDelta;
       }
 
-      //  CREATE PRODUCT STOCK USING QC VALUES
-      const product = await tx.productStock.create({
-        data: {
-          itemName: item.productName,
-          itemWeight: Number(itemWeight),
-          touch: Number(touch) || null,
-          count: Number(count) || 1,
-          stoneWeight: Number(stoneWeight) || 0,
-          wastageValue: Number(wastageValue) || 0,
-          wastageType: item.wastageType || null,
-          netWeight: Number(netWeight),
-          wastagePure: Number(wastagePureDelta) || 0,
-          finalPurity: Number(finalPurityDelta),
-          isBillProduct: false,
-          isActive: true,
-          source: "CUSTOMER_RETURN",
-        }
-      });
+      //  CREATE STOCK ENTRY BASED ON STOCK TYPE
+      let product;
+      if (item.stockType === "ITEM_PURCHASE") {
+        // Return to Item Purchase Stock
+        const originalEntry = item.stockId
+          ? await tx.itemPurchaseEntry.findUnique({ where: { id: item.stockId } })
+          : null;
+
+        product = await tx.itemPurchaseEntry.create({
+          data: {
+            supplierId: originalEntry?.supplierId || 1,
+            supplierName: originalEntry?.supplierName || null,
+            itemName: item.productName,
+            grossWeight: Number(itemWeight),
+            stoneWeight: Number(stoneWeight) || 0,
+            netWeight: Number(netWeight),
+            touch: Number(touch) || 0,
+            wastageType: item.wastageType || "None",
+            wastage: Number(wastageValue) || 0,
+            wastagePure: Number(wastagePureDelta) || 0,
+            actualPure: Number(actualPurityDelta) || 0,
+            finalPurity: Number(finalPurityDelta),
+            isSold: false,
+            isInRepair: false,
+            moveTo: "CUSTOMER_RETURN",
+          }
+        });
+      } else {
+        // Return to Product Stock
+        product = await tx.productStock.create({
+          data: {
+            itemName: item.productName,
+            itemWeight: Number(itemWeight),
+            touch: Number(touch) || null,
+            count: Number(count) || 1,
+            stoneWeight: Number(stoneWeight) || 0,
+            wastageValue: Number(wastageValue) || 0,
+            wastageType: item.wastageType || null,
+            netWeight: Number(netWeight),
+            wastagePure: Number(wastagePureDelta) || 0,
+            finalPurity: Number(finalPurityDelta),
+            isBillProduct: false,
+            isActive: true,
+            source: "CUSTOMER_RETURN",
+          }
+        });
+      }
 
       // Split logic to support partial returns
       const originalWeight = Number(item.weight) || 0;
@@ -219,7 +248,8 @@ const returnCustomerItem = async (req, res) => {
         data: {
           billId: Number(billId),
           orderItemId: item.id,
-          productStockId: product.id,
+          productStockId: item.stockType === "ITEM_PURCHASE" ? null : product.id,
+          itemPurchaseId: item.stockType === "ITEM_PURCHASE" ? product.id : null,
           productName: item.productName,
           weight: Number(itemWeight),
           count: Number(count) || 1,

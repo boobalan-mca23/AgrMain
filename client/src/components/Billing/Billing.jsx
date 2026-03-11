@@ -67,9 +67,11 @@ const Billing = () => {
       hour12: true,
     })
   );
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
+      if (isEditMode) return; // preserve original bill date/time during editing
       const now = new Date();
       setDate(now.toLocaleDateString("en-IN"));
       setTime(
@@ -81,7 +83,7 @@ const Billing = () => {
       );
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isEditMode]);
 
   const [billTime, setBillTime] = useState("")
   const [weightAllocations, setWeightAllocations] = useState({});
@@ -115,7 +117,6 @@ const Billing = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [billNo, setBillNo] = useState("");
 
-  const [isEditMode, setIsEditMode] = useState(false);
   const [editBillId, setEditBillId] = useState(null);
 
   const [stockSource, setStockSource] = useState("ALL");
@@ -543,7 +544,7 @@ const Billing = () => {
       count: product.count.toString(),
       wt: toFixedStr(product.itemWeight, 3),
       eStWt: toFixedStr(stWtValue, 3), // from stock (read-only)
-      aStWt: "0.000",
+      aStWt: "",
       awt: toFixedStr(awtVal, 3),
       percent: '',
       // fwt: toFixedStr(fwtVal, 3),
@@ -600,7 +601,7 @@ const Billing = () => {
       count: countVal.toString(),
       wt: toFixedStr(grossWt, 3),
       eStWt: toFixedStr(stoneWt, 3),
-      aStWt: "0.000",
+      aStWt: "",
       awt: toFixedStr(netWt, 3),
       percent: "",  // touch NOT pre-filled — user enters manually
       fwt: "0.000",
@@ -626,7 +627,7 @@ const Billing = () => {
       [productId]: (prev[productId] || 0) + 1,
     }));
 
-    toast.success(`${product.itemName} added to bill!`);
+    // toast.success(`${product.itemName} added to bill!`);
   };
 
   const handleSave = async () => {
@@ -704,6 +705,7 @@ const Billing = () => {
           const finalPurity = actualPurity + wastagePure
           return {
             stockId: row.productId,
+            stockType: isItemPurchaseRow(row) ? "ITEM_PURCHASE" : "PRODUCT",
             productName: row.productName,
 
             // bill data
@@ -760,6 +762,7 @@ const Billing = () => {
       //much faster but little slower
       // setBills(prev => [resJson.bill, ...(prev || [])]);
       await fetchProductStock();
+      await fetchItemPurchaseStock();
       toast.success("Bill saved successfully!");
     } catch (error) {
       console.error("Error saving bill:", error);
@@ -825,6 +828,7 @@ const Billing = () => {
 
           return {
             stockId: row.productId,
+            stockType: isItemPurchaseRow(row) ? "ITEM_PURCHASE" : "PRODUCT",
             productName: row.productName,
             count: toNumber(row.count || 0),
             weight: wt,
@@ -946,7 +950,7 @@ const Billing = () => {
   const isItemPurchaseRow = (row) =>
     !availableProducts?.allStock?.some(p => (p.id || p._id) === row.productId);
   // Hide Count column when every row is from Item Purchase
-  const showCountCol = !(billDetailRows.length > 0 && billDetailRows.every(isItemPurchaseRow));
+  const showCountCol = true; // Always show Count column, including for item purchase rows
 
   const hallmarkAmount = useMemo(() => toNumber(hallmarkQty) * toNumber(billHallmark), [hallmarkQty, billHallmark]);
   const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
@@ -988,8 +992,13 @@ const Billing = () => {
   };
 
   const getUniqueProductNames = () => {
-    if (!originalProducts) return [];
-    const uniqueNames = [...new Set((originalProducts.allStock || []).map((product) => product.itemName)),];
+    let list = [];
+    if (selectedStockType === "PRODUCT") {
+      list = originalProducts?.allStock || [];
+    } else {
+      list = itemPurchaseProducts || [];
+    }
+    const uniqueNames = [...new Set(list.map((product) => product.itemName))];
     return uniqueNames.sort();
   };
 
@@ -1127,6 +1136,18 @@ const Billing = () => {
       setIsEditMode(true);
       setEditBillId(id);
 
+      // Show the bill's original date and time instead of current
+      if (fetchedBill.date) {
+        setDate(new Date(fetchedBill.date).toLocaleDateString("en-IN"));
+      }
+      if (fetchedBill.time) {
+        setTime(new Date(fetchedBill.time).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }));
+      }
+
       if (fetchedBill.customers) {
         setSelectedCustomer(fetchedBill.customers);
       } else {
@@ -1139,8 +1160,8 @@ const Billing = () => {
       setBillDetailsProfit(fetchedBill.billDetailsprofit || "0.000");
       setStoneProfit(fetchedBill.Stoneprofit || "0.000");
       setTotalBillProfit(fetchedBill.Totalprofit || "0.000");
-      setPrevHallmark(toNumber(fetchedBill.prevHallmark) || 0);
-      setPreviousBalance(toNumber(fetchedBill.prevBalance) || 0);
+      setPrevHallmark(toNumber(fetchedBill.prevHallmark || fetchedBill.prevHallMark) || 0);
+      setPreviousBalance(toNumber(fetchedBill.PrevBalance || fetchedBill.prevBalance) || 0);
 
       setHallmarkQty(toNumber(fetchedBill.hallmarkQty) || 0);
       setBillHallmark(toNumber(fetchedBill.hallMark) || 0);
@@ -1202,6 +1223,8 @@ const Billing = () => {
     setPrevHallmark(0);
     setPreviousBalance(0);
     setHallmarkQty(0);
+
+    fetchAllBills();
   };
 
   const fetchProductStock = async () => {
@@ -1223,7 +1246,14 @@ const Billing = () => {
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
-      setItemPurchaseProducts(data.allStock || []);
+
+      const mappedData = (data.allStock || []).map(p => {
+        if (p.moveTo === "CUSTOMER_RETURN" || p.moveTo === "REPAIR_RETURN") {
+          return { ...p, source: p.moveTo };
+        }
+        return p;
+      });
+      setItemPurchaseProducts(mappedData);
     } catch (error) {
       console.error("Error fetching Item Purchase Stock:", error);
     }
@@ -1418,7 +1448,8 @@ const Billing = () => {
       {/* Left panel */}
       <Box className="left-panel"
         style={{
-          maxWidth: '65%',
+          maxWidth: isEditMode ? '65%' : '60%',
+          margin: isEditMode ? '0 auto' : undefined,
         }}
       >
         <Tooltip title="View Bills" arrow placement="right">
@@ -1581,7 +1612,7 @@ const Billing = () => {
                           <TextField
                             size="small"
                             type="text"
-                            value="-"
+                            value={row.count || "1"}
                             disabled
                             inputProps={{ style: inputStyle }}
                           />
@@ -1637,7 +1668,8 @@ const Billing = () => {
                         size="small"
                         type="text"
                         value={row.awt}
-                        disabled
+                        disabled={!isEditMode}
+                        onChange={(e) => handleNumericInput(e, (ev) => handleBillDetailChange(index, "awt", ev.target.value))}
                         inputProps={{ style: inputStyle }}
                       />
                     </TableCell>
@@ -1657,7 +1689,8 @@ const Billing = () => {
                         size="small"
                         type="text"
                         value={row.fwt}
-                        disabled
+                        disabled={!isEditMode}
+                        onChange={(e) => handleNumericInput(e, (ev) => handleBillDetailChange(index, "fwt", ev.target.value))}
                         inputProps={{ style: inputStyle }}
                       />
                     </TableCell>
@@ -1845,7 +1878,7 @@ const Billing = () => {
                   onClick={handleUpdate}
                   disabled={isSaving}
                 >
-                  {isSaving ? "Updating..." : "Update Bill"}
+                  {isSaving ? "Editing..." : "Edit Bill"}
                 </Button>
               </>
             ) : (
@@ -1872,8 +1905,8 @@ const Billing = () => {
         </Box>
       </Box>
 
-      {/* Right panel: available products */}
-      <Box className="right-panel no-print">
+      {/* Right panel: available products — hidden during edit mode */}
+      {!isEditMode && <Box className="right-panel no-print">
         {/* Stock type toggle – full width */}
         <Box sx={{ display: "flex", width: "100%", marginBottom: "12px", borderRadius: "8px", overflow: "hidden", border: "1.5px solid #0a4c9a" }}>
           <Button
@@ -1986,7 +2019,7 @@ const Billing = () => {
                 <TableRow>
                   <TableCell className="th" style={{ textAlign: "center" }}>S.No </TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Item Name</TableCell>
-                  <TableCell className="th" style={{ textAlign: "center" }}>Item Weight</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Item WT</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Stone WT</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Wastage Pure</TableCell>
@@ -2066,15 +2099,31 @@ const Billing = () => {
                 )
               ) : (
                 (() => {
-                  const visibleItems = (itemPurchaseProducts || []).filter(p => !p.isSold);
+                  const visibleItems = (itemPurchaseProducts || []).filter(p => {
+                    if (p.isSold) return false;
+
+                    // Filter by stockSource ("ALL", "CUSTOMER_RETURN", "REPAIR_RETURN")
+                    // Since item purchases don't have these sources, we hide them if an explicit source is selected.
+                    if (stockSource !== "ALL" && p.source !== stockSource) return false;
+
+                    if (selectedFilter && p.itemName !== selectedFilter) return false;
+                    if (searchTerm) {
+                      const searchLower = searchTerm.toLowerCase();
+                      const nameMatch = p.itemName.toLowerCase().includes(searchLower);
+                      const touchMatch = p.touch.toString().toLowerCase().includes(searchLower);
+                      if (!nameMatch && !touchMatch) return false;
+                    }
+                    return true;
+                  });
                   return visibleItems.length > 0 ? (
                     visibleItems.map((prodata, index) => {
                       const productId = prodata.id || prodata._id;
                       const addedCount = selectedProductCounts[productId] || 0;
                       const isSelected = addedCount > 0;
-                      const remainingWeight = getRemainingWeight(productId, toNumber(prodata.grossWeight));
-                      const remainingStone = getRemainingStone(productId, toNumber(prodata.stoneWeight));
-                      const isFullyAllocated = remainingWeight <= 0;
+                      // Item purchase products are sold as a full unit — always show full values
+                      const displayWeight = toNumber(prodata.grossWeight);
+                      const displayStone = toNumber(prodata.stoneWeight);
+                      const isFullyAllocated = isSelected; // greyed out once added to bill
 
                       return (
                         <TableRow
@@ -2095,9 +2144,9 @@ const Billing = () => {
                           <TableCell className="td" style={{ textAlign: "center" }}>
                             <span>{prodata.itemName}</span>
                           </TableCell>
-                          <TableCell className="td" style={{ color: remainingWeight <= 0 ? "red" : "green", fontWeight: "bold", textAlign: "center" }}>{toNumber(remainingWeight).toFixed(3)}</TableCell>
+                          <TableCell className="td" style={{ color: "green", fontWeight: "bold", textAlign: "center" }}>{displayWeight.toFixed(3)}</TableCell>
                           <TableCell className="td" style={{ textAlign: "center" }}>{prodata.touch}</TableCell>
-                          <TableCell className="td" style={{ color: remainingStone <= 0 ? "red" : "inherit", textAlign: "center" }}>{toNumber(remainingStone).toFixed(3)}</TableCell>
+                          <TableCell className="td" style={{ textAlign: "center" }}>{displayStone.toFixed(3)}</TableCell>
                           <TableCell className="td" style={{ textAlign: "center" }}>{toNumber(prodata.wastagePure).toFixed(3)}</TableCell>
                           <TableCell className="td" style={{ textAlign: "center" }}>{toNumber(prodata.finalPurity).toFixed(3)}</TableCell>
                           <TableCell className="td" style={{ textAlign: "center" }}>
@@ -2126,7 +2175,7 @@ const Billing = () => {
           </Table>
         </Box>
         <ToastContainer />
-      </Box>
+      </Box>}
 
       {/* Modal to view all bills */}
       <Modal open={isModal} onClose={() => setIsModal(false)}>
@@ -2201,7 +2250,7 @@ const Billing = () => {
                           color="primary"
                           onClick={() => loadBillForEditing(bill.id)}
                         >
-                          Update
+                          Edit
                         </Button>
                       </div>
                     </TableCell>

@@ -250,8 +250,8 @@ const DailySalesReport = () => {
                 <TableCell className="table-header">Date</TableCell>
                 <TableCell className="table-header">Name</TableCell>
                 <TableCell className="table-header">Weight</TableCell>
-                <TableCell className="table-header">Pure Received</TableCell>
-                <TableCell className="table-header">Cash Balance</TableCell>
+                {/* <TableCell className="table-header">Pure Received</TableCell>
+                <TableCell className="table-header">Cash Balance</TableCell> */}
                 <TableCell className="table-header">Pure Balance</TableCell>
                 <TableCell className="table-header">Total Profit</TableCell>
                 <TableCell className="table-header">Actions</TableCell>
@@ -287,10 +287,10 @@ const DailySalesReport = () => {
                       </TableCell>
                       <TableCell className="table-cell">{bill.customers?.name || "Unknown"}</TableCell>
                       <TableCell className="table-cell">{totalWeight.toFixed(3)}</TableCell>
-                      <TableCell className="table-cell">{totalReceivedPurity.toFixed(3)} g</TableCell>
+                      {/* <TableCell className="table-cell">{totalReceivedPurity.toFixed(3)} g</TableCell>
                       <TableCell className="table-cell" sx={{ color: cashBalance >= 0 ? "#28a745" : "#dc3545" }}>
                         {Number(bill.cashBalance ?? cashBalance ?? 0).toLocaleString("en-IN")}
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell className="table-cell" sx={{ color: pureBalance >= 0 ? "#28a745" : "#dc3545" }}>
                         {pureBalance.toFixed(3)} g
                       </TableCell>
@@ -310,7 +310,7 @@ const DailySalesReport = () => {
                 })}
               {/* Totals Row */}
               <TableRow className="totals-row">
-                <TableCell colSpan={3} className="totals-cell" style={{ textAlign: "center" }}>
+                <TableCell colSpan={1} className="totals-cell" style={{ textAlign: "center" }}>
                   Total
                 </TableCell>
                 <TableCell className="totals-cell">{topTotalsVisible.totalWeight.toFixed(3)}</TableCell>

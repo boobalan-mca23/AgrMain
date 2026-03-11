@@ -618,18 +618,11 @@ exports.getItemPurchaseStock = async (req, res) => {
     const stock = await prisma.itemPurchaseEntry.findMany({
       where: {
         isSold: false,
-        isBilled: false,
+        isInRepair: false,
 
         netWeight: {
           gt: 0
         },
-
-        // exclude items currently in repair
-        repairStocks: {
-          none: {
-            status: "InRepair"
-          }
-        }
       },
 
       orderBy: {
@@ -658,18 +651,11 @@ exports.itemPurchaseStock = async (req, res) => {
       where: {
 
         isSold: false,
-        isBilled: false,
+        isInRepair: false,
 
         netWeight: {
           gt: 0
         },
-
-        // 🚫 Skip items currently in repair
-        repairStocks: {
-          none: {
-            status: "InRepair"
-          }
-        }
 
       },
 

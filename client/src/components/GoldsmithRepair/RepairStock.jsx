@@ -29,6 +29,45 @@ const ProductStock = () => {
   const [selectedGoldsmith, setSelectedGoldsmith] = useState("");
   const [reason, setReason] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [repairQC, setRepairQC] = useState({
+    touch: 0,
+    itemWeight: 0,
+    count: 1,
+    stoneWeight: 0,
+    wastageValue: 0,
+    wastageType: null,
+    wastagePure: 0,
+    netWeight: 0,
+    finalPurity: 0,
+  });
+
+  const calculatePurity = (qc) => {
+    const netWeight = (Number(qc.itemWeight) || 0) - (Number(qc.stoneWeight) || 0);
+    const actualPurity = (netWeight * (Number(qc.touch) || 0)) / 100;
+    let finalPurity = 0;
+    let wastagePure = 0;
+
+    if (qc.wastageType === "Touch") {
+      finalPurity = (netWeight * (Number(qc.wastageValue) || 0)) / 100;
+      wastagePure = finalPurity - actualPurity;
+    } else if (qc.wastageType === "%") {
+      const wastageWeight = (netWeight * (Number(qc.wastageValue) || 0)) / 100;
+      finalPurity = ((netWeight + wastageWeight) * (Number(qc.touch) || 0)) / 100;
+      wastagePure = finalPurity - actualPurity;
+    } else if (qc.wastageType === "+") {
+      finalPurity = ((netWeight + (Number(qc.wastageValue) || 0)) * (Number(qc.touch) || 0)) / 100;
+      wastagePure = finalPurity - actualPurity;
+    }
+
+    return { netWeight, actualPurity, finalPurity, wastagePure };
+  };
+
+  const {
+    netWeight: currentNetWeight,
+    actualPurity: currentActualPurity,
+    finalPurity: currentFinalPurity,
+    wastagePure: currentWastagePure,
+  } = calculatePurity(repairQC);
 
   useEffect(() => {
     fetchProductStock();
@@ -65,6 +104,17 @@ const ProductStock = () => {
     setSelectedProduct(product);
     setSelectedGoldsmith("");
     setReason("");
+    setRepairQC({
+      itemWeight: product.itemWeight || product.grossWeight || 0,
+      touch: product.touch || 0,
+      count: product.count || 1,
+      stoneWeight: product.stoneWeight || 0,
+      wastageValue: product.wastageValue || product.wastage || 0,
+      wastageType: product.wastageType || null,
+      wastagePure: product.wastagePure || 0,
+      netWeight: product.netWeight || 0,
+      finalPurity: product.finalPurity || 0,
+    });
     setOpenSendDialog(true);
   };
 
@@ -78,7 +128,21 @@ const ProductStock = () => {
 
       goldsmithId: selectedGoldsmith || null,
 
-      reason: reason || null
+      reason: reason || null,
+
+      repairProduct: {
+        ...selectedProduct,
+        weight: repairQC.itemWeight,
+        count: repairQC.count,
+        stoneWeight: repairQC.stoneWeight,
+        touch: repairQC.touch,
+        wastageValue: repairQC.wastageValue,
+        wastageType: repairQC.wastageType,
+        wastagePure: currentWastagePure,
+        netWeight: currentNetWeight,
+        finalPurity: currentFinalPurity,
+        actualPurity: currentActualPurity,
+      }
 
     });
 
@@ -222,13 +286,14 @@ const ProductStock = () => {
 
       </div>
 
-      {/* POPUP — unchanged */}
+      {/* SEND TO REPAIR POPUP */}
 
-      <Dialog open={openSendDialog} onClose={() => setOpenSendDialog(false)}>
+      <Dialog open={openSendDialog} onClose={() => setOpenSendDialog(false)} maxWidth="xl" fullWidth
+        PaperProps={{ sx: { minWidth: 500, maxWidth: 700 } }}>
 
         <DialogTitle>Send Product to Repair</DialogTitle>
 
-        <DialogContent>
+        <DialogContent sx={{ overflow: 'visible' }}>
 
           <div
             style={{
@@ -237,61 +302,151 @@ const ProductStock = () => {
               paddingBottom: "8px"
             }}
           >
-
             <h3 style={{ margin: 0, color: "#2e7d32" }}>
               Item Name : {selectedProduct?.itemName}
             </h3>
-
           </div>
 
-          <div
-            style={{
-              background: "#f9fafb",
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              padding: "12px",
-              marginBottom: "15px"
-            }}
-          >
+          <table style={{ width: "100%", fontSize: '0.95rem', borderCollapse: 'collapse', marginBottom: '15px' }}>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Field</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Original</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Edit</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '8px', textAlign: 'center' }}>Current Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Item Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.itemWeight || selectedProduct?.grossWeight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={repairQC.itemWeight}
+                    onChange={(e) =>
+                      setRepairQC({ ...repairQC, itemWeight: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.itemWeight)}
+                </td>
+              </tr>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                rowGap: "8px",
-                columnGap: "10px"
-              }}
-            >
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Count</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{selectedProduct?.count || 1}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={repairQC.count}
+                    onChange={(e) =>
+                      setRepairQC({ ...repairQC, count: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {repairQC.count}
+                </td>
+              </tr>
 
-              <div><b>Item Weight</b></div>
-              <div>{safeFixed(selectedProduct?.itemWeight || selectedProduct?.grossWeight)} g</div>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Stone Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={repairQC.stoneWeight}
+                    onChange={(e) =>
+                      setRepairQC({ ...repairQC, stoneWeight: e.target.value })
+                    }
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.stoneWeight)}
+                </td>
+              </tr>
 
-              <div><b>Stone Weight</b></div>
-              <div>{safeFixed(selectedProduct?.stoneWeight)} g</div>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Net Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed((Number(selectedProduct?.itemWeight || selectedProduct?.grossWeight) || 0) - (Number(selectedProduct?.stoneWeight) || 0))}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#888', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(currentNetWeight)}
+                </td>
+              </tr>
 
-              <div><b>Net Weight</b></div>
-              <div>{safeFixed(selectedProduct?.netWeight)} g</div>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.touch)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.touch)}
+                </td>
+              </tr>
 
-              <div><b>Touch</b></div>
-              <div>{selectedProduct?.touch}</div>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Type</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{selectedProduct?.wastageType || "-"}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {repairQC.wastageType || "-"}
+                </td>
+              </tr>
 
-              <div><b>Wastage Type</b></div>
-              <div>{selectedProduct?.wastageType || "-"}</div>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Value %</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.wastageValue || selectedProduct?.wastage)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.wastageValue)}
+                </td>
+              </tr>
 
-              <div><b>Wastage Value</b></div>
-              <div>{selectedProduct?.wastageValue || selectedProduct?.wastage}</div>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Wastage Pure (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.wastagePure)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#1976d2', textAlign: 'center' }}>
+                  {safeFixed(currentWastagePure)}
+                </td>
+              </tr>
 
-              <div><b>Wastage Pure</b></div>
-              <div>{safeFixed(selectedProduct?.wastagePure)} g</div>
-
-              <div><b>Final Purity</b></div>
-              <div style={{ fontWeight: "bold", color: "#2e7d32" }}>
-                {safeFixed(selectedProduct?.finalPurity)} g
-              </div>
-
-            </div>
-
-          </div>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Final Purity</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.finalPurity)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#2e7d32', textAlign: 'center' }}>
+                  {safeFixed(currentFinalPurity)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
           <TextField
             select
@@ -301,15 +456,12 @@ const ProductStock = () => {
             onChange={(e) => setSelectedGoldsmith(e.target.value)}
             margin="normal"
           >
-
             {goldsmiths.map((g) => (
               <MenuItem key={g.id} value={g.id}>
                 {g.name}
               </MenuItem>
             ))}
-
           </TextField>
-
 
           <TextField
             fullWidth
@@ -323,7 +475,6 @@ const ProductStock = () => {
         </DialogContent>
 
         <DialogActions>
-
           <Button onClick={() => setOpenSendDialog(false)}>
             Cancel
           </Button>
@@ -335,7 +486,6 @@ const ProductStock = () => {
           >
             Confirm
           </Button>
-
         </DialogActions>
 
       </Dialog>

@@ -49,6 +49,8 @@ const createBill = async (req, res) => {
       percentage: item.percentage ? parseFloat(item.percentage) : undefined,
       finalWeight: item.finalWeight ? parseFloat(item.finalWeight) : undefined,
 
+      stockId: item.stockId ? parseInt(item.stockId) : undefined,
+      stockType: item.stockType || "PRODUCT",
       actualPurity: item.actualPurity ? parseFloat(item.actualPurity) : undefined,
       touch: item.touch ? parseFloat(item.touch) : undefined,
       netWeight: item.netWeight ? parseFloat(item.netWeight) : undefined,
@@ -107,17 +109,37 @@ const createBill = async (req, res) => {
 
     for (const item of orderItems) {
       if (item.stockId) {
-        // parse safely
+
+        if (item.stockType === "ITEM_PURCHASE") {
+          const itemPurchaseEntry = await prisma.itemPurchaseEntry.findUnique({
+            where: { id: parseInt(item.stockId) },
+          });
+
+          if (itemPurchaseEntry) {
+            // Split logic for item purchase bill deductions
+            const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
+            const remainWt = itemPurchaseEntry.netWeight - decProductWt;
+
+            await prisma.itemPurchaseEntry.update({
+              where: { id: parseInt(item.stockId) },
+              data: {
+                netWeight: remainWt,
+                isSold: remainWt <= 0,
+                soldAt: remainWt <= 0 ? new Date() : null,
+              },
+            });
+          }
+          continue;
+        }
+
+        // parse safely (for PRODUCT stock)
         const stock = await prisma.productStock.findMany({
           where: {
             id: item.stockId
           },
-          // select:{
-          //  itemWeight:true,
-          //  touch:true,
-          //  wastageValue:true,
-          // }
-        },)
+        });
+
+        if (!stock || stock.length === 0) continue;
 
         const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
         const decStoneWeight = isNaN(parseFloat(item.stoneWeight)) ? 0 : parseFloat(item.stoneWeight);
@@ -159,7 +181,8 @@ const createBill = async (req, res) => {
             wastagePure,
             finalPurity,
             wastageType: stock[0].wastageType,
-            isBillProduct: true,
+            isBillProduct: remainWt <= 0.05,
+            isActive: remainWt > 0.05,
           },
         });
       }
@@ -191,9 +214,22 @@ const createBill = async (req, res) => {
 
 const updateBill = async (req, res) => {
   const { customerId, billId } = req.params;
-  const { received, pureBalance, hallmarkBalance } = req.body;
+  const {
+    received,
+    pureBalance,
+    hallmarkBalance,
+    billTotal,
+    hallMark,
+    prevHallmark,
+    prevBalance,
+    billDetailsprofit,
+    Stoneprofit,
+    Totalprofit,
+    hallmarkQty,
+    orderItems,
+  } = req.body;
 
-  console.log("customerId", customerId);
+  console.log("updateBill customerId", customerId, "billId", billId);
   try {
     // check customer
     const customerExist = await prisma.customer.findUnique({
@@ -203,33 +239,73 @@ const updateBill = async (req, res) => {
       return res.status(400).json({ msg: "Invalid Customer Id" });
     }
 
-    // validate received array
-    if (!received || received.length < 1) {
-      return res
-        .status(400)
-        .json({ msg: "At least one received item is required" });
-    }
-    // update bill time we need to create or update rawGoldStock
-    addRawGold.moveToRawGoldStock(received, billId, customerId);
+    // Update the main bill fields
+    if (orderItems && orderItems.length > 0) {
+      const modifiedOrders = orderItems.map((item) => ({
+        productName: item.productName,
+        count: item.count ? parseInt(item.count) : undefined,
+        weight: item.weight ? parseFloat(item.weight) : undefined,
+        stoneWeight: item.stoneWeight ? parseFloat(item.stoneWeight) : undefined,
+        enteredStoneWeight: item.enteredStoneWeight ? parseFloat(item.enteredStoneWeight) : undefined,
+        afterWeight: item.afterWeight ? parseFloat(item.afterWeight) : undefined,
+        percentage: item.percentage ? parseFloat(item.percentage) : undefined,
+        finalWeight: item.finalWeight ? parseFloat(item.finalWeight) : undefined,
+        actualPurity: item.actualPurity ? parseFloat(item.actualPurity) : undefined,
+        touch: item.touch ? parseFloat(item.touch) : undefined,
+        netWeight: item.netWeight ? parseFloat(item.netWeight) : undefined,
+        wastageValue: item.wastageValue ? parseFloat(item.wastageValue) : undefined,
+        wastageType: item.wastageType,
+        wastagePure: item.wastagePure ? parseFloat(item.wastagePure) : undefined,
+        finalPurity: item.finalPurity ? parseFloat(item.finalPurity) : undefined,
+        stockId: item.stockId ? parseInt(item.stockId) : undefined,
+        stockType: item.stockType || "PRODUCT",
+      }));
 
+      // Delete old orders and recreate
+      await prisma.orderItems.deleteMany({ where: { billId: parseInt(billId) } });
+
+      await prisma.bill.update({
+        where: { id: parseInt(billId) },
+        data: {
+          billAmount: parseFloat(billTotal) || 0,
+          hallMark: parseFloat(hallMark) || 0,
+          prevHallMark: parseFloat(prevHallmark) || 0,
+          PrevBalance: parseFloat(prevBalance) || 0,
+          hallmarkQty: parseFloat(hallmarkQty) || 0,
+          billDetailsprofit: parseFloat(billDetailsprofit) || 0,
+          Stoneprofit: parseFloat(Stoneprofit) || 0,
+          Totalprofit: parseFloat(Totalprofit) || 0,
+          orders: { create: modifiedOrders },
+        },
+      });
+    }
+
+    // Update customer balance
     await prisma.customerBillBalance.upsert({
       where: { customer_id: parseInt(customerId) },
       update: {
-        balance: pureBalance,
-        hallMarkBal: hallmarkBalance,
+        balance: parseFloat(pureBalance) || 0,
+        hallMarkBal: parseFloat(hallmarkBalance) || 0,
       },
       create: {
         customer_id: parseInt(customerId),
-        balance: pureBalance,
-        hallMarkBal: hallmarkBalance,
+        balance: parseFloat(pureBalance) || 0,
+        hallMarkBal: parseFloat(hallmarkBalance) || 0,
       },
     });
+
+    // If received gold items are also provided, process them too (optional)
+    if (received && received.length > 0) {
+      addRawGold.moveToRawGoldStock(received, billId, customerId);
+    }
+
     res.status(201).json({ message: "Bill updated successfully" });
   } catch (err) {
     console.error(err.message);
     return res.status(500).json({ err: err.message });
   }
 };
+
 
 // get bills by customer id
 const getBillByCustomer = async (req, res) => {
