@@ -81,7 +81,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
               <strong>Bill No:</strong> {billNo}
             </p>
             <p style={styles.billInfoItem}>
-              <strong>Customer Name:</strong> {selectedCustomer.name || selectedCustomer ||"null"}
+              <strong>Customer Name:</strong> {selectedCustomer.name || selectedCustomer || "null"}
             </p>
           </div>
           <div>
@@ -107,6 +107,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
               <th style={styles.th}>AWT</th>
               <th style={styles.th}>Touch</th>
               <th style={styles.th}>FWT</th>
+              {/* <th style={styles.th}>Status</th> */}
             </tr>
           </thead>
           <tbody>
@@ -120,6 +121,17 @@ const PrintableBill = React.forwardRef((props, ref) => {
                 <td style={styles.td}>{formatToFixed3Strict(item.afterWeight)}</td>
                 <td style={styles.td}>{item.percentage}</td>
                 <td style={styles.td}>{formatToFixed3Strict(item.finalWeight)}</td>
+                {/* <td style={styles.td}>
+                  {item.repairStatus === "IN_REPAIR"
+                    ? "Repair"
+                    : item.repairStatus === "PARTIAL_REPAIR"
+                      ? "Partial Repair"
+                      : item.repairStatus === "RETURNED"
+                        ? "Return"
+                        : item.repairStatus === "PARTIAL_RETURN"
+                          ? "Partial Return"
+                          : "Sold"}
+                </td> */}
               </tr>
             ))}
             {billItems.length === 0 && (

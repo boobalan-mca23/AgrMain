@@ -139,9 +139,8 @@ function AgrNewJobCard({
       }
     });
 
-    // STEP 3: overwrite new value
-    copy[i][field] = val;
-    copy[i]["isEdit"] = true;
+    // STEP 3: clone row object and overwrite new value
+    copy[i] = { ...copy[i], [field]: val, isEdit: true };
 
     // STEP 4: deduct new value from stock
     const newTouch = copy[i].touch;
@@ -324,7 +323,8 @@ function AgrNewJobCard({
 
   const handleSave = (print = "noprint") => {
     const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
-    const existStock = checkAvailabilityStock(rawGoldStock);
+    const usedTouches = givenGold.map(g => parseFloat(g.touch)).filter(t => !isNaN(t));
+    const existStock = checkAvailabilityStock(rawGoldStock, usedTouches);
 
     const doUpdate = () => {
 

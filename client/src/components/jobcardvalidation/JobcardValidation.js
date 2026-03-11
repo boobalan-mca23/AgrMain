@@ -20,7 +20,7 @@ const goldRowValidation = (givenGold, setGivenGoldErrors) => {
   return errors.every((err) => Object.keys(err).length === 0);
 };
 
-const itemValidation = (itemDelivery,setItemDeliveryErrors) => {
+const itemValidation = (itemDelivery, setItemDeliveryErrors) => {
   const errors = itemDelivery.map((row) => {
     const rowErrors = {};
     if (!row.itemName) rowErrors.itemName = "Item Name";
@@ -30,7 +30,7 @@ const itemValidation = (itemDelivery,setItemDeliveryErrors) => {
     if (!/^\d*\.?\d*$/.test(row.itemWeight)) {
       rowErrors.itemWeight = "Enter valid weight";
     }
-     if (row.count <= 0) rowErrors.count = "negative value";
+    if (row.count <= 0) rowErrors.count = "negative value";
 
 
     if (row.touch < 0) rowErrors.touch = "negative";
@@ -38,9 +38,9 @@ const itemValidation = (itemDelivery,setItemDeliveryErrors) => {
     if (!/^\d*\.?\d*$/.test(row.touch)) {
       rowErrors.touch = "valid touch";
     }
-      if (!row.wastageType) rowErrors.wastageType = "wastage Type";
-      if (!row.wastageValue) rowErrors.wastageValue = "weight";
-      if (row.wastageValue < 0) rowErrors.wastageValue = "negative value";
+    if (!row.wastageType) rowErrors.wastageType = "wastage Type";
+    if (!row.wastageValue) rowErrors.wastageValue = "weight";
+    if (row.wastageValue < 0) rowErrors.wastageValue = "negative value";
 
     if (!/^\d*\.?\d*$/.test(row.wastageValue)) {
       rowErrors.wastageValue = "Enter valid weight";
@@ -77,8 +77,11 @@ const receiveRowValidation = (received, setReceivedErrors) => {
   return errors.every((err) => Object.keys(err).length === 0);
 };
 
-const checkAvailabilityStock = (rawGoldStock) => {
-  return rawGoldStock.find((item) => item.remainingWt < 0) ||{stock:"ok"};
+const checkAvailabilityStock = (rawGoldStock, usedTouches = []) => {
+  if (usedTouches && usedTouches.length > 0) {
+    return rawGoldStock.find((item) => item.remainingWt < 0 && usedTouches.includes(parseFloat(item.touch))) || { stock: "ok" };
+  }
+  return rawGoldStock.find((item) => item.remainingWt < 0) || { stock: "ok" };
 };
 
 export {

@@ -322,7 +322,7 @@ const entryToRawGold = async (date, type, amount, gold, touch, purity, goldRate,
   }
 
   // Calculate pure weight based on type
-  let weight = type === "Cash" ? (parseFloat(purity) / actualTouch) * 100 : parseFloat(gold) || 0;
+  let weight = type === "Cash" ? (parseFloat(purity) / actualTouch) * 100 : parseFloat(purity) || 0;
 
   let rawGoldLog;
 

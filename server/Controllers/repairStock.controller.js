@@ -47,7 +47,7 @@ const getAllRepairStock = async (req, res) => {
 
     const repairs = await prisma.repairStock.findMany({
       where,
-      include: { product: true,itemPurchase: true, goldsmith: true },
+      include: { product: true, itemPurchase: true, goldsmith: true },
       orderBy: { sentDate: "desc" },
       skip,
       take
@@ -192,6 +192,11 @@ const sendToRepair = async (req, res) => {
 
         if (!g)
           throw new Error("Invalid goldsmith");
+
+        await tx.itemPurchaseEntry.update({
+          where: { id: item.id },
+          data: { isInRepair: true }
+        });
 
         const repair =
           await tx.repairStock.create({
@@ -379,7 +384,11 @@ const returnFromRepair = async (req, res) => {
 
             wastagePure: updatedWastagePure,
 
-            finalPurity: computedFinalPurity
+            finalPurity: computedFinalPurity,
+
+            isInRepair: false,
+
+            moveTo: "REPAIR_RETURN"
 
           }
 
@@ -568,36 +577,72 @@ const sendCustomerItemToRepair = async (req, res) => {
         wastagePureDelta = finalPurityDelta - actualPurityDelta;
       }
 
-      const productStock = await tx.productStock.create({
-        data: {
-          itemName: repairProduct.productName,
-          itemWeight: Number(repairProduct.weight),
-          stoneWeight: Number(repairProduct.stoneWeight),
-          netWeight: Number(repairProduct.netWeight) || Number(repairProduct.weight),
-          finalPurity: finalPurityDelta,
-          count: Number(repairProduct.count) || 0,
-          touch: Number(repairProduct.touch),
-          wastageType: repairProduct.wastageType,
-          wastageValue: Number(repairProduct.wastageValue),
-          wastagePure: wastagePureDelta,
-          isBillProduct: true,
-          isActive: false,
-          source: "REPAIR_RETURN",
-        }
-      });
+      let productStock;
+      let repair;
 
-      const repair = await tx.repairStock.create({
-        data: {
-          productId: productStock.id,
-          goldsmithId: goldsmithId ? Number(goldsmithId) : null,
-          source: "CUSTOMER",
-          reason: reason || null,
-          itemName: productStock.itemName,
-          grossWeight: productStock.itemWeight,
-          netWeight: productStock.netWeight,
-          purity: productStock.finalPurity,
-        }
-      });
+      if (orderItem.stockType === "ITEM_PURCHASE") {
+        productStock = await tx.itemPurchaseEntry.create({
+          data: {
+            supplierId: 1, // Fallback, could look up original if needed
+            itemName: repairProduct.productName,
+            grossWeight: Number(repairProduct.weight),
+            stoneWeight: Number(repairProduct.stoneWeight),
+            netWeight: Number(repairProduct.netWeight) || Number(repairProduct.weight),
+            finalPurity: finalPurityDelta,
+            touch: Number(repairProduct.touch),
+            wastageType: repairProduct.wastageType || "None",
+            wastage: Number(repairProduct.wastageValue) || 0,
+            wastagePure: wastagePureDelta,
+            actualPure: actualPurityDelta,
+            isSold: false,
+            isInRepair: true,
+          }
+        });
+
+        repair = await tx.repairStock.create({
+          data: {
+            itemPurchaseId: productStock.id,
+            goldsmithId: goldsmithId ? Number(goldsmithId) : null,
+            source: "CUSTOMER",
+            reason: reason || null,
+            itemName: productStock.itemName,
+            grossWeight: productStock.grossWeight,
+            netWeight: productStock.netWeight,
+            purity: productStock.finalPurity,
+          }
+        });
+      } else {
+        productStock = await tx.productStock.create({
+          data: {
+            itemName: repairProduct.productName,
+            itemWeight: Number(repairProduct.weight),
+            stoneWeight: Number(repairProduct.stoneWeight),
+            netWeight: Number(repairProduct.netWeight) || Number(repairProduct.weight),
+            finalPurity: finalPurityDelta,
+            count: Number(repairProduct.count) || 0,
+            touch: Number(repairProduct.touch),
+            wastageType: repairProduct.wastageType,
+            wastageValue: Number(repairProduct.wastageValue),
+            wastagePure: wastagePureDelta,
+            isBillProduct: true,
+            isActive: false,
+            source: "REPAIR_RETURN",
+          }
+        });
+
+        repair = await tx.repairStock.create({
+          data: {
+            productId: productStock.id,
+            goldsmithId: goldsmithId ? Number(goldsmithId) : null,
+            source: "CUSTOMER",
+            reason: reason || null,
+            itemName: productStock.itemName,
+            grossWeight: productStock.itemWeight,
+            netWeight: productStock.netWeight,
+            purity: productStock.finalPurity,
+          }
+        });
+      }
 
       // Split logic to support partial repairs
       const originalWeight = Number(orderItem.weight) || 0;
@@ -628,43 +673,22 @@ const sendCustomerItemToRepair = async (req, res) => {
           remWastagePure = remFinalPurity - remActualPurity;
         }
 
-        // 1. Update original item remaining values
+        // 1. Update original item remaining values (keeping to 3 decimal places)
         await tx.orderItems.update({
           where: { id: Number(orderItemId) },
           data: {
-            weight: remainingWeight,
-            stoneWeight: remainingStoneWeight,
-            netWeight: remainingNetWeight,
+            weight: Number(remainingWeight.toFixed(3)),
+            stoneWeight: Number(remainingStoneWeight.toFixed(3)),
+            netWeight: Number(remainingNetWeight.toFixed(3)),
+            afterWeight: Number(remainingNetWeight.toFixed(3)),
             count: remainingCount,
-            actualPurity: remActualPurity,
-            wastagePure: remWastagePure,
-            finalPurity: remFinalPurity,
-            finalWeight: remainingNetWeight // assuming finalWeight correlates here
+            actualPurity: Number(remActualPurity.toFixed(3)),
+            wastagePure: Number(remWastagePure.toFixed(3)),
+            finalPurity: Number(remFinalPurity.toFixed(3)),
+            finalWeight: Number(remFinalPurity.toFixed(3)),
+            repairStatus: "PARTIAL_REPAIR"
           }
         });
-
-        // 2. Create the repair line item
-        const newRepairItem = await tx.orderItems.create({
-          data: {
-            billId: Number(billId),
-            productName: orderItem.productName,
-            count: Number(repairProduct.count) || 0,
-            weight: sentWeight,
-            stoneWeight: Number(repairProduct.stoneWeight) || 0,
-            afterWeight: Number(repairProduct.netWeight) || 0,
-            netWeight: Number(repairProduct.netWeight) || 0,
-            touch: Number(repairProduct.touch),
-            wastageType: repairProduct.wastageType,
-            wastageValue: Number(repairProduct.wastageValue),
-            actualPurity: (Number(repairProduct.netWeight) * Number(repairProduct.touch)) / 100, // Derived
-            wastagePure: wastagePureDelta,
-            finalPurity: finalPurityDelta,
-            percentage: finalPurityDelta,
-            repairStatus: "IN_REPAIR"
-          }
-        });
-
-        repairOrderItemId = newRepairItem.id;
 
       } else {
         // Full Repair
@@ -732,32 +756,72 @@ const sendCustomerBillToRepair = async (req, res) => {
       }
 
       for (const item of items) {
-        const productStock = await tx.productStock.create({
-          data: {
-            itemName: item.productName,
-            itemWeight: item.weight,
-            stoneWeight: item.stoneWeight,
-            netWeight: item.afterWeight || item.weight,
-            finalPurity: item.percentage,
-            count: item.count || 1,
-            isBillProduct: true,
-            isActive: false,
-            source: "REPAIR_RETURN",
-          }
-        });
+        let productStock;
+        let repair;
 
-        const repair = await tx.repairStock.create({
-          data: {
-            productId: productStock.id,
-            goldsmithId: goldsmithId ? Number(goldsmithId) : null,
-            source: "CUSTOMER",
-            reason: reason || null,
-            itemName: productStock.itemName,
-            grossWeight: productStock.itemWeight,
-            netWeight: productStock.netWeight,
-            purity: productStock.finalPurity
-          }
-        });
+        if (item.stockType === "ITEM_PURCHASE") {
+          productStock = await tx.itemPurchaseEntry.create({
+            data: {
+              supplierId: 1,
+              itemName: item.productName,
+              grossWeight: item.weight,
+              stoneWeight: item.stoneWeight,
+              netWeight: item.afterWeight || item.weight,
+              finalPurity: item.percentage,
+              touch: item.touch || 0,
+              wastageType: item.wastageType || "None",
+              wastage: item.wastageValue || 0,
+              wastagePure: item.wastagePure || 0,
+              actualPure: item.actualPurity || 0,
+              isSold: false,
+              isInRepair: true,
+            }
+          });
+
+          repair = await tx.repairStock.create({
+            data: {
+              itemPurchaseId: productStock.id,
+              goldsmithId: goldsmithId ? Number(goldsmithId) : null,
+              source: "CUSTOMER",
+              reason: reason || null,
+              itemName: productStock.itemName,
+              grossWeight: productStock.grossWeight,
+              netWeight: productStock.netWeight,
+              purity: productStock.finalPurity
+            }
+          });
+        } else {
+          productStock = await tx.productStock.create({
+            data: {
+              itemName: item.productName,
+              itemWeight: item.weight,
+              stoneWeight: item.stoneWeight,
+              netWeight: item.afterWeight || item.weight,
+              finalPurity: item.percentage,
+              count: item.count || 1,
+              touch: item.touch,
+              wastageType: item.wastageType,
+              wastageValue: item.wastageValue,
+              wastagePure: item.wastagePure,
+              isBillProduct: true,
+              isActive: false,
+              source: "REPAIR_RETURN",
+            }
+          });
+
+          repair = await tx.repairStock.create({
+            data: {
+              productId: productStock.id,
+              goldsmithId: goldsmithId ? Number(goldsmithId) : null,
+              source: "CUSTOMER",
+              reason: reason || null,
+              itemName: productStock.itemName,
+              grossWeight: productStock.itemWeight,
+              netWeight: productStock.netWeight,
+              purity: productStock.finalPurity
+            }
+          });
+        }
 
         await tx.orderItems.update({
           where: { id: item.id },

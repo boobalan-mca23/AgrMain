@@ -14,7 +14,7 @@ import { useState } from "react";
 import {
   checkAvailabilityStock,
 } from "../jobcardvalidation/JobcardValidation";
-import {checkExpense} from "../../components/cashOrGoldValidation/cashOrGoldValidation"
+import { checkExpense } from "../../components/cashOrGoldValidation/cashOrGoldValidation"
 const NewExpense = ({
   open,
   newExpense,
@@ -25,9 +25,9 @@ const NewExpense = ({
   rawGold,
   setRawGold,
 }) => {
-const [expenseError,setExpenseError]=useState({})
+  const [expenseError, setExpenseError] = useState({})
 
-const handleChangeExpense = (e) => {
+  const handleChangeExpense = (e) => {
     const { name, value } = e.target;
 
     // Save previous touch & weight
@@ -70,42 +70,42 @@ const handleChangeExpense = (e) => {
   };
 
   const handleSave = () => {
-  try {
-    // Convert values to numbers for Zod
-    const dataToValidate = {
-      ...newExpense,
-      expenseDate:newExpense.expenseDate,
-      gold: parseFloat(newExpense.gold),
-      touch: parseFloat(newExpense.touch),
-      purity: parseFloat(newExpense.purity),
-    };
+    try {
+      // Convert values to numbers for Zod
+      const dataToValidate = {
+        ...newExpense,
+        expenseDate: newExpense.expenseDate,
+        gold: parseFloat(newExpense.gold),
+        touch: parseFloat(newExpense.touch),
+        purity: parseFloat(newExpense.purity),
+      };
 
-    // If validation passes
-    let validExpense=checkExpense(dataToValidate,setExpenseError)
-    let exist = checkAvailabilityStock(rawGold);
+      // If validation passes
+      let validExpense = checkExpense(dataToValidate, setExpenseError)
+      let exist = checkAvailabilityStock(rawGold, [parseFloat(newExpense.touch)]);
 
-    if(Object.keys(validExpense).length!==0) return toast.warn("Give Valid Information in Expense ")
-    if (exist.stock === "ok") {
-      handleSaveExpense(dataToValidate);
-      handleClosePop();
-    } else {
-      toast.warn(`No Gold Stock in Touch ${exist.touch}`);
+      if (Object.keys(validExpense).length !== 0) return toast.warn("Give Valid Information in Expense ")
+      if (exist.stock === "ok") {
+        handleSaveExpense(dataToValidate);
+        handleClosePop();
+      } else {
+        toast.warn(`No Gold Stock in Touch ${exist.touch}`);
+      }
+
+    } catch (err) {
+      alert(err.message)
     }
 
-  } catch (err) {
-    alert(err.message)
-  }
-  
-};
+  };
 
   return (
     <Dialog
       open={open}
-       onClose={(event, reason) => {
+      onClose={(event, reason) => {
         if (reason !== 'backdropClick') {
-            handleClosePop();
-          }
-         }}
+          handleClosePop();
+        }
+      }}
       fullWidth
       maxWidth="xl" // larger than md
       PaperProps={{
@@ -136,7 +136,7 @@ const handleChangeExpense = (e) => {
           {/* //Forms */}
           <div>
             <form className="formGrid">
-             <label className="expense-lable">Expense Date :</label>
+              <label className="expense-lable">Expense Date :</label>
               <input
                 type="date"
                 name="expenseDate"
@@ -145,7 +145,7 @@ const handleChangeExpense = (e) => {
                   handleChangeExpense(e);
                 }}
               />
-               {expenseError.expenseDate&& <p style={{color:"red"}}>{expenseError.expenseDate}</p>}
+              {expenseError.expenseDate && <p style={{ color: "red" }}>{expenseError.expenseDate}</p>}
               <label className="expense-lable">Notes :</label>
               <textarea
                 className="description"
@@ -165,10 +165,10 @@ const handleChangeExpense = (e) => {
                 onChange={(e) => {
                   handleChangeExpense(e);
                 }}
-                onWheel={(e)=>e.target.blur()}
+                onWheel={(e) => e.target.blur()}
               ></input>
-              {expenseError.gold&& <p style={{color:"red"}}>{expenseError.gold}</p>}
-               <label className="expense-lable">Select Touch :</label>
+              {expenseError.gold && <p style={{ color: "red" }}>{expenseError.gold}</p>}
+              <label className="expense-lable">Select Touch :</label>
               <select
                 onChange={(e) => {
                   handleChangeExpense(e);
@@ -183,10 +183,10 @@ const handleChangeExpense = (e) => {
                   </option>
                 ))}
               </select>
-                {expenseError.touch&& <p style={{color:"red"}}>{expenseError.touch}</p>}
-             <label className="expense-lable">Purity :</label>
+              {expenseError.touch && <p style={{ color: "red" }}>{expenseError.touch}</p>}
+              <label className="expense-lable">Purity :</label>
               <input
-                
+
                 readOnly
                 value={newExpense.purity}
               ></input>

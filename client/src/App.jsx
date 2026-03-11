@@ -30,6 +30,7 @@ import GoldsmithRepair from "./components/GoldsmithRepair/RepairStock";
 import RepairStockList from "./components/GoldsmithRepair/RepairStockList";
 import CustomerReturn from "./components/CustomerReturn&Repair/CustomerReturn&Repair";
 import ReturnStockList from "./components/CustomerReturn&Repair/ReturnStockList";
+import CustomerRepairStockList from "./components/CustomerReturn&Repair/CustomerRepairStockList";
 import Jewelstockreport from "./components/Report/jewelstockreport";
 import BillView from "./components/Billing/BillView";
 
@@ -63,7 +64,7 @@ function App() {
             </PageWithNavbar>
           }
         />
-          <Route
+        <Route
           path="/expenseVoucher"
           element={
             <PageWithNavbar>
@@ -79,7 +80,7 @@ function App() {
             </PageWithNavbar>
           }
         />
-      <Route
+        <Route
           path="/bill-view/:billId"
           element={
             <PageWithNavbar>
@@ -115,15 +116,23 @@ function App() {
           path="/customerreturn"
           element={
             <PageWithNavbar>
-            <CustomerReturn />
+              <CustomerReturn />
             </PageWithNavbar>
           }
         />
         <Route
           path="/returnstocklist"
           element={
-            <PageWithNavbar>  
+            <PageWithNavbar>
               <ReturnStockList />
+            </PageWithNavbar>
+          }
+        />
+        <Route
+          path="/customerrepairstocklist"
+          element={
+            <PageWithNavbar>
+              <CustomerRepairStockList />
             </PageWithNavbar>
           }
         />
@@ -199,13 +208,13 @@ function App() {
             </PageWithNavbar>
           }
         />
-        <Route 
-          path="/itempurchasestock" 
+        <Route
+          path="/itempurchasestock"
           element={
             <PageWithNavbar>
               <ItemPurchaseStock />
             </PageWithNavbar>
-          } 
+          }
         />
         <Route
           path="/rawGoldStock"
@@ -231,7 +240,7 @@ function App() {
             </PageWithNavbar>
           }
         />
-    
+
         <Route
           path="/newjobcard/:id/:name"
           element={
@@ -240,7 +249,7 @@ function App() {
             </PageWithNavbar>
           }
         />
-    
+
 
         <Route
           path="/bullion"
