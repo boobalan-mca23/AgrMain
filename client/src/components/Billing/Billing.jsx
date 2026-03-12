@@ -17,8 +17,11 @@ import {
   InputLabel,
   Select,
   Tooltip, Modal,
+  TableContainer,
+  InputAdornment,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import SearchIcon from "@mui/icons-material/Search";
 import PrintIcon from "@mui/icons-material/Print";
 import { MdBorderBottom, MdDeleteForever } from "react-icons/md";
 import { toast, ToastContainer } from "react-toastify";
@@ -118,17 +121,29 @@ const Billing = () => {
   const [billNo, setBillNo] = useState("");
 
   const [editBillId, setEditBillId] = useState(null);
+  const [billSearchTerm, setBillSearchTerm] = useState("");
+
+  const filteredBills = useMemo(() => {
+    if (!Array.isArray(bills)) return [];
+    if (!billSearchTerm.trim()) return bills;
+    const term = billSearchTerm.toLowerCase();
+    return bills.filter((b) => {
+      const billNo = b.id?.toString() || "";
+      const custName = b.customers?.name?.toLowerCase() || "";
+      return billNo.includes(term) || custName.includes(term);
+    });
+  }, [bills, billSearchTerm]);
 
   const [stockSource, setStockSource] = useState("ALL");
 
   useEffect(() => {
-  setSelectedFilter("");
-  setSearchTerm("");
+    setSelectedFilter("");
+    setSearchTerm("");
 
-  if (originalProducts) {
-    setAvailableProducts(originalProducts);
-  }
-}, [selectedStockType]);
+    if (originalProducts) {
+      setAvailableProducts(originalProducts);
+    }
+  }, [selectedStockType]);
 
   // === Validation helpers ===
   const validateInput = (
@@ -715,17 +730,16 @@ const Billing = () => {
           const awt = wt - stWt;
 
           const touch = toNumber(productStock?.touch || 0);
-          const wastageValue = toNumber(productStock?.wastageValue || 0);
+          const wastageValue = productStock?.wastage || productStock?.wastageValue;
           //wastage value and wastage is completely different
           // starts here
-          const wastage = (awt * wastageValue) / 100;
-          const wastageType = productStock?.wastageType || "None";
+          // const wastage = (awt * wastageValue) / 100;
+          const wastageType = productStock?.wastageType;
           console.log("testing type coming or not", wastageType)
-          const wastagePure = (wastage * touch) / 100;
+          // const wastagePure = (wastage * touch) / 100;
 
-          const actualPurity = (awt * touch) / 100;
-          // change this later below is the og final purity and above is actual purity
-          const finalPurity = actualPurity + wastagePure
+          // const actualPurity = (awt * touch) / 100;
+          // const finalPurity = actualPurity + wastagePure
           return {
             stockId: row.productId,
             stockType: row.stockType || "PRODUCT",
@@ -746,9 +760,9 @@ const Billing = () => {
             touch,
             netWeight: awt,
             wastageValue,
-            wastagePure,
-            actualPurity,
-            finalPurity,
+            // wastagePure,
+            // actualPurity,
+            // finalPurity,
           };
         }),
 
@@ -841,13 +855,13 @@ const Billing = () => {
           const awt = wt - stWt;
 
           const touch = toNumber(productStock?.touch || 0);
-          const wastageValue = toNumber(productStock?.wastageValue || 0);
-          const wastage = (awt * wastageValue) / 100;
+          const wastageValue = toNumber(productStock?.wastageValue || productStock?.wastage);
+          // const wastage = (awt * wastageValue) / 100;
           const wastageType = productStock?.wastageType || "None";
-          const wastagePure = (wastage * touch) / 100;
+          // const wastagePure = (wastage * touch) / 100;
 
-          const actualPurity = (awt * touch) / 100;
-          const finalPurity = actualPurity + wastagePure;
+          // const actualPurity = (awt * touch) / 100;
+          // const finalPurity = actualPurity + wastagePure;
 
           return {
             stockId: row.productId,
@@ -864,9 +878,9 @@ const Billing = () => {
             touch,
             netWeight: awt,
             wastageValue,
-            wastagePure,
-            actualPurity,
-            finalPurity,
+            // wastagePure,
+            // actualPurity,
+            // finalPurity,
           };
         }),
       };
@@ -1084,6 +1098,9 @@ const Billing = () => {
     boxShadow: 24,
     p: 4,
     borderRadius: "10px",
+    display: "flex",
+    flexDirection: "column",
+    maxHeight: "85vh",
   };
 
   const sidebarButtonSX = {
@@ -1260,6 +1277,7 @@ const Billing = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       setAvailableProducts(data);
+      console.log("product stock:", data)
       setOriginalProducts(data);
     } catch (error) {
       console.error("Error fetching Available Products:", error);
@@ -1280,6 +1298,7 @@ const Billing = () => {
         return p;
       });
       setItemPurchaseProducts(mappedData);
+      console.log("item purchase stock", mappedData)
     } catch (error) {
       console.error("Error fetching Item Purchase Stock:", error);
     }
@@ -2213,92 +2232,90 @@ const Billing = () => {
         <ToastContainer />
       </Box>}
 
-      {/* Modal to view all bills */}
       <Modal open={isModal} onClose={() => setIsModal(false)}>
         <Box sx={modalStyle}>
-          <Typography variant="h6" component="h2" gutterBottom>
-            All Bills
-          </Typography>
-          <Button
-            style={{
-              position: "absolute",
-              top: 30,
-              right: 20,
-              minWidth: "30px",
-              height: "30px",
-              borderRadius: "50%",
-              padding: 0,
-              fontSize: "16px",
-              lineHeight: 1,
-              backgroundColor: "#f44336",
-              color: "white",
-              cursor: "pointer",
-            }}
-            onClick={() => setIsModal(false)}
-          >
-            x </Button>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" component="h2">
+              All Bills
+            </Typography>
+            <IconButton
+              onClick={() => setIsModal(false)}
+              sx={{
+                width: "40px",
+                height: "40px",
+                backgroundColor: "#f44336",
+                color: "white",
+                '&:hover': { backgroundColor: "#d32f2f" }
+              }}
+            >
+              ×
+            </IconButton>
+          </Box>
 
-          <Table
-            sx={{
-              maxHeight: 700,
-              maxWidth: 600,
-              overflowY: "auto",
-              display: "block",
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search by Bill No or Customer Name..."
+            value={billSearchTerm}
+            onChange={(e) => setBillSearchTerm(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
             }}
-          >
-            <TableHead>
-              <TableRow
-                style={{
-                  backgroundColor: "#06387a",
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 1,
-                }}
-              >
-                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}>  Bill No </TableCell>
-                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }} >Customer </TableCell>
-                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}> Amount </TableCell>
-                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }} >  Date </TableCell>
-                <TableCell style={{ textAlign: "center", color: "white", width: "90px" }}> Actions </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {Array.isArray(bills) && bills.length > 0 ? (
-                bills.map((bill) => (
-                  <TableRow key={bill.id}>
-                    <TableCell style={{ textAlign: "center" }}>  {bill.id} </TableCell>
-                    <TableCell style={{ textAlign: "center" }}> {bill.customers?.name || "N/A"} </TableCell>
-                    <TableCell style={{ textAlign: "center" }}>  {bill.billAmount} </TableCell>
-                    <TableCell style={{ textAlign: "center" }}>  {new Date(bill.createdAt).toLocaleDateString()} </TableCell>
-                    <TableCell>
-                      <div style={{ display: 'flex', gap: '5px' }}>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => { setIsModal(false); navigate(`/bill-view/${bill.id}`); }}
-                          sx={{ mr: 1 }}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="primary"
-                          onClick={() => loadBillForEditing(bill.id)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
+          />
+
+          <TableContainer sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 'calc(85vh - 160px)' }}>
+            <Table stickyHeader>
+              <TableHead>
                 <TableRow>
-                  <TableCell colSpan={5} style={{ textAlign: "center" }}> No bills found </TableCell>
+                  <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "90px" }}>  Bill No </TableCell>
+                  <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "150px" }} >Customer </TableCell>
+                  <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "110px" }}> Amount </TableCell>
+                  <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "110px" }} >  Date </TableCell>
+                  <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "150px" }}> Actions </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {filteredBills.length > 0 ? (
+                  filteredBills.map((bill) => (
+                    <TableRow key={bill.id}>
+                      <TableCell style={{ textAlign: "center" }}>  {bill.id} </TableCell>
+                      <TableCell style={{ textAlign: "center" }}> {bill.customers?.name || "N/A"} </TableCell>
+                      <TableCell style={{ textAlign: "center" }}>  {bill.billAmount} </TableCell>
+                      <TableCell style={{ textAlign: "center" }}>  {new Date(bill.createdAt).toLocaleDateString("en-GB")} </TableCell>
+                      <TableCell>
+                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => { setIsModal(false); navigate(`/bill-view/${bill.id}`); }}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="primary"
+                            onClick={() => loadBillForEditing(bill.id)}
+                          >
+                            Edit
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} style={{ textAlign: "center" }}> No bills found </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       </Modal>
     </Box >
