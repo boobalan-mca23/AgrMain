@@ -2,9 +2,9 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-const setTotalRawGold = async () => {
+const setTotalRawGold = async (tx = prisma) => {
   //  Group logs by rawGoldStockId and sum weights
-  const grouped = await prisma.rawGoldLogs.groupBy({
+  const grouped = await tx.rawGoldLogs.groupBy({
     by: ["rawGoldStockId"],
     _sum: {
       weight: true,
@@ -13,7 +13,7 @@ const setTotalRawGold = async () => {
 
   //  Loop through each group and update the corresponding stock
   for (const g of grouped) {
-    await prisma.rawgoldStock.update({
+    await tx.rawgoldStock.update({
       where: { id: g.rawGoldStockId },
       data: {
         weight: g._sum.weight || 0, // assumes your stock table has totalWeight column
@@ -25,16 +25,16 @@ const setTotalRawGold = async () => {
 
 
 
-const createhundredPercentTouch = async () => {
+const createhundredPercentTouch = async (tx = prisma) => {
   // In received section we have goldRate so that time we need to create new touch as 100
-  const ifExist = await prisma.masterTouch.findFirst({
+  const ifExist = await tx.masterTouch.findFirst({
     where: {
       touch: 100
     }
   })
 
   if (!ifExist) {
-    await prisma.masterTouch.create({
+    await tx.masterTouch.create({
       data: {
         touch: 100,
         rawGoldStock: {
@@ -50,13 +50,10 @@ const createhundredPercentTouch = async () => {
 }
 
 
-const moveToRawGoldStock = async (received, billId, customerId) => {
+const moveToRawGoldStock = async (received, billId, customerId, tx = prisma) => {
   if (!received || received.length === 0) return;
-
-  await createhundredPercentTouch();
-
+  await createhundredPercentTouch(tx);
   if (received.length >= 1) {
-    await prisma.$transaction(async (tx) => {
       for (const receive of received) {
         let data = {
           date: receive.date,
@@ -116,10 +113,9 @@ const moveToRawGoldStock = async (received, billId, customerId) => {
           });
         }
       }
-    });
   }
 
-  await setTotalRawGold();
+  await setTotalRawGold(tx);
 };
 
 const receiptMoveToRawGold = async (received, customerId) => {

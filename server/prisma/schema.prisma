@@ -416,6 +416,8 @@ model Bill {
   hallMark          Float?
   prevHallMark      Float?
   PrevBalance       Float?
+  billPureEffect     Float?
+  billHallmarkEffect Float?
   hallmarkQty       Float?
   billDetailsprofit Float?
   Stoneprofit       Float?

@@ -66,8 +66,12 @@ const createBill = async (req, res) => {
 
     const nextBillNo = lastBill ? (lastBill.billno || lastBill.id) + 1 : 1;
 
+    const billPureEffect = parseFloat(pureBalance) - parseFloat(prevBalance);
+    const billHallmarkEffect = parseFloat(hallmarkBalance) - parseFloat(prevHallmark);
+    let newBill;
 
-    const newBill = await prisma.bill.create({
+    await prisma.$transaction(async (tx) => {
+    newBill = await tx.bill.create({
       data: {
         billno: nextBillNo,
         date: new Date(date),
@@ -80,6 +84,8 @@ const createBill = async (req, res) => {
         hallMark: parseFloat(hallMark),
         prevHallMark: parseFloat(prevHallmark),
         PrevBalance: parseFloat(prevBalance),
+        billPureEffect,
+        billHallmarkEffect,
         billDetailsprofit: parseFloat(billDetailsprofit),
         Stoneprofit: parseFloat(Stoneprofit),
         Totalprofit: parseFloat(Totalprofit),
@@ -92,7 +98,7 @@ const createBill = async (req, res) => {
     });
     console.log("newBill created", newBill);
     // newbill time we need to move rawgold stock
-    await addRawGold.moveToRawGoldStock(received || [], newBill.id, customerId);
+    await addRawGold.moveToRawGoldStock(received || [], newBill.id, customerId, tx);
 
     // for (const item of orderItems) {
     //   if (item.stockId) {
@@ -111,7 +117,7 @@ const createBill = async (req, res) => {
       if (item.stockId) {
 
         if (item.stockType === "ITEM_PURCHASE") {
-          const itemPurchaseEntry = await prisma.itemPurchaseEntry.findUnique({
+          const itemPurchaseEntry = await tx.itemPurchaseEntry.findUnique({
             where: { id: parseInt(item.stockId) },
           });
 
@@ -120,7 +126,7 @@ const createBill = async (req, res) => {
             const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
             const remainWt = itemPurchaseEntry.netWeight - decProductWt;
 
-            await prisma.itemPurchaseEntry.update({
+            await tx.itemPurchaseEntry.update({
               where: { id: parseInt(item.stockId) },
               data: {
                 netWeight: remainWt,
@@ -133,7 +139,7 @@ const createBill = async (req, res) => {
         }
 
         // parse safely (for PRODUCT stock)
-        const stock = await prisma.productStock.findMany({
+        const stock = await tx.productStock.findMany({
           where: {
             id: item.stockId
           },
@@ -170,7 +176,7 @@ const createBill = async (req, res) => {
           wastagePure = finalPurity - actualPurity;
         }
 
-        await prisma.productStock.update({
+        await tx.productStock.update({
           where: { id: parseInt(item.stockId) },
           data: {
             itemWeight: remainWt,
@@ -189,7 +195,7 @@ const createBill = async (req, res) => {
 
 
 
-    await prisma.customerBillBalance.upsert({
+    await tx.customerBillBalance.upsert({
       where: { customer_id: parseInt(customerId) },
       update: {
         balance: parseFloat(pureBalance),
@@ -201,6 +207,7 @@ const createBill = async (req, res) => {
         hallMarkBal: parseFloat(hallmarkBalance),
       },
     });
+})
     res
       .status(201)
       .json({ message: "Bill created successfully", bill: newBill });
@@ -239,62 +246,144 @@ const updateBill = async (req, res) => {
     }
 
     // Update the main bill fields
-    if (orderItems && orderItems.length > 0) {
-      const modifiedOrders = orderItems.map((item) => ({
-        productName: item.productName,
-        count: item.count ? parseInt(item.count) : undefined,
-        weight: item.weight ? parseFloat(item.weight) : undefined,
-        stoneWeight: item.stoneWeight ? parseFloat(item.stoneWeight) : undefined,
-        enteredStoneWeight: item.enteredStoneWeight ? parseFloat(item.enteredStoneWeight) : undefined,
-        afterWeight: item.afterWeight ? parseFloat(item.afterWeight) : undefined,
-        percentage: item.percentage ? parseFloat(item.percentage) : undefined,
-        finalWeight: item.finalWeight ? parseFloat(item.finalWeight) : undefined,
-        actualPurity: item.actualPurity ? parseFloat(item.actualPurity) : undefined,
-        touch: item.touch ? parseFloat(item.touch) : undefined,
-        netWeight: item.netWeight ? parseFloat(item.netWeight) : undefined,
-        wastageValue: item.wastageValue ? parseFloat(item.wastageValue) : undefined,
-        wastageType: item.wastageType,
-        wastagePure: item.wastagePure ? parseFloat(item.wastagePure) : undefined,
-        finalPurity: item.finalPurity ? parseFloat(item.finalPurity) : undefined,
-      }));
+   let modifiedOrders = [];
 
-      // Delete old orders and recreate
-      await prisma.orderItems.deleteMany({ where: { billId: parseInt(billId) } });
+if (orderItems && orderItems.length > 0) {
 
-      await prisma.bill.update({
-        where: { id: parseInt(billId) },
-        data: {
-          billAmount: parseFloat(billTotal) || 0,
-          hallMark: parseFloat(hallMark) || 0,
-          prevHallMark: parseFloat(prevHallmark) || 0,
-          PrevBalance: parseFloat(prevBalance) || 0,
-          hallmarkQty: parseFloat(hallmarkQty) || 0,
-          billDetailsprofit: parseFloat(billDetailsprofit) || 0,
-          Stoneprofit: parseFloat(Stoneprofit) || 0,
-          Totalprofit: parseFloat(Totalprofit) || 0,
-          orders: { create: modifiedOrders },
-        },
+  modifiedOrders = orderItems.map((item) => {
+
+    const netWeight = item.netWeight ? parseFloat(item.netWeight) : 0;
+    const touch = item.touch ? parseFloat(item.touch) : 0;
+    const wastageValue = item.wastageValue ? parseFloat(item.wastageValue) : 0;
+
+    const actualPurity = (netWeight * touch) / 100;
+
+    let wastagePure = 0;
+    let finalPurity = 0;
+
+    if (item.wastageType === "Touch") {
+      finalPurity = (netWeight * wastageValue) / 100;
+      wastagePure = finalPurity - actualPurity;
+
+    } else if (item.wastageType === "%") {
+
+      const wastageWeight = (netWeight * wastageValue) / 100;
+      const finalWeight = netWeight + wastageWeight;
+
+      finalPurity = (finalWeight * touch) / 100;
+      wastagePure = finalPurity - actualPurity;
+
+    } else if (item.wastageType === "+") {
+
+      const finalWeight = netWeight + wastageValue;
+
+      finalPurity = (finalWeight * touch) / 100;
+      wastagePure = finalPurity - actualPurity;
+    }
+
+    return {
+      productName: item.productName,
+      count: item.count ? parseInt(item.count) : undefined,
+      weight: item.weight ? parseFloat(item.weight) : undefined,
+      stoneWeight: item.stoneWeight ? parseFloat(item.stoneWeight) : undefined,
+      enteredStoneWeight: item.enteredStoneWeight ? parseFloat(item.enteredStoneWeight) : undefined,
+      afterWeight: item.afterWeight ? parseFloat(item.afterWeight) : undefined,
+      percentage: item.percentage ? parseFloat(item.percentage) : undefined,
+      finalWeight: item.finalWeight ? parseFloat(item.finalWeight) : undefined,
+
+      touch,
+      netWeight,
+      wastageValue,
+      wastageType: item.wastageType,
+
+      actualPurity,
+      wastagePure,
+      finalPurity
+    };
+
+  });
+
+}
+
+  const billIdNum = parseInt(billId);
+  const customerIdNum = parseInt(customerId);
+
+  // get the old bill
+  const oldBill = await prisma.bill.findUnique({
+    where: { id: billIdNum },
+    select: {
+      billPureEffect: true,
+      billHallmarkEffect: true
+    }
+  });
+
+  // get current customer balance
+  const customerBalance = await prisma.customerBillBalance.findUnique({
+    where: { customer_id: customerIdNum }
+  });
+
+  const currentPure = customerBalance?.balance || 0;
+  const currentHallmark = customerBalance?.hallMarkBal || 0;
+
+  const oldPureEffect = oldBill?.billPureEffect || 0;
+  const oldHallEffect = oldBill?.billHallmarkEffect || 0;
+
+  // new bill effect
+  const newPureEffect =
+    parseFloat(pureBalance) - parseFloat(prevBalance);
+
+  const newHallEffect =
+    parseFloat(hallmarkBalance) - parseFloat(prevHallmark);
+
+  // compute new overall balances
+  const updatedPureBalance =
+    currentPure - oldPureEffect + newPureEffect;
+
+  const updatedHallmarkBalance =
+    currentHallmark - oldHallEffect + newHallEffect;
+
+      await prisma.$transaction(async (tx) => {
+        await tx.bill.update({
+          where: { id: billIdNum },
+          data: {
+            billAmount: parseFloat(billTotal) || 0,
+            hallMark: parseFloat(hallMark) || 0,
+
+            prevHallMark: parseFloat(prevHallmark) || 0,
+            PrevBalance: parseFloat(prevBalance) || 0,
+
+            billPureEffect: newPureEffect,
+            billHallmarkEffect: newHallEffect,
+
+            hallmarkQty: parseFloat(hallmarkQty) || 0,
+            billDetailsprofit: parseFloat(billDetailsprofit) || 0,
+            Stoneprofit: parseFloat(Stoneprofit) || 0,
+            Totalprofit: parseFloat(Totalprofit) || 0,
+
+            ...(modifiedOrders.length > 0 && {
+              orders: {
+                deleteMany: { billId: billIdNum },
+                create: modifiedOrders
+              }
+            })
+          }
+        });
+
+        // update customer balance
+        await tx.customerBillBalance.upsert({
+          where: { customer_id: customerIdNum },
+          update: {
+            balance: updatedPureBalance,
+            hallMarkBal: updatedHallmarkBalance,
+          },
+          create: {
+            customer_id: customerIdNum,
+            balance: updatedPureBalance,
+            hallMarkBal: updatedHallmarkBalance,
+          },
+        });
+
       });
-    }
-
-    // Update customer balance
-    await prisma.customerBillBalance.upsert({
-      where: { customer_id: parseInt(customerId) },
-      update: {
-        balance: parseFloat(pureBalance) || 0,
-        hallMarkBal: parseFloat(hallmarkBalance) || 0,
-      },
-      create: {
-        customer_id: parseInt(customerId),
-        balance: parseFloat(pureBalance) || 0,
-        hallMarkBal: parseFloat(hallmarkBalance) || 0,
-      },
-    });
-
-    // If received gold items are also provided, process them too (optional)
-    if (received && received.length > 0) {
-      addRawGold.moveToRawGoldStock(received, billId, customerId);
-    }
 
     res.status(201).json({ message: "Bill updated successfully" });
   } catch (err) {
