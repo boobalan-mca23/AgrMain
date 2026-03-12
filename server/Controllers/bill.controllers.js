@@ -181,8 +181,7 @@ const createBill = async (req, res) => {
             wastagePure,
             finalPurity,
             wastageType: stock[0].wastageType,
-            isBillProduct: remainWt <= 0.05,
-            isActive: remainWt > 0.05,
+            isBillProduct: true,
           },
         });
       }
@@ -257,8 +256,6 @@ const updateBill = async (req, res) => {
         wastageType: item.wastageType,
         wastagePure: item.wastagePure ? parseFloat(item.wastagePure) : undefined,
         finalPurity: item.finalPurity ? parseFloat(item.finalPurity) : undefined,
-        stockId: item.stockId ? parseInt(item.stockId) : undefined,
-        stockType: item.stockType || "PRODUCT",
       }));
 
       // Delete old orders and recreate
