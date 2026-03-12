@@ -169,10 +169,6 @@ function Cashgold() {
   const calculateTotalPurity = () => {
     return entries
       .reduce((total, entry) => {
-        if (entry.type === "Cash" && entry.touch && entry.purity) {
-          const pureGold = (parseFloat(entry.purity) / parseFloat(entry.touch)) * 100;
-          return total + (isNaN(pureGold) ? 0 : pureGold);
-        }
         return total + parseFloat(entry.purity || 0);
       }, 0)
       .toFixed(3);
