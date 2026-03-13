@@ -322,7 +322,8 @@ const CustomerReturn = () => {
           netWeight: currentNetWeight,
           wastagePure: currentWastagePure,
           finalPurity: currentFinalPurity,
-          actualPurity: currentActualPurity
+          actualPurity: currentActualPurity,
+          finalWeight: (currentNetWeight * Number(selectedProduct?.percentage || 0)) / 100, // Sync with FWT calculation
         }
       );
 
@@ -406,6 +407,7 @@ const CustomerReturn = () => {
           netWeight: currentRepairNetWeight,
           finalPurity: currentRepairFinalPurity,
           actualPurity: currentRepairActualPurity,
+          finalWeight: (currentRepairNetWeight * Number(selectedProduct?.percentage || 0)) / 100, // Sync with FWT calculation
         },
         reason
       });
@@ -718,7 +720,7 @@ const CustomerReturn = () => {
                               </span>
                             </TableCell>
                             <TableCell>
-                              {item.repairStatus === "NONE" || item.repairStatus === "PARTIAL_RETURN" ? (
+                              {item.repairStatus !== "RETURNED" && item.repairStatus !== "IN_REPAIR" ? (
                                 <Button
                                   color="error"
                                   variant="outlined"
@@ -802,7 +804,7 @@ const CustomerReturn = () => {
                               </span>
                             </TableCell>
                             <TableCell>
-                              {item.repairStatus === "NONE" || item.repairStatus === "PARTIAL_REPAIR" ? (
+                              {item.repairStatus !== "RETURNED" && item.repairStatus !== "IN_REPAIR" ? (
                                 <Button
                                   variant="contained"
                                   size="small"
@@ -972,6 +974,45 @@ const CustomerReturn = () => {
                   {safeFixed((currentRepairNetWeight * Number(selectedProduct?.percentage || 0)) / 100)}
                 </td>
               </tr>
+              {/* DEBUG ROWS */}
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee',color: '#666' , textAlign: 'center' }}>Touch</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  {safeFixed(selectedProduct?.touch)}
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Wastage Type</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{selectedProduct?.wastageType}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{repairQC.wastageType}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Wastage Value</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{selectedProduct?.wastageValue}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{repairQC.wastageValue}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Actual Purity</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(selectedProduct?.actualPurity)}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(currentRepairActualPurity)}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Wastage Pure</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(selectedProduct?.wastagePure)}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(currentRepairWastagePure)}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Final Purity</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(selectedProduct?.finalPurity)}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(currentRepairFinalPurity)}</td>
+              </tr>
             </tbody>
           </table>
 
@@ -1134,7 +1175,7 @@ const CustomerReturn = () => {
                 </td>
               </tr>
               <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch %</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch %<br/>(profit percentage <br/> entered while billing)</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   <b>{safeFixed(selectedProduct?.percentage)}</b>
                 </td>
@@ -1150,6 +1191,45 @@ const CustomerReturn = () => {
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#2e7d32', textAlign: 'center' }}>
                   {safeFixed((currentNetWeight * Number(selectedProduct?.percentage || 0)) / 100)}
                 </td>
+              </tr>
+              {/* DEBUG ROWS */}
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>Touch</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  {safeFixed(selectedProduct?.touch)}
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Wastage Type</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{selectedProduct?.wastageType}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{returnQC.wastageType}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Wastage Value</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{selectedProduct?.wastageValue}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{returnQC.wastageValue}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Actual Purity</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(selectedProduct?.actualPurity)}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(currentActualPurity)}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Wastage Pure</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(selectedProduct?.wastagePure)}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(currentWastagePure)}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666' }}>Final Purity</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(selectedProduct?.finalPurity)}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(currentFinalPurity)}</td>
               </tr>
             </tbody>
           </table>
