@@ -99,20 +99,25 @@ const returnCustomerItem = async (req, res) => {
         where: { customer_id: bill.customer_id }
       });
 
+      const isFull = item.stockType === "ITEM_PURCHASE" || (Number(item.weight) <= Number(itemWeight));
+      const hallmarkReduction = isFull ? Number(currentHallmark) : 0;
+      const fwtReduction = Number(finalWeight);
+
       if (customerBalance) {
         await tx.customerBillBalance.update({
           where: { customer_id: bill.customer_id },
           data: {
-            balance: customerBalance.balance - Number(finalWeight),
-            hallMarkBal: customerBalance.hallMarkBal - Number(currentHallmark)
+            balance: customerBalance.balance - fwtReduction,
+            hallMarkBal: customerBalance.hallMarkBal - hallmarkReduction
           }
         });
       } else {
         await tx.customerBillBalance.create({
           data: {
             customer_id: bill.customer_id,
-            balance: Number(finalWeight),
-            initialBalance: Number(finalWeight)
+            balance: -fwtReduction, // Note: if coming from a return, we usually subtract from balance
+            initialBalance: -fwtReduction,
+            hallMarkBal: -hallmarkReduction
           }
         });
       }
@@ -191,10 +196,10 @@ const returnCustomerItem = async (req, res) => {
       }
 
       // Split logic to support partial returns
-      const originalWeight = Number(item.weight) || 0;
-      const returnedWeight = Number(itemWeight) || 0;
+      const originalWeight = (Number(item.weight) || 0).toFixed(3);
+      const returnedWeight = (Number(itemWeight) || 0).toFixed(3);
 
-      if (originalWeight > returnedWeight) {
+      if (item.stockType !== "ITEM_PURCHASE" && Number(originalWeight) > Number(returnedWeight)) {
         // Partial Return: Deduct from original
         const remainingWeight = originalWeight - returnedWeight;
         const remainingStoneWeight = (Number(item.stoneWeight) || 0) - (Number(stoneWeight) || 0);
