@@ -23,26 +23,23 @@ const JobCardRepTable = forwardRef((props, ref) => {
       <table ref={ref} className="reportTable">
         <thead id="reportHead">
           <tr className="reportThead">
-            <th >S.No</th>
-            <th >Date</th>
-            <th >Id</th>
+            <th rowSpan="2">S.No</th>
+            <th rowSpan="2">Date</th>
+            <th rowSpan="2">Id</th>
             <th colSpan="4">Given Wt</th>
             <th colSpan="11">Item Delivery</th>
             <th colSpan="3">Receive</th>
-            <th>Total</th>
-            <th >Balance</th>
-            {/* <th colSpan="3">ReceiveAmt</th> */}
-
-            <th>Is Finished</th>
+            <th rowSpan="2">Total</th>
+            <th rowSpan="2">Balance</th>
+            <th rowSpan="2">Is Finished</th>
           </tr>
           <tr className="reportThead">
-            <th colSpan={3}></th>
             <th>Issue Date</th>
             <th>Weight</th>
             <th>Touch</th>
             <th>Purity</th>
-            <th>DlyDate</th>
-            <th>Itme Name</th>
+            <th>Due Date</th>
+            <th>Item Name</th>
             <th>Wt</th>
             <th>Count</th>
             <th>tch</th>
@@ -55,7 +52,6 @@ const JobCardRepTable = forwardRef((props, ref) => {
             <th>weight</th>
             <th>touch</th>
             <th>purity</th>
-            <th colSpan={4}></th>
           </tr>
         </thead>
         <tbody className="reportTbody">
@@ -81,7 +77,7 @@ const JobCardRepTable = forwardRef((props, ref) => {
                   {i === 0 && (
                     <>
                       <td rowSpan={maxRows} >
-                        {jobIndex + 1}
+                        {props.page * props.rowsPerPage + jobIndex + 1}
                       </td>
                       <td rowSpan={maxRows}>
                         {new Date(job.createdAt).toLocaleDateString(
@@ -98,9 +94,9 @@ const JobCardRepTable = forwardRef((props, ref) => {
                       )
                       : "-"}
                   </td>
-                  <td>{g?.weight || "-"}</td>
-                  <td>{g?.touch || "-"}</td>
-                  <td>{g?.purity || "-"}</td>
+                  <td>{g?.weight ? Number(g.weight).toFixed(3) : "-"}</td>
+                  <td>{g?.touch ? Number(g.touch).toFixed(3) : "-"}</td>
+                  <td>{g?.purity ? Number(g.purity).toFixed(3) : "-"}</td>
                   <td>
                     {d?.createdAt
                       ? new Date(d?.createdAt).toLocaleDateString(
@@ -114,27 +110,27 @@ const JobCardRepTable = forwardRef((props, ref) => {
                       : "-"}
                   </td>
                   <td>{d?.itemName || "-"}</td>
-                  <td>{d?.itemWeight || "0"}</td>
+                  <td>{d?.itemWeight ? Number(d.itemWeight).toFixed(3) : "0"}</td>
                   <td>{d?.count || "0"}</td>
-                  <td>{d?.touch || "0"}</td>
+                  <td>{d?.touch ? Number(d.touch).toFixed(3) : "0"}</td>
 
                   <td>
                     {(d?.stoneWeight !== undefined ? Number(d.stoneWeight).toFixed(3) : (d?.deduction && totalStoneWt(d?.deduction) ? Number(totalStoneWt(d.deduction)).toFixed(3) : "0"))}
                   </td>
-                  <td>{d?.netWeight || "0"}</td>
+                  <td>{d?.netWeight ? Number(d.netWeight).toFixed(3) : "0"}</td>
                   <td>{d?.wastageType || "-"}</td>
-                  <td>{d?.wastageValue || "0"}</td>
-                  <td>{d?.wastagePure || "0"}</td>
-                  <td>{d?.finalPurity || "0"}</td>
+                  <td>{d?.wastageValue ? Number(d.wastageValue).toFixed(3) : "0"}</td>
+                  <td>{d?.wastagePure ? Number(d.wastagePure).toFixed(3) : "0"}</td>
+                  <td>{d?.finalPurity ? Number(d.finalPurity).toFixed(3) : "0"}</td>
 
-                  <td>{r?.weight || "0"}</td>
-                  <td>{r?.touch || "0"}</td>
-                  <td>{r?.purity || "0"}</td>
+                  <td>{r?.weight ? Number(r.weight).toFixed(3) : "0"}</td>
+                  <td>{r?.touch ? Number(r.touch).toFixed(3) : "0"}</td>
+                  <td>{r?.purity ? Number(r.purity).toFixed(3) : "0"}</td>
 
                   {i === 0 && (
                     <>
                       <td rowSpan={maxRows}>
-                        {total?.receivedTotal || "-"}
+                        {total?.receivedTotal ? Number(total.receivedTotal).toFixed(3) : "-"}
                       </td>
                       <td rowSpan={maxRows}>{Number(total?.jobCardBalance).toFixed(3) || "-"}</td>
                       <td rowSpan={maxRows}>

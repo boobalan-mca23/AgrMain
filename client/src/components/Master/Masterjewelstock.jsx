@@ -58,6 +58,9 @@ const Masterjewelstock = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === "jewelName" && value !== "" && !/^[a-zA-Z0-9\s]*$/.test(value)) {
+      return;
+    }
     const updatedData = { ...formData, [name]: value };
 
     const weight = parseFloat(updatedData.weight) || 0;

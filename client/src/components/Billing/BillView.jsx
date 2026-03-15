@@ -392,12 +392,9 @@ const BillView = () => {
                   <TableRow key={row.id} style={{ backgroundColor: "" }}>
                     <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
                     <TableCell className="td">
-                      <TextField
-                        size="small"
-                        value={row.productName}
-                        disabled
-                        inputProps={{ style: inputStyle }}
-                      />
+                      <Box className="product-name-wrap-cell">
+                        {row.productName}
+                      </Box>
                     </TableCell>
 
                     <TableCell className="td">

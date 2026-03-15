@@ -108,9 +108,9 @@ const OrderReport = () => {
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       return (
-        group.id.toLowerCase().includes(search) ||
-        group.customer.toLowerCase().includes(search) ||
-        group.items.some((item) => item.name.toLowerCase().includes(search))
+        (group.id && group.id.toLowerCase().includes(search)) ||
+        (group.customer && group.customer.toLowerCase().includes(search)) ||
+        group.items.some((item) => item.name && item.name.toLowerCase().includes(search))
       );
     }
 
@@ -148,7 +148,8 @@ const OrderReport = () => {
         <TextField
           variant="outlined"
           size="small"
-          placeholder="Search orders by customer name..."
+          placeholder="Search by customer or item name..."
+          value={searchTerm}
           InputProps={{ startAdornment: <Search color="action" /> }}
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ flex: 1, maxWidth: 400 }}

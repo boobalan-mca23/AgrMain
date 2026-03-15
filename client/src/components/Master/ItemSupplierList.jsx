@@ -114,6 +114,7 @@ function ItemSupplierList() {
 
         <TextField
           label="Search Supplier Name"
+          size="small"
           value={supplierFilter}
           onChange={(e) =>
             setSupplierFilter(e.target.value)
@@ -124,6 +125,10 @@ function ItemSupplierList() {
 
         <Button
           variant="outlined"
+          size="small"
+          sx={{
+            height: "40px"
+          }}
           onClick={clearFilter}
         >
           Clear

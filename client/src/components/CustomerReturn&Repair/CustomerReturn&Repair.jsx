@@ -16,12 +16,19 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  IconButton,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import "./Customer.css";
 import axios from "axios";
+import CloseIcon from "@mui/icons-material/Close";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 
 // import "./Stock.css";
 const modalStyle = {
@@ -50,15 +57,8 @@ const CustomerReturn = () => {
 
   // filters (Stored and displayed as DD/MM/YYYY)
   const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 15);
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  });
-  const [toDate, setToDate] = useState(() => {
-    const d = new Date();
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  });
+  const [fromDate, setFromDate] = useState(() => dayjs().subtract(15, "day"));
+  const [toDate, setToDate] = useState(() => dayjs());
 
   // "RETURN" | "REPAIR"
   const [actionType, setActionType] = useState(null);
@@ -214,6 +214,9 @@ const CustomerReturn = () => {
   const filteredBills = bills.filter((bill) => {
 
     const searchValue = search.toLowerCase();
+    const allReturned = bill.orders?.every(item => item.repairStatus === "RETURNED");
+
+    if (allReturned) return false;
 
     const matchesSearch =
       !search ||
@@ -223,25 +226,14 @@ const CustomerReturn = () => {
         item.productName?.toLowerCase().includes(searchValue)
       );
 
-    const billDateLocal = bill.date ? new Date(bill.date) : null;
-
-    // Helper to parse DD/MM/YYYY to Date object
-    const parseDDMMYYYY = (dateStr) => {
-      if (!dateStr || dateStr.length !== 10) return null;
-      const [day, month, year] = dateStr.split('/');
-      if (!day || !month || !year) return null;
-      return new Date(`${year}-${month}-${day}T00:00:00`);
-    };
+    const billDateLocal = bill.date ? dayjs(bill.date) : null;
 
     // Normalize bounds to ignore time comparison errors
-    const from = parseDDMMYYYY(fromDate);
-    if (from) from.setHours(0, 0, 0, 0);
+    const from = fromDate ? fromDate.startOf("day") : null;
+    const to = toDate ? toDate.endOf("day") : null;
 
-    const to = parseDDMMYYYY(toDate);
-    if (to) to.setHours(23, 59, 59, 999);
-
-    const matchesFrom = !from || (billDateLocal && billDateLocal >= from);
-    const matchesTo = !to || (billDateLocal && billDateLocal <= to);
+    const matchesFrom = !from || (billDateLocal && (billDateLocal.isAfter(from) || billDateLocal.isSame(from, "day")));
+    const matchesTo = !to || (billDateLocal && (billDateLocal.isBefore(to) || billDateLocal.isSame(to, "day")));
 
     return matchesSearch && matchesFrom && matchesTo;
   }).sort((a, b) => {
@@ -308,10 +300,20 @@ const CustomerReturn = () => {
   // };
 
   const confirmReturn = async () => {
+    if (returnLoading) return;
     try {
+      if (!returnQC.itemWeight || Number(returnQC.itemWeight) <= 0) {
+        toast.error("Item Weight is mandatory and must be greater than zero");
+        return;
+      }
+      if (!returnQC.count || Number(returnQC.count) <= 0) {
+        toast.error("Count is mandatory and must be greater than zero");
+        return;
+      }
+
       setReturnLoading(true);
 
-      await axios.post(
+      const updatedOrderItem = (await axios.post(
         `${BACKEND_SERVER_URL}/api/returns/customer-item-return`,
         {
           billId: selectedBill.id,
@@ -325,21 +327,25 @@ const CustomerReturn = () => {
           actualPurity: currentActualPurity,
           finalWeight: (currentNetWeight * Number(selectedProduct?.percentage || 0)) / 100, // Sync with FWT calculation
         }
-      );
+      )).data.updatedOrderItem;
 
       toast.success("Item returned successfully");
-      //   setSelectedBill(prev => ({
-      //   ...prev,
-      //   orders: prev.orders.map(o =>
-      //     o.id === selectedProduct.id
-      //       ? { ...o, repairStatus: "RETURNED" }
-      //       : o
-      //   )
-      // }));
+
+      setSelectedBill(prev => {
+        const updatedBill = {
+          ...prev,
+          orders: prev.orders.map(o =>
+            o.id === selectedProduct.id ? updatedOrderItem : o
+          )
+        };
+        setBills(currentBills =>
+          currentBills.map(b => b.id === updatedBill.id ? updatedBill : b)
+        );
+        return updatedBill;
+      });
 
       setOpenReturnDialog(false);
-      setSelectedBill(null);
-      fetchSoldBills();
+      // Removed setSelectedBill(null) and fetchSoldBills() to keep modal open
     } catch (err) {
       toast.error("Failed to return item");
     } finally {
@@ -387,11 +393,24 @@ const CustomerReturn = () => {
 
   //sned to repair
   const handleSend = async () => {
+    if (repairLoading) return;
     try {
+      if (!repairQC.itemWeight || Number(repairQC.itemWeight) <= 0) {
+        toast.error("Item Weight is mandatory and must be greater than zero");
+        return;
+      }
+      if (!repairQC.count || Number(repairQC.count) <= 0) {
+        toast.error("Count is mandatory and must be greater than zero");
+        return;
+      }
+      if (!selectedGoldsmith) {
+        toast.error("Please select a goldsmith");
+        return;
+      }
       setRepairLoading(true);
       setLoading(true);
 
-      await axios.post(`${BACKEND_SERVER_URL}/api/repair/customer-send`, {
+      const updatedOrderItem = (await axios.post(`${BACKEND_SERVER_URL}/api/repair/customer-send`, {
         billId: selectedBill.id,
         goldsmithId: selectedGoldsmith,
         orderItemId: selectedProduct.id,
@@ -410,23 +429,28 @@ const CustomerReturn = () => {
           finalWeight: (currentRepairNetWeight * Number(selectedProduct?.percentage || 0)) / 100, // Sync with FWT calculation
         },
         reason
-      });
+      })).data.updatedOrderItem;
+
       console.log("data to send", selectedProduct)
       toast.success("Item sent to repair");
 
-      setSelectedBill(prev => ({
-        ...prev,
-        orders: prev.orders.map(item =>
-          item.id === selectedProduct.id
-            ? { ...item, repairStatus: "IN_REPAIR" }
-            : item
-        )
-      }));
+      setSelectedBill(prev => {
+        const updatedBill = {
+          ...prev,
+          orders: prev.orders.map(item =>
+            item.id === selectedProduct.id ? updatedOrderItem : item
+          )
+        };
+        setBills(currentBills =>
+          currentBills.map(b => b.id === updatedBill.id ? updatedBill : b)
+        );
+        return updatedBill;
+      });
 
       setOpenSendDialog(false);
       setReason("");
       setSelectedProduct(null);
-      fetchSoldBills();
+      // Removed fetchSoldBills() to avoid unnecessary re-fetch while modal is open
 
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to send to repair");
@@ -473,9 +497,14 @@ const CustomerReturn = () => {
     v === null || v === undefined || v === "" ? "-" : v;
 
   const handlePrint = () => {
+    const fmtPrintDate = (d) => {
+      if (!d) return "—";
+      return d.format("DD/MM/YYYY");
+    };
+
     const dateRangeText =
       fromDate || toDate
-        ? `Date Range: ${fromDate || "—"} to ${toDate || "—"}`
+        ? `Date Range: ${fmtPrintDate(fromDate)} to ${fmtPrintDate(toDate)}`
         : "";
 
     const tableRows = filteredBills
@@ -539,32 +568,52 @@ const CustomerReturn = () => {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <TextField
-          type="text"
-          size="small"
-          label="From (DD/MM/YYYY)"
-          InputLabelProps={{ shrink: true }}
-          placeholder="DD/MM/YYYY"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="From Date"
+            value={fromDate}
+            format="DD/MM/YYYY"
+            onChange={(newValue) => {
+              if (newValue && toDate && newValue.isAfter(toDate, "day")) {
+                toast.error("From Date cannot be after To Date");
+                return;
+              }
+              setFromDate(newValue);
+            }}
+            slotProps={{ textField: { size: "small", sx: { width: 260 } } }}
+          />
+        </LocalizationProvider>
 
-        <TextField
-          type="text"
-          size="small"
-          label="To (DD/MM/YYYY)"
-          InputLabelProps={{ shrink: true }}
-          placeholder="DD/MM/YYYY"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-        />
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="To Date"
+            value={toDate}
+            format="DD/MM/YYYY"
+            minDate={fromDate || undefined}
+            onChange={(newValue) => {
+              if (newValue && fromDate && newValue.isBefore(fromDate, "day")) {
+                toast.error("To Date cannot be before From Date");
+                return;
+              }
+              setToDate(newValue);
+            }}
+            slotProps={{ textField: { size: "small", sx: { width: 260 } } }}
+          />
+        </LocalizationProvider>
 
         <Button
-          variant="outlined"
+          variant="contained"
+          size="small"
+          sx={{
+            backgroundColor: "#d32f2f",
+            color: "white",
+            '&:hover': { backgroundColor: "#c62828" },
+            height: "40px"
+          }}
           onClick={() => {
             setSearch("");
-            setFromDate("");
-            setToDate("");
+            setFromDate(null);
+            setToDate(null);
           }}
         >
           Reset
@@ -582,8 +631,9 @@ const CustomerReturn = () => {
             <TableCell className="BillTable-th-td" style={{ width: '10px !important' }}>S.No</TableCell>
             <TableCell className="BillTable-th-td">Bill No</TableCell>
             <TableCell className="BillTable-th-td">Customer</TableCell>
+            <TableCell className="BillTable-th-td">Product</TableCell>
             <TableCell className="BillTable-th-td">Date</TableCell>
-            <TableCell className="BillTable-th-td"></TableCell>
+            <TableCell className="BillTable-th-td">Bill View</TableCell>
             <TableCell className="BillTable-th-td">Action</TableCell>
           </TableRow>
         </TableHead>
@@ -597,6 +647,9 @@ const CustomerReturn = () => {
                 <TableCell className="BillTable-tb-td">{bill.id}</TableCell>
                 <TableCell className="BillTable-tb-td">
                   {showValue(bill.customers?.name)}
+                </TableCell>
+                <TableCell className="BillTable-tb-td">
+                  {bill.orders?.map(o => o.productName).join(", ") || "-"}
                 </TableCell>
                 <TableCell className="BillTable-tb-td">
                   {bill.date
@@ -636,7 +689,7 @@ const CustomerReturn = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} align="center">
+              <TableCell colSpan={6} align="center">
                 No matching bills
               </TableCell>
             </TableRow>
@@ -665,7 +718,7 @@ const CustomerReturn = () => {
           {selectedBill && (
             <>
               {/* HEADER */}
-              <div className="model-heading-section">
+              <div className="model-heading-section" style={{ position: 'relative', paddingRight: '40px' }}>
                 <Typography variant="h6">
                   Bill no: <strong>{selectedBill.id}</strong>
                 </Typography>
@@ -673,6 +726,22 @@ const CustomerReturn = () => {
                 <Typography variant="h6">
                   Customer: <strong>{selectedBill.customers?.name}</strong>
                 </Typography>
+
+                <IconButton
+                  aria-label="close"
+                  onClick={() => {
+                    setSelectedBill(null);
+                    setActionType(null);
+                  }}
+                  sx={{
+                    position: 'absolute',
+                    right: -8,
+                    top: -8,
+                    color: (theme) => theme.palette.grey[500],
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
               </div>
 
               {/* ================= RETURN MODE ================= */}
@@ -716,11 +785,12 @@ const CustomerReturn = () => {
                                   : item.repairStatus === "PARTIAL_REPAIR" ? "Partial Repair"
                                     : item.repairStatus === "RETURNED" ? "Returned"
                                       : item.repairStatus === "PARTIAL_RETURN" ? "Partial Return"
-                                        : "Sold"}
+                                        : item.repairStatus === "PARTIAL_REPAIR_RETURN" ? "Partial Rep/Ret"
+                                          : "Sold"}
                               </span>
                             </TableCell>
                             <TableCell>
-                              {item.repairStatus !== "RETURNED" && item.repairStatus !== "IN_REPAIR" ? (
+                              {!["RETURNED", "IN_REPAIR"].includes(item.repairStatus) ? (
                                 <Button
                                   color="error"
                                   variant="outlined"
@@ -800,11 +870,12 @@ const CustomerReturn = () => {
                                   : item.repairStatus === "PARTIAL_REPAIR" ? "Partial Repair"
                                     : item.repairStatus === "RETURNED" ? "Returned"
                                       : item.repairStatus === "PARTIAL_RETURN" ? "Partial Return"
-                                        : "Sold"}
+                                        : item.repairStatus === "PARTIAL_REPAIR_RETURN" ? "Partial Rep/Ret"
+                                          : "Sold"}
                               </span>
                             </TableCell>
                             <TableCell>
-                              {item.repairStatus !== "RETURNED" && item.repairStatus !== "IN_REPAIR" ? (
+                              {!["RETURNED", "IN_REPAIR"].includes(item.repairStatus) ? (
                                 <Button
                                   variant="contained"
                                   size="small"
@@ -839,7 +910,21 @@ const CustomerReturn = () => {
       {/* SEND TO REPAIR POPUP */}
       <Dialog open={openSendDialog} onClose={repairLoading ? null : () => setOpenSendDialog(false)} maxWidth="xl" fullWidth
         PaperProps={{ sx: { minWidth: 500, maxWidth: 700 } }}>
-        <DialogTitle>Send Product to Repair</DialogTitle>
+        <DialogTitle sx={{ m: 0, p: 2 }}>
+          Send Product to Repair
+          <IconButton
+            aria-label="close"
+            onClick={() => setOpenSendDialog(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
 
         <DialogContent sx={{ overflow: 'visible' }}>
           {/* ITEM HEADER */}
@@ -873,15 +958,18 @@ const CustomerReturn = () => {
                   <b>{safeFixed(selectedProduct?.weight)}</b>
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={repairQC.itemWeight}
-                    onChange={(e) =>
-                      setRepairQC({ ...repairQC, itemWeight: e.target.value })
-                    }
-                    sx={{ width: '100px' }}
-                  />
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={repairQC.itemWeight}
+                      onChange={(e) =>
+                        setRepairQC({ ...repairQC, itemWeight: e.target.value })
+                      }
+                      error={!repairQC.itemWeight || Number(repairQC.itemWeight) <= 0}
+                      helperText={(!repairQC.itemWeight || Number(repairQC.itemWeight) <= 0) ? "Required" : ""}
+                      disabled={false}
+                      sx={{ width: '100px' }}
+                    />
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
                   {safeFixed(repairQC.itemWeight)}
@@ -894,15 +982,24 @@ const CustomerReturn = () => {
                   <b>{selectedProduct?.count}</b>
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={repairQC.count}
-                    onChange={(e) =>
-                      setRepairQC({ ...repairQC, count: e.target.value })
-                    }
-                    sx={{ width: '100px' }}
-                  />
+                    <TextField
+                      size="small"
+                      type="number"
+                      inputProps={{ min: 0 }}
+                      value={repairQC.count}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (val < 0) {
+                          toast.error("Count cannot be negative");
+                          return;
+                        }
+                        setRepairQC({ ...repairQC, count: e.target.value });
+                      }}
+                      error={!repairQC.count || Number(repairQC.count) <= 0}
+                      helperText={(!repairQC.count || Number(repairQC.count) <= 0) ? "Required" : ""}
+                      disabled={false}
+                      sx={{ width: '100px' }}
+                    />
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
                   {repairQC.count}
@@ -922,6 +1019,7 @@ const CustomerReturn = () => {
                     onChange={(e) =>
                       setRepairQC({ ...repairQC, stoneWeight: e.target.value })
                     }
+                    disabled={false}
                     sx={{ width: '100px' }}
                   />
                 </td>
@@ -976,7 +1074,7 @@ const CustomerReturn = () => {
               </tr>
               {/* DEBUG ROWS */}
               <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee',color: '#666' , textAlign: 'center' }}>Touch</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666', textAlign: 'center' }}>Touch</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   {safeFixed(selectedProduct?.touch)}
                 </td>
@@ -1048,7 +1146,7 @@ const CustomerReturn = () => {
           {/* disable until filled (optional) */}
           <Button
             variant="contained"
-            disabled={!selectedGoldsmith || repairLoading}
+            disabled={!selectedGoldsmith || !repairQC.itemWeight || Number(repairQC.itemWeight) <= 0 || !repairQC.count || Number(repairQC.count) <= 0 || repairLoading}
             onClick={handleSend}
           >
             {repairLoading ? "Sending..." : "Confirm"}
@@ -1060,7 +1158,21 @@ const CustomerReturn = () => {
       {/* RETURN POPUP */}
       <Dialog open={openReturnDialog} onClose={returnLoading ? null : () => setOpenReturnDialog(false)} maxWidth="xl" fullWidth
         PaperProps={{ sx: { minWidth: 500, maxWidth: 700 } }}>
-        <DialogTitle>Confirm Customer Return</DialogTitle>
+        <DialogTitle sx={{ m: 0, p: 2 }}>
+          Confirm Customer Return
+          <IconButton
+            aria-label="close"
+            onClick={() => setOpenReturnDialog(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
 
         <DialogContent sx={{ overflow: 'visible' }}>
           {/* <h4 >Item name{" "}:{" "}{selectedProduct?.productName}</h4> */}
@@ -1091,15 +1203,18 @@ const CustomerReturn = () => {
                   <b>{safeFixed(selectedProduct?.weight)}</b>
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={returnQC.itemWeight}
-                    onChange={(e) =>
-                      setReturnQC({ ...returnQC, itemWeight: e.target.value })
-                    }
-                    sx={{ width: '100px' }}
-                  />
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={returnQC.itemWeight}
+                      onChange={(e) =>
+                        setReturnQC({ ...returnQC, itemWeight: e.target.value })
+                      }
+                      error={!returnQC.itemWeight || Number(returnQC.itemWeight) <= 0}
+                      helperText={(!returnQC.itemWeight || Number(returnQC.itemWeight) <= 0) ? "Required" : ""}
+                      disabled={false}
+                      sx={{ width: '100px' }}
+                    />
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
                   {safeFixed(returnQC.itemWeight)}
@@ -1112,15 +1227,24 @@ const CustomerReturn = () => {
                   <b>{selectedProduct?.count}</b>
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={returnQC.count}
-                    onChange={(e) =>
-                      setReturnQC({ ...returnQC, count: e.target.value })
-                    }
-                    sx={{ width: '100px' }}
-                  />
+                    <TextField
+                      size="small"
+                      type="number"
+                      inputProps={{ min: 0 }}
+                      value={returnQC.count}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (val < 0) {
+                          toast.error("Count cannot be negative");
+                          return;
+                        }
+                        setReturnQC({ ...returnQC, count: e.target.value });
+                      }}
+                      error={!returnQC.count || Number(returnQC.count) <= 0}
+                      helperText={(!returnQC.count || Number(returnQC.count) <= 0) ? "Required" : ""}
+                      disabled={false}
+                      sx={{ width: '100px' }}
+                    />
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
                   {returnQC.count}
@@ -1140,6 +1264,7 @@ const CustomerReturn = () => {
                     onChange={(e) =>
                       setReturnQC({ ...returnQC, stoneWeight: e.target.value })
                     }
+                    disabled={false}
                     sx={{ width: '100px' }}
                   />
                 </td>
@@ -1175,7 +1300,7 @@ const CustomerReturn = () => {
                 </td>
               </tr>
               <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch %<br/>(profit percentage <br/> entered while billing)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch %<br />(profit percentage <br /> entered while billing)</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   <b>{safeFixed(selectedProduct?.percentage)}</b>
                 </td>
@@ -1248,14 +1373,14 @@ const CustomerReturn = () => {
           <Button
             variant="contained"
             color="success"
-            disabled={returnLoading}
+            disabled={!returnQC.itemWeight || Number(returnQC.itemWeight) <= 0 || !returnQC.count || Number(returnQC.count) <= 0 || returnLoading}
             onClick={confirmReturn}
           >
             {returnLoading ? "Processing..." : "Confirm Return"}
           </Button>
         </DialogActions>
       </Dialog>
-
+      <ToastContainer position="top-right" autoClose={3000} />
     </Box>
   );
 };

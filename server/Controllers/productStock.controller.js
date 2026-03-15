@@ -28,7 +28,11 @@ const getAllProductStock = async (req, res) => {
       );
     }
 
-    const activeStock = allStock.filter((item) => item.isActive);
+    const activeStock = allStock.filter((item) => {
+      // If it was just deactivated or weight is low, exclude it
+      if (item.itemWeight <= 0.05 && item.isActive) return false;
+      return item.isActive;
+    });
 
     return res.status(200).json({ allStock: activeStock });
   } catch (err) {

@@ -265,9 +265,10 @@ exports.getEntries = async (req, res) => {
     const entries =
       await prisma.itemPurchaseEntry.findMany({
 
-        where: supplierId
-          ? { supplierId: Number(supplierId) }
-          : {},
+        where: {
+          source: "PURCHASE",
+          ...(supplierId ? { supplierId: Number(supplierId) } : {})
+        },
 
         orderBy: {
           createdAt: "desc"
@@ -554,6 +555,8 @@ exports.getItemPurchaseReport = async (req, res) => {
       where.supplierId = Number(supplierId);
 
     }
+
+    where.source = "PURCHASE";
 
     // Date filter
     if (from && to) {

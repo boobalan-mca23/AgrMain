@@ -51,6 +51,7 @@ const createCustomerOrder = async (req, res) => {
       weight,
       due_date,
       worker_name,
+      status,
       order_group_id,
     } = req.body;
  
@@ -63,6 +64,7 @@ const createCustomerOrder = async (req, res) => {
     const workerNames = Array.isArray(worker_name)
       ? worker_name
       : [worker_name];
+    const statuses = Array.isArray(status) ? status : [status];
  
     const groupId = order_group_id
       ? parseInt(order_group_id)
@@ -81,7 +83,7 @@ const createCustomerOrder = async (req, res) => {
           due_date: dueDate,
           worker_name: workerNames[i],
           order_group_id: groupId,
-          status: "Pending",
+          status: statuses[i] || "Pending",
         },
       });
  
@@ -195,6 +197,7 @@ const addExtraItemToOrderGroup = async (req, res) => {
       weight,
       due_date,
       worker_name,
+      status,
     } = req.body;
  
     const dueDate = new Date(due_date);
@@ -208,7 +211,7 @@ const addExtraItemToOrderGroup = async (req, res) => {
         due_date: dueDate,
         worker_name,
         order_group_id: parseInt(order_group_id),
-        status: "Pending",
+        status: status || "Pending",
       },
     });
  

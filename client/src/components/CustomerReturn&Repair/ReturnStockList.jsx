@@ -13,7 +13,12 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
+import "react-toastify/dist/ReactToastify.css";
 import "./Customer.css";
 
 const ReturnStockList = () => {
@@ -21,19 +26,16 @@ const ReturnStockList = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 15);
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  });
-  const [toDate, setToDate] = useState(() => {
-    const d = new Date();
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  });
+  const [fromDate, setFromDate] = useState(() => dayjs().subtract(15, "day"));
+  const [toDate, setToDate] = useState(() => dayjs());
+  const [stockFilter, setStockFilter] = useState("ALL"); // ALL, PRODUCT, ITEM_PURCHASE
 
   useEffect(() => {
+    if (fromDate && toDate && toDate.isBefore(fromDate, "day")) {
+      toast.error("To Date cannot be before From Date");
+    }
     fetchReturnedStock();
-  }, []);
+  }, [fromDate, toDate]);
 
   const fetchReturnedStock = async () => {
     try {
@@ -44,12 +46,6 @@ const ReturnStockList = () => {
     }
   };
 
-  const parseDDMMYYYY = (dateStr) => {
-    if (!dateStr || dateStr.length !== 10) return null;
-    const [day, month, year] = dateStr.split("/");
-    if (!day || !month || !year) return null;
-    return new Date(`${year}-${month}-${day}T00:00:00`);
-  };
 
   const filteredReturns = returns
     .filter((r) => {
@@ -57,21 +53,26 @@ const ReturnStockList = () => {
       const matchesSearch =
         !search ||
         (r.productName && r.productName.toLowerCase().includes(searchValue)) ||
-        (r.bill?.id && r.bill.id.toString().includes(searchValue));
+        (r.bill?.id && r.bill.id.toString().includes(searchValue)) ||
+        (r.bill?.customers?.name && r.bill.customers.name.toLowerCase().includes(searchValue));
 
-      const itemDate = r.createdAt ? new Date(r.createdAt) : null;
-      const from = parseDDMMYYYY(fromDate);
-      if (from) from.setHours(0, 0, 0, 0);
-      const to = parseDDMMYYYY(toDate);
-      if (to) to.setHours(23, 59, 59, 999);
-      const matchesFrom = !from || (itemDate && itemDate >= from);
-      const matchesTo = !to || (itemDate && itemDate <= to);
-      return matchesSearch && matchesFrom && matchesTo;
+      const itemDate = r.createdAt ? dayjs(r.createdAt) : null;
+      const from = fromDate ? fromDate.startOf("day") : null;
+      const to = toDate ? toDate.endOf("day") : null;
+      const matchesFrom = !from || (itemDate && (itemDate.isAfter(from) || itemDate.isSame(from, "day")));
+      const matchesTo = !to || (itemDate && (itemDate.isBefore(to) || itemDate.isSame(to, "day")));
+
+      const matchesStock =
+        stockFilter === "ALL" ||
+        (stockFilter === "PRODUCT" && r.productStockId) ||
+        (stockFilter === "ITEM_PURCHASE" && r.itemPurchaseId);
+
+      return matchesSearch && matchesFrom && matchesTo && matchesStock;
     })
     .sort((a, b) =>
       fromDate || toDate
-        ? new Date(a.createdAt) - new Date(b.createdAt)
-        : new Date(b.createdAt) - new Date(a.createdAt)
+        ? dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix()
+        : dayjs(b.createdAt).unix() - dayjs(a.createdAt).unix()
     );
 
   const paginatedData = filteredReturns.slice(
@@ -82,9 +83,14 @@ const ReturnStockList = () => {
   const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("en-IN") : "-");
 
   const handlePrint = () => {
+    const fmtPrintDate = (d) => {
+      if (!d) return "—";
+      return d.format("DD/MM/YYYY");
+    };
+
     const dateRangeText =
       fromDate || toDate
-        ? `Date Range: ${fromDate || "—"} to ${toDate || "—"}`
+        ? `Date Range: ${fmtPrintDate(fromDate)} to ${fmtPrintDate(toDate)}`
         : "";
 
     const tableRows = filteredReturns
@@ -143,35 +149,93 @@ const ReturnStockList = () => {
 
   return (
     <Box p={3}>
-      <Typography variant="h5" mb={2}>Customer Returned Products</Typography>
+      <ToastContainer position="top-right" autoClose={3000} />
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h5">Customer Returned Products</Typography>
+        <Box display="flex" gap={1}>
+          <Button
+            variant={stockFilter === "ALL" ? "contained" : "outlined"}
+            onClick={() => { setStockFilter("ALL"); setPage(0); }}
+            size="small"
+            sx={{ borderRadius: "20px", textTransform: "none", fontWeight: stockFilter === "ALL" ? 700 : 400 }}
+          >
+            All Products
+          </Button>
+          <Button
+            variant={stockFilter === "PRODUCT" ? "contained" : "outlined"}
+            onClick={() => { setStockFilter("PRODUCT"); setPage(0); }}
+            size="small"
+            sx={{ borderRadius: "20px", textTransform: "none", fontWeight: stockFilter === "PRODUCT" ? 700 : 400 }}
+          >
+            Product Stock Products
+          </Button>
+          <Button
+            variant={stockFilter === "ITEM_PURCHASE" ? "contained" : "outlined"}
+            onClick={() => { setStockFilter("ITEM_PURCHASE"); setPage(0); }}
+            size="small"
+            sx={{ borderRadius: "20px", textTransform: "none", fontWeight: stockFilter === "ITEM_PURCHASE" ? 700 : 400 }}
+          >
+            Item Purchase Products
+          </Button>
+        </Box>
+      </Box>
 
       {/* Filters + Print */}
       <Box mb={2} display="flex" gap={2} flexWrap="wrap" alignItems="center">
         <TextField
           size="small"
-          label="Search (Bill / Product)"
+          label="Search (Bill / Product / Customer)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <TextField
-          type="text"
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="From Date"
+            value={fromDate}
+            format="DD/MM/YYYY"
+            onChange={(newValue) => {
+              if (newValue && toDate && newValue.isAfter(toDate, "day")) {
+                toast.error("From Date cannot be after To Date");
+                return;
+              }
+              setFromDate(newValue);
+            }}
+            slotProps={{ textField: { size: "small", sx: { width: 260 } } }}
+          />
+        </LocalizationProvider>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="To Date"
+            value={toDate}
+            format="DD/MM/YYYY"
+            minDate={fromDate || undefined}
+            onChange={(newValue) => {
+              if (newValue && fromDate && newValue.isBefore(fromDate, "day")) {
+                toast.error("To Date cannot be before From Date");
+                return;
+              }
+              setToDate(newValue);
+            }}
+            slotProps={{ textField: { size: "small", sx: { width: 260 } } }}
+          />
+        </LocalizationProvider>
+        <Button
+          variant="contained"
           size="small"
-          label="From (DD/MM/YYYY)"
-          InputLabelProps={{ shrink: true }}
-          placeholder="DD/MM/YYYY"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
-        <TextField
-          type="text"
-          size="small"
-          label="To (DD/MM/YYYY)"
-          InputLabelProps={{ shrink: true }}
-          placeholder="DD/MM/YYYY"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-        />
-        <Button variant="outlined" onClick={() => { setSearch(""); setFromDate(""); setToDate(""); }}>
+          sx={{
+            backgroundColor: "#d32f2f",
+            color: "white",
+            '&:hover': { backgroundColor: "#c62828" },
+            height: "40px"
+          }}
+          onClick={() => {
+            setSearch("");
+            setFromDate(null);
+            setToDate(null);
+            setStockFilter("ALL");
+            setPage(0);
+          }}
+        >
           Reset
         </Button>
         <Button variant="outlined" onClick={handlePrint}>
@@ -199,7 +263,7 @@ const ReturnStockList = () => {
             paginatedData.map((item, index) => (
               <TableRow key={item.id}>
                 <TableCell className="BillTable-tb-td">{page * rowsPerPage + index + 1}</TableCell>
-                <TableCell className="BillTable-tb-td">{fmtDate(item.createdAt)}</TableCell>
+                <TableCell className="BillTable-tb-td">{dayjs(item.createdAt).format("DD/MM/YYYY")}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.bill?.id || "-"}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.bill?.customers?.name || "-"}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.productName}</TableCell>

@@ -559,7 +559,7 @@ const handleSaveAddWeight = async () => {
             <tbody>
               {paginatedData.map((item, index) => (
                 <tr key={item.id}>
-                  <td>{index + 1}</td>
+                  <td>{page * rowsPerPage + index + 1}</td>
                   <td>{item.itemName}</td>
 
                   <td>
@@ -615,6 +615,7 @@ const handleSaveAddWeight = async () => {
                 <td>
                   <strong>{safeFixed(currentPageTotal.finalWt)}</strong>
                 </td>
+                <td></td>
               </tr>
             </tfoot>
           </table>

@@ -428,6 +428,7 @@ model Bill {
   orders            OrderItems[]
   billReceive       billReceived[]
   returnLogs        returnLogs[]
+  repairStock       RepairStock[]
 
   @@index([customer_id], map: "Bill_customer_id_fkey")
 }
@@ -671,9 +672,13 @@ model RepairStock {
 
   goldsmith Goldsmith? @relation("GoldsmithRepairRelation", fields: [goldsmithId], references: [id])
 
+  billId Int?
+  bill   Bill? @relation(fields: [billId], references: [id])
+
   @@index([productId])
   @@index([itemPurchaseId])
   @@index([goldsmithId])
+  @@index([billId])
   @@map("repairstock")
 }
 

@@ -1,7 +1,7 @@
 import '../customerReport.css'
 const CustomerReportPrint=(props)=>{
    const { fromDate,toDate,customerName,billInfo,
-    billReceive, billAmount,overAllBalance}=props
+    billReceive, billAmount,overAllBalance, page, rowsPerPage}=props
     return(
       <>
         <div>
@@ -64,11 +64,11 @@ const CustomerReportPrint=(props)=>{
                                     ).toLocaleDateString("en-GB")}
                                   </td>
                                   <td style={style.customerReportBorder}>{item.productName}</td>
-                                  <td style={style.customerReportBorder}>{item.weight}</td>
-                                  <td style={style.customerReportBorder}>{item.stoneWeight}</td>
-                                  <td style={style.customerReportBorder}>{item.afterWeight}</td>
-                                  <td style={style.customerReportBorder}>{item.percentage}</td>
-                                  <td style={style.customerReportBorder}>{item.finalWeight}</td>
+                                  <td style={style.customerReportBorder}>{(Number(item.weight) || 0).toFixed(3)}</td>
+                                  <td style={style.customerReportBorder}>{(Number(item.stoneWeight) || 0).toFixed(3)}</td>
+                                  <td style={style.customerReportBorder}>{(Number(item.afterWeight) || 0).toFixed(3)}</td>
+                                  <td style={style.customerReportBorder}>{(Number(item.percentage) || 0).toFixed(3)}</td>
+                                  <td style={style.customerReportBorder}>{(Number(item.finalWeight) || 0).toFixed(3)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -98,12 +98,12 @@ const CustomerReportPrint=(props)=>{
                                   bill.info.createdAt
                                 ).toLocaleDateString("en-GB")}
                               </td>
-                              <td style={style.customerReportBorder}>{bill.info.goldRate}</td>
-                              <td style={style.customerReportBorder}>{bill.info.gold}</td>
-                              <td style={style.customerReportBorder}>{bill.info.touch}</td>
-                              <td style={style.customerReportBorder}>{bill.info.purity}</td>
-                              <td style={style.customerReportBorder}>{bill.info.amount}</td>
-                              <td style={style.customerReportBorder}>{bill.info.receiveHallMark||0}</td>
+                              <td style={style.customerReportBorder}>{(Number(bill.info.goldRate) || 0).toFixed(3)}</td>
+                              <td style={style.customerReportBorder}>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
+                              <td style={style.customerReportBorder}>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
+                              <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                              <td style={style.customerReportBorder}>{(Number(bill.info.amount) || 0).toFixed(3)}</td>
+                              <td style={style.customerReportBorder}>{(Number(bill.info.receiveHallMark) || 0).toFixed(3)}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -113,11 +113,11 @@ const CustomerReportPrint=(props)=>{
                     {bill.type === "bill" ? (
                       <>
                         <td style={style.customerReportBorder}>-</td>
-                        <td style={style.customerReportBorder}>{bill.info.billAmount}</td>
+                        <td style={style.customerReportBorder}>{(Number(bill.info.billAmount) || 0).toFixed(3)}</td>
                       </>
                     ) : (
                       <>
-                        <td style={style.customerReportBorder}>{bill.info.purity}</td>
+                        <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
                         <td style={style.customerReportBorder}>-</td>
                       </>
                     )}
@@ -125,15 +125,15 @@ const CustomerReportPrint=(props)=>{
                 ))}
                
                  <tr  >
-                  <td colSpan={4} style={style.customerReportBorder}></td>
+                  <td colSpan={4} style={{...style.customerReportBorder, textAlign: 'right'}}><strong>GRAND TOTAL:</strong></td>
 
                   <td style={style.customerReportBorder}>
                     <strong>
-                      Total Receive :{(billReceive).toFixed(3)} gr
+                      {(billReceive).toFixed(3)} gr
                     </strong>{" "}
                   </td>
                   <td style={style.customerReportBorder}>
-                    <strong> Total bill Amount :{(billAmount).toFixed(3)} gr</strong>
+                    <strong> {(billAmount).toFixed(3)} gr</strong>
                   </td>
                 </tr>
                

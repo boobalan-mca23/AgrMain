@@ -88,6 +88,10 @@ const returnCustomerItem = async (req, res) => {
 
       if (!item) throw new Error("Item not found");
 
+      // Define weights for comparison and split logic at the start
+      const originalWeight = (Number(item.weight) || 0).toFixed(3);
+      const returnedWeight = (Number(itemWeight) || 0).toFixed(3);
+
       const bill = await tx.bill.findUnique({
         where: { id: Number(billId) },
         select: { customer_id: true }
@@ -150,15 +154,29 @@ const returnCustomerItem = async (req, res) => {
       //  CREATE STOCK ENTRY BASED ON STOCK TYPE
       let product;
       if (item.stockType === "ITEM_PURCHASE") {
+
         // Return to Item Purchase Stock
         const originalEntry = item.stockId
           ? await tx.itemPurchaseEntry.findUnique({ where: { id: item.stockId } })
           : null;
 
+        let supplierId = originalEntry?.supplierId || 1;
+        let supplierName = originalEntry?.supplierName || null;
+
+        // Verify if the supplierId exists, otherwise fallback to first available
+        const existingSupplier = await tx.supplier.findUnique({ where: { id: supplierId } });
+        if (!existingSupplier) {
+          const firstSupplier = await tx.supplier.findFirst();
+          if (firstSupplier) {
+            supplierId = firstSupplier.id;
+            supplierName = firstSupplier.name;
+          }
+        }
+
         product = await tx.itemPurchaseEntry.create({
           data: {
-            supplierId: originalEntry?.supplierId || 1,
-            supplierName: originalEntry?.supplierName || null,
+            supplierId: supplierId,
+            supplierName: supplierName,
             itemName: item.productName,
             grossWeight: Number(itemWeight),
             stoneWeight: Number(stoneWeight) || 0,
@@ -171,6 +189,7 @@ const returnCustomerItem = async (req, res) => {
             finalPurity: Number(finalPurityDelta),
             isSold: false,
             isInRepair: false,
+            source: "CUSTOMER_RETURN",
             moveTo: "CUSTOMER_RETURN",
           }
         });
@@ -194,10 +213,6 @@ const returnCustomerItem = async (req, res) => {
           }
         });
       }
-
-      // Split logic to support partial returns
-      const originalWeight = (Number(item.weight) || 0).toFixed(3);
-      const returnedWeight = (Number(itemWeight) || 0).toFixed(3);
 
       if (item.stockType !== "ITEM_PURCHASE" && Number(originalWeight) > Number(returnedWeight)) {
         // Partial Return: Deduct from original
@@ -223,6 +238,11 @@ const returnCustomerItem = async (req, res) => {
           remWastagePure = remFinalPurity - remActualPurity;
         }
 
+        let newStatus = "PARTIAL_RETURN";
+        if (item.repairStatus === "PARTIAL_REPAIR") {
+          newStatus = "PARTIAL_REPAIR_RETURN";
+        }
+
         // 1. Update original item remaining values (keeping to 3 decimal places)
         await tx.orderItems.update({
           where: { id: item.id },
@@ -236,7 +256,7 @@ const returnCustomerItem = async (req, res) => {
             wastagePure: Number(remWastagePure.toFixed(3)),
             finalPurity: Number(remFinalPurity.toFixed(3)),
             finalWeight: Number(remFinalPurity.toFixed(3)),
-            repairStatus: "PARTIAL_RETURN"
+            repairStatus: newStatus
           }
         });
 
@@ -246,6 +266,21 @@ const returnCustomerItem = async (req, res) => {
           where: { id: item.id },
           data: { repairStatus: "RETURNED" }
         });
+
+        // Check if all items in the bill are now RETURNED
+        const remainingActiveItems = await tx.orderItems.findMany({
+          where: { 
+            billId: Number(billId),
+            repairStatus: { not: "RETURNED" }
+          }
+        });
+
+        if (remainingActiveItems.length === 0) {
+          await tx.bill.update({
+            where: { id: Number(billId) },
+            data: { status: "RETURNED" }
+          });
+        }
       }
 
       //  RETURN LOG
@@ -264,7 +299,11 @@ const returnCustomerItem = async (req, res) => {
       });
     });
 
-    res.json({ success: true });
+    const updatedOrderItem = await prisma.orderItems.findUnique({
+      where: { id: Number(orderItemId) }
+    });
+
+    res.json({ success: true, updatedOrderItem });
 
   } catch (err) {
     res.status(400).json({ error: err.message });

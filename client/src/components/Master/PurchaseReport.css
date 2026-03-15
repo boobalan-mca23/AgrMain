@@ -16,14 +16,7 @@ h2 {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 20px;
-}
-
-.filter-section input,
-.filter-section select {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  min-width: 150px;
+  align-items: center;
 }
 
 .btn-primary {

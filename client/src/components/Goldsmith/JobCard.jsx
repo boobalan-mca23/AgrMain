@@ -481,7 +481,7 @@ function JobCardDetails() {
                               <tr key={`${job.id}-${i}`}>
                                 {i === 0 && (
                                   <>
-                                    <td rowSpan={maxRows}> {jobIndex + 1}</td>
+                                    <td rowSpan={maxRows}> {page * rowsPerPage + jobIndex + 1}</td>
                                     <td rowSpan={maxRows}>
                                       {new Date(job.createdAt).toLocaleDateString(
                                         "en-GB",
@@ -509,12 +509,12 @@ function JobCardDetails() {
                                     : "-"}
                                 </td>
 
-                                <td>{g?.weight || "-"}</td>
+                                <td>{g?.weight ? Number(g.weight).toFixed(3) : "-"}</td>
                                 {/* {i === 0 && (
                             <td rowSpan={maxRows}>{total?.givenWt || "-"}</td>
                           )} */}
-                                <td>{g?.touch || "-"}</td>
-                                <td>{g?.purity || "-"}</td>
+                                <td>{g?.touch ? Number(g.touch).toFixed(3) : "-"}</td>
+                                <td>{g?.purity ? Number(g.purity).toFixed(3) : "-"}</td>
                                 <td>
                                   {d?.createdAt
                                     ? new Date(d?.createdAt).toLocaleDateString(
@@ -528,24 +528,24 @@ function JobCardDetails() {
                                     : "-"}
                                 </td>
                                 <td>{d?.itemName || "-"}</td>
-                                <td>{d?.itemWeight || "-"}</td>
+                                <td>{d?.itemWeight ? Number(d.itemWeight).toFixed(3) : "-"}</td>
                                 <td>{d?.count || "0"}</td>
-                                <td>{d?.touch || "-"}</td>
+                                <td>{d?.touch ? Number(d.touch).toFixed(3) : "-"}</td>
 
-                                <td>{d?.deduction && totalStoneWt(d?.deduction)}</td>
-                                <td>{d?.netWeight || "0"}</td>
+                                <td>{d?.deduction && Number(totalStoneWt(d?.deduction)).toFixed(3)}</td>
+                                <td>{d?.netWeight ? Number(d.netWeight).toFixed(3) : "0"}</td>
                                 {/* <td>{d?.wastageType || "-"}</td> */}
-                                <td>{d?.wastageValue || "0"}</td>
-                                <td>{d?.wastagePure || "0"}</td>
-                                <td>{d?.finalPurity || "0"}</td>
+                                <td>{d?.wastageValue ? Number(d.wastageValue).toFixed(3) : "0"}</td>
+                                <td>{d?.wastagePure ? Number(d.wastagePure).toFixed(3) : "0"}</td>
+                                <td>{d?.finalPurity ? Number(d.finalPurity).toFixed(3) : "0"}</td>
 
-                                <td>{r?.weight || "0"}</td>
-                                <td>{r?.touch || "0"}</td>
-                                <td>{r?.purity || "0"}</td>
+                                <td>{r?.weight ? Number(r.weight).toFixed(3) : "0"}</td>
+                                <td>{r?.touch ? Number(r.touch).toFixed(3) : "0"}</td>
+                                <td>{r?.purity ? Number(r.purity).toFixed(3) : "0"}</td>
                                 {i === 0 && (
                                   <>
                                     <td rowSpan={maxRows}>
-                                      {total?.receivedTotal || "-"}
+                                      {total?.receivedTotal ? Number(total.receivedTotal).toFixed(3) : "-"}
                                     </td>
                                     <td rowSpan={maxRows}>
                                       {(total?.jobCardBalance).toFixed(3) ?? "-"}
