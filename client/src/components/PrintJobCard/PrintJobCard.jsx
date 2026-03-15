@@ -39,16 +39,16 @@ const PrintJobCard = React.forwardRef((props, ref) => {
             <span style={styles.subTitle}  ><strong>Given Details</strong>:</span>
             <div style={styles.goldSection}>
               {givenGold.map((item, index) => (
-                <div style={styles.goldFlex}>
-                  <span style={{ fontSize: "12px", fontWeight: "bold" }}>
-                    {index + 1})
-                  </span>
-                  <div style={styles.goldBox}>{item.weight}</div>
-                  <div style={{ fontSize: "10px", fontWeight: "bold" }}>X</div>
-                  <div style={styles.goldBox}>{item.touch}</div>
-                  <div style={{ fontSize: "10px", fontWeight: "bold" }}>=</div>
-                  <div style={styles.goldBox}>{item.purity}</div>
-                </div>
+                  <div style={styles.goldFlex}>
+                    <span style={{ fontSize: "12px", fontWeight: "bold" }}>
+                      {index + 1})
+                    </span>
+                    <div style={styles.goldBox}>{item.weight}</div>
+                    <div style={{ fontSize: "10px", fontWeight: "bold", padding: "0 4px" }}>X</div>
+                    <div style={styles.goldBox}>{item.touch}</div>
+                    <div style={{ fontSize: "10px", fontWeight: "bold", padding: "0 4px" }}>=</div>
+                    <div style={styles.goldBox}>{item.purity}</div>
+                  </div>
               ))}
             </div>
            
@@ -88,16 +88,16 @@ const PrintJobCard = React.forwardRef((props, ref) => {
             <span style={styles.subTitle}><strong>Received Details:</strong></span>
             <div style={styles.goldSection}>
               {received.map((item, index) => (
-                <div style={styles.goldFlex}>
-                  <span style={{ fontSize: "12px", fontWeight: "bold" }}>
-                    {index + 1})
-                  </span>
-                  <div style={styles.goldBox}>{item.weight}</div>
-                  <div style={{ fontSize: "10px", fontWeight: "bold" }}>X</div>
-                  <div style={styles.goldBox}>{item.touch}</div>
-                  <div style={{ fontSize: "10px", fontWeight: "bold" }}>=</div>
-                  <div style={styles.goldBox}>{item.purity}</div>
-                </div>
+                  <div style={styles.goldFlex}>
+                    <span style={{ fontSize: "12px", fontWeight: "bold" }}>
+                      {index + 1})
+                    </span>
+                    <div style={styles.goldBox}>{item.weight}</div>
+                    <div style={{ fontSize: "10px", fontWeight: "bold", padding: "0 4px" }}>X</div>
+                    <div style={styles.goldBox}>{item.touch}</div>
+                    <div style={{ fontSize: "10px", fontWeight: "bold", padding: "0 4px" }}>=</div>
+                    <div style={styles.goldBox}>{item.purity}</div>
+                  </div>
               ))}
             </div>
             <div style={styles.totalpuritycontainer}>

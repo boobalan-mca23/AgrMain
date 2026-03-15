@@ -247,11 +247,14 @@ function PurchaseEntry() {
 
       finalPurity: Number(form.finalPurity),
 
-      goldBalance: Number(form.goldBalance),
-
+      goldBalance: Number(form.goldBalance || 0),
       moveTo: "purchase"
-
     };
+
+    if (!payload.jewelName || !payload.grossWeight || !payload.touch) {
+      toast.error("Please fill all mandatory fields (Jewel Name, Gross Weight, Touch)");
+      return;
+    }
 
     try {
 
@@ -353,6 +356,7 @@ function PurchaseEntry() {
 
           <TextField
             label="Filter by Jewel Name"
+            size="small"
             value={jewelFilter}
             onChange={(e) => setJewelFilter(e.target.value)}
           />
@@ -360,9 +364,11 @@ function PurchaseEntry() {
 
           <TextField
             select
+            size="small"
             value={touchFilter}
             onChange={(e) => setTouchFilter(e.target.value)}
             SelectProps={{ native: true }}
+            style={{ minWidth: 150 }}
           >
 
             <option value="">Filter by Touch</option>
@@ -374,7 +380,14 @@ function PurchaseEntry() {
           </TextField>
 
 
-          <Button onClick={clearFilters}>
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{
+              height: "40px"
+            }}
+            onClick={clearFilters}
+          >
             Clear
           </Button>
 
@@ -492,7 +505,7 @@ function PurchaseEntry() {
             label="Advance Gold (g)"
             fullWidth
             margin="dense"
-            value={form.advanceGold || "0"}
+            value={form.advanceGold}
             onChange={(e) =>
               {
               const value = e.target.value;
@@ -508,16 +521,21 @@ function PurchaseEntry() {
             label="Jewel Name"
             fullWidth
             margin="dense"
+            required
             value={form.jewelName}
-            onChange={(e) =>
-              handleChange("jewelName", e.target.value)
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || /^[a-zA-Z0-9\s]*$/.test(value)) {
+                handleChange("jewelName", value);
+              }
+            }}
           />
 
           <TextField
             label="Gross Weight (g)"
             fullWidth
             margin="dense"
+            required
             value={form.grossWeight}
             onChange={(e) =>
               {
@@ -558,6 +576,7 @@ function PurchaseEntry() {
             label="Touch"
             fullWidth
             margin="dense"
+            required
             value={form.touch}
             onChange={(e) =>
               {
@@ -575,6 +594,7 @@ function PurchaseEntry() {
             select
             label="Wastage Type"
             fullWidth
+            required
             margin="dense"
             value={form.wastageType}
             onChange={(e) =>
@@ -652,7 +672,7 @@ function PurchaseEntry() {
 
 
           <Button variant="contained" onClick={handleSubmit}>
-            Save
+            {isEdit ? "Update" : "Save"}
           </Button>
 
         </DialogActions>

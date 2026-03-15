@@ -10,8 +10,11 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem
+  MenuItem,
+  Typography,
 } from "@mui/material";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ProductStock = () => {
 
@@ -156,6 +159,7 @@ const ProductStock = () => {
 
   return (
     <div className="stock-container">
+      <ToastContainer position="top-right" autoClose={3000} />
 
       <h2 className="stock-heading">
         Stock Management – Repair Module
@@ -326,10 +330,16 @@ const ProductStock = () => {
                   <TextField
                     size="small"
                     type="number"
+                    inputProps={{ min: 0 }}
                     value={repairQC.itemWeight}
-                    onChange={(e) =>
-                      setRepairQC({ ...repairQC, itemWeight: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val < 0) {
+                        toast.error("Weight cannot be negative");
+                        return;
+                      }
+                      setRepairQC({ ...repairQC, itemWeight: e.target.value });
+                    }}
                     sx={{ width: '100px' }}
                   />
                 </td>
@@ -347,10 +357,16 @@ const ProductStock = () => {
                   <TextField
                     size="small"
                     type="number"
+                    inputProps={{ min: 0 }}
                     value={repairQC.count}
-                    onChange={(e) =>
-                      setRepairQC({ ...repairQC, count: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val < 0) {
+                        toast.error("Count cannot be negative");
+                        return;
+                      }
+                      setRepairQC({ ...repairQC, count: e.target.value });
+                    }}
                     sx={{ width: '100px' }}
                   />
                 </td>
@@ -368,10 +384,16 @@ const ProductStock = () => {
                   <TextField
                     size="small"
                     type="number"
+                    inputProps={{ min: 0 }}
                     value={repairQC.stoneWeight}
-                    onChange={(e) =>
-                      setRepairQC({ ...repairQC, stoneWeight: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val < 0) {
+                        toast.error("Stone weight cannot be negative");
+                        return;
+                      }
+                      setRepairQC({ ...repairQC, stoneWeight: e.target.value });
+                    }}
                     sx={{ width: '100px' }}
                   />
                 </td>

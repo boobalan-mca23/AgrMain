@@ -1,25 +1,27 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
+import { TablePagination, TextField, Autocomplete, Button } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import "./PurchaseReport.css";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function BCPurchaseReport() {
 
   const [suppliers, setSuppliers] = useState([]);
 
   const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-
-  // ✅ Last 15 days default
-  const last15Days = new Date();
-  last15Days.setDate(today.getDate() - 15);
-  const last15DaysStr = last15Days.toISOString().slice(0, 10);
-
-  const [from, setFrom] = useState(last15DaysStr);
-  const [to, setTo] = useState(todayStr);
+  const [from, setFrom] = useState(dayjs().subtract(15, 'day'));
+  const [to, setTo] = useState(dayjs());
   const [supplierId, setSupplierId] = useState("all");
 
   const [rows, setRows] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // ===============================
   // FETCH SUPPLIERS
@@ -41,8 +43,8 @@ export default function BCPurchaseReport() {
 
     const q = [];
 
-    if (from) q.push(`from=${from}`);
-    if (to) q.push(`to=${to}`);
+    if (from) q.push(`from=${from.format("YYYY-MM-DD")}`);
+    if (to) q.push(`to=${to.format("YYYY-MM-DD")}`);
 
     if (supplierId !== "all")
       q.push(`supplierId=${supplierId}`);
@@ -56,6 +58,7 @@ export default function BCPurchaseReport() {
       const res = await axios.get(url);
 
       setRows(res.data);
+      setPage(0);
 
     } catch (err) {
 
@@ -66,7 +69,11 @@ export default function BCPurchaseReport() {
   }, [from, to, supplierId]);
 
   useEffect(() => {
-
+    if (from && to && to.isBefore(from, 'day')) {
+      toast.error("To Date cannot be before From Date");
+      setRows([]);
+      return;
+    }
     fetchReport();
 
   }, [fetchReport]);
@@ -87,12 +94,14 @@ export default function BCPurchaseReport() {
     let totalNet = 0;
     let totalWastagePure = 0;
     let totalFinalPurity = 0;
+    let totalAdvanceGold = 0;
 
     rows.forEach(r => {
 
       totalNet += Number(r.netWeight || 0);
       totalWastagePure += Number(r.wastagePure || 0);
       totalFinalPurity += Number(r.finalPurity || 0);
+      totalAdvanceGold += Number(r.advanceGold || 0);
 
     });
 
@@ -100,7 +109,8 @@ export default function BCPurchaseReport() {
 
       totalNet,
       totalWastagePure,
-      totalFinalPurity
+      totalFinalPurity,
+      totalAdvanceGold
 
     };
 
@@ -180,6 +190,30 @@ export default function BCPurchaseReport() {
 
   };
 
+  const handleClear = () => {
+    setFrom(null);
+    setTo(null);
+    setSupplierId("all");
+    setRows([]);
+  };
+
+  // ===============================
+  // PAGINATION HANDLERS
+  // ===============================
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedRows = useMemo(() => {
+    return rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [rows, page, rowsPerPage]);
+
   // ===============================
   // UI
   // ===============================
@@ -187,55 +221,70 @@ export default function BCPurchaseReport() {
   return (
 
     <div className="purchase-container">
+      <ToastContainer position="top-right" autoClose={3000} />
 
       <h2>BC Purchase Report</h2>
 
       {/* FILTER */}
 
-      <div className="filter-section">
+      <div className="filter-section" style={{ alignItems: "center" }}>
 
-        From:
-        <input
-          type="date"
-          value={from}
-          onChange={e => setFrom(e.target.value)}
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="From Date"
+            value={from}
+            format="DD/MM/YYYY"
+            slotProps={{ textField: { size: 'small' } }}
+            sx={{ width: "220px" }}
+            onChange={(newValue) => setFrom(newValue)}
+          />
+        </LocalizationProvider>
+
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="To Date"
+            value={to}
+            format="DD/MM/YYYY"
+            minDate={from || undefined}
+            slotProps={{ textField: { size: 'small' } }}
+            sx={{ width: "220px" }}
+            onChange={(newValue) => setTo(newValue)}
+          />
+        </LocalizationProvider>
+
+        <Autocomplete
+          size="small"
+          options={[{ id: "all", name: "All Suppliers" }, ...suppliers]}
+          getOptionLabel={(option) => option.name || ""}
+          value={[{ id: "all", name: "All Suppliers" }, ...suppliers].find(s => s.id === (supplierId || "all")) || null}
+          onChange={(event, newValue) => {
+            setSupplierId(newValue ? newValue.id : "all");
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Select Supplier" variant="outlined" />
+          )}
+          sx={{ width: 220 }}
         />
 
-        To:
-        <input
-          type="date"
-          value={to}
-          onChange={e => setTo(e.target.value)}
-        />
-
-        <div className="filter-group">
-
-          <select
-            value={supplierId}
-            onChange={(e) => setSupplierId(e.target.value)}
-          >
-
-            <option value="all">All Suppliers</option>
-
-            {suppliers.map((s) => (
-
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-
-            ))}
-
-          </select>
-
-        </div>
-
-        <button className="btn-primary" onClick={fetchReport}>
-          Search
-        </button>
-
-        <button className="btn-primary" onClick={handlePrint}>
+        <Button
+          variant="contained"
+          size="small"
+          sx={{ backgroundColor: "#6c757d", '&:hover': { backgroundColor: "#5a6268" }, height: "40px", width: "100px" }}
+          onClick={handlePrint}
+        >
           Print
-        </button>
+        </Button>
+
+        <Button
+          variant="outlined"
+          size="small"
+          sx={{
+            height: "40px"
+          }}
+          onClick={handleClear}
+        >
+          Clear
+        </Button>
 
       </div>
 
@@ -265,16 +314,17 @@ export default function BCPurchaseReport() {
 
             <tr>
 
-              <th>#</th>
+              <th>S.No</th>
               <th>Supplier</th>
               <th>Jewel</th>
-              <th>Gross wt. (g)</th>
-              <th>Stone wt. (g)</th>
-              <th>Net wt. (g)</th>
+              <th>Gross wt (g)</th>
+              <th>Stone wt (g)</th>
+              <th>Net wt (g)</th>
               <th>Touch</th>
               <th>Wastage Value</th>
               <th>Wastage Pure (g)</th>
               <th>Final Purity (g)</th>
+              <th>Advance Gold (g)</th>
 
             </tr>
 
@@ -292,11 +342,11 @@ export default function BCPurchaseReport() {
 
             )}
 
-            {rows.map((r, i) => (
+            {paginatedRows.map((r, i) => (
 
               <tr key={r.id}>
 
-                <td>{i + 1}</td>
+                <td>{page * rowsPerPage + i + 1}</td>
 
                 <td>{r.supplier?.name}</td>
 
@@ -315,6 +365,8 @@ export default function BCPurchaseReport() {
                 <td>{format3(r.wastagePure)}</td>
 
                 <td>{format3(r.finalPurity)}</td>
+
+                <td>{format3(r.advanceGold)}</td>
 
               </tr>
 
@@ -349,6 +401,10 @@ export default function BCPurchaseReport() {
                   {format3(totals.totalFinalPurity)}
                 </td>
 
+                <td>
+                  {format3(totals.totalAdvanceGold)}
+                </td>
+
               </tr>
 
             )}
@@ -356,6 +412,16 @@ export default function BCPurchaseReport() {
           </tbody>
 
         </table>
+
+        <TablePagination
+          component="div"
+          count={rows.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+        />
 
       </div>
 

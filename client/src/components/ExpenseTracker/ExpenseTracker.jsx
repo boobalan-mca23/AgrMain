@@ -146,8 +146,18 @@ const ExpenseTracker = () => {
         
           <div className="expenseBtnGroup">
             
-             <button
+            <button
               className="expenseClear"
+              style={{
+                backgroundColor: "#d32f2f",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                padding: "10px 20px",
+                cursor: "pointer",
+                height: "40px",
+                fontWeight: "bold"
+              }}
               onClick={() => {
                 setToDate("")
                 setFromDate("")

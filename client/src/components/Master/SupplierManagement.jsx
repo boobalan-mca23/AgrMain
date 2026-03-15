@@ -305,21 +305,13 @@ function SupplierManagement() {
           <thead>
 
             <tr>
-
-              <th>S.No</th>
-
-              <th>Name</th>
-
-              <th>Contact</th>
-
-              <th>Address</th>
-
-              <th>GST</th>
-
-              <th>Opening Balance (g)</th>
-
-              <th>Action</th>
-
+              <th style={{ textAlign: "center" }}>S.No</th>
+              <th style={{ textAlign: "center" }}>Name</th>
+              <th style={{ textAlign: "center" }}>Contact</th>
+              <th style={{ textAlign: "center" }}>Address</th>
+              <th style={{ textAlign: "center" }}>GST</th>
+              <th style={{ textAlign: "center" }}>Opening Balance (g)</th>
+              <th style={{ textAlign: "center" }}>Action</th>
             </tr>
 
           </thead>
@@ -343,24 +335,18 @@ function SupplierManagement() {
             {filteredSuppliers.map((supplier, index) => (
 
               <tr key={supplier.id}>
-
-                <td>{index + 1}</td>
-
-                <td>{supplier.name}</td>
-
-                <td>{supplier.contactNumber}</td>
-
-                <td>{supplier.address}</td>
-
-                <td>{supplier.gstOrBusinessId}</td>
-
-                <td>
+                <td style={{ textAlign: "center" }}>{index + 1}</td>
+                <td style={{ textAlign: "center" }}>{supplier.name}</td>
+                <td style={{ textAlign: "center" }}>{supplier.contactNumber}</td>
+                <td style={{ textAlign: "center" }}>{supplier.address}</td>
+                <td style={{ textAlign: "center" }}>{supplier.gstOrBusinessId}</td>
+                <td style={{ textAlign: "center" }}>
                   {Number(
                     supplier.openingBalance || 0
                   ).toFixed(3)}
                 </td>
 
-                <td>
+                <td style={{ textAlign: "center" }}>
 
                   <EditIcon
                     style={{
@@ -412,12 +398,16 @@ function SupplierManagement() {
             fullWidth
             margin="dense"
             value={form.name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                name: e.target.value
-              })
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              // Only allow letters, numbers, and spaces
+              if (/^[a-zA-Z0-9\s]*$/.test(value)) {
+                setForm({
+                  ...form,
+                  name: value
+                });
+              }
+            }}
           />
 
 
@@ -458,12 +448,16 @@ function SupplierManagement() {
             fullWidth
             margin="dense"
             value={form.gstOrBusinessId}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                gstOrBusinessId: e.target.value
-              })
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              // Only allow letters and numbers
+              if (/^[a-zA-Z0-9]*$/.test(value)) {
+                setForm({
+                  ...form,
+                  gstOrBusinessId: value
+                });
+              }
+            }}
           />
 
 

@@ -1,15 +1,27 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-import { TablePagination, Button, TextField, MenuItem } from "@mui/material";
 import "./Stock.css";
-
 import {
+  TablePagination,
+  Button,
+  TextField,
+  MenuItem,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Typography,
+  Box,
+  IconButton,
 } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import CloseIcon from "@mui/icons-material/Close";
 
 
 const RepairStockList = () => {
@@ -24,10 +36,10 @@ const RepairStockList = () => {
 
   const [selectedRepair, setSelectedRepair] = useState(null);
 
-  const [filterGoldsmith, setFilterGoldsmith] = useState("");
+  const [filterGoldsmith, setFilterGoldsmith] = useState("all");
   const [filterStatus, setFilterStatus] = useState("InRepair");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(null);
+  const [dateTo, setDateTo] = useState(null);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("PRODUCT");
 
@@ -54,18 +66,21 @@ const RepairStockList = () => {
 
   useEffect(() => {
     fetchGoldsmiths();
-    fetchRepairStock();
   }, []);
+
+  useEffect(() => {
+    fetchRepairStock();
+  }, [filterGoldsmith, filterStatus, dateFrom, dateTo, search, activeTab]);
 
   const fetchRepairStock = async () => {
     const res = await axios.get(
       `${BACKEND_SERVER_URL}/api/repair`,
       {
         params: {
-          status: filterStatus || undefined,
-          goldsmith: filterGoldsmith || undefined,
-          from: dateFrom || undefined,
-          to: dateTo || undefined,
+          status: filterStatus !== "all" ? filterStatus : undefined,
+          goldsmith: filterGoldsmith !== "all" ? filterGoldsmith : undefined,
+          from: dateFrom ? dateFrom.format("YYYY-MM-DD") : undefined,
+          to: dateTo ? dateTo.format("YYYY-MM-DD") : undefined,
           search: search || undefined
         }
       }
@@ -146,6 +161,7 @@ const RepairStockList = () => {
 
   return (
     <div className="stock-container">
+      <ToastContainer position="top-right" autoClose={3000} />
       <h2 className="stock-heading">Repair Stock</h2>
 
       <div style={{ marginBottom: "15px" }}>
@@ -159,7 +175,7 @@ const RepairStockList = () => {
             onChange={(e) => setFilterGoldsmith(e.target.value)}
             style={{ minWidth: 180 }}
           >
-            <MenuItem value="">All</MenuItem>
+            <MenuItem value="all">All</MenuItem>
             {goldsmiths.map(g => (
               <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
             ))}
@@ -173,28 +189,43 @@ const RepairStockList = () => {
             onChange={(e) => setFilterStatus(e.target.value)}
             style={{ minWidth: 150 }}
           >
-            <MenuItem value="">All</MenuItem>
+            <MenuItem value="all">All</MenuItem>
             <MenuItem value="InRepair">In Repair</MenuItem>
             <MenuItem value="Returned">Returned</MenuItem>
           </TextField>
 
-          <TextField
-            type="date"
-            size="small"
-            label="From"
-            InputLabelProps={{ shrink: true }}
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-          />
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="From Date"
+              value={dateFrom}
+              format="DD/MM/YYYY"
+              onChange={(newValue) => {
+                if (newValue && dateTo && newValue.isAfter(dateTo, "day")) {
+                  toast.error("From Date cannot be after To Date");
+                  return;
+                }
+                setDateFrom(newValue);
+              }}
+              slotProps={{ textField: { size: "small", sx: { width: 260 } } }}
+            />
+          </LocalizationProvider>
 
-          <TextField
-            type="date"
-            size="small"
-            label="To"
-            InputLabelProps={{ shrink: true }}
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-          />
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="To Date"
+              value={dateTo}
+              format="DD/MM/YYYY"
+              minDate={dateFrom || undefined}
+              onChange={(newValue) => {
+                if (newValue && dateFrom && newValue.isBefore(dateFrom, "day")) {
+                  toast.error("To Date cannot be before From Date");
+                  return;
+                }
+                setDateTo(newValue);
+              }}
+              slotProps={{ textField: { size: "small", sx: { width: 260 } } }}
+            />
+          </LocalizationProvider>
 
           <TextField
             size="small"
@@ -203,20 +234,15 @@ const RepairStockList = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <Button variant="contained" size="small" onClick={fetchRepairStock}>
-            Filter
-          </Button>
-
           <Button
             variant="outlined"
             size="small"
             onClick={() => {
-              setFilterGoldsmith("");
-              setFilterStatus("");
-              setDateFrom("");
-              setDateTo("");
+              setFilterGoldsmith("all");
+              setFilterStatus("all");
+              setDateFrom(null);
+              setDateTo(null);
               setSearch("");
-              fetchRepairStock();
             }}
           >
             Reset
@@ -274,7 +300,7 @@ const RepairStockList = () => {
             <tbody>
               {paginated.map((r, i) => (
                 <tr key={r.id}>
-                  <td>{i + 1}</td>
+                  <td>{page * rowsPerPage + i + 1}</td>
                   <td>
                     {r.product?.itemName ||
                     r.itemPurchase?.itemName ||
@@ -306,7 +332,7 @@ const RepairStockList = () => {
                       r.purity
                     )}
                   </td>
-                  <td>{new Date(r.sentDate).toLocaleDateString()}</td>
+                  <td>{dayjs(r.sentDate).format("DD/MM/YYYY")}</td>
                   <td>
                     {r.status === "InRepair" ? (
                       <span style={{ color: "red", fontWeight: "bold" }}>
@@ -384,10 +410,16 @@ const RepairStockList = () => {
                   <TextField
                     size="small"
                     type="number"
+                    inputProps={{ min: 0 }}
                     value={qc.itemWeight}
-                    onChange={(e) =>
-                      setQc({ ...qc, itemWeight: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val < 0) {
+                        toast.error("Weight cannot be negative");
+                        return;
+                      }
+                      setQc({ ...qc, itemWeight: e.target.value });
+                    }}
                   />
                 </td>
               </tr>
@@ -405,10 +437,16 @@ const RepairStockList = () => {
                   <TextField
                     size="small"
                     type="number"
+                    inputProps={{ min: 0 }}
                     value={qc.stoneWeight}
-                    onChange={(e) =>
-                      setQc({ ...qc, stoneWeight: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val < 0) {
+                        toast.error("Stone weight cannot be negative");
+                        return;
+                      }
+                      setQc({ ...qc, stoneWeight: e.target.value });
+                    }}
                   />
                 </td>
               </tr>

@@ -4,6 +4,8 @@ import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import dayjs from "dayjs";
 import "./customerReport.css";
 import {
@@ -56,6 +58,8 @@ const CustReport = () => {
         billReceive={currentPageTotal.billReceive}
         billAmount={currentPageTotal.billAmount}
         overAllBalance={overAllBalance}
+        page={page}
+        rowsPerPage={rowsPerPage}
       />
     );
 
@@ -119,6 +123,14 @@ const CustReport = () => {
       setOverAllBalance({});
       return;
     }
+
+    if (fromDate && toDate && toDate.isBefore(fromDate, 'day')) {
+      toast.error("To Date cannot be before From Date");
+      setBillInfo([]);
+      setOverAllBalance({});
+      return;
+    }
+
     const fetchBillInfo = async () => {
       try {
         const from = fromDate ? fromDate.format("YYYY-MM-DD") : "";
@@ -163,29 +175,29 @@ const CustReport = () => {
 
   return (
     <>
+      <ToastContainer position="top-right" autoClose={3000} />
       <div>
         <div className="customerReportHeader">
           <h3>Customer Report</h3>
           <div className={"report"}>
-            <label>From Date</label>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DemoContainer components={["DatePicker"]}>
-                <DatePicker
-                  value={fromDate}
-                  format="DD/MM/YYYY"
-                  onChange={(newValue) => setFromDate(newValue)}
-                />
-              </DemoContainer>
+              <DatePicker
+                label="From Date"
+                value={fromDate}
+                format="DD/MM/YYYY"
+                sx={{ width: 260 }}
+                onChange={(newValue) => setFromDate(newValue)}
+              />
             </LocalizationProvider>
-            <label>To Date</label>
+
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DemoContainer components={["DatePicker"]}>
-                <DatePicker
-                  value={toDate}
-                  format="DD/MM/YYYY"
-                  onChange={(newValue) => setToDate(newValue)}
-                />
-              </DemoContainer>
+              <DatePicker
+                label="To Date"
+                value={toDate}
+                format="DD/MM/YYYY"
+                sx={{ width: 260 }}
+                onChange={(newValue) => setToDate(newValue)}
+              />
             </LocalizationProvider>
 
             {/* Autocomplete */}
@@ -193,7 +205,7 @@ const CustReport = () => {
               disablePortal
               options={customers}
               getOptionLabel={(option) => option.name || ""}
-              sx={{ width: 300 }}
+              sx={{ width: 260 }}
               value={selectedCustomer}
               onChange={(event, newValue) => handleCustomer(newValue)}
               renderInput={(params) => (
@@ -242,7 +254,7 @@ const CustReport = () => {
               <tbody className="customerReportTbody">
                 {paginatedData.map((bill, index) => (
                   <tr key={index + 1}>
-                    <td>{index + 1}</td>
+                    <td>{page * rowsPerPage + index + 1}</td>
                     <td>{bill.type === "bill" ? bill.info.id : "-"}</td>
                     <td>
                       {new Date(bill.info.createdAt).toLocaleDateString(
@@ -276,11 +288,11 @@ const CustReport = () => {
                                     ).toLocaleDateString("en-GB")}
                                   </td>
                                   <td>{item.productName}</td>
-                                  <td>{item.weight}</td>
-                                  <td>{item.stoneWeight}</td>
-                                  <td>{item.afterWeight}</td>
-                                  <td>{item.percentage}</td>
-                                  <td>{item.finalWeight}</td>
+                                  <td>{(Number(item.weight) || 0).toFixed(3)}</td>
+                                  <td>{(Number(item.stoneWeight) || 0).toFixed(3)}</td>
+                                  <td>{(Number(item.afterWeight) || 0).toFixed(3)}</td>
+                                  <td>{(Number(item.percentage) || 0).toFixed(3)}</td>
+                                  <td>{(Number(item.finalWeight) || 0).toFixed(3)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -310,12 +322,12 @@ const CustReport = () => {
                                   bill.info.createdAt
                                 ).toLocaleDateString("en-GB")}
                               </td>
-                              <td>{bill.info.goldRate}</td>
-                              <td>{bill.info.gold}</td>
-                              <td>{bill.info.touch}</td>
-                              <td>{bill.info.purity}</td>
-                              <td>{bill.info.amount}</td>
-                              <td>{bill.info.receiveHallMark || 0}</td>
+                              <td>{(Number(bill.info.goldRate) || 0).toFixed(3)}</td>
+                              <td>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
+                              <td>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
+                              <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                              <td>{(Number(bill.info.amount) || 0).toFixed(3)}</td>
+                              <td>{(Number(bill.info.receiveHallMark) || 0).toFixed(3)}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -336,11 +348,11 @@ const CustReport = () => {
                     {bill.type === "bill" ? (
                       <>
                         <td>-</td>
-                        <td>{bill.info.billAmount}</td>
+                        <td>{(Number(bill.info.billAmount) || 0).toFixed(3)}</td>
                       </>
                     ) : (
                       <>
-                        <td>{bill.info.purity}</td>
+                        <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
                         <td>-</td>
                       </>
                     )}
@@ -348,15 +360,15 @@ const CustReport = () => {
                 ))}
 
                 <tr className="custRepTfoot" >
-                  <td colSpan={5}></td>
+                  <td colSpan={5} style={{textAlign: 'right'}}><strong>TOTALS:</strong></td>
 
                   <td className="customerTotal">
                     <strong>
-                      Total bill Received :{(currentPageTotal.billReceive).toFixed(3)} gr
+                      {(currentPageTotal.billReceive).toFixed(3)} gr
                     </strong>{" "}
                   </td>
                   <td className="customerTotal">
-                    <strong> Total bill Amount:{(currentPageTotal.billAmount).toFixed(3)} gr</strong>
+                    <strong> {(currentPageTotal.billAmount).toFixed(3)} gr</strong>
                   </td>
                 </tr>
 
@@ -402,7 +414,7 @@ const CustReport = () => {
               Excess Balance:{" "}
               {overAllBalance.balance < 0
                 ? overAllBalance.balance.toFixed(3)
-                : 0.0}{" "}
+                : (0).toFixed(3)}{" "}
               gr
             </span>
             {overAllBalance.initialBalance < 0 && (
@@ -424,7 +436,7 @@ const CustReport = () => {
 
           {showInitialNegative && overAllBalance.initialBalance < 0 && (
             <div className="balanceDetails">
-              <p>Initial Value: {overAllBalance.initialBalance}</p>
+              <p>Initial Value: {(Number(overAllBalance.initialBalance) || 0).toFixed(3)}</p>
             </div>
           )}
         </div>
@@ -442,7 +454,7 @@ const CustReport = () => {
               Balance:{" "}
               {overAllBalance.balance >= 0
                 ? overAllBalance.balance.toFixed(3)
-                : 0.0}{" "}
+                : (0).toFixed(3)}{" "}
               gr
             </span>
             {overAllBalance.initialBalance >= 0 && (
@@ -464,7 +476,7 @@ const CustReport = () => {
 
           {showInitialPositive && overAllBalance.initialBalance >= 0 && (
             <div className="balanceDetails">
-              <p>Initial Value: {overAllBalance.initialBalance}</p>
+              <p>Initial Value: {(Number(overAllBalance.initialBalance) || 0).toFixed(3)}</p>
             </div>
           )}
         </div>

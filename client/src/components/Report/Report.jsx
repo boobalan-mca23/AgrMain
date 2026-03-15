@@ -310,12 +310,12 @@ const DailySalesReport = () => {
                 })}
               {/* Totals Row */}
               <TableRow className="totals-row">
-                <TableCell colSpan={1} className="totals-cell" style={{ textAlign: "center" }}>
+                <TableCell colSpan={3} className="totals-cell" style={{ textAlign: "center" }}>
                   Total
                 </TableCell>
                 <TableCell className="totals-cell">{topTotalsVisible.totalWeight.toFixed(3)}</TableCell>
-                <TableCell className="totals-cell">{topTotalsVisible.totalReceivedPurity.toFixed(3)} g</TableCell>
-                <TableCell className="totals-cell">{Number(topTotalsVisible.cashBalance ?? 0).toLocaleString("en-IN")}</TableCell>
+                {/* <TableCell className="totals-cell">{topTotalsVisible.totalReceivedPurity.toFixed(3)} g</TableCell> */}
+                {/* <TableCell className="totals-cell">{Number(topTotalsVisible.cashBalance ?? 0).toLocaleString("en-IN")}</TableCell> */}
                 <TableCell className="totals-cell">{topTotalsVisible.pureBalance.toFixed(3)} g</TableCell>
                 <TableCell className="totals-cell">{topTotalsVisible.totalTotalProfit.toFixed(3)} g</TableCell>
                 <TableCell className="totals-cell" />

@@ -119,26 +119,19 @@ const ItemPurchaseStock = () => {
 
   const currentPageTotals =
     useMemo(() => {
-
       return paginatedData.reduce(
-
         (acc, item) => {
-
           acc.weight += Number(item.netWeight || 0);
-
+          acc.wastage += Number(item.wastagePure || 0);
           acc.purity += Number(item.finalPurity || 0);
-
           return acc;
-
         },
-
         {
           weight: 0,
+          wastage: 0,
           purity: 0
         }
-
       );
-
     }, [paginatedData]);
 
 
@@ -181,7 +174,7 @@ const ItemPurchaseStock = () => {
 
         <div className="stock-card">
 
-          <p>Total Weight (g)</p>
+          <p>Total Net Weight (g)</p>
 
           <h3>{safeFixed(totals.weight)}</h3>
 
@@ -190,7 +183,7 @@ const ItemPurchaseStock = () => {
 
         <div className="stock-card">
 
-          <p>Wastage Pure (g)</p>
+          <p>Total Wastage Pure (g)</p>
 
           <h3>{safeFixed(totals.wastage)}</h3>
 
@@ -336,41 +329,22 @@ const ItemPurchaseStock = () => {
 
 
           <tfoot>
-
             <tr>
-
-              <td colSpan={2}>
+              <td colSpan={5}>
                 <strong>Total</strong>
               </td>
-
-
               <td>
-                <strong>
-                  {safeFixed(currentPageTotals.weight)}
-                </strong>
+                <strong>{safeFixed(currentPageTotals.weight)}</strong>
               </td>
-
-
               <td></td>
-
-
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-
-
               <td>
-                <strong>
-                  {safeFixed(currentPageTotals.purity)}
-                </strong>
+                <strong>{safeFixed(currentPageTotals.wastage)}</strong>
               </td>
-
-
+              <td>
+                <strong>{safeFixed(currentPageTotals.purity)}</strong>
+              </td>
               <td></td>
-
             </tr>
-
           </tfoot>
 
         </table>

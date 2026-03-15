@@ -118,7 +118,12 @@ const Masteradditems = () => {
           <input
             type="text"
             value={itemName}
-            onChange={(e) => setItemName(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || validName.test(value)) {
+                setItemName(value);
+              }
+            }}
             placeholder="Enter item name"
           />
           <button onClick={handleAddItem}>Add Item</button>
@@ -145,7 +150,12 @@ const Masteradditems = () => {
                         <input
                           type="text"
                           value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "" || validName.test(value)) {
+                              setEditValue(value);
+                            }
+                          }}
                           style={{ width: "90%", padding: "4px" }}
                         />
                       ) : (

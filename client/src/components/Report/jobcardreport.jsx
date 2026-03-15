@@ -16,6 +16,8 @@ import {
 } from "@mui/material";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const JobCardReport = () => {
   const [fromDate, setFromDate] = useState(null);
@@ -41,6 +43,8 @@ const JobCardReport = () => {
         goldSmithName={selectedGoldSmith?.name || ""}
         jobCard={paginatedData}
         totalJobCard={jobCard}
+        page={page}
+        rowsPerPage={rowsPerPage}
       />
     );
 
@@ -89,6 +93,13 @@ const JobCardReport = () => {
       setJobCard([]);
       return;
     }
+
+    if (fromDate && toDate && toDate.isBefore(fromDate, 'day')) {
+      toast.error("To Date cannot be before From Date");
+      setJobCard([]);
+      return;
+    }
+
     const fetchJobCards = async () => {
       try {
         const from = fromDate ? fromDate.format("YYYY-MM-DD") : "";
@@ -132,29 +143,29 @@ const JobCardReport = () => {
 
   return (
     <>
+      <ToastContainer position="top-right" autoClose={3000} />
       <div>
         <div className="reportHeader">
           <h3>GoldSmith Report</h3>
           <div className="report">
-            <label>From Date</label>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DemoContainer components={["DatePicker"]}>
-                <DatePicker
-                  value={fromDate}
-                  format="DD/MM/YYYY"
-                  onChange={(newValue) => setFromDate(newValue)}
-                />
-              </DemoContainer>
+              <DatePicker
+                label="From Date"
+                value={fromDate}
+                format="DD/MM/YYYY"
+                sx={{ width: 260 }}
+                onChange={(newValue) => setFromDate(newValue)}
+              />
             </LocalizationProvider>
-            <label>To Date</label>
+
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DemoContainer components={["DatePicker"]}>
-                <DatePicker
-                  value={toDate}
-                  format="DD/MM/YYYY"
-                  onChange={(newValue) => setToDate(newValue)}
-                />
-              </DemoContainer>
+              <DatePicker
+                label="Due Date"
+                value={toDate}
+                format="DD/MM/YYYY"
+                sx={{ width: 260 }}
+                onChange={(newValue) => setToDate(newValue)}
+              />
             </LocalizationProvider>
 
             {/* Autocomplete */}
@@ -162,7 +173,7 @@ const JobCardReport = () => {
               disablePortal
               options={goldSmith}
               getOptionLabel={(option) => option.name || ""}
-              sx={{ width: 300 }}
+              sx={{ width: 260 }}
               value={selectedGoldSmith}
               onChange={(event, newValue) => handleGoldSmith(newValue)}
               renderInput={(params) => (
@@ -222,7 +233,7 @@ const JobCardReport = () => {
         <div className="jobReportTable">
           {jobCard.length >= 1 ? (
             <div className="reportContainer">
-              <JobCardRepTable paginatedData={paginatedData} />
+              <JobCardRepTable paginatedData={paginatedData} page={page} rowsPerPage={rowsPerPage} />
               <TablePagination
                 component="div"
                 count={jobCard.length}

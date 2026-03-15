@@ -864,6 +864,7 @@ const Billing = () => {
           // const finalPurity = actualPurity + wastagePure;
 
           return {
+            id: row.orderItemId, // Sending back original ID
             stockId: row.productId,
             stockType: row.stockType || "PRODUCT",
             productName: row.productName,
@@ -878,9 +879,7 @@ const Billing = () => {
             touch,
             netWeight: awt,
             wastageValue,
-            // wastagePure,
-            // actualPurity,
-            // finalPurity,
+            repairStatus: row.repairStatus || "NONE",
           };
         }),
       };
@@ -916,6 +915,7 @@ const Billing = () => {
       await fetchAllBills();
       await fetchCustomers();
       await fetchProductStock();
+      await fetchItemPurchaseStock();
 
       toast.success("Bill updated successfully!");
     } catch (error) {
@@ -1225,7 +1225,8 @@ const Billing = () => {
           awt: item.afterWeight?.toString() || "",
           percent: item.percentage?.toString() || "",
           fwt: item.finalWeight?.toString() || "",
-          repairStatus: item.repairStatus || "SOLD",
+          repairStatus: item.repairStatus || "NONE",
+          orderItemId: item.id, // Store original ID from DB
         });
 
         if (uniqueId) {
@@ -1640,15 +1641,9 @@ const Billing = () => {
                   <TableRow key={row.id}>
                     <TableCell className="td">{index + 1}</TableCell>
                     <TableCell className="td">
-                      <TextField
-                        size="small"
-                        value={row.productName}
-                        disabled
-                        onChange={(e) => handleBillDetailChange(index, "productName", e.target.value)}
-                        inputProps={{ style: inputStyle }}
-                        error={!!fieldErrors[`billDetail_${index}_productName`]}
-                        helperText={fieldErrors[`billDetail_${index}_productName`] || ""}
-                      />
+                      <Box className="product-name-wrap-cell">
+                        {row.productName}
+                      </Box>
                     </TableCell>
 
                     {showCountCol && (

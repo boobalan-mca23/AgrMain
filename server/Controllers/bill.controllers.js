@@ -212,7 +212,8 @@ const createBill = async (req, res) => {
               wastagePure,
               finalPurity,
               wastageType: stock[0].wastageType,
-              isBillProduct: true,
+              isBillProduct: remainWt > 0.05,
+              isActive: remainWt > 0.05,
             },
           });
         }
@@ -379,20 +380,45 @@ const updateBill = async (req, res) => {
 
           billPureEffect: newPureEffect,
           billHallmarkEffect: newHallEffect,
-
           hallmarkQty: parseFloat(hallmarkQty) || 0,
           billDetailsprofit: parseFloat(billDetailsprofit) || 0,
           Stoneprofit: parseFloat(Stoneprofit) || 0,
           Totalprofit: parseFloat(Totalprofit) || 0,
-
-          ...(modifiedOrders.length > 0 && {
-            orders: {
-              deleteMany: { billId: billIdNum },
-              create: modifiedOrders
-            }
-          })
         }
       });
+
+      // Manual update/create/delete for order items to preserve repairStatus and IDs
+      const existingItems = await tx.orderItems.findMany({ where: { billId: billIdNum } });
+      const incomingIds = modifiedOrders.map(o => o.id).filter(id => id !== undefined);
+
+      // 1. Delete items that were removed
+      await tx.orderItems.deleteMany({
+        where: {
+          billId: billIdNum,
+          id: { notIn: incomingIds }
+        }
+      });
+
+      // 2. Update existing or Create new
+      for (const item of modifiedOrders) {
+        const { id, ...itemData } = item;
+        if (id) {
+          await tx.orderItems.update({
+            where: { id: parseInt(id) },
+            data: {
+              ...itemData,
+              // repairStatus is included in itemData via frontend
+            }
+          });
+        } else {
+          await tx.orderItems.create({
+            data: {
+              ...itemData,
+              billId: billIdNum
+            }
+          });
+        }
+      }
 
       // update customer balance
       await tx.customerBillBalance.upsert({

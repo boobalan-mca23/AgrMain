@@ -296,11 +296,8 @@ function ItemPurchaseEntry() {
       itemName: form.itemName,
 
       grossWeight: Number(form.grossWeight),
-
-      stoneWeight: Number(form.stoneWeight),
-
+      stoneWeight: Number(form.stoneWeight || 0),
       netWeight: Number(form.netWeight),
-
       touch: Number(form.touch),
 
       wastageType: form.wastageType,
@@ -311,9 +308,13 @@ function ItemPurchaseEntry() {
 
       finalPurity: Number(form.finalPurity),
 
-      goldBalance: Number(form.goldBalance),
-
+      goldBalance: Number(form.goldBalance || 0),
     };
+
+    if (!payload.itemName || !payload.grossWeight || !payload.touch) {
+      toast.error("Please fill all mandatory fields (Item Name, Gross Weight, Touch)");
+      return;
+    }
 
     try {
 
@@ -430,6 +431,7 @@ function ItemPurchaseEntry() {
 
           <TextField
             label="Filter by Item Name"
+            size="small"
             value={itemFilter}
             onChange={(e) =>
               setItemFilter(e.target.value)
@@ -443,12 +445,13 @@ function ItemPurchaseEntry() {
 
           <TextField
             select
+            size="small"
             value={touchFilter}
             onChange={(e) =>
               setTouchFilter(e.target.value)
             }
             SelectProps={{ native: true }}
-            style={{ minWidth: 200 }}
+            style={{ minWidth: 150 }}
           >
 
             <option value="">Filter by Touch</option>
@@ -460,7 +463,14 @@ function ItemPurchaseEntry() {
           </TextField>
 
 
-          <Button onClick={clearFilters}>
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{
+              height: "40px"
+            }}
+            onClick={clearFilters}
+          >
             Clear
           </Button>
 
@@ -564,7 +574,7 @@ function ItemPurchaseEntry() {
             label="Advance Gold (g)"
             fullWidth
             margin="dense"
-            value={form.advanceGold || "0"}
+            value={form.advanceGold}
             onChange={(e) =>
               {
               const value = e.target.value;
@@ -581,10 +591,14 @@ function ItemPurchaseEntry() {
             label="Item Name"
             fullWidth
             margin="dense"
+            required
             value={form.itemName}
-            onChange={(e) =>
-              handleChange("itemName", e.target.value)
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^[a-zA-Z0-9\s]*$/.test(value)) {
+                handleChange("itemName", value);
+              }
+            }}
           />
 
 
@@ -592,6 +606,7 @@ function ItemPurchaseEntry() {
             label="Gross Weight (g)"
             fullWidth
             margin="dense"
+            required
             value={form.grossWeight}
             onChange={(e) =>
               {
@@ -634,6 +649,7 @@ function ItemPurchaseEntry() {
           <TextField
             label="Touch"
             fullWidth
+            required
             margin="dense"
             value={form.touch}
             onChange={(e) =>
@@ -652,6 +668,7 @@ function ItemPurchaseEntry() {
             select
             label="Wastage Type"
             fullWidth
+            required
             margin="dense"
             SelectProps={{ native: true }}
             value={form.wastageType}
@@ -730,7 +747,7 @@ function ItemPurchaseEntry() {
             variant="contained"
             onClick={handleSubmit}
           >
-            Save
+            {isEdit ? "Update" : "Save"}
           </Button>
 
         </DialogActions>

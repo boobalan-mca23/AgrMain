@@ -49,7 +49,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
       textAlign: "center",
       backgroundColor: "#f2f2f2",
     },
-    td: { border: "1px solid #ddd", padding: "4px", textAlign: "center" },
+    td: { border: "1px solid #ddd", padding: "4px", textAlign: "center", wordBreak: "break-word", overflowWrap: "anywhere" },
     flex: {
       display: "flex",
       justifyContent: "space-between",
@@ -194,18 +194,26 @@ const PrintableBill = React.forwardRef((props, ref) => {
                 Opening Hallmark Balance: 0.000
               </p>
             )}
-            <div style={{ display: "flex", }}>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <p
                 style={{ fontSize: "12px", margin: "0", }}
-              ><b>Qty:</b>{hallmarkQty || "0.000"} X</p>
+              ><b>Qty:</b> {hallmarkQty || "0.000"}</p>
 
               <p
                 style={{ fontSize: "12px", margin: "0", }}
-              ><b>Rate:</b>{hallMark || "0.000"} =</p>
+              >X</p>
 
               <p
                 style={{ fontSize: "12px", margin: "0", }}
-              ><b></b>{hallmarkAmount?.toFixed(3) || "0.000"}</p>
+              ><b>Rate:</b> {hallMark || "0.000"}</p>
+
+              <p
+                style={{ fontSize: "12px", margin: "0", }}
+              >=</p>
+
+              <p
+                style={{ fontSize: "12px", margin: "0", }}
+              >{hallmarkAmount?.toFixed(3) || "0.000"}</p>
 
             </div>
             {/* Total Hallmark below table */}

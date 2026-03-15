@@ -1,6 +1,7 @@
 import React from "react";
+import dayjs from "dayjs";
 const ReceiptPrintReport = (props) => {
-  const { fromDate, toDate, customerName, receipt,selectedCustomer } = props;
+  const { fromDate, toDate, customerName, receipt, selectedCustomer, page, rowsPerPage } = props;
   return (
     <>
       <div>
@@ -64,7 +65,7 @@ const ReceiptPrintReport = (props) => {
                   {receipt.map((item, index) => (
                     <tr>
                       <td style={styles.ReportTablebody}>{index + 1}</td>
-                      <td style={styles.ReportTablebody}>{item.date || "-"}</td>
+                      <td style={styles.ReportTablebody}>{item.date ? dayjs(item.date).format("DD-MM-YYYY") : "-"}</td>
                       <td style={styles.ReportTablebody}>{item.type || "-"}</td>
                       <td style={styles.ReportTablebody}>
                         {item.goldRate || 0}
@@ -74,7 +75,7 @@ const ReceiptPrintReport = (props) => {
                       <td style={styles.ReportTablebody}>{item.purity || 0}</td>
                       <td style={styles.ReportTablebody}>{item.amount || 0}</td>
                       <td style={styles.ReportTablebody}>
-                        {item.hallMark || 0}
+                        {item.receiveHallMark || 0}
                       </td>
                     </tr>
                   ))}

@@ -22,6 +22,8 @@ import {
 } from "@mui/material";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ReceiptReport = () => {
   const [fromDate, setFromDate] = useState(null);
@@ -47,8 +49,10 @@ const ReceiptReport = () => {
         fromDate={fromDate ? fromDate.format("DD/MM/YYYY") : ""}
         toDate={toDate ? toDate.format("DD/MM/YYYY") : ""}
         customerName={selectedCustomer?.name || ""}
-        receipt={receipt}
+        receipt={paginatedData}
         selectedCustomer={selectedCustomer}
+        page={page}
+        rowsPerPage={rowsPerPage}
       />
     );
 
@@ -96,6 +100,13 @@ const ReceiptReport = () => {
       setReceipt([]);
       return;
     }
+
+    if (fromDate && toDate && toDate.isBefore(fromDate, 'day')) {
+      toast.error("To Date cannot be before From Date");
+      setReceipt([]);
+      return;
+    }
+
     const fetchReceipts = async () => {
       try {
         const from = fromDate ? fromDate.format("YYYY-MM-DD") : "";
@@ -138,29 +149,29 @@ const ReceiptReport = () => {
 
   return (
     <>
+      <ToastContainer position="top-right" autoClose={3000} />
       <div>
         <div className="receiptreportHeader">
           <h3>Receipt Report</h3>
           <div className="receipt">
-            <label>From Date</label>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DemoContainer components={["DatePicker"]}>
-                <DatePicker
-                  value={fromDate}
-                  format="DD/MM/YYYY"
-                  onChange={(newValue) => setFromDate(newValue)}
-                />
-              </DemoContainer>
+              <DatePicker
+                label="From Date"
+                value={fromDate}
+                format="DD/MM/YYYY"
+                sx={{ width: 260 }}
+                onChange={(newValue) => setFromDate(newValue)}
+              />
             </LocalizationProvider>
-            <label>To Date</label>
+
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DemoContainer components={["DatePicker"]}>
-                <DatePicker
-                  value={toDate}
-                  format="DD/MM/YYYY"
-                  onChange={(newValue) => setToDate(newValue)}
-                />
-              </DemoContainer>
+              <DatePicker
+                label="To Date"
+                value={toDate}
+                format="DD/MM/YYYY"
+                sx={{ width: 260 }}
+                onChange={(newValue) => setToDate(newValue)}
+              />
             </LocalizationProvider>
 
             {/* Autocomplete */}
@@ -168,7 +179,7 @@ const ReceiptReport = () => {
               disablePortal
               options={customers}
               getOptionLabel={(option) => option.name || ""}
-              sx={{ width: 300 }}
+              sx={{ width: 260 }}
               value={selectedCustomer}
               onChange={(event, newValue) => handleCustomer(newValue)}
               renderInput={(params) => (
@@ -239,7 +250,7 @@ const ReceiptReport = () => {
                 <tbody className="receiptreportTbody">
                   {paginatedData.map((item, index) => (
                     <tr key={index + 1}>
-                      <td>{index + 1}</td>
+                      <td>{page * rowsPerPage + index + 1}</td>
                       <td>{item.date ? dayjs(item.date).format("DD-MM-YYYY") : "-"}</td>
                       <td>{item.type}</td>
                       <td>{item.goldRate}</td>

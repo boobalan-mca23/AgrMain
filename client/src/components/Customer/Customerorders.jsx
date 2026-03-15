@@ -548,6 +548,7 @@ const CustomerOrders = () => {
         formData.append("weight", item.weight);
         formData.append("due_date", item.dueDate);
         formData.append("worker_name", item.workerName);
+        formData.append("status", item.status);
 
         if (item.images?.length > 0)
           item.images.forEach((f) => formData.append("images", f));
@@ -571,6 +572,7 @@ const CustomerOrders = () => {
           formData.append("weight", item.weight);
           formData.append("due_date", item.dueDate);
           formData.append("worker_name", item.workerName);
+          formData.append("status", item.status);
           formData.append("image", item.images);
 
           if (item.images?.length > 0) {

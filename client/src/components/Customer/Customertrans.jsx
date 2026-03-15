@@ -10,11 +10,18 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  Button,
+  Box
 } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 import "react-toastify/dist/ReactToastify.css";
 import { checkTransaction } from "../cashOrGoldValidation/cashOrGoldValidation";
 const Customertrans = () => {
@@ -25,8 +32,8 @@ const Customertrans = () => {
   const customerId = searchParams.get("id");
   const customerName = searchParams.get("name");
 
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [error, setError] = useState("");
@@ -185,11 +192,14 @@ const Customertrans = () => {
   };
 
   const filteredTransactions = transactions.filter((transaction) => {
-    const transactionDate = new Date(transaction.date);
-    const from = fromDate ? new Date(fromDate) : null;
-    const to = toDate ? new Date(toDate) : null;
+    const transactionDate = dayjs(transaction.date);
+    const from = fromDate ? fromDate.startOf("day") : null;
+    const to = toDate ? toDate.endOf("day") : null;
 
-    return (!from || transactionDate >= from) && (!to || transactionDate <= to);
+    const matchesFrom = !from || transactionDate.isAfter(from) || transactionDate.isSame(from, "day");
+    const matchesTo = !to || transactionDate.isBefore(to) || transactionDate.isSame(to, "day");
+
+    return matchesFrom && matchesTo;
   });
 
   const totals = filteredTransactions.reduce(
@@ -210,24 +220,43 @@ const Customertrans = () => {
       <br />
       {error && <div className="error-message">{error}</div>}
 
-      <div className="filters">
-        <label>
-          From Date:
-          <input
-            type="date"
+      <Box className="filters" sx={{ mb: 2, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", justifyContent: "center" }}>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="From Date"
             value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
+            format="DD/MM/YYYY"
+            onChange={(newValue) => setFromDate(newValue)}
+            slotProps={{ textField: { size: "small", sx: { width: 200 } } }}
           />
-        </label>
-        <label>
-          To Date:
-          <input
-            type="date"
+        </LocalizationProvider>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="To Date"
             value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
+            format="DD/MM/YYYY"
+            minDate={fromDate || undefined}
+            onChange={(newValue) => setToDate(newValue)}
+            slotProps={{ textField: { size: "small", sx: { width: 200 } } }}
           />
-        </label>
-      </div>
+        </LocalizationProvider>
+        <Button
+          variant="contained"
+          size="small"
+          sx={{
+            backgroundColor: "#d32f2f",
+            color: "white",
+            '&:hover': { backgroundColor: "#c62828" },
+            height: "40px"
+          }}
+          onClick={() => {
+            setFromDate(null);
+            setToDate(null);
+          }}
+        >
+          Reset
+        </Button>
+      </Box>
 
       <button onClick={() => setShowPopup(true)} className="add-btn">
         Add Transaction
@@ -281,6 +310,7 @@ const Customertrans = () => {
                       name="amount"
                       value={newTransaction.amount}
                       onChange={handleChange}
+                      onWheel={(e) => e.target.blur()}
                       step="0.01"
                       required
                     />
@@ -293,6 +323,7 @@ const Customertrans = () => {
                     <input
                       type="number"
                       value={goldRate}
+                      onWheel={(e) => e.target.blur()}
                       onChange={(e) => {
                         setGoldRate(e.target.value);
                         const cash = parseFloat(newTransaction.amount);
@@ -346,6 +377,7 @@ const Customertrans = () => {
                           name="touch"
                           required
                           size="small"
+                          onWheel={(e) => e.target.blur()}
                           onChange={(e) => handleChange(e)}
                           inputProps={{
                             ...params.inputProps,
@@ -390,6 +422,7 @@ const Customertrans = () => {
                       name="gold"
                       value={newTransaction.gold}
                       onChange={handleChange}
+                      onWheel={(e) => e.target.blur()}
                       step="0.001"
                       required
                     />
@@ -426,6 +459,7 @@ const Customertrans = () => {
                           name="touch"
                           required
                           size="small"
+                          onWheel={(e) => e.target.blur()}
                           onChange={(e) => handleChange(e)}
                           inputProps={{
                             ...params.inputProps,
