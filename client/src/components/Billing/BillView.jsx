@@ -366,9 +366,8 @@ const BillView = () => {
             className="table"
             style={{
               marginTop: "10px",
-              minWidth: "500px",
+              minWidth: "900px",
               width: "100%",
-              tableLayout: "fixed",
             }}
           >
             <TableHead>
@@ -480,6 +479,7 @@ const BillView = () => {
                                     ? "#81c784" // lighter green
                                     : "#9e9e9e",
                           color: "white",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {row.repairStatus === "IN_REPAIR"

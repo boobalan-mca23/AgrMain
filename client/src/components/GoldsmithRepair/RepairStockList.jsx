@@ -290,13 +290,13 @@ const RepairStockList = () => {
             <thead>
               <tr>
                 <th>Serial</th>
+                <th>Sent Date</th>
                 <th>Item Name</th>
                 <th>Goldsmith</th>
                 <th>Item Wt (g)</th>
                 <th>Net Wt (g)</th>
                 <th>Touch</th>
                 <th>Final Purity (g)</th>
-                <th>Sent Date</th>
                 <th>Status</th>
                 <th>Reason</th>
                 <th>Action</th>
@@ -307,6 +307,7 @@ const RepairStockList = () => {
               {paginated.map((r, i) => (
                 <tr key={r.id}>
                   <td>{page * rowsPerPage + i + 1}</td>
+                  <td>{dayjs(r.sentDate).format("DD/MM/YYYY")}</td>
                   <td>
                     {r.product?.itemName ||
                     r.itemPurchase?.itemName ||
@@ -338,7 +339,6 @@ const RepairStockList = () => {
                       r.purity
                     )}
                   </td>
-                  <td>{dayjs(r.sentDate).format("DD/MM/YYYY")}</td>
                   <td>
                     {r.status === "InRepair" ? (
                       <span style={{ color: "red", fontWeight: "bold" }}>

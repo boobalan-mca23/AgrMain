@@ -322,6 +322,7 @@ function AgrNewJobCard({
   );
 
   const handleSave = (print = "noprint") => {
+    if (saveDisable) return;
     const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
     const usedTouches = givenGold.map(g => parseFloat(g.touch)).filter(t => !isNaN(t));
     const existStock = checkAvailabilityStock(rawGoldStock, usedTouches);
@@ -1463,9 +1464,14 @@ function AgrNewJobCard({
             onClick={() => {
               handleSave("print");
             }}
+            disabled={saveDisable}
             className="jobCardPrintBtn"
+            style={{ 
+              opacity: saveDisable ? 0.5 : 1,
+              cursor: saveDisable ? "not-allowed" : "pointer"
+            }}
           >
-            Print
+            {saveDisable ? "Printing..." : "Print"}
           </Button>
         </DialogActions>
       </Dialog>
