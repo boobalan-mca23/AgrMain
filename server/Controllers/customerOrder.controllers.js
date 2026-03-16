@@ -251,8 +251,8 @@ const deleteImageById = async (req, res) => {
  
     const fs = require("fs");
     const path = require("path");
-    const imagePath = path.join(__dirname, "../../uploads", image.filename);
- 
+    const imagePath = path.join(__dirname, "../uploads", image.filename);
+
     if (fs.existsSync(imagePath)) {
       fs.unlinkSync(imagePath);
     }
@@ -407,7 +407,7 @@ const deleteOrderGroup = async (req, res) => {
 
     for (const img of images) {
       try {
-        const imagePath = path.join(__dirname, "../../uploads", img.filename);
+        const imagePath = path.join(__dirname, "../uploads", img.filename);
         if (fs.existsSync(imagePath)) {
           fs.unlinkSync(imagePath);
         }
@@ -442,8 +442,24 @@ const deleteOrderById = async (req, res) => {
     if (!existingOrder) {
       return res.status(404).json({ error: "Order not found" });
     }
+    const images = await prisma.product_multiple_images.findMany({
+      where: { customer_order_id: parseInt(itemId) },
+      select: { id: true, filename: true },
+    });
+
+    for (const img of images) {
+      try {
+        const imagePath = path.join(__dirname, "../uploads", img.filename);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      } catch (e) {
+        console.error(`Failed to unlink file for image id ${img.id}:`, e);
+      }
+    }
+
     await prisma.product_multiple_images.deleteMany({
-      where: { customer_order_id: parseInt(itemId) },  
+      where: { customer_order_id: parseInt(itemId) },
     });
     const deletedOrder = await prisma.customer_order.delete({
       where: { id: parseInt(itemId) },

@@ -96,8 +96,8 @@ const moveToRawGoldStock = async (received, billId, customerId, tx = prisma) => 
           const rawGoldLog = await tx.rawGoldLogs.create({
             data: {
               rawGoldStockId: stock.id,
-              weight: data.type === "Cash" ? parseFloat(data.purity) : parseFloat(data.gold) || 0,
-              touch: data.type === "Cash" ? 100 : parseFloat(data.touch) || 0,
+              weight: parseFloat(data.purity)|| 0,
+              touch:  parseFloat(data.touch) || 0,
               purity: data.purity,
             },
           });
@@ -256,7 +256,7 @@ const transactionToRawGold = async (date, type, amount, gold, touch, purity, cus
     throw new Error(`No stock found for touch: ${actualTouch}`);
   }
 
-  let weight = type === "Cash" ? (parseFloat(purity) / actualTouch) * 100 : parseFloat(gold) || 0;
+  let weight = type === "Cash" ? (parseFloat(purity) / actualTouch) * 100 : parseFloat(purity) || 0;
 
   const rawGoldLog = await prisma.rawGoldLogs.create({
     data: {
