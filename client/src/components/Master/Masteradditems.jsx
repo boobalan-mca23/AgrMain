@@ -135,7 +135,7 @@ const Masteradditems = () => {
           <table>
             <thead>
               <tr>
-                <th>SI.No</th>
+                <th>S.No</th>
                 <th>Item Name</th>
                 <th>Action</th>
               </tr>

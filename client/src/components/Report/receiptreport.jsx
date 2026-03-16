@@ -170,6 +170,7 @@ const ReceiptReport = () => {
                 value={toDate}
                 format="DD/MM/YYYY"
                 sx={{ width: 260 }}
+                minDate={fromDate}
                 onChange={(newValue) => setToDate(newValue)}
               />
             </LocalizationProvider>

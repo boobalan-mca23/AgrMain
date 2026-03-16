@@ -214,9 +214,8 @@ const CustomerReturn = () => {
   const filteredBills = bills.filter((bill) => {
 
     const searchValue = search.toLowerCase();
-    const allReturned = bill.orders?.every(item => item.repairStatus === "RETURNED");
-
-    if (allReturned) return false;
+    // const allReturned = bill.orders?.every(item => item.repairStatus === "RETURNED");
+    // if (allReturned) return false;
 
     const matchesSearch =
       !search ||

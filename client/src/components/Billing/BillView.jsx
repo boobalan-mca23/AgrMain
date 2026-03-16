@@ -366,9 +366,8 @@ const BillView = () => {
             className="table"
             style={{
               marginTop: "10px",
-              minWidth: "500px",
+              minWidth: "900px",
               width: "100%",
-              tableLayout: "fixed",
             }}
           >
             <TableHead>
@@ -478,19 +477,24 @@ const BillView = () => {
                                   ? "#4caf50"
                                   : row.repairStatus === "PARTIAL_RETURN"
                                     ? "#81c784" // lighter green
-                                    : "#9e9e9e",
+                                    : row.repairStatus === "PARTIAL_REPAIR_RETURN"
+                                      ? "#795548" // Brown for mixed state
+                                      : "#9e9e9e",
                           color: "white",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {row.repairStatus === "IN_REPAIR"
-                          ? "Repair"
+                          ? "In Repair"
                           : row.repairStatus === "PARTIAL_REPAIR"
                             ? "Partial Repair"
                             : row.repairStatus === "RETURNED"
-                              ? "Return"
+                              ? "Returned"
                               : row.repairStatus === "PARTIAL_RETURN"
                                 ? "Partial Return"
-                                : "Sold"}
+                                : row.repairStatus === "PARTIAL_REPAIR_RETURN"
+                                  ? "Partial Rep/Ret"
+                                  : "Sold"}
                       </span>
                     </TableCell>
 

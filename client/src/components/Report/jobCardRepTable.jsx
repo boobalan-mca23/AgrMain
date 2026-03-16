@@ -45,7 +45,7 @@ const JobCardRepTable = forwardRef((props, ref) => {
             <th>tch</th>
             <th>stoneWt</th>
             <th>NetWt</th>
-            <th>wastageTyp</th>
+            <th>wastageType</th>
             <th>w.Value</th>
             <th>w.Pure</th>
             <th>FinalPurity</th>

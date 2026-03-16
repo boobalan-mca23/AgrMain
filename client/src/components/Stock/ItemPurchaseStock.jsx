@@ -192,7 +192,7 @@ const ItemPurchaseStock = () => {
 
         <div className="stock-card">
 
-          <p>Total Purity (g)</p>
+          <p>Total Final Purity (g)</p>
 
           <h3>{safeFixed(totals.purity)}</h3>
 

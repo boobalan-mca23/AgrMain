@@ -67,15 +67,25 @@ const updateTouch =  async (req, res) => {
   }
 }
 
-const deleteTouch =  async (req, res) => {
+const deleteTouch = async (req, res) => {
   const { id } = req.params;
   try {
-    await prisma.masterTouch.delete({
-      where: { id: parseInt(id) },
+    const touchId = parseInt(id);
+
+    // Delete associated RawgoldStock records first
+    await prisma.rawgoldStock.deleteMany({
+      where: { touchId: touchId },
     });
+
+    // Then delete the masterTouch record
+    await prisma.masterTouch.delete({
+      where: { id: touchId },
+    });
+
     res.json({ message: "Touch value deleted" });
   } catch (err) {
-    res.status(500).json({ error: "Failed to delete touch value" });
+    console.error("Error deleting touch:", err);
+    res.status(500).json({ error: "Failed to delete touch value. It might be in use." });
   }
 };
 module.exports = {

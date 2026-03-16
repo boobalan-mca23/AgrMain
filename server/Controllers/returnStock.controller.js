@@ -103,9 +103,9 @@ const returnCustomerItem = async (req, res) => {
         where: { customer_id: bill.customer_id }
       });
 
-      const isFull = item.stockType === "ITEM_PURCHASE" || (Number(item.weight) <= Number(itemWeight));
+      const isFull = item.stockType === "ITEM_PURCHASE" || (Number(originalWeight) <= Number(returnedWeight));
       const hallmarkReduction = isFull ? Number(currentHallmark) : 0;
-      const fwtReduction = Number(finalWeight);
+      const fwtReduction = isFull ? (Number(item.finalWeight) || 0) : Number(finalWeight);
 
       if (customerBalance) {
         await tx.customerBillBalance.update({
@@ -255,7 +255,7 @@ const returnCustomerItem = async (req, res) => {
             actualPurity: Number(remActualPurity.toFixed(3)),
             wastagePure: Number(remWastagePure.toFixed(3)),
             finalPurity: Number(remFinalPurity.toFixed(3)),
-            finalWeight: Number(remFinalPurity.toFixed(3)),
+            finalWeight: Number(((remainingNetWeight * Number(item.percentage || 0)) / 100).toFixed(3)),
             repairStatus: newStatus
           }
         });
@@ -267,20 +267,8 @@ const returnCustomerItem = async (req, res) => {
           data: { repairStatus: "RETURNED" }
         });
 
-        // Check if all items in the bill are now RETURNED
-        const remainingActiveItems = await tx.orderItems.findMany({
-          where: { 
-            billId: Number(billId),
-            repairStatus: { not: "RETURNED" }
-          }
-        });
-
-        if (remainingActiveItems.length === 0) {
-          await tx.bill.update({
-            where: { id: Number(billId) },
-            data: { status: "RETURNED" }
-          });
-        }
+        // All items returned logic removed because Bill model does not have a status field.
+        // The frontend already handles bill filtering based on OrderItems repairStatus.
       }
 
       //  RETURN LOG
@@ -341,10 +329,7 @@ const returnCustomerBill = async (req, res) => {
         throw new Error("Return all items before returning bill");
       }
 
-      await tx.bill.update({
-        where: { id: Number(billId) },
-        data: { status: "RETURNED" }
-      });
+      // Bill status update removed as Bill model does not have a status field.
     });
 
     res.json({ success: true });

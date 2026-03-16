@@ -117,6 +117,8 @@
 /* Items Section */
 .billing-wrapper .items-section {
   margin-bottom: 15px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .billing-wrapper .items-section h3 {
@@ -479,8 +481,23 @@
 
 
 
-.table-container::-webkit-scrollbar {
-  display: none;
+/* Table Scrollbars visibility improvement */
+.items-section::-webkit-scrollbar {
+  height: 8px;
+}
+
+.items-section::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.items-section::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.items-section::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* Responsive Design */
@@ -526,7 +543,8 @@
   .billing-wrapper .table .th,
   .billing-wrapper .table .td {
     padding: 8px 4px;
-    font-size: 12px;
+    font-size: 11px;
+    white-space: nowrap;
   }
 
   .billing-wrapper .received-details-table .th,
