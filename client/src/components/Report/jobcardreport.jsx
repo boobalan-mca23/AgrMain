@@ -160,10 +160,11 @@ const JobCardReport = () => {
 
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
-                label="Due Date"
+                label="To Date"
                 value={toDate}
                 format="DD/MM/YYYY"
                 sx={{ width: 260 }}
+                minDate={fromDate}
                 onChange={(newValue) => setToDate(newValue)}
               />
             </LocalizationProvider>
