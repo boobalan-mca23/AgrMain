@@ -144,6 +144,12 @@ const RepairStockList = () => {
   };
 
   const handleReceive = async () => {
+    const weight = Number(qc.itemWeight || 0);
+    if (weight <= 0) {
+      toast.error("Item weight must be greater than zero");
+      return;
+    }
+
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/return`, {
       repairId: selectedRepair.id,
       itemWeight: qc.itemWeight,
