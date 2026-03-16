@@ -708,7 +708,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             actualPurity: Number(remActualPurity.toFixed(3)),
             wastagePure: Number(remWastagePure.toFixed(3)),
             finalPurity: Number(remFinalPurity.toFixed(3)),
-            finalWeight: Number(remFinalPurity.toFixed(3)),
+            finalWeight: Number(((remainingNetWeight * Number(orderItem.percentage || 0)) / 100).toFixed(3)),
             repairStatus: newStatus
           }
         });
@@ -753,7 +753,7 @@ const sendCustomerItemToRepair = async (req, res) => {
 
           const hallmarkRate = Number(orderItem.bill.hallMark) || 0;
           const hallmarkReduction = isFull ? hallmarkRate : 0;
-          const fwtReduction = Number(repairProduct.finalWeight);
+          const fwtReduction = isFull ? (Number(orderItem.finalWeight) || 0) : Number(repairProduct.finalWeight);
 
           await tx.customerBillBalance.update({
             where: { customer_id: customerId },

@@ -429,7 +429,7 @@ function JobCardDetails() {
                           <td rowSpan={2}>Date</td>
                           <td rowSpan={2}>Id</td>
                           <td colSpan={4}>Given Gold</td>
-                          <td colSpan={10}>Itm Delivery</td>
+                          <td colSpan={10}>Item Delivery</td>
                           <td colSpan={3}>Received</td>
                           <td rowSpan={2}>Total</td>
                           <td rowSpan={2}>Balance</td>

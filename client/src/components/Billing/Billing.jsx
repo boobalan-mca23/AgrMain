@@ -934,33 +934,40 @@ const Billing = () => {
     let stoneProfitCalc = 0;
 
     billDetailRows.forEach((row, index) => {
-      const productStock = availableProducts?.allStock?.find(product => (product.id || product._id) === row.productId);
-      // if (!productStock) alert('no products available');
+      let productStock;
+      if (row.stockType === "ITEM_PURCHASE") {
+        productStock = itemPurchaseProducts?.find(
+          (p) => (p.id || p._id) === row.productId
+        );
+      } else {
+        productStock = availableProducts?.allStock?.find(
+          (product) => (product.id || product._id) === row.productId
+        );
+      }
+
       const awt = toNumber(row.awt);
       const fwt = toNumber(row.fwt);
       const enteredStoneWt = toNumber(row.eStWt);
       const actualStoneWt = toNumber(row.aStWt);
-      // const enteredStoneWt = toNumber(row.stWt);
       const enteredPercentage = toNumber(row.percent);
-      // console.log('AWT:', awt, 'FWT:', fwt, 'Stone WT:', enteredStoneWt, 'Entered %:', enteredPercentage);
 
       if (productStock) {
-        // Bill Details Profit: (awt × wastage%) - fwt
-        // Use the wastage from productStock (availableProducts), not items
-        const wastageValue = toNumber(productStock.wastageValue) || 0;
+        // Use "wastage" for ITEM_PURCHASE, "wastageValue" for regular products
+        const wastageValue =
+          row.stockType === "ITEM_PURCHASE"
+            ? toNumber(productStock.wastage)
+            : toNumber(productStock.wastageValue);
+
         const purityFromWastage = (awt * wastageValue) / 100;
         const rowBillProfit = fwt - purityFromWastage;
         detailsProfit += rowBillProfit;
-        // Stone Profit: Stone Profit = (expectedStoneWeight − actualStoneWeight) × touch / 100
-        // const remainingStone = getRemainingStone(row.productId, productStock.stoneWeight);
+
         const touchValue = toNumber(productStock.touch) || 0;
-        // const rowStoneProfit = (enteredStoneWt * touchValue) / 100;
-        // const rowStoneProfit = (toNumber(enteredStoneWt) * touchValue) / 100;
         const stoneDifference = Math.max(0, enteredStoneWt - actualStoneWt);
         const rowStoneProfit = (stoneDifference * touchValue) / 100;
         stoneProfitCalc += rowStoneProfit;
       } else {
-        console.log('Product stock not found for productId:', row.productId);
+        console.log("Product stock not found for productId:", row.productId);
       }
     });
 
@@ -973,7 +980,7 @@ const Billing = () => {
       totalBillProfit: toFixedStr(totalProfit, 3),
       billProfitPercentage: toFixedStr(profitPercentage, 2),
     };
-  }, [billDetailRows, items, availableProducts, FWT]);
+  }, [billDetailRows, items, availableProducts, itemPurchaseProducts, FWT]);
   const TotalFWT =
     previousBalance > 0
       ? toNumber(FWT) + toNumber(previousBalance)
@@ -2068,10 +2075,10 @@ const Billing = () => {
                   <TableCell className="th" style={{ textAlign: "center" }}>S.No </TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Item Name</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Item WT</TableCell>
-                  <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
                   <TableCell className="th" style={{ textAlign: "center" }}>Stone WT</TableCell>
-                  <TableCell className="th" style={{ textAlign: "center" }}>Wastage Pure</TableCell>
-                  <TableCell className="th" style={{ textAlign: "center" }}>Final Purity</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Wastage</TableCell>
+                  <TableCell className="th" style={{ textAlign: "center" }}>Touch</TableCell>
+                  {/* <TableCell className="th" style={{ textAlign: "center" }}>Final Purity</TableCell> */}
                   <TableCell className="th" style={{ textAlign: "center" }}>Status</TableCell>
                 </TableRow>
               )}
@@ -2195,10 +2202,10 @@ const Billing = () => {
                             <span>{prodata.itemName}</span>
                           </TableCell>
                           <TableCell className="td" style={{ color: "green", fontWeight: "bold", textAlign: "center" }}>{displayWeight.toFixed(3)}</TableCell>
-                          <TableCell className="td" style={{ textAlign: "center" }}>{prodata.touch}</TableCell>
                           <TableCell className="td" style={{ textAlign: "center" }}>{displayStone.toFixed(3)}</TableCell>
-                          <TableCell className="td" style={{ textAlign: "center" }}>{toNumber(prodata.wastagePure).toFixed(3)}</TableCell>
-                          <TableCell className="td" style={{ textAlign: "center" }}>{toNumber(prodata.finalPurity).toFixed(3)}</TableCell>
+                          <TableCell className="td" style={{ textAlign: "center" }}>{toNumber(prodata.wastage).toFixed(3)}</TableCell>
+                          <TableCell className="td" style={{ textAlign: "center" }}>{prodata.touch}</TableCell>
+                          {/* <TableCell className="td" style={{ textAlign: "center" }}>{toNumber(prodata.finalPurity).toFixed(3)}</TableCell> */}
                           <TableCell className="td" style={{ textAlign: "center" }}>
                             {prodata.source === "REPAIR_RETURN" || prodata.source === "CUSTOMER_RETURN" ? (
                               <span style={{

@@ -68,8 +68,8 @@
 
 .reportTable{
   width: 100%;
-  border-collapse: collapse;
-
+  border-collapse: separate;
+  border-spacing: 0;
 }
 #reportHead{
   position: sticky;
@@ -77,16 +77,27 @@
   z-index: 10;
 }
 .reportThead th{
-  border: 1px solid #0b0a0a;
+  border-right: 1px solid #0b0a0a;
+  border-bottom: 1px solid #0b0a0a;
   padding: 6px;
   text-align:center;
   background: #1DA3A3;
   color: white;
 }
+.reportThead th:first-child {
+  border-left: 1px solid #0b0a0a;
+}
+#reportHead tr:first-child th {
+  border-top: 1px solid #0b0a0a;
+}
 .reportTbody tr td{
-   border: 1px solid #0b0a0a;
+  border-right: 1px solid #0b0a0a;
+  border-bottom: 1px solid #0b0a0a;
   padding: 6px;
   text-align:center;
+}
+.reportTbody tr td:first-child {
+  border-left: 1px solid #0b0a0a;
 }
 
 .totalOfJobCardReport{
@@ -99,8 +110,15 @@
 }
 
 .totalOfJobCardReport tr td{
-  border: 2px solid black;
+  border-right: 1px solid #0b0a0a;
+  border-bottom: 1px solid #0b0a0a;
   padding: 6px;
+}
+.totalOfJobCardReport tr td:first-child {
+  border-left: 1px solid #0b0a0a;
+}
+#reportFoot td {
+  border-top: 1px solid #0b0a0a;
 }
 
 
