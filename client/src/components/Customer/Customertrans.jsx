@@ -12,7 +12,8 @@ import {
   TableRow,
   Paper,
   Button,
-  Box
+  Box,
+  TablePagination
 } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -51,6 +52,8 @@ const Customertrans = () => {
     pureGold: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -79,6 +82,10 @@ const Customertrans = () => {
     fetchTouch();
     fetchTransactions();
   }, [customerId]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [fromDate, toDate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -163,7 +170,7 @@ const Customertrans = () => {
           transactionData
         );
 
-        setTransactions([...transactions, response.data]);
+        setTransactions([response.data, ...transactions]);
         resetForm();
         setShowPopup(false);
         toast.success("Transaction added successfully!");
@@ -208,6 +215,11 @@ const Customertrans = () => {
       return acc;
     },
     { totalPurity: 0 }
+  );
+
+  const paginatedTransactions = filteredTransactions.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
   );
 
   return (
@@ -532,6 +544,7 @@ const Customertrans = () => {
             }}
           >
             <TableRow>
+              <TableCell align="center">S.No</TableCell>
               <TableCell align="center">Date</TableCell>
               <TableCell align="center">Type</TableCell>
               <TableCell align="center">Gold Rate</TableCell>
@@ -543,12 +556,13 @@ const Customertrans = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredTransactions.length > 0 ? (
-              filteredTransactions.map((transaction) => (
+            {paginatedTransactions.length > 0 ? (
+              paginatedTransactions.map((transaction, index) => (
                 <TableRow key={transaction.id} hover>
+                  <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
                   <TableCell align="center">{new Date(transaction.date).toLocaleDateString("en-GB")}</TableCell>
                   <TableCell align="center">{transaction.type}</TableCell>
-                  <TableCell align="center">{transaction.goldRate}</TableCell>
+                  <TableCell align="center">{transaction.goldRate && transaction.goldRate !== 0 ? transaction.goldRate : "-"}</TableCell>
                   <TableCell align="center">{transaction.type === "Cash" ? "-" : `${transaction.gold}gr`}</TableCell>
                   <TableCell align="center">{transaction.purity.toFixed(3)}</TableCell>
                   <TableCell align="center">
@@ -564,12 +578,25 @@ const Customertrans = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} align="center">No details available</TableCell>
+                <TableCell colSpan={9} align="center">No details available</TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePagination
+        component="div"
+        count={filteredTransactions.length}
+        page={page}
+        onPageChange={(e, newPage) => setPage(newPage)}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        rowsPerPageOptions={[10, 25, 50, 100]}
+      />
 
       {totals.totalPurity > 0 && (
         <div className="transaction-totals">

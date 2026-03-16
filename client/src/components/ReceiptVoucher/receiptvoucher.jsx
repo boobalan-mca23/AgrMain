@@ -129,7 +129,7 @@ const Receipt = () => {
     setSelectedCustomer(customerId);
 
     // Mock data for receipts when customer is selected
-    if (customerId) {
+    if (customerId && customerId !== "Select Customer") {
       const fetchPreviousBal = async () => {
         try {
           const response = await axios.get(
@@ -137,12 +137,17 @@ const Receipt = () => {
           );
           console.log("response from bal", response);
           setReceiptBalances({
-            oldbalance: response?.data?.customerBillBalance?.balance,
-            hallMark: response?.data?.customerBillBalance?.hallMarkBal,
+            oldbalance: response?.data?.customerBillBalance?.balance || 0,
+            hallMark: response?.data?.customerBillBalance?.hallMarkBal || 0,
           });
-        } catch (err) {}
+        } catch (err) {
+          console.error("Error fetching balance:", err);
+          setReceiptBalances({ oldbalance: 0, hallMark: 0 });
+        }
       };
       fetchPreviousBal();
+    } else {
+      setReceiptBalances({ oldbalance: 0, hallMark: 0 });
     }
   };
   const totalReceivedPurity = receipt.reduce(
@@ -245,7 +250,7 @@ const handleSaveReeceipt = async () => {
   // setReceiptErrors([]);
   // setHallMarkErrors([]);
   if (issaving) return;
-  if (!selectedCustomer) {
+  if (!selectedCustomer || selectedCustomer === "Select Customer") {
     toast.warn("Select Customer");
     return;
   }

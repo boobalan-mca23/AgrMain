@@ -1381,7 +1381,7 @@ const Billing = () => {
         productName: row.productName,
         count: row.count,
         weight: row.wt,
-        stoneWeight: row.stWt,
+        stoneWeight: row.aStWt,
         afterWeight: row.awt,
         percentage: row.percent,
         finalWeight: row.fwt,

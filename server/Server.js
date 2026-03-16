@@ -82,16 +82,18 @@ app.use("/api/item-purchase", itemPurchaseRoutes);
 app.use("/api/repair", repairRoutes);
 app.use("/api/returns", customerReturnRoutes);
 // app.use("/api/repair", customerRepairRoutes);
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", (req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  next();
+}, express.static(path.join(__dirname, "uploads")));
+
 app.get("/uploads/:filename", (req, res) => {
   const filePath = path.join(__dirname, "uploads", req.params.filename);
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).send("File not found");
   }
-
-  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 
   const ext = path.extname(filePath).toLowerCase();
   if (ext === ".jpg" || ext === ".jpeg") res.type("jpeg");
