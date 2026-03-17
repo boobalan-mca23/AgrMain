@@ -475,8 +475,10 @@ const BillView = () => {
                                 ? "#ffb74d" // lighter orange
                                 : row.repairStatus === "RETURNED"
                                   ? "#4caf50"
-                                  : row.repairStatus === "PARTIAL_RETURN"
-                                    ? "#81c784" // lighter green
+                                  : row.repairStatus === "REPAIRED"
+                                    ? "#2196f3"
+                                    : row.repairStatus === "PARTIAL_RETURN"
+                                      ? "#81c784" // lighter green
                                     : row.repairStatus === "PARTIAL_REPAIR_RETURN"
                                       ? "#795548" // Brown for mixed state
                                       : "#9e9e9e",
@@ -490,8 +492,10 @@ const BillView = () => {
                             ? "Partial Repair"
                             : row.repairStatus === "RETURNED"
                               ? "Returned"
-                              : row.repairStatus === "PARTIAL_RETURN"
-                                ? "Partial Return"
+                              : row.repairStatus === "REPAIRED"
+                                ? "Repaired"
+                                : row.repairStatus === "PARTIAL_RETURN"
+                                  ? "Partial Return"
                                 : row.repairStatus === "PARTIAL_REPAIR_RETURN"
                                   ? "Partial Rep/Ret"
                                   : "Sold"}

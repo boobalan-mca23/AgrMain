@@ -128,8 +128,10 @@ const PrintableBill = React.forwardRef((props, ref) => {
                       ? "Partial Repair"
                       : item.repairStatus === "RETURNED"
                         ? "Return"
-                        : item.repairStatus === "PARTIAL_RETURN"
-                          ? "Partial Return"
+                        : item.repairStatus === "REPAIRED"
+                          ? "Repaired"
+                          : item.repairStatus === "PARTIAL_RETURN"
+                            ? "Partial Return"
                             : "Sold"}
                 </td> */}
               </tr>

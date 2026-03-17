@@ -486,7 +486,7 @@ const CustomerReturn = () => {
   );
 
   const allReturned = selectedBill?.orders?.every(
-    item => item.repairStatus === "RETURNED"
+    item => ["RETURNED", "REPAIRED"].includes(item.repairStatus)
   );
 
   const safeFixed = (v, d = 3) =>
@@ -775,6 +775,7 @@ const CustomerReturn = () => {
                                     item.repairStatus === "IN_REPAIR" ? "#ff9800"
                                       : item.repairStatus === "PARTIAL_REPAIR" ? "#ffb74d"
                                         : item.repairStatus === "RETURNED" ? "#4caf50"
+                                          : item.repairStatus === "REPAIRED" ? "#2196f3"
                                           : item.repairStatus === "PARTIAL_RETURN" ? "#81c784"
                                             : "#9e9e9e",
                                   color: "white",
@@ -783,13 +784,14 @@ const CustomerReturn = () => {
                                 {item.repairStatus === "IN_REPAIR" ? "In Repair"
                                   : item.repairStatus === "PARTIAL_REPAIR" ? "Partial Repair"
                                     : item.repairStatus === "RETURNED" ? "Returned"
-                                      : item.repairStatus === "PARTIAL_RETURN" ? "Partial Return"
-                                        : item.repairStatus === "PARTIAL_REPAIR_RETURN" ? "Partial Rep/Ret"
-                                          : "Sold"}
+                                      : item.repairStatus === "REPAIRED" ? "Repaired"
+                                        : item.repairStatus === "PARTIAL_RETURN" ? "Partial Return"
+                                          : item.repairStatus === "PARTIAL_REPAIR_RETURN" ? "Partial Rep/Ret"
+                                            : "Sold"}
                               </span>
                             </TableCell>
                             <TableCell>
-                              {!["RETURNED", "IN_REPAIR"].includes(item.repairStatus) ? (
+                              {!["RETURNED", "IN_REPAIR", "REPAIRED"].includes(item.repairStatus) ? (
                                 <Button
                                   color="error"
                                   variant="outlined"
@@ -860,21 +862,23 @@ const CustomerReturn = () => {
                                     item.repairStatus === "IN_REPAIR" ? "#ff9800"
                                       : item.repairStatus === "PARTIAL_REPAIR" ? "#ffb74d"
                                         : item.repairStatus === "RETURNED" ? "#4caf50"
-                                          : item.repairStatus === "PARTIAL_RETURN" ? "#81c784"
-                                            : "#9e9e9e",
+                                          : item.repairStatus === "REPAIRED" ? "#2196f3"
+                                            : item.repairStatus === "PARTIAL_RETURN" ? "#81c784"
+                                              : "#9e9e9e",
                                   color: "white",
                                 }}
                               >
                                 {item.repairStatus === "IN_REPAIR" ? "In Repair"
                                   : item.repairStatus === "PARTIAL_REPAIR" ? "Partial Repair"
                                     : item.repairStatus === "RETURNED" ? "Returned"
-                                      : item.repairStatus === "PARTIAL_RETURN" ? "Partial Return"
-                                        : item.repairStatus === "PARTIAL_REPAIR_RETURN" ? "Partial Rep/Ret"
-                                          : "Sold"}
+                                      : item.repairStatus === "REPAIRED" ? "Repaired"
+                                        : item.repairStatus === "PARTIAL_RETURN" ? "Partial Return"
+                                          : item.repairStatus === "PARTIAL_REPAIR_RETURN" ? "Partial Rep/Ret"
+                                            : "Sold"}
                               </span>
                             </TableCell>
                             <TableCell>
-                              {!["RETURNED", "IN_REPAIR"].includes(item.repairStatus) ? (
+                              {!["RETURNED", "IN_REPAIR", "REPAIRED"].includes(item.repairStatus) ? (
                                 <Button
                                   variant="contained"
                                   size="small"

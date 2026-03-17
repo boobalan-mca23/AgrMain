@@ -420,7 +420,7 @@ const returnFromRepair = async (req, res) => {
       if (repair.orderItemId) {
         await tx.orderItems.update({
           where: { id: repair.orderItemId },
-          data: { repairStatus: "RETURNED" }
+          data: { repairStatus: "REPAIRED" }
         });
       }
 
