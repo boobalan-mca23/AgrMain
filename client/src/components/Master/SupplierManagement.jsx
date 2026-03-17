@@ -46,6 +46,7 @@ function SupplierManagement() {
   const [selectedId, setSelectedId] = useState(null);
 
   const [form, setForm] = useState(initialForm);
+  const [saving, setSaving] = useState(false);
 
 
   useEffect(() => {
@@ -169,7 +170,7 @@ function SupplierManagement() {
       return toast.warn("GST ID must be alphanumeric");
 
     try {
-
+      setSaving(true);
       if (isEdit) {
 
         await axios.put(
@@ -198,6 +199,8 @@ function SupplierManagement() {
 
       toast.error("Operation failed");
 
+    } finally {
+      setSaving(false);
     }
 
   };
@@ -497,8 +500,9 @@ function SupplierManagement() {
           <Button
             variant="contained"
             onClick={handleSubmit}
+            disabled={saving}
           >
-            Save
+            {saving ? "Saving..." : "Save"}
           </Button>
 
         </DialogActions>
