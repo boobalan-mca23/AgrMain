@@ -148,15 +148,13 @@ const createBill = async (req, res) => {
 
             if (itemPurchaseEntry) {
               // Split logic for item purchase bill deductions
-              const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
-              const remainWt = itemPurchaseEntry.netWeight - decProductWt;
-
               await tx.itemPurchaseEntry.update({
                 where: { id: parseInt(item.stockId) },
                 data: {
-                  netWeight: remainWt,
-                  isSold: remainWt <= 0,
-                  soldAt: remainWt <= 0 ? new Date() : null,
+                  netWeight: 0,
+                  isSold: true,
+                  soldAt: new Date(),
+                  moveTo: "billed",
                 },
               });
             }

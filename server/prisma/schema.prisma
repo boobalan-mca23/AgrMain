@@ -459,6 +459,7 @@ model OrderItems {
 
   repairStatus String       @default("NONE")
   returnLogs   returnLogs[]
+  repairStocks RepairStock[] @relation("OrderItemRepairRelation")
 
   @@index([billId], map: "OrderItems_billId_fkey")
 }
@@ -675,10 +676,14 @@ model RepairStock {
   billId Int?
   bill   Bill? @relation(fields: [billId], references: [id])
 
+  orderItemId Int?
+  orderItem   OrderItems? @relation("OrderItemRepairRelation", fields: [orderItemId], references: [id])
+
   @@index([productId])
   @@index([itemPurchaseId])
   @@index([goldsmithId])
   @@index([billId])
+  @@index([orderItemId])
   @@map("repairstock")
 }
 
