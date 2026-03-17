@@ -409,18 +409,20 @@ const returnFromRepair = async (req, res) => {
       // =================================
 
       await tx.repairStock.update({
-
         where: { id: repair.id },
-
         data: {
-
           status: "Returned",
-
           receivedDate: new Date()
-
         }
-
       });
+
+      // Update OrderItem status if linked
+      if (repair.orderItemId) {
+        await tx.orderItems.update({
+          where: { id: repair.orderItemId },
+          data: { repairStatus: "RETURNED" }
+        });
+      }
 
 
       // =================================
@@ -569,10 +571,6 @@ const sendCustomerItemToRepair = async (req, res) => {
       let repair;
 
       if (orderItem.stockType === "ITEM_PURCHASE") {
-        if (Number(originalWeight) > Number(sentWeight)) {
-          throw new Error("Partial repair is not allowed for Item Purchase stock");
-        }
-
         // Fetch original item purchase entry to get supplierId
         let supplierId = 1;
         let supplierName = "Unknown";
@@ -621,6 +619,7 @@ const sendCustomerItemToRepair = async (req, res) => {
           data: {
             itemPurchaseId: productStock.id,
             billId: Number(billId),
+            orderItemId: Number(orderItemId),
             goldsmithId: goldsmithId ? Number(goldsmithId) : null,
             source: "CUSTOMER",
             reason: reason || null,
@@ -653,6 +652,7 @@ const sendCustomerItemToRepair = async (req, res) => {
           data: {
             productId: productStock.id,
             billId: Number(billId),
+            orderItemId: Number(orderItemId),
             goldsmithId: goldsmithId ? Number(goldsmithId) : null,
             source: "CUSTOMER",
             reason: reason || null,

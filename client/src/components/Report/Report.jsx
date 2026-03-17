@@ -301,9 +301,9 @@ const DailySalesReport = () => {
                         <IconButton color="primary" onClick={() => navigate(`/bill-view/${bill.id}`)}>
                           <VisibilityIcon />
                         </IconButton>
-                        <IconButton color="error" onClick={() => HandlebillDelete(bill.id)}>
+                        {/* <IconButton color="error" onClick={() => HandlebillDelete(bill.id)}>
                           <MdDeleteForever />
-                        </IconButton>
+                        </IconButton> */}
                       </TableCell>
                     </TableRow>
                   );

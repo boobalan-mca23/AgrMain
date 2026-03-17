@@ -159,13 +159,13 @@ function SupplierManagement() {
     if (!form.name.trim())
       return toast.warn("Supplier name required");
 
-    if (!/^\d{10}$/.test(form.contactNumber))
+    if (/^\d{10}$/.test(form.contactNumber))
       return toast.warn("Contact must be exactly 10 digits");
 
     // if (!form.gstOrBusinessId.trim())
     //   return toast.warn("GST / Business ID required");
 
-    if (!/^[a-zA-Z0-9]$/.test(form.gstOrBusinessId))
+    if (/^[a-zA-Z0-9]$/.test(form.gstOrBusinessId))
       return toast.warn("GST ID must be alphanumeric");
 
     try {
