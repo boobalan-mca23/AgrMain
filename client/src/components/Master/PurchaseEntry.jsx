@@ -438,51 +438,39 @@ function PurchaseEntry() {
 
 
           <tbody>
-
-            {filteredEntries.map((e, i) => (
-
-              <tr key={e.id}>
-
-                <td>{i + 1}</td>
-
-                <td>{e.jewelName}</td>
-
-                <td>{e.grossWeight}</td>
-
-                <td>{e.stoneWeight}</td>
-
-                <td>{e.netWeight}</td>
-
-                <td>{e.touch}</td>
-
-                <td>{e.wastage} ({e.wastageType})</td>
-
-                <td>{e.wastagePure}</td>
-
-                <td>{e.finalPurity}</td>
-
-                <td>{e.advanceGold}</td>
-
-                <td>{e.goldBalance}</td>
-
-                <td>
-
-                  <EditIcon
-                    style={{ cursor: "pointer", marginRight: 8 }}
-                    onClick={() => openEditDialog(e)}
-                  />
-
-                  <DeleteIcon
-                    style={{ cursor: "pointer" }}
-                    onClick={() => handleDelete(e.id)}
-                  />
-
+            {filteredEntries.length > 0 ? (
+              filteredEntries.map((e, i) => (
+                <tr key={e.id}>
+                  <td>{i + 1}</td>
+                  <td>{e.jewelName}</td>
+                  <td>{e.grossWeight}</td>
+                  <td>{e.stoneWeight}</td>
+                  <td>{e.netWeight}</td>
+                  <td>{e.touch}</td>
+                  <td>{e.wastage} ({e.wastageType})</td>
+                  <td>{e.wastagePure}</td>
+                  <td>{e.finalPurity}</td>
+                  <td>{e.advanceGold}</td>
+                  <td>{e.goldBalance}</td>
+                  <td>
+                    <EditIcon
+                      style={{ cursor: "pointer", marginRight: 8 }}
+                      onClick={() => openEditDialog(e)}
+                    />
+                    <DeleteIcon
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleDelete(e.id)}
+                    />
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="12" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
+                  No BC Purchase Entry Added
                 </td>
-
               </tr>
-
-            ))}
-
+            )}
           </tbody>
 
         </table>

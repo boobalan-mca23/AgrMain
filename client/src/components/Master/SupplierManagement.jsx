@@ -343,9 +343,9 @@ function SupplierManagement() {
               <tr key={supplier.id}>
                 <td style={{ textAlign: "center" }}>{index + 1}</td>
                 <td style={{ textAlign: "center" }}>{supplier.name}</td>
-                <td style={{ textAlign: "center" }}>{supplier.contactNumber}</td>
-                <td style={{ textAlign: "center" }}>{supplier.address}</td>
-                <td style={{ textAlign: "center" }}>{supplier.gstOrBusinessId}</td>
+                <td style={{ textAlign: "center" }}>{supplier.contactNumber || "-"}</td>
+                <td style={{ textAlign: "center" }}>{supplier.address || "-"}</td>
+                <td style={{ textAlign: "center" }}>{supplier.gstOrBusinessId || "-"}</td>
                 <td style={{ textAlign: "center" }}>
                   {Number(
                     supplier.openingBalance || 0

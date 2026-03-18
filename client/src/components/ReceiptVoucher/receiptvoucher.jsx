@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   TextField,
   Autocomplete,
-
+  Button,
+  Box,
+  Typography,
 } from "@mui/material";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -333,50 +335,55 @@ const handleSaveReeceipt = async () => {
           <h2>Receipt Voucher</h2>
         </div>
 
-        <div>
-          <div className="receiptFlex">
-            <div>
-              <p className="receiptLabel">Customer Name</p>
-              <select
-                value={selectedCustomer}
-                onChange={handleCustomerChange}
-                className="receiptSelect"
-              >
-                <option value="Select Customer">Select Customer</option>
-                {customers.map((option) => (
-                  <option key={option.id} value={option?.id}>
-                    {option?.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <p className="receiptLabel">{receiptBalances?.oldbalance>=0?"Old Balance":"Excees Balance"}</p>
-              <input
-                className="receiptInput"
-                readOnly
-                value={(receiptBalances?.oldbalance).toFixed(3) || 0}
-              />
-            </div>
-            <div>
-              <p className="receiptLabel">Hall Mark Balance</p>
-              <input
-                className="receiptInput"
-                readOnly
-                value={(receiptBalances?.hallMark).toFixed(3) || 0}
-              />
-            </div>
-            <div className="receiptcommanbtn receiptbtn">
-              <button
-                onClick={() => {
-                  handleAddRow();
+        <Box className="receiptFlex" sx={{ display: "flex", alignItems: "flex-end", gap: "20px", padding: "20px 100px", flexWrap: "wrap", justifyContent: "center" }}>
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 0.5, textAlign: "center", color: "black" }}>
+              Customer Name
+            </Typography>
+            <Autocomplete
+                size="small"
+                options={customers}
+                getOptionLabel={(option) => option.name || ""}
+                value={customers.find(c => String(c.id) === String(selectedCustomer)) || null}
+                onChange={(event, newValue) => {
+                    handleCustomerChange({ target: { value: newValue ? newValue.id : "Select Customer" } });
                 }}
-              >
-                Add Row
-              </button>
-             
-            </div>
-          </div>
+                renderInput={(params) => (
+                    <TextField {...params} placeholder="Select Customer" sx={{ width: "250px", bgcolor: "white", borderRadius: "4px" }} />
+                )}
+            />
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 0.5, textAlign: "center", color: "black" }}>
+              {receiptBalances?.oldbalance >= 0 ? "Old Balance" : "Excess Balance"}
+            </Typography>
+            <TextField
+                size="small"
+                value={(receiptBalances?.oldbalance || 0).toFixed(3)}
+                sx={{ width: "150px", bgcolor: "white", borderRadius: "4px", pointerEvents:"none", "& .MuiInputBase-input": { textAlign: "center", fontWeight: "bold" } }}
+                InputProps={{ readOnly: true }}
+            />
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 0.5, textAlign: "center", color: "black" }}>
+              Hall Mark Balance
+            </Typography>
+            <TextField
+                size="small"
+                value={(receiptBalances?.hallMark || 0).toFixed(3)}
+                sx={{ width: "150px", bgcolor: "white", borderRadius: "4px", pointerEvents:"none", "& .MuiInputBase-input": { textAlign: "center", fontWeight: "bold" } }}
+                InputProps={{ readOnly: true }}
+            />
+          </Box>
+          <Button
+            variant="contained"
+            size="small"
+            sx={{ height: "40px", fontWeight: "bold", mb: "0.5px" }}
+            onClick={handleAddRow}
+          >
+            Add Row
+          </Button>
+        </Box>
 
           <div className="tableWrapper">
             <table className="receiptTable">
@@ -551,23 +558,20 @@ const handleSaveReeceipt = async () => {
               </tbody>
             </table>
           </div>
-          <div className="receiptcommanbtn saveReceiptbtn">
-             <button
-                disabled={receipt.length <= 0 || issaving}
-                style={{
-                  backgroundColor: issaving ? "#9e9e9e" : "#2b7d23",
-                  cursor: issaving ? "not-allowed" : "pointer",
-                  transition: "background-color 300ms ease, transform 150ms ease, opacity 300ms ease",
-                  transform: issaving ? "scale(0.99)" : "none",
-                  opacity: issaving ? 0.9 : 1,
-                }}
-                onClick={() => {
+          <div className="saveReceiptbtn">
+              <Button
+              variant="contained"
+              size="small"
+              sx={{ height: "40px", fontWeight: "bold" }}
+              disabled={receipt.length <= 0 || issaving}
+              onClick={() => {
                   handleSaveReeceipt();
                 }}
               >
-                {issaving ? "Saving..." : "Save"}
-              </button>
+               {issaving ? "Saving..." : "Save"}
+            </Button>
           </div>
+          
           <div className="receiptBalances">
             <div>
               <p>
@@ -589,7 +593,6 @@ const handleSaveReeceipt = async () => {
             </div>
           </div>
         </div>
-      </div>
       <ToastContainer
         position="top-right"
         autoClose={1000}

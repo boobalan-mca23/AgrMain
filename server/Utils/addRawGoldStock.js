@@ -287,14 +287,14 @@ const transactionToRawGold = async (date, type, amount, gold, touch, purity, cus
     },
   });
 
-
+  const value = type === "Cash" ? (parseFloat(purity) / actualTouch) * 100 : parseFloat(purity) || 0;
   await prisma.customerBillBalance.update({ // update customer excess balance
     where: {
       id: parseInt(customerId)
     },
     data: {
       balance: {
-        increment: -purity || 0
+        increment: -value || 0
       }
     }
   })

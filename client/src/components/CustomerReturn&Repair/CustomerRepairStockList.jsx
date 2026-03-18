@@ -323,7 +323,7 @@ const CustomerRepairStockList = () => {
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={9} align="center">No customer repair records found</TableCell>
+                            <TableCell colSpan={11} align="center">No customer repair records found</TableCell>
                         </TableRow>
                     )}
                 </TableBody>

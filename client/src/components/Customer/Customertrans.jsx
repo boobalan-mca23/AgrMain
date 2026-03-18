@@ -253,14 +253,8 @@ const Customertrans = () => {
           />
         </LocalizationProvider>
         <Button
-          variant="contained"
-          size="small"
-          sx={{
-            backgroundColor: "#d32f2f",
-            color: "white",
-            '&:hover': { backgroundColor: "#c62828" },
-            height: "40px"
-          }}
+          variant="outlined"
+          size="large"
           onClick={() => {
             setFromDate(null);
             setToDate(null);
@@ -270,9 +264,16 @@ const Customertrans = () => {
         </Button>
       </Box>
 
-      <button onClick={() => setShowPopup(true)} className="add-btn">
+      <Button
+        variant="contained"
+        size="large"
+        sx={{
+          display: "flex",
+          justifyContent: "flex-start",
+        }}
+        onClick={() => setShowPopup(true)}>
         Add Transaction
-      </button>
+      </Button>
 
       {showPopup && (
         <div className="popup-overlay">
@@ -503,7 +504,7 @@ const Customertrans = () => {
                   className="submit-btn"
                   onClick={addTransaction}
                   disabled={isSaving}
-                  style={{ background: isSaving ? "grey" : "#1DA3A3", marginRight: "10px" }}
+                  style={{ background: isSaving ? "grey" : "#277ee0ff", marginRight: "10px" }}
                 >
                   {isSaving ? "Saving..." : "Save"}
                 </button>

@@ -12,28 +12,7 @@
   color: #000;
   text-align: center;   
 }
-.receiptLabel{
-    text-align: center;
-    font-size: 1rem;
-    color: black;
-    font-weight: 700;
-}
-.receiptSelect{
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease;
-}
- .receiptInput{
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease;
-} 
+/* MUI components handle these now */
  .delIcon{
     font-size: x-large;
     cursor: pointer;
@@ -49,13 +28,6 @@
      font-size: 15px;
      margin: 4px 2px;
     cursor: pointer;
-  }
-.receiptbtn{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 2px;
   }
 
 
@@ -86,8 +58,8 @@
 .receiptRow th{
   padding: 12px;
   text-align: center;
-  border: 1px solid #0b0a0a;
-  background-color: #1b2487;
+  /* border: 1px solid #0b0a0a; */
+  background-color: #0074d9;
   
   color: white;
 

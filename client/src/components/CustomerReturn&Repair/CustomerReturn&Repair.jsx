@@ -688,7 +688,7 @@ const CustomerReturn = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={6} align="center">
+              <TableCell colSpan={7} align="center">
                 No matching bills
               </TableCell>
             </TableRow>

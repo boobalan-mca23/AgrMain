@@ -2221,7 +2221,7 @@ const Billing = () => {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="no-products-message">
+                      <TableCell colSpan={7} className="no-products-message">
                         There are no available purchase items.
                       </TableCell>
                     </TableRow>
