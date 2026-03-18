@@ -33,7 +33,7 @@ h2 {
 }
 
 .btn-secondary {
-  background: #6c757d;
+  /* background: #6c757d; */
   border: none;
   padding: 8px 14px;
   color: white;
@@ -60,7 +60,8 @@ h2 {
 }
 
 .purchase-table thead {
-  background: #f1f1f1;
+  background: #1DA3A3;
+  color: white;
 }
 
 /* PRINT STYLES */

@@ -269,7 +269,7 @@ export default function BCPurchaseReport() {
         <Button
           variant="contained"
           size="small"
-          sx={{ backgroundColor: "#6c757d", '&:hover': { backgroundColor: "#5a6268" }, height: "40px", width: "100px" }}
+          sx={{ height: "40px", width: "100px" }}
           onClick={handlePrint}
         >
           Print

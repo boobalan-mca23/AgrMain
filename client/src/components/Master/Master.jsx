@@ -251,6 +251,7 @@ const containerStyle = {
   minHeight: "100vh",
   display: "flex",
   flexDirection: "column",
+  minWidth: "100%",
 };
 
 const navContainer = {

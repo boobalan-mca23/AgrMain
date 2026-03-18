@@ -19,6 +19,7 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  TablePagination,
 } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -40,6 +41,34 @@ const Bullion = () => {
   const [allData, setAllData] = useState([]);
   const [editId, setEditId] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // Search and Pagination State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setPage(0); // Reset to first page on search
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const filteredData = allData.filter((item) =>
+    item.bullion?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const paginatedData = filteredData.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   const openDialog = async (editData = null) => {
     setOpen(true);
@@ -178,6 +207,20 @@ const Bullion = () => {
   };
 
   const handleSave = async () => {
+    // Validation
+    if (!selectedNameId) {
+      toast.warning("Please select a Bullion name.");
+      return;
+    }
+    if (!grams || parseFloat(grams) <= 0) {
+      toast.warning("Please enter valid Total Grams.");
+      return;
+    }
+    if (!rate || parseFloat(rate) <= 0) {
+      toast.warning("Please enter valid Rate per gram.");
+      return;
+    }
+
     try {
       const currentRate = parseFloat(rate);
       const amountVal = parseFloat(newGivenAmount);
@@ -256,37 +299,46 @@ const Bullion = () => {
 
   return (
     <div className="bullion-container">
-      <Box sx={{ display: "flex", justifyContent: "flex-start", marginBottom: "20px" }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
         <Button variant="contained" onClick={() => openDialog()}>
           New Purchase
         </Button>
+        <TextField
+          label="Search Bullion Name"
+          variant="outlined"
+          size="small"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          sx={{ width: "300px" }}
+        />
       </Box>
 
       <Table>
         <TableHead
           sx={{
-            backgroundColor: "#e3f2fd",
+            backgroundColor: "#0074d9",
             "& th": {
-              backgroundColor: "#e3f2fd",
-              color: "#0d47a1",
+              backgroundColor: "#0074d9",
+              color: "white",
               fontWeight: "bold",
               fontSize: "1rem",
             },
           }}
         >
           <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Grams</TableCell>
-            <TableCell>Rate</TableCell>
-            <TableCell>Amount</TableCell>
-            <TableCell>Given Details</TableCell>
-            <TableCell>Balance (Grams)</TableCell>
-            <TableCell>Action</TableCell>
+            <TableCell align="center">S.No</TableCell>
+            <TableCell align="center">Name</TableCell>
+            <TableCell align="center">Grams</TableCell>
+            <TableCell align="center">Rate</TableCell>
+            <TableCell align="center">Amount</TableCell>
+            <TableCell align="center">Given Details</TableCell>
+            <TableCell align="center">Balance (Grams)</TableCell>
+            <TableCell align="center">Action</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {allData.length > 0 ? (
-            allData.map((row) => {
+          {paginatedData.length > 0 ? (
+            paginatedData.map((row, index) => {
               const rowTotalGivenGrams = calculateTotalGivenGrams(
                 row.givenDetails || []
               );
@@ -296,31 +348,33 @@ const Bullion = () => {
 
               return (
                 <TableRow key={row.id}>
-                  <TableCell>{row.bullion?.name}</TableCell>
-                  <TableCell>{row.grams}</TableCell>
-                  <TableCell>{row.rate}</TableCell>
-                  <TableCell>{row.amount?.toFixed(2)}</TableCell>
-                  <TableCell>
+                  <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
+                  <TableCell align="center">{row.bullion?.name}</TableCell>
+                  <TableCell align="center">{row.grams}</TableCell>
+                  <TableCell align="center">{row.rate}</TableCell>
+                  <TableCell align="center">{row.amount}</TableCell>
+                  <TableCell align="center">
                     {row.givenDetails?.length > 0 ? (
                       row.givenDetails.map((entry, i) => (
-                        <Typography key={i}>
+                        <Typography key={i} align="center">
                           ₹ {entry.amount?.toFixed(2)} ({entry.grams?.toFixed(2)}{" "}
                           g @ {entry.touch?.toFixed(2)} T) → P:{" "}
                           {entry.purity?.toFixed(2)} g
                         </Typography>
                       ))
                     ) : (
-                      <Typography>-</Typography>
+                      <Typography align="center">-</Typography>
                     )}
                   </TableCell>
                   <TableCell
+                    align="center"
                     style={{
                       color: parseFloat(rowBalanceInGrams) <= 0 ? "green" : "red",
                     }}
                   >
                     {rowBalanceInGrams} g
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="center">
                     <IconButton onClick={() => openDialog(row)}>
                       <VisibilityIcon />
                     </IconButton>
@@ -333,13 +387,23 @@ const Bullion = () => {
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={7} align="center" style={{ padding: "20px", fontWeight: "bold", color: "#666" }}>
-                No Bullion Purchase Added
+              <TableCell colSpan={8} align="center" style={{ padding: "20px", fontWeight: "bold", color: "#666" }}>
+                {searchQuery ? "No matching bullion found" : "No Bullion Purchase Added"}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      <TablePagination
+        rowsPerPageOptions={[10, 25, 50, 100]}
+        component="div"
+        count={filteredData.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       <Dialog open={open} onClose={closeDialog} maxWidth="lg" fullWidth>
         <DialogTitle>
@@ -348,7 +412,7 @@ const Bullion = () => {
         <DialogContent>
           <TextField
             select
-            label="Name"
+            label="Name*"
             fullWidth
             margin="normal"
             value={selectedNameId}
@@ -364,7 +428,7 @@ const Bullion = () => {
 
           <Box className="input-row">
             <TextField
-              label="Total Grams"
+              label="Total Grams*"
               type="number"
               value={grams}
               onChange={(e) => setGrams(e.target.value)}
@@ -373,7 +437,7 @@ const Bullion = () => {
               onWheel={(e) => e.target.blur()}
             />
             <TextField
-              label="Rate per gram"
+              label="Rate per gram*"
               type="number"
               value={rate}
               onChange={(e) => setRate(e.target.value)}
