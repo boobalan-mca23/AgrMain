@@ -62,21 +62,14 @@ input[type="date"]:focus {
 
 .expensetable th, td {
   border: 1px solid #ddd; /* thin border */
-  padding: 8px 12px;
+  padding: 12px 14px;
   text-align: center;
 }
 
 .expensetable thead th {
-  background-color: #000; /* black header */
+  background-color: #0074d9; /* black header */
   color: #fff; /* white text */
   font-weight: bold;
-}
-
-
-
-.expensetable tbody tr:hover {
-  background-color: #f1f1f1; /* hover effect */
-  cursor: pointer;
 }
 
 .expensefilters  {

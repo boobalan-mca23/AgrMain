@@ -256,9 +256,11 @@ const Bullion = () => {
 
   return (
     <div className="bullion-container">
-      <Button variant="contained" onClick={() => openDialog()}>
-        New Purchase
-      </Button>
+      <Box sx={{ display: "flex", justifyContent: "flex-start", marginBottom: "20px" }}>
+        <Button variant="contained" onClick={() => openDialog()}>
+          New Purchase
+        </Button>
+      </Box>
 
       <Table>
         <TableHead
@@ -283,51 +285,59 @@ const Bullion = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {allData.map((row) => {
-            const rowTotalGivenGrams = calculateTotalGivenGrams(
-              row.givenDetails || []
-            );
-            const rowBalanceInGrams = (row.grams - rowTotalGivenGrams).toFixed(
-              2
-            );
+          {allData.length > 0 ? (
+            allData.map((row) => {
+              const rowTotalGivenGrams = calculateTotalGivenGrams(
+                row.givenDetails || []
+              );
+              const rowBalanceInGrams = (row.grams - rowTotalGivenGrams).toFixed(
+                2
+              );
 
-            return (
-              <TableRow key={row.id}>
-                <TableCell>{row.bullion?.name}</TableCell>
-                <TableCell>{row.grams}</TableCell>
-                <TableCell>{row.rate}</TableCell>
-                <TableCell>{row.amount?.toFixed(2)}</TableCell>
-                <TableCell>
-                  {row.givenDetails?.length > 0 ? (
-                    row.givenDetails.map((entry, i) => (
-                      <Typography key={i}>
-                        ₹ {entry.amount?.toFixed(2)} ({entry.grams?.toFixed(2)}{" "}
-                        g @ {entry.touch?.toFixed(2)} T) → P:{" "}
-                        {entry.purity?.toFixed(2)} g
-                      </Typography>
-                    ))
-                  ) : (
-                    <Typography>-</Typography>
-                  )}
-                </TableCell>
-                <TableCell
-                  style={{
-                    color: parseFloat(rowBalanceInGrams) <= 0 ? "green" : "red",
-                  }}
-                >
-                  {rowBalanceInGrams} g
-                </TableCell>
-                <TableCell>
-                  <IconButton onClick={() => openDialog(row)}>
-                    <VisibilityIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(row.id)}>
-                    <DeleteIcon color="error" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+              return (
+                <TableRow key={row.id}>
+                  <TableCell>{row.bullion?.name}</TableCell>
+                  <TableCell>{row.grams}</TableCell>
+                  <TableCell>{row.rate}</TableCell>
+                  <TableCell>{row.amount?.toFixed(2)}</TableCell>
+                  <TableCell>
+                    {row.givenDetails?.length > 0 ? (
+                      row.givenDetails.map((entry, i) => (
+                        <Typography key={i}>
+                          ₹ {entry.amount?.toFixed(2)} ({entry.grams?.toFixed(2)}{" "}
+                          g @ {entry.touch?.toFixed(2)} T) → P:{" "}
+                          {entry.purity?.toFixed(2)} g
+                        </Typography>
+                      ))
+                    ) : (
+                      <Typography>-</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell
+                    style={{
+                      color: parseFloat(rowBalanceInGrams) <= 0 ? "green" : "red",
+                    }}
+                  >
+                    {rowBalanceInGrams} g
+                  </TableCell>
+                  <TableCell>
+                    <IconButton onClick={() => openDialog(row)}>
+                      <VisibilityIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(row.id)}>
+                      <DeleteIcon color="error" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          ) : (
+            <TableRow>
+              <TableCell colSpan={7} align="center" style={{ padding: "20px", fontWeight: "bold", color: "#666" }}>
+                No Bullion Purchase Added
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
 

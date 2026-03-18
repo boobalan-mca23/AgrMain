@@ -142,7 +142,7 @@ const Customer = () => {
                   <TableRow key={index} hover>
                     <TableCell align="center">{index+1}</TableCell>
                     <TableCell align="center">{customer.name}</TableCell>
-                    <TableCell align="center">{customer.phone}</TableCell>
+                    <TableCell align="center">{customer.phone || "-"}</TableCell>
                     <TableCell
                       align="center"
                       sx={{
@@ -172,7 +172,7 @@ const Customer = () => {
                     >
                       {Number(customer?.customerBillBalance?.hallMarkBal).toFixed(3) ?? "-"}
                     </TableCell>
-                    <TableCell align="center">{customer.address}</TableCell>
+                    <TableCell align="center">{customer.address || "-"}</TableCell>
                     <TableCell align="center">
                       <Tooltip title="View Orders">
                         <IconButton
