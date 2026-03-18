@@ -136,10 +136,6 @@ h2 {
   cursor: pointer;
 }
 
-.submit-btn:hover {
-  background-color: #158282;
-}
-
 .transaction-totals {
   margin-top: 20px;
   padding: 15px;
