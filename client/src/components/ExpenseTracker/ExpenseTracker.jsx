@@ -125,8 +125,8 @@ const ExpenseTracker = () => {
     return (
         <>
             <Box sx={{ maxWidth: "1800px", margin: "0 auto", padding: "20px" }}>
-                <Typography variant="h4" sx={{ textAlign: "center", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                    <FaWallet /> Expense Voucher
+                <Typography variant="h2" sx={{ textAlign: "center", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontSize:"24px" }}>
+                  Expense Voucher
                 </Typography>
 
                 <Paper sx={{ padding: "15px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>

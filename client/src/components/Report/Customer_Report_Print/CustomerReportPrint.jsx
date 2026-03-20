@@ -22,9 +22,9 @@ const CustomerReportPrint=(props)=>{
                   <th style={style.customerReportBorder}>S.no</th>
                   <th style={style.customerReportBorder}>Bill Id</th>
                   <th style={style.customerReportBorder}>Date</th>
-                  <th style={style.customerReportBorder}>Bill&Receive</th>
-                  <th style={style.customerReportBorder}>ReceiveAmount</th>
-                  <th style={style.customerReportBorder}>BillAmount</th>
+                  <th style={style.customerReportBorder}>Bill & Receive</th>
+                  <th style={style.customerReportBorder}>Received Amount</th>
+                  <th style={style.customerReportBorder}>Bill Amount</th>
                 </tr>
               </thead>
               <tbody >

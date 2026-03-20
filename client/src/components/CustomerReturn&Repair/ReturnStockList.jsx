@@ -81,6 +81,7 @@ const ReturnStockList = () => {
   );
 
   const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("en-IN") : "-");
+  const fmtNum = (v, d = 3) => (v != null && !isNaN(v) ? Number(v).toFixed(d) : "-");
 
   const handlePrint = () => {
     const fmtPrintDate = (d) => {
@@ -100,11 +101,12 @@ const ReturnStockList = () => {
         <td>${i + 1}</td>
         <td>${fmtDate(item.createdAt)}</td>
         <td>${item.bill?.id || "-"}</td>
-        <td>${item.bill?.customers?.name || "-"}</td>
         <td>${item.productName || "-"}</td>
-        <td>${item.weight ?? "-"}</td>
-        <td>${item.count ?? "-"}</td>
-        <td>${item.reason || "-"}</td>
+        <td>${item.bill?.customers?.name || "-"}</td>
+        <td>${fmtNum(item.weight)}</td>
+        <td>${fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</td>
+        <td>${fmtNum(item.product?.finalPurity ?? item.itemPurchase?.finalPurity ?? 0)}</td>
+        <td class="reason-column">${item.reason || "-"}</td>
       </tr>`
       )
       .join("");
@@ -119,7 +121,8 @@ const ReturnStockList = () => {
             h2 { text-align: center; margin-bottom: 4px; }
             .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 12px; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 12px; white-space: nowrap; }
+            th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 11px; vertical-align: top; }
+            .reason-column { width: 200px; min-width: 150px; white-space: normal; word-break: break-word; }
             th { background: #2c3e50; color: #fff; font-weight: bold; }
             tr:nth-child(even) td { background: #f9f9f9; }
             @media print {
@@ -133,9 +136,15 @@ const ReturnStockList = () => {
           <table>
             <thead>
               <tr>
-                <th>S.No</th><th>Date</th><th>Bill No</th>
-                <th>Customer</th><th>Product</th>
-                <th>Weight</th><th>Count</th><th>Reason</th>
+                <th style="width: 40px;">S.No</th>
+                <th style="width: 80px;">Date</th>
+                <th style="width: 60px;">Bill No</th>
+                <th>Product</th>
+                <th>Customer</th>
+                <th style="width: 60px;">Wt</th>
+                <th style="width: 60px;">Stone Wt</th>
+                <th style="width: 60px;">Purity</th>
+                <th class="reason-column">Reason</th>
               </tr>
             </thead>
             <tbody>${tableRows}</tbody>
@@ -253,11 +262,12 @@ const ReturnStockList = () => {
             <TableCell className="BillTable-th-td">S.No</TableCell>
             <TableCell className="BillTable-th-td">Date</TableCell>
             <TableCell className="BillTable-th-td">Bill No</TableCell>
+            <TableCell className="BillTable-th-td">Product Name</TableCell>
             <TableCell className="BillTable-th-td">Customer</TableCell>
-            <TableCell className="BillTable-th-td">Product</TableCell>
-            <TableCell className="BillTable-th-td">Weight</TableCell>
-            <TableCell className="BillTable-th-td">Count</TableCell>
-            <TableCell className="BillTable-th-td">Reason</TableCell>
+            <TableCell className="BillTable-th-td">Wt</TableCell>
+            <TableCell className="BillTable-th-td">Stone Wt</TableCell>
+            <TableCell className="BillTable-th-td">Purity</TableCell>
+            <TableCell className="BillTable-th-td BillTable-reason">Reason</TableCell>
           </TableRow>
         </TableHead>
 
@@ -268,11 +278,12 @@ const ReturnStockList = () => {
                 <TableCell className="BillTable-tb-td">{page * rowsPerPage + index + 1}</TableCell>
                 <TableCell className="BillTable-tb-td">{dayjs(item.createdAt).format("DD/MM/YYYY")}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.bill?.id || "-"}</TableCell>
-                <TableCell className="BillTable-tb-td">{item.bill?.customers?.name || "-"}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.productName}</TableCell>
-                <TableCell className="BillTable-tb-td">{item.weight}</TableCell>
-                <TableCell className="BillTable-tb-td">{item.count}</TableCell>
-                <TableCell className="BillTable-tb-td">{item.reason || "-"}</TableCell>
+                <TableCell className="BillTable-tb-td">{item.bill?.customers?.name || "-"}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.weight)}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.finalPurity ?? item.itemPurchase?.finalPurity ?? 0)}</TableCell>
+                <TableCell className="BillTable-tb-td BillTable-reason">{item.reason || "-"}</TableCell>
               </TableRow>
             ))
           ) : (

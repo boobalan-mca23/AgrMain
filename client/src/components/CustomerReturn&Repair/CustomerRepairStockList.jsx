@@ -61,7 +61,6 @@ const CustomerRepairStockList = () => {
                 (r.product?.itemName && r.product.itemName.toLowerCase().includes(searchVal)) ||
                 (r.bill?.id && r.bill.id.toString().includes(searchVal)) ||
                 (r.bill?.customers?.name && r.bill.customers.name.toLowerCase().includes(searchVal));
-            console.log(repairs)
             const sentDate = r.sentDate ? dayjs(r.sentDate) : null;
             const from = fromDate ? fromDate.startOf("day") : null;
             const to = toDate ? toDate.endOf("day") : null;
@@ -129,7 +128,7 @@ const CustomerRepairStockList = () => {
         <td>${fmtNum(item.grossWeight)}</td>
         <td>${fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</td>
         <td>${fmtNum(item.purity)}</td>
-        <td>${item.reason || "-"}</td>
+        <td class="reason-column">${item.reason || "-"}</td>
         <td>${item.status || "-"}</td>
       </tr>`
             )
@@ -145,7 +144,8 @@ const CustomerRepairStockList = () => {
             h2 { text-align: center; margin-bottom: 4px; }
             .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 12px; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 12px; white-space: nowrap; }
+            th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 11px; vertical-align: top; }
+            .reason-column { width: 200px; min-width: 150px; white-space: normal; word-break: break-word; }
             th { background: #2c3e50; color: #fff; font-weight: bold; }
             tr:nth-child(even) td { background: #f9f9f9; }
             @media print {
@@ -159,10 +159,17 @@ const CustomerRepairStockList = () => {
           <table>
             <thead>
               <tr>
-                <th>S.No</th><th>Sent Date</th><th>Bill No</th><th>Item Name</th>
-                <th>Customer</th><th>Goldsmith</th>
-                <th>Wt</th><th>Stone Wt</th><th>Purity</th>
-                <th>Reason</th><th>Status</th>
+                <th style="width: 40px;">S.No</th>
+                <th style="width: 80px;">Sent Date</th>
+                <th style="width: 60px;">Bill No</th>
+                <th>Product</th>
+                <th>Customer</th>
+                <th style="width: 80px;">Goldsmith</th>
+                <th style="width: 60px;">Wt</th>
+                <th style="width: 60px;">Stone Wt</th>
+                <th style="width: 60px;">Purity</th>
+                <th class="reason-column">Reason</th>
+                <th style="width: 80px;">Status</th>
               </tr>
             </thead>
             <tbody>${tableRows}</tbody>
@@ -295,13 +302,13 @@ const CustomerRepairStockList = () => {
                         <TableCell className="BillTable-th-td">S.No</TableCell>
                         <TableCell className="BillTable-th-td">Sent Date</TableCell>
                         <TableCell className="BillTable-th-td">Bill No</TableCell>
-                        <TableCell className="BillTable-th-td">Item Name</TableCell>
+                        <TableCell className="BillTable-th-td">Product Name</TableCell>
                         <TableCell className="BillTable-th-td">Customer</TableCell>
                         <TableCell className="BillTable-th-td">Goldsmith</TableCell>
                         <TableCell className="BillTable-th-td">Wt</TableCell>
                         <TableCell className="BillTable-th-td">Stone Wt</TableCell>
                         <TableCell className="BillTable-th-td">Purity</TableCell>
-                        <TableCell className="BillTable-th-td">Reason</TableCell>
+                        <TableCell className="BillTable-th-td BillTable-reason">Reason</TableCell>
                         <TableCell className="BillTable-th-td">Status</TableCell>
 
                     </TableRow>
@@ -319,7 +326,7 @@ const CustomerRepairStockList = () => {
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.grossWeight)}</TableCell>
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</TableCell>
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.purity)}</TableCell>
-                                <TableCell className="BillTable-tb-td">{item.reason || "-"}</TableCell>
+                                <TableCell className="BillTable-tb-td BillTable-reason">{item.reason || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{statusChip(item.status)}</TableCell>
 
                             </TableRow>

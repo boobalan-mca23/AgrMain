@@ -90,6 +90,15 @@
   text-align: center;
 }
 
+.reason-column {
+  text-align: left !important;
+  min-width: 150px;
+  max-width: 300px;
+  vertical-align: top;
+  white-space: normal !important;
+  word-break: break-all !important;
+}
+
 .stock-table th {
   background-color: #0074d9;
   color: white;

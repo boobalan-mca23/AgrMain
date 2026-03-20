@@ -653,7 +653,7 @@ model RepairStock {
 
   goldsmithId Int?
   source      String?
-  reason      String?
+  reason      String? @db.Text
 
   sentDate     DateTime  @default(now())
   receivedDate DateTime?
@@ -691,7 +691,7 @@ model RepairLogs {
   id        Int      @id @default(autoincrement())
   repairId  Int
   action    String
-  note      String?
+  note      String? @db.Text
   createdAt DateTime @default(now())
 }
 
@@ -711,7 +711,7 @@ model returnLogs {
   productName String
   weight      Float
   count       Int
-  reason      String?
+  reason      String? @db.Text
   source      String
   createdAt   DateTime @default(now())
 }
