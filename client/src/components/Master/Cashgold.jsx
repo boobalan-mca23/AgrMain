@@ -3,6 +3,7 @@ import axios from "axios";
 import "./Cashgold.css";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
+import { Button, TablePagination } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -27,6 +28,8 @@ function Cashgold() {
   });
   const [goldCashError, setGoldCashError] = useState({});
   const [saveDiasable, setSaveDisable] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const handleClose = () => {
     setShowFormPopup(false);
@@ -198,13 +201,41 @@ function Cashgold() {
     }
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedEntries = entries.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
   return (
     <div className="cashgold-container">
       <ToastContainer position="top-right" autoClose={3000} />
-      <h2>Cash/Gold</h2>
-      <button className="add-btn" onClick={() => setShowFormPopup(true)}>
+      {/* <h2>Cash/Gold</h2> */}
+      {/* <button className="add-btn" >
         Add Cash or Gold
-      </button>
+      </button> */}
+       <Button
+       
+          style={{
+            backgroundColor: "#F5F5F5",
+            color: "black",
+            borderColor: "#25274D",
+            borderStyle: "solid",
+            borderWidth: "2px",
+          }}
+          variant="contained"
+          onClick={() => setShowFormPopup(true)}
+        >
+           Add Cash or Gold
+        </Button>
 
       {showFormPopup && (
         <div className="popup-overlay">
@@ -424,7 +455,7 @@ function Cashgold() {
       )}
 
       <div className="entries-section">
-        <h3>Entries</h3>
+        {/* <h3>Entries</h3> */}
         <table className="entries-table">
           <thead>
             <tr>
@@ -440,11 +471,11 @@ function Cashgold() {
             </tr>
           </thead>
           <tbody>
-            {entries.length > 0 ? (
+            {paginatedEntries.length > 0 ? (
               <>
-                {entries.map((entry, index) => (
+                {paginatedEntries.map((entry, index) => (
                   <tr key={entry.id}>
-                    <td>{index + 1}</td>
+                    <td>{page * rowsPerPage + index + 1}</td>
                     <td>{new Date(entry.date).toLocaleDateString("en-IN")}</td>
                     <td>{entry.type}</td>
                     <td>
@@ -466,9 +497,6 @@ function Cashgold() {
                         ? ((parseFloat(entry.purity) / parseFloat(entry.touch)) * 100).toFixed(3)
                         : "-"}
                     </td>
-                    {/* <td>
-                      <button className="edit-icon-btn" onClick={() => handleEdit(entry)}>Edit</button>
-                    </td> */}
                   </tr>
                 ))}
 
@@ -489,6 +517,15 @@ function Cashgold() {
             )}
           </tbody>
         </table>
+        <TablePagination
+          component="div"
+          count={entries.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25]}
+        />
       </div>
     </div>
   );

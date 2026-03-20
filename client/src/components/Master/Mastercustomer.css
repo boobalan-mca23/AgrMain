@@ -10,7 +10,7 @@
 
 .customer-tablehead th {
   border: 1px solid #0b0a0a !important;
-  padding: 8px;
+  padding: 12px;
   text-align:center;
   background: #1DA3A3 !important;
   color: white;
@@ -18,7 +18,7 @@
 
 .customer-tablebody tr td{
   border: 1px solid #0b0a0a;
-  padding: 8px;
+  padding: 12px;
   text-align:center;
 }
 

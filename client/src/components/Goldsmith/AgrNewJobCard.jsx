@@ -232,8 +232,8 @@ function AgrNewJobCard({
       // ).toFixed(3);
     }
     updated[itemIndex]["netWeight"] = format(
-      updated[itemIndex]["itemWeight"] -
-      Number(totalDeduction(itemIndex, updated))
+      (parseFloat(updated[itemIndex]["itemWeight"]) || 0) -
+      (parseFloat(totalDeduction(itemIndex, updated)) || 0)
     );
     const { wastagePure, finalPurity } = recalculateWastagePurity(
       updated[itemIndex]
@@ -267,7 +267,8 @@ function AgrNewJobCard({
     const copy = [...itemDelivery];
     copy[itemIndex].deduction.splice(stoneIndex, 1);
     copy[itemIndex]["netWeight"] = format(
-      copy[itemIndex]["ItemWeight"] - Number(totalDeduction(itemIndex, copy))
+      (parseFloat(copy[itemIndex]["itemWeight"]) || 0) - 
+      (parseFloat(totalDeduction(itemIndex, copy)) || 0)
     );
     setItemDelivery(copy);
   };

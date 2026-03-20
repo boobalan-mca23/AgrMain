@@ -110,7 +110,7 @@ const Master = () => {
           </HoverNavLink>
 
           <HoverNavLink to="/master/items">
-            Items
+            Items Info
           </HoverNavLink>
 
 

@@ -120,8 +120,11 @@ const ReturnStockList = () => {
             .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 12px; }
             table { width: 100%; border-collapse: collapse; }
             th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 12px; white-space: nowrap; }
-            th { background: #2c3e50; color: #fff; }
+            th { background: #2c3e50; color: #fff; font-weight: bold; }
             tr:nth-child(even) td { background: #f9f9f9; }
+            @media print {
+              th { background-color: #2c3e50 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #fff !important; }
+            }
           </style>
         </head>
         <body>

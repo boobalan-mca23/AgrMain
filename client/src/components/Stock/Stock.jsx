@@ -19,7 +19,7 @@ const Stock = () => {
   const [stockData, setStockData] = useState([]);
 
   const [page, setPage] = useState(0); 
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
 
   const [groupPage, setGroupPage] = useState(0);
   const [groupRowsPerPage, setGroupRowsPerPage] = useState(5);
@@ -633,7 +633,7 @@ const handleSaveAddWeight = async () => {
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25]}
+            rowsPerPageOptions={[10, 20, 50, 100]}
           />
         )}
       </div>

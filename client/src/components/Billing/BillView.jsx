@@ -13,7 +13,8 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import EditIcon from "@mui/icons-material/Edit";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { MdDeleteForever } from "react-icons/md";
 import ReactDOMServer from 'react-dom/server';
@@ -36,6 +37,7 @@ const toFixedStr = (v, d = 3) => {
 
 const BillView = () => {
   const { billId } = useParams();
+  const navigate = useNavigate();
   const [bill, setBill] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -296,8 +298,26 @@ const BillView = () => {
       {/* Left panel */}
       <Box
         className="left-panel"
-        style={{ maxWidth: "65%", margin: "0 auto" }}
+        style={{ maxWidth: "65%", margin: "0 auto", position: 'relative' }}
       >
+        <Box className="no-print" sx={{ position: 'absolute', top: 20, right: 20 }}>
+          <Button
+            variant="contained"
+            startIcon={<EditIcon />}
+            onClick={() => navigate(`/bill?edit=${billId}`)}
+            sx={{
+              backgroundColor: "#0a4c9a",
+              "&:hover": { backgroundColor: "#083d7a" },
+              height: "36px",
+              fontSize: "13px",
+              textTransform: "none",
+              borderRadius: "8px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+            }}
+          >
+            Edit Bill
+          </Button>
+        </Box>
 
         <h1 className="heading">Estimate Only</h1>
 

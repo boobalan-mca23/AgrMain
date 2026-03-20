@@ -61,7 +61,7 @@ const CustomerRepairStockList = () => {
                 (r.product?.itemName && r.product.itemName.toLowerCase().includes(searchVal)) ||
                 (r.bill?.id && r.bill.id.toString().includes(searchVal)) ||
                 (r.bill?.customers?.name && r.bill.customers.name.toLowerCase().includes(searchVal));
-
+            console.log(repairs)
             const sentDate = r.sentDate ? dayjs(r.sentDate) : null;
             const from = fromDate ? fromDate.startOf("day") : null;
             const to = toDate ? toDate.endOf("day") : null;
@@ -122,15 +122,15 @@ const CustomerRepairStockList = () => {
       <tr>
         <td>${i + 1}</td>
         <td>${fmtDate(item.sentDate)}</td>
-        <td>${item.itemName || item.product?.itemName || "-"}</td>
         <td>${item.bill?.id || "-"}</td>
+        <td>${item.itemName || item.product?.itemName || "-"}</td>
         <td>${item.bill?.customers?.name || "-"}</td>
-        <td>${fmtNum(item.grossWeight)}</td>
-        <td>${fmtNum(item.netWeight)}</td>
-        <td>${fmtNum(item.purity)}</td>
-        <td>${item.status || "-"}</td>
-        <td>${item.reason || "-"}</td>
         <td>${item.goldsmith?.name || "-"}</td>
+        <td>${fmtNum(item.grossWeight)}</td>
+        <td>${fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</td>
+        <td>${fmtNum(item.purity)}</td>
+        <td>${item.reason || "-"}</td>
+        <td>${item.status || "-"}</td>
       </tr>`
             )
             .join("");
@@ -146,8 +146,11 @@ const CustomerRepairStockList = () => {
             .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 12px; }
             table { width: 100%; border-collapse: collapse; }
             th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 12px; white-space: nowrap; }
-            th { background: #2c3e50; color: #fff; }
+            th { background: #2c3e50; color: #fff; font-weight: bold; }
             tr:nth-child(even) td { background: #f9f9f9; }
+            @media print {
+              th { background-color: #2c3e50 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #fff !important; }
+            }
           </style>
         </head>
         <body>
@@ -156,10 +159,10 @@ const CustomerRepairStockList = () => {
           <table>
             <thead>
               <tr>
-                <th>S.No</th><th>Sent Date</th><th>Item Name</th>
-                <th>Bill No</th><th>Customer</th>
-                <th>Wt</th><th>Net Wt</th><th>Purity</th>
-                <th>Status</th><th>Reason</th><th>Goldsmith</th>
+                <th>S.No</th><th>Sent Date</th><th>Bill No</th><th>Item Name</th>
+                <th>Customer</th><th>Goldsmith</th>
+                <th>Wt</th><th>Stone Wt</th><th>Purity</th>
+                <th>Reason</th><th>Status</th>
               </tr>
             </thead>
             <tbody>${tableRows}</tbody>
@@ -291,15 +294,15 @@ const CustomerRepairStockList = () => {
                     <TableRow>
                         <TableCell className="BillTable-th-td">S.No</TableCell>
                         <TableCell className="BillTable-th-td">Sent Date</TableCell>
-                        <TableCell className="BillTable-th-td">Item Name</TableCell>
                         <TableCell className="BillTable-th-td">Bill No</TableCell>
+                        <TableCell className="BillTable-th-td">Item Name</TableCell>
                         <TableCell className="BillTable-th-td">Customer</TableCell>
-                        <TableCell className="BillTable-th-td">Wt</TableCell>
-                        <TableCell className="BillTable-th-td">Net Wt</TableCell>
-                        <TableCell className="BillTable-th-td">Purity</TableCell>
-                        <TableCell className="BillTable-th-td">Status</TableCell>
-                        <TableCell className="BillTable-th-td">Reason</TableCell>
                         <TableCell className="BillTable-th-td">Goldsmith</TableCell>
+                        <TableCell className="BillTable-th-td">Wt</TableCell>
+                        <TableCell className="BillTable-th-td">Stone Wt</TableCell>
+                        <TableCell className="BillTable-th-td">Purity</TableCell>
+                        <TableCell className="BillTable-th-td">Reason</TableCell>
+                        <TableCell className="BillTable-th-td">Status</TableCell>
 
                     </TableRow>
                 </TableHead>
@@ -309,15 +312,15 @@ const CustomerRepairStockList = () => {
                             <TableRow key={item.id}>
                                 <TableCell className="BillTable-tb-td">{page * rowsPerPage + index + 1}</TableCell>
                                 <TableCell className="BillTable-tb-td">{dayjs(item.sentDate).format("DD/MM/YYYY")}</TableCell>
-                                <TableCell className="BillTable-tb-td">{item.itemName || item.product?.itemName || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{item.bill?.id || "-"}</TableCell>
+                                <TableCell className="BillTable-tb-td">{item.itemName || item.product?.itemName || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{item.bill?.customers?.name || "-"}</TableCell>
-                                <TableCell className="BillTable-tb-td">{fmtNum(item.grossWeight)}</TableCell>
-                                <TableCell className="BillTable-tb-td">{fmtNum(item.netWeight)}</TableCell>
-                                <TableCell className="BillTable-tb-td">{fmtNum(item.purity)}</TableCell>
-                                <TableCell className="BillTable-tb-td">{statusChip(item.status)}</TableCell>
-                                <TableCell className="BillTable-tb-td">{item.reason || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{item.goldsmith?.name || "-"}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.grossWeight)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.purity)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{item.reason || "-"}</TableCell>
+                                <TableCell className="BillTable-tb-td">{statusChip(item.status)}</TableCell>
 
                             </TableRow>
                         ))

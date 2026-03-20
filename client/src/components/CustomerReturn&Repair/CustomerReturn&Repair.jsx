@@ -513,6 +513,7 @@ const CustomerReturn = () => {
         <td>${i + 1}</td>
         <td>${bill.id}</td>
         <td>${bill.customers?.name || "-"}</td>
+        <td>${bill.orders?.map(o => o.productName).join(", ") || "-"}</td>
         <td>${bill.date ? new Date(bill.date).toLocaleDateString("en-IN") : "-"}</td>
       </tr>`
       )
@@ -529,8 +530,11 @@ const CustomerReturn = () => {
             .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 12px; }
             table { width: 100%; border-collapse: collapse; }
             th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 12px; white-space: nowrap; }
-            th { background: #2c3e50; color: #fff; }
+            th { background: #2c3e50; color: #fff; font-weight: bold; }
             tr:nth-child(even) td { background: #f9f9f9; }
+            @media print {
+              th { background-color: #2c3e50 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #fff !important; }
+            }
           </style>
         </head>
         <body>
@@ -538,7 +542,7 @@ const CustomerReturn = () => {
           ${dateRangeText ? `<p class="date-range">${dateRangeText}</p>` : ""}
           <table>
             <thead>
-              <tr><th>S.No</th><th>Bill No</th><th>Customer</th><th>Date</th></tr>
+              <tr><th>S.No</th><th>Bill No</th><th>Customer</th><th>Product</th><th>Date</th></tr>
             </thead>
             <tbody>${tableRows}</tbody>
           </table>
@@ -1000,7 +1004,7 @@ const CustomerReturn = () => {
                       }}
                       error={!repairQC.count || Number(repairQC.count) <= 0}
                       helperText={(!repairQC.count || Number(repairQC.count) <= 0) ? "Required" : ""}
-                      disabled={false}
+                      disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
                       sx={{ width: '100px' }}
                     />
                 </td>
@@ -1245,7 +1249,7 @@ const CustomerReturn = () => {
                       }}
                       error={!returnQC.count || Number(returnQC.count) <= 0}
                       helperText={(!returnQC.count || Number(returnQC.count) <= 0) ? "Required" : ""}
-                      disabled={false}
+                      disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
                       sx={{ width: '100px' }}
                     />
                 </td>

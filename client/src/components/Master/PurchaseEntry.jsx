@@ -251,8 +251,8 @@ function PurchaseEntry() {
       moveTo: "purchase"
     };
 
-    if (!payload.jewelName || !payload.grossWeight || !payload.touch) {
-      toast.error("Please fill all mandatory fields (Jewel Name, Gross Weight, Touch)");
+    if (!payload.jewelName && !payload.grossWeight && !payload.advanceGold) {
+      toast.error("Please fill at least one field (Jewel Name, Gross Weight, or Advance Gold)");
       return;
     }
 
@@ -509,7 +509,6 @@ function PurchaseEntry() {
             label="Jewel Name"
             fullWidth
             margin="dense"
-            required
             value={form.jewelName}
             onChange={(e) => {
               const value = e.target.value;
@@ -523,7 +522,6 @@ function PurchaseEntry() {
             label="Gross Weight (g)"
             fullWidth
             margin="dense"
-            required
             value={form.grossWeight}
             onChange={(e) =>
               {
@@ -564,7 +562,6 @@ function PurchaseEntry() {
             label="Touch"
             fullWidth
             margin="dense"
-            required
             value={form.touch}
             onChange={(e) =>
               {
@@ -582,7 +579,6 @@ function PurchaseEntry() {
             select
             label="Wastage Type"
             fullWidth
-            required
             margin="dense"
             value={form.wastageType}
             onChange={(e) =>
