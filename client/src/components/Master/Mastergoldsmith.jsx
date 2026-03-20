@@ -16,6 +16,7 @@ import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { TablePagination } from "@mui/material";
 
 function Mastergoldsmith() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,6 +38,8 @@ function Mastergoldsmith() {
   const [touched, setTouched] = useState({ name: false, phone: false });
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const validName = /^[a-zA-Z0-9\s]+$/;
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
@@ -311,6 +314,20 @@ function Mastergoldsmith() {
     }
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedGoldsmith = goldsmith.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
   return (
     <div className="goldSmith-container">
       <Button
@@ -430,10 +447,10 @@ function Mastergoldsmith() {
             </tr>
           </thead>
           <tbody className="goldSmith-tablebody">
-            {goldsmith.length > 0 ? (
-              goldsmith.map((item, index) => (
+            {paginatedGoldsmith.length > 0 ? (
+              paginatedGoldsmith.map((item, index) => (
                 <tr key={index}>
-                  <td>{index + 1}</td>
+                  <td>{page * rowsPerPage + index + 1}</td>
                   <td>{item.name}</td>
                   <td>{item.phone || "-"}</td>
                   <td>{item.address || "-"}</td>
@@ -458,6 +475,15 @@ function Mastergoldsmith() {
           </tbody>
         </table>
       </Paper>
+      <TablePagination
+          component="div"
+          count={goldsmith.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25]}
+        />
 
       <Dialog
         open={openEditDialog}

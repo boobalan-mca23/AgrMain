@@ -16,6 +16,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { TablePagination } from "@mui/material";
 
 function MasterCustomer() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,6 +39,8 @@ function MasterCustomer() {
     hallMarkBal: "",
   });
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowPerPage] = useState(10);
 
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
@@ -294,6 +297,20 @@ function MasterCustomer() {
     }
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedCustomers = customers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
   console.log("Customer:", customers);
 
   return (
@@ -473,10 +490,10 @@ function MasterCustomer() {
               </tr>
             </thead>
             <tbody className="customer-tablebody">
-              {customers.length > 0 ? (
-                customers.map((customer, index) => (
+              {paginatedCustomers.length > 0 ? (
+                paginatedCustomers.map((customer, index) => (
                   <tr key={index}>
-                    <td>{index + 1}</td>
+                    <td>{page * rowsPerPage + index + 1}</td>
                     <td>{customer.name}</td>
                     <td>{customer.phone || "-"}</td>
                     <td
@@ -533,6 +550,15 @@ function MasterCustomer() {
             </tbody>
           </table>
         </Paper>
+        <TablePagination
+            component="div"
+            count={customers.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+          />
       </div>
 
       <Dialog open={!!editCustomer} onClose={() => setEditCustomer(null)}>

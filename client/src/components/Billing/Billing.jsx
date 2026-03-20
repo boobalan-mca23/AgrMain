@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Autocomplete,
   TextField,
@@ -50,6 +50,7 @@ const toFixedStr = (v, d = 3) => {
 
 const Billing = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   // === State ===
   const [customers, setCustomers] = useState([]);
   const [items, setItems] = useState([]);
@@ -390,8 +391,9 @@ const Billing = () => {
     }
 
 
+    // Removed count validation as per user request
     const count = toNumber(currentRow.count);
-    if (field === 'count' && currentRow.uniqueId) {
+    if (!isEditMode && field === 'count' && currentRow.uniqueId) {
       const productStock = currentRow.stockType === "ITEM_PURCHASE"
         ? itemPurchaseProducts?.find(p => (p.id || p._id) === currentRow.productId)
         : availableProducts?.allStock?.find(p => (p.id || p._id) === currentRow.productId);
@@ -911,6 +913,7 @@ const Billing = () => {
 
       setIsEditMode(false);
       setEditBillId(null);
+      navigate("/bill", { replace: true });
 
       await fetchAllBills();
       await fetchCustomers();
@@ -1263,6 +1266,7 @@ const Billing = () => {
   const cancelEditMode = () => {
     setIsEditMode(false);
     setEditBillId(null);
+    navigate("/bill", { replace: true });
     setBillDetailRows([]);
     setSelectedCustomer(null);
     setBillHallmark("");
@@ -1375,6 +1379,15 @@ const Billing = () => {
     fetchItems();
     fetchCustomers();
   }, []);
+
+  // Handle edit parameter from URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const editId = params.get("edit");
+    if (editId && bills.length > 0) {
+      loadBillForEditing(Number(editId));
+    }
+  }, [location.search, bills.length]);
 
   const handlePrint = () => {
     const billData = {
@@ -1671,7 +1684,7 @@ const Billing = () => {
                             onChange={(e) => handleNumericInput(e, (ev) => handleBillDetailChange(index, "count", ev.target.value))}
                             inputProps={{ style: inputStyle }}
                             error={!!fieldErrors[`billDetail_${index}_wt`]}
-                            helperText={fieldErrors[`billDetSeletail_${index}_wt`] || ""}
+                            helperText={fieldErrors[`billDetail_${index}_wt`] || ""}
                           />
                         )}
                       </TableCell>
@@ -1916,7 +1929,7 @@ const Billing = () => {
                   onClick={cancelEditMode}
                   disabled={isSaving}
                 >
-                  Cancel Edit
+                  Cancel
                 </Button>
                 <Button
                   variant="contained"
@@ -1925,7 +1938,7 @@ const Billing = () => {
                   onClick={handleUpdate}
                   disabled={isSaving}
                 >
-                  {isSaving ? "Editing..." : "Edit Bill"}
+                  {isSaving ? "Saving..." : "Save"}
                 </Button>
               </>
             ) : (

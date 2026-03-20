@@ -1098,7 +1098,6 @@ const CustomerOrders = () => {
                 !items.every(
                   (item) =>
                     item.itemName &&
-                    item.description &&
                     item.weight &&
                     item.dueDate &&
                     item.workerName

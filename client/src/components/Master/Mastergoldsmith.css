@@ -13,7 +13,7 @@
 
 .goldSmith-tablehead th {
   border: 1px solid #0b0a0a;
-  padding: 8px;
+  padding: 12px;
   text-align:center;
   background: #1DA3A3;
   color: white;
@@ -21,7 +21,7 @@
 
 .goldSmith-tablebody tr td{
   border: 1px solid #0b0a0a;
-  padding: 8px;
+  padding: 12px;
   text-align:center;
 }
 

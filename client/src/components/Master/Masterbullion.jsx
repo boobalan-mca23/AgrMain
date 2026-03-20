@@ -14,6 +14,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { TablePagination } from "@mui/material";
 
 import './MasterBullion.css'
 function MasterBullion() {
@@ -24,7 +25,9 @@ function MasterBullion() {
   const [bullions, setBullions] = useState([]);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedBullion, setSelectedBullion] = useState(null);
-  const [formData, setFormData] = useState({ name: "", phone: "", address: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "" , address: "" });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
 
   // Validation states
@@ -211,7 +214,19 @@ function MasterBullion() {
       }
     }
   };
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
 
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedBullions = bullions.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
     <>
@@ -325,10 +340,10 @@ function MasterBullion() {
               </tr>
             </thead>
             <tbody className="bullion-tablebody">
-              {bullions.length > 0 ? (
-                bullions.map((b, i) => (
+              {paginatedBullions.length > 0 ? (
+                paginatedBullions.map((b, i) => (
                   <tr key={i}>
-                    <td>{i + 1}</td>
+                    <td>{page * rowsPerPage + i + 1}</td>
                     <td>{b.name}</td>
                     <td>{b.phone}</td>
                     <td>{b.address || "-"}</td>
@@ -352,6 +367,15 @@ function MasterBullion() {
             </tbody>
           </table>
         </Paper>
+        <TablePagination
+            component="div"
+            count={bullions.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+          />
 
         <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} fullWidth maxWidth="sm">
           <DialogTitle>Edit Bullion</DialogTitle>
