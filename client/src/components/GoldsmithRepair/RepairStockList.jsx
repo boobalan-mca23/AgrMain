@@ -132,7 +132,7 @@ const RepairStockList = () => {
       netWeight: p?.netWeight ?? 0,
       touch: p?.touch ?? 0,
       wastageType: p?.wastageType ?? "",
-      wastageValue: p?.wastageValue ?? 0,
+      wastageValue: p?.wastageValue ?? p?.wastage ?? 0,
 
       originalWastagePure: p?.wastagePure ?? 0,
       wastageDelta: 0,
@@ -285,26 +285,26 @@ const RepairStockList = () => {
       </div>
 
       <div className="stock-table-container">
-        {paginated.length ? (
-          <table className="stock-table">
-            <thead>
-              <tr>
-                <th>Serial</th>
-                <th>Sent Date</th>
-                <th>Item Name</th>
-                <th>Goldsmith</th>
-                <th>Item Wt (g)</th>
-                <th>Net Wt (g)</th>
-                <th>Touch</th>
-                <th>Final Purity (g)</th>
-                <th>Status</th>
-                <th>Reason</th>
-                <th>Action</th>
-              </tr>
-            </thead>
+        <table className="stock-table">
+          <thead>
+            <tr>
+              <th>Serial</th>
+              <th>Sent Date</th>
+              <th>Item Name</th>
+              <th>Goldsmith</th>
+              <th>Item Wt (g)</th>
+              <th>Net Wt (g)</th>
+              <th>Touch</th>
+              <th>Final Purity (g)</th>
+              <th>Status</th>
+              <th >Reason</th>
+              <th>Action</th>
+            </tr>
+          </thead>
 
-            <tbody>
-              {paginated.map((r, i) => (
+          <tbody>
+            {paginated.length > 0 ? (
+              paginated.map((r, i) => (
                 <tr key={r.id}>
                   <td>{page * rowsPerPage + i + 1}</td>
                   <td>{dayjs(r.sentDate).format("DD/MM/YYYY")}</td>
@@ -350,7 +350,7 @@ const RepairStockList = () => {
                       </span>
                     )}
                   </td>
-                  <td>{r.reason || "-"}</td>
+                  <td className="reason-column">{r.reason || "-"}</td>
                   <td>
                     {r.status === "InRepair" ? (
                       <Button
@@ -364,14 +364,16 @@ const RepairStockList = () => {
                     ) : "—"}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p style={{ textAlign: "center", color: "red" }}>
-            No matching records
-          </p>
-        )}
+              ))
+            ) : (
+              <tr>
+                <td colSpan={11} style={{ textAlign: "center", color: "red", padding: "20px" }}>
+                  {activeTab === "PRODUCT" ? "No Product Stock Added" : "No Item Purchase Stock Added"}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
         <TablePagination
           component="div"

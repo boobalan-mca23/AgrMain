@@ -18,6 +18,14 @@
     font-size: 1.05rem !important;
     text-align: center !important;
 }
+.BillTable-reason{
+    text-align: left !important;
+    min-width: 15rem !important;
+    max-width: 20rem !important;
+    white-space: normal !important;
+    word-break: break-all !important;
+    vertical-align: top !important;
+}
 .model-main-button{
     display: flex;
     justify-content: center;

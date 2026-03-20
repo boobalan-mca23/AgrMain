@@ -98,24 +98,30 @@ const OrderReport = () => {
     }));
   };
 
-  const filteredOrders = orders.filter((group) => {
-    const hasStatus = group.items.some(
-      (item) => filter === "all" || item.status === filter
-    );
+  const filteredOrders = orders.map((group) => {
+    const filteredItems = group.items.filter((item) => {
+      const matchesStatus = filter === "all" || item.status === filter;
+      const matchesSearch =
+        !searchTerm ||
+        (group.id && group.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (group.customer &&
+          group.customer.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.name &&
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    if (!hasStatus) return false;
+      return matchesStatus && matchesSearch;
+    });
 
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      return (
-        (group.id && group.id.toLowerCase().includes(search)) ||
-        (group.customer && group.customer.toLowerCase().includes(search)) ||
-        group.items.some((item) => item.name && item.name.toLowerCase().includes(search))
-      );
-    }
+    const totalPurity = filteredItems
+      .reduce((sum, item) => sum + parseFloat(item.weight), 0)
+      .toFixed(3);
 
-    return true;
-  });
+    return {
+      ...group,
+      items: filteredItems,
+      totalPurity,
+    };
+  }).filter((group) => group.items.length > 0);
 
   const getStatusIcon = (status) =>
     status === "Delivered" ? (
@@ -254,12 +260,14 @@ const OrderReport = () => {
                     </TableRow>
                   ))}
                   <TableRow sx={{ backgroundColor: "#f1f1f1" }}>
-                    <TableCell colSpan={4} sx={{ fontWeight: 600 }}>
-                      Total Purity
+                    <TableCell colSpan={2} sx={{ fontWeight: 600 }}>
+                      Total
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>
                       {group.totalPurity} g
                     </TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>

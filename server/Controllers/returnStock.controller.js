@@ -363,7 +363,10 @@ const getReturnedStock = async (req, res) => {
             id: true,
             customers: { select: { name: true } }
           }
-        }
+        },
+        product: true,
+        itemPurchase: true,
+        orderItem: true
       },
       orderBy: { createdAt: "desc" }
     });

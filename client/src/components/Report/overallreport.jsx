@@ -20,23 +20,26 @@ const OverallReportNew = () => {
     setLoading(true);
     setReportData([]);
     try {
-      const [customersRes, billsRes, stockRes, entriesRes] = await Promise.all([
+      const [customersRes, billsRes, stockRes, entriesRes, purchaseStockRes] = await Promise.all([
         fetch(`${BACKEND_SERVER_URL}/api/customers`),
         fetch(`${BACKEND_SERVER_URL}/api/bill`),
         fetch(`${BACKEND_SERVER_URL}/api/productStock`),
         fetch(`${BACKEND_SERVER_URL}/api/entries`),
+        fetch(`${BACKEND_SERVER_URL}/api/item-purchase/itemstock`),
       ]);
 
       if (!customersRes.ok) throw new Error("Failed to fetch Customers data");
       if (!billsRes.ok) throw new Error("Failed to fetch Bills data");
       if (!stockRes.ok) throw new Error("Failed to fetch Product Stock data");
       if (!entriesRes.ok) throw new Error("Failed to fetch Entries data");
+      if (!purchaseStockRes.ok) throw new Error("Failed to fetch Item Purchase Stock data");
 
-      const [customersData, bills, productStock, entriesData] = await Promise.all([
+      const [customersData, bills, productStock, entriesData, purchaseStockData] = await Promise.all([
         customersRes.json(),
         billsRes.json(),
         stockRes.json(),
         entriesRes.json(),
+        purchaseStockRes.json(),
       ]);
 
       setCustomers(customersData);
@@ -82,6 +85,13 @@ const OverallReportNew = () => {
         0
       );
 
+      const purchaseStockItems = purchaseStockData?.allStock || [];
+      const totalPurchaseStockCount = purchaseStockItems.length;
+      const totalPurchaseStockTouch = purchaseStockItems.reduce(
+        (sum, s) => sum + (parseFloat(s.touch) || 0),
+        0
+      );
+
       setReportData([
         // { label: "Cash Balance Total", value: `${cashBalanceTotal.toFixed(2)}` },
         { label: "Bill Details Profit", value: `${billDetailsProfit.toFixed(2)}` },
@@ -97,7 +107,7 @@ const OverallReportNew = () => {
         },
         {
           label: "Purchase Item Stock",
-          value: `${totalStockCount} Items (Touch ${totalStockTouch.toFixed(3)})`,
+          value: `${totalPurchaseStockCount} Items (Touch ${totalPurchaseStockTouch.toFixed(3)})`,
         },
       ]);
     } catch (err) {

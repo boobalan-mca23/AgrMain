@@ -122,6 +122,14 @@ const ProductStock = () => {
   };
 
   const handleSend = async () => {
+    if (Number(repairQC.count) <= 0) {
+      toast.error("Count must be greater than zero");
+      return;
+    }
+    if (Number(repairQC.itemWeight) <= 0) {
+      toast.error("Weight must be greater than zero");
+      return;
+    }
 
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/send`, {
 
@@ -191,59 +199,38 @@ const ProductStock = () => {
 
       </div>
 
-      <div className="stock-table-container">
-
-        {paginated.length ? (
-
-          <table className="stock-table">
-
-            <thead>
-
-              <tr>
-                <th>S.No</th>
-                <th>Item Name</th>
-                <th>Item Wt (g)</th>
-                <th>Stone Wt (g)</th>
-                <th>Net Wt (g)</th>
-                <th>Touch</th>
-                <th>Wastage Val</th>
-                <th>Wastage Pure (g)</th>
-                <th>Final Purity (g)</th>
-                <th>Action</th>
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {paginated.map((p, i) => (
-
+      <div className="stock-table-container">        <table className="stock-table">
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Item Name</th>
+              <th>Item Wt (g)</th>
+              <th>Stone Wt (g)</th>
+              <th>Net Wt (g)</th>
+              <th>Touch</th>
+              <th>Wastage Val</th>
+              <th>Wastage Pure (g)</th>
+              <th>Final Purity (g)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.length > 0 ? (
+              paginated.map((p, i) => (
                 <tr key={p.id}>
-
                   <td>{page * rowsPerPage + i + 1}</td>
-
                   <td>{p.itemName}</td>
-
                   <td>{safeFixed(p.itemWeight || p.grossWeight)}</td>
-
                   <td>{safeFixed(p.stoneWeight)}</td>
-
                   <td>{safeFixed(p.netWeight)}</td>
-
                   <td>{p.touch}</td>
-
                   <td>{p.wastageValue || p.wastage} ({p.wastageType})</td>
-
                   <td>{safeFixed(p.wastagePure)}</td>
-
                   <td style={{ fontWeight: "bold" }}>
                     {safeFixed(p.finalPurity)}
                   </td>
-
                   <td>
-
                     {p.isActive !== false ? (
-
                       <Button
                         variant="contained"
                         size="small"
@@ -251,30 +238,21 @@ const ProductStock = () => {
                       >
                         Send to Repair
                       </Button>
-
                     ) : (
-
                       "-"
-
                     )}
-
                   </td>
-
                 </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
-
-        ) : (
-
-          <p style={{ textAlign: "center", color: "red" }}>
-            No Stock Found
-          </p>
-
-        )}
+              ))
+            ) : (
+              <tr>
+                <td colSpan={10} style={{ textAlign: "center", color: "red", padding: "20px" }}>
+                  {tab === 0 ? "No product data found" : "No item purchase stock data"}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
         <TablePagination
           component="div"
@@ -334,10 +312,10 @@ const ProductStock = () => {
                     value={repairQC.itemWeight}
                     onChange={(e) => {
                       const val = Number(e.target.value);
-                      if (val < 0) {
-                        toast.error("Weight cannot be negative");
-                        return;
-                      }
+                      // if (tab === 0 && val > (selectedProduct?.itemWeight || selectedProduct?.grossWeight || 0)) {
+                      //   toast.error("Weight cannot exceed original weight for Product Stock partial repair");
+                      //   return;
+                      // }
                       setRepairQC({ ...repairQC, itemWeight: e.target.value });
                     }}
                     sx={{ width: '100px' }}
@@ -361,12 +339,13 @@ const ProductStock = () => {
                     value={repairQC.count}
                     onChange={(e) => {
                       const val = Number(e.target.value);
-                      if (val < 0) {
-                        toast.error("Count cannot be negative");
-                        return;
-                      }
+                      // if (tab === 0 && val > (selectedProduct?.count || 1)) {
+                      //   toast.error("Count cannot exceed original count for Product Stock partial repair");
+                      //   return;
+                      // }
                       setRepairQC({ ...repairQC, count: e.target.value });
                     }}
+                    disabled={tab === 1}
                     sx={{ width: '100px' }}
                   />
                 </td>
