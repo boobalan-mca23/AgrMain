@@ -60,6 +60,12 @@ const prisma = new PrismaClient();
 //     res.status(400).json({ error: err.message });
 //   }
 // };
+
+const combineStatus = (current, action) => {
+  if (!current || current === "NONE" || current === "SOLD") return action;
+  if (current.includes(action)) return current;
+  return `${action} (${current})`;
+};
 const returnCustomerItem = async (req, res) => {
   const {
     billId,
@@ -155,44 +161,70 @@ const returnCustomerItem = async (req, res) => {
       let product;
       if (item.stockType === "ITEM_PURCHASE") {
 
-        // Return to Item Purchase Stock
-        const originalEntry = item.stockId
-          ? await tx.itemPurchaseEntry.findUnique({ where: { id: item.stockId } })
-          : null;
+        // Return to Item Purchase Stock (Update existing entry to avoid status "Sold" staying sticky)
+        let targetStockId = item.stockId;
 
-        let supplierId = originalEntry?.supplierId || 1;
-        let supplierName = originalEntry?.supplierName || null;
-
-        // Verify if the supplierId exists, otherwise fallback to first available
-        const existingSupplier = await tx.supplier.findUnique({ where: { id: supplierId } });
-        if (!existingSupplier) {
-          const firstSupplier = await tx.supplier.findFirst();
-          if (firstSupplier) {
-            supplierId = firstSupplier.id;
-            supplierName = firstSupplier.name;
+        if (!targetStockId) {
+          console.log("stockId missing, trying fallback lookup by itemName and supplier...");
+          const lookup = await tx.itemPurchaseEntry.findFirst({
+            where: {
+              itemName: item.productName,
+              supplierId: Number(supplierId),
+              isSold: true
+            },
+            orderBy: { createdAt: "desc" }
+          });
+          if (lookup) {
+            console.log("Fallback found original entry. ID:", lookup.id);
+            targetStockId = lookup.id;
           }
         }
 
-        product = await tx.itemPurchaseEntry.create({
-          data: {
-            supplierId: supplierId,
-            supplierName: supplierName,
-            itemName: item.productName,
-            grossWeight: Number(itemWeight),
-            stoneWeight: Number(stoneWeight) || 0,
-            netWeight: Number(netWeight),
-            touch: Number(touch) || 0,
-            wastageType: item.wastageType || "None",
-            wastage: Number(wastageValue) || 0,
-            wastagePure: Number(wastagePureDelta) || 0,
-            actualPure: Number(actualPurityDelta) || 0,
-            finalPurity: Number(finalPurityDelta),
-            isSold: false,
-            isInRepair: false,
-            source: "CUSTOMER_RETURN",
-            moveTo: "CUSTOMER_RETURN",
-          }
-        });
+        if (targetStockId) {
+          product = await tx.itemPurchaseEntry.update({
+            where: { id: targetStockId },
+            data: {
+              grossWeight: Number(itemWeight || req.body.weight),
+              stoneWeight: Number(stoneWeight) || 0,
+              netWeight: Number(netWeight),
+              touch: Number(touch) || 0,
+              wastageType: item.wastageType || "None",
+              wastage: Number(wastageValue) || 0,
+              wastagePure: Number(wastagePureDelta) || 0,
+              actualPure: Number(actualPurityDelta) || 0,
+              finalPurity: Number(finalPurityDelta),
+              isSold: false,
+              isBilled: false,
+              isInRepair: false,
+              source: "CUSTOMER_RETURN",
+              moveTo: "CUSTOMER_RETURN",
+            }
+          });
+          console.log("SUCCESS: Updated existing ItemPurchaseEntry ID:", targetStockId);
+        } else {
+          // Fallback if stockId is missing (should not happen for full returns handled correctly)
+          console.log("WARNING: No stock link found. Creating NEW ItemPurchaseEntry record.");
+          product = await tx.itemPurchaseEntry.create({
+            data: {
+              itemName: item.productName,
+              grossWeight: Number(itemWeight),
+              stoneWeight: Number(stoneWeight) || 0,
+              netWeight: Number(netWeight),
+              touch: Number(touch) || 0,
+              wastageType: item.wastageType || "None",
+              wastage: Number(wastageValue) || 0,
+              wastagePure: Number(wastagePureDelta) || 0,
+              actualPure: Number(actualPurityDelta) || 0,
+              finalPurity: Number(finalPurityDelta),
+              isSold: false,
+              isBilled: false,
+              isInRepair: false,
+              source: "CUSTOMER_RETURN",
+              moveTo: "CUSTOMER_RETURN",
+            }
+          });
+        }
+
       } else {
         // Return to Product Stock
         product = await tx.productStock.create({
@@ -238,10 +270,6 @@ const returnCustomerItem = async (req, res) => {
           remWastagePure = remFinalPurity - remActualPurity;
         }
 
-        let newStatus = "PARTIAL_RETURN";
-        if (item.repairStatus === "PARTIAL_REPAIR") {
-          newStatus = "PARTIAL_REPAIR_RETURN";
-        }
 
         // 1. Update original item remaining values (keeping to 3 decimal places)
         await tx.orderItems.update({
@@ -256,7 +284,7 @@ const returnCustomerItem = async (req, res) => {
             wastagePure: Number(remWastagePure.toFixed(3)),
             finalPurity: Number(remFinalPurity.toFixed(3)),
             finalWeight: Number(((remainingNetWeight * Number(item.percentage || 0)) / 100).toFixed(3)),
-            repairStatus: newStatus
+            repairStatus: combineStatus(item.repairStatus, "PARTIAL_RETURN")
           }
         });
 
@@ -264,7 +292,9 @@ const returnCustomerItem = async (req, res) => {
         // Full Return
         await tx.orderItems.update({
           where: { id: item.id },
-          data: { repairStatus: "RETURNED" }
+          data: { 
+            repairStatus: combineStatus(item.repairStatus, "RETURNED") 
+          }
         });
 
         // All items returned logic removed because Bill model does not have a status field.

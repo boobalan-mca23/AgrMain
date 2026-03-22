@@ -594,6 +594,16 @@ model ItemPurchaseEntry {
   actualPure  Float
   finalPurity Float
 
+  // Initial values at the time of purchase
+  initialGrossWeight Float?
+  initialStoneWeight Float?
+  initialNetWeight   Float?
+  initialActualPure  Float?
+  initialWastagePure Float?
+  initialFinalPurity Float?
+  initialAdvanceGold Float?
+  initialGoldBalance Float?
+
   goldBalance Float @default(0)
 
   moveTo String @default("item")

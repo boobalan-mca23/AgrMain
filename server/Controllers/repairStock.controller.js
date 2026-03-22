@@ -65,6 +65,13 @@ const getAllRepairStock = async (req, res) => {
 };
 
 
+const combineStatus = (current, action) => {
+  if (!current || current === "NONE" || current === "SOLD") return action;
+  if (current.includes(action)) return current;
+  return `${action} (${current})`;
+};
+
+
 const sendToRepair = async (req, res) => {
   const { productId, goldsmithId, reason, source, repairProduct } = req.body;
 
@@ -247,7 +254,7 @@ const sendToRepair = async (req, res) => {
           throw new Error("Invalid goldsmith");
 
         const reqCount = Number(repairProduct?.count) || item.count;
-        const reqWeight = Number(repairProduct?.weight) || item.grossWeight;
+        const reqWeight = Number(repairProduct?.weight || repairProduct?.itemWeight) || item.grossWeight;
         const reqStoneWeight = Number(repairProduct?.stoneWeight) || item.stoneWeight;
         const reqNetWeight = reqWeight - reqStoneWeight;
 
@@ -264,15 +271,22 @@ const sendToRepair = async (req, res) => {
 
         const updatedPurity = getPurity(reqNetWeight, item.touch, item.wastageType, item.wastage);
 
+        const actualPure = updatedPurity.actual;
+        const goldBalance = (item.advanceGold || 0) - updatedPurity.final;
+
         await tx.itemPurchaseEntry.update({
           where: { id: item.id },
           data: {
             grossWeight: reqWeight,
             stoneWeight: reqStoneWeight,
             netWeight: reqNetWeight,
+            actualPure: actualPure,
             wastagePure: updatedPurity.wastage,
             finalPurity: updatedPurity.final,
-            isInRepair: true
+            goldBalance: goldBalance,
+            isInRepair: true,
+            isSold: false,
+            isBilled: false
           }
         });
 
@@ -461,6 +475,8 @@ const returnFromRepair = async (req, res) => {
 
       if (repair.itemPurchaseId) {
 
+        const goldBalance = (repair.itemPurchase.advanceGold || 0) - computedFinalPurity;
+
         await tx.itemPurchaseEntry.update({
 
           where: { id: repair.itemPurchaseId },
@@ -473,6 +489,8 @@ const returnFromRepair = async (req, res) => {
 
             netWeight,
 
+            actualPure: actualPurity,
+
             wastagePure: updatedWastagePure,
 
             wastage: Number(wastageValue) || 0,
@@ -481,8 +499,11 @@ const returnFromRepair = async (req, res) => {
 
             finalPurity: computedFinalPurity,
 
-            isInRepair: false,
+            goldBalance: goldBalance,
 
+            isInRepair: false,
+            isSold: false,
+            isBilled: false,
             moveTo: "REPAIR_RETURN"
 
           }
@@ -506,9 +527,27 @@ const returnFromRepair = async (req, res) => {
 
       // Update OrderItem status if linked
       if (repair.orderItemId) {
+        const orderItem = await tx.orderItems.findUnique({
+          where: { id: repair.orderItemId },
+          select: { repairStatus: true }
+        });
+
+        const currentStatus = orderItem?.repairStatus || "";
+        let nextStatus;
+        if (currentStatus === "IN_REPAIR_SPLIT") {
+          nextStatus = "REPAIRED_TO_STOCK";
+        } else {
+          // If it was "IN_REPAIR (PARTIAL_RETURN)", it should become "REPAIRED (PARTIAL_RETURN)"
+          // If it was "IN_REPAIR", it should become "REPAIRED"
+          nextStatus = currentStatus.replace("IN_REPAIR", "REPAIRED");
+          if (nextStatus === currentStatus) {
+              nextStatus = combineStatus(currentStatus, "REPAIRED");
+          }
+        }
+
         await tx.orderItems.update({
           where: { id: repair.orderItemId },
-          data: { repairStatus: "REPAIRED" }
+          data: { repairStatus: nextStatus }
         });
       }
 
@@ -684,25 +723,61 @@ const sendCustomerItemToRepair = async (req, res) => {
           }
         }
 
-        productStock = await tx.itemPurchaseEntry.create({
-          data: {
-            supplierId: supplierId,
-            supplierName: supplierName,
-            itemName: repairProduct.productName,
-            grossWeight: Number(repairProduct.weight),
-            stoneWeight: Number(repairProduct.stoneWeight),
-            netWeight: Number(repairProduct.netWeight) || Number(repairProduct.weight),
-            finalPurity: finalPurityDelta,
-            touch: Number(repairProduct.touch),
-            wastageType: repairProduct.wastageType || "None",
-            wastage: Number(repairProduct.wastageValue) || 0,
-            wastagePure: wastagePureDelta,
-            actualPure: actualPurityDelta,
-            isSold: false,
-            isInRepair: true,
-            source: "REPAIR",
-          }
-        });
+        let targetStockId = orderItem.stockId;
+
+        // Fallback lookup if stockId is missing (e.g. manual entry)
+        if (!targetStockId) {
+          const lookup = await tx.itemPurchaseEntry.findFirst({
+            where: {
+              itemName: orderItem.productName,
+              supplierId: supplierId,
+              isSold: true
+            },
+            orderBy: { createdAt: "desc" }
+          });
+          if (lookup) targetStockId = lookup.id;
+        }
+
+        if (targetStockId) {
+          productStock = await tx.itemPurchaseEntry.update({
+            where: { id: targetStockId },
+            data: {
+              isInRepair: true,
+              isSold: false,
+              isBilled: false,
+              moveTo: "IN_REPAIR",
+              // Update weights if needed
+              grossWeight: Number(repairProduct.weight || repairProduct.itemWeight),
+              stoneWeight: Number(repairProduct.stoneWeight),
+              netWeight: Number(repairProduct.netWeight) || (Number(repairProduct.weight) - Number(repairProduct.stoneWeight)),
+              actualPure: actualPurityDelta,
+              wastagePure: wastagePureDelta,
+              finalPurity: finalPurityDelta,
+            }
+          });
+          console.log("SUCCESS: Linked CUSTOMER repair to existing ItemPurchaseEntry ID:", targetStockId);
+        } else {
+          console.log("WARNING: No original stock record found for CUSTOMER repair. Creating NEW.");
+          productStock = await tx.itemPurchaseEntry.create({
+            data: {
+              supplierId: supplierId,
+              supplierName: supplierName,
+              itemName: repairProduct.productName,
+              grossWeight: Number(repairProduct.weight),
+              stoneWeight: Number(repairProduct.stoneWeight),
+              netWeight: Number(repairProduct.netWeight) || Number(repairProduct.weight),
+              finalPurity: finalPurityDelta,
+              touch: Number(repairProduct.touch),
+              wastageType: repairProduct.wastageType || "None",
+              wastage: Number(repairProduct.wastageValue) || 0,
+              wastagePure: wastagePureDelta,
+              actualPure: actualPurityDelta,
+              isSold: false,
+              isInRepair: true,
+              source: "REPAIR",
+            }
+          });
+        }
 
         repair = await tx.repairStock.create({
           data: {
@@ -776,7 +851,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             finalWeight: (Number(repairProduct.netWeight) * Number(orderItem.percentage || 0)) / 100,
             stockType: orderItem.stockType,
             stockId: orderItem.stockId,
-            repairStatus: "IN_REPAIR"
+            repairStatus: "IN_REPAIR_SPLIT"
           }
         });
 
@@ -820,7 +895,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             wastagePure: Number(remWastagePure.toFixed(3)),
             finalPurity: Number(remFinalPurity.toFixed(3)),
             finalWeight: Number(((remainingNetWeight * Number(orderItem.percentage || 0)) / 100).toFixed(3)),
-            repairStatus: "PARTIAL_REPAIR"
+            repairStatus: combineStatus(orderItem.repairStatus, "PARTIAL_REPAIR")
           }
         });
 
@@ -828,7 +903,9 @@ const sendCustomerItemToRepair = async (req, res) => {
         // Full Repair
         await tx.orderItems.update({
           where: { id: Number(orderItemId) },
-          data: { repairStatus: "IN_REPAIR" }
+          data: { 
+            repairStatus: combineStatus(orderItem.repairStatus, "IN_REPAIR") 
+          }
         });
       }
 

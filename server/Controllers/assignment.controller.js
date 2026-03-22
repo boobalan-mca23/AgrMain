@@ -179,6 +179,46 @@ const createJobcard = async (req, res) => {
     }
 
 
+    // Idempotency check: prevent duplicate jobcard creation within 5 seconds
+    const recentJobcard = await prisma.jobcard.findFirst({
+      where: {
+        goldsmithId: parseInt(goldSmithId),
+        description: description,
+        createdAt: {
+          gte: new Date(Date.now() - 5000), // check last 5 seconds
+        },
+      },
+      include: {
+        total: true,
+      },
+    });
+
+    if (recentJobcard && Math.abs((recentJobcard.total[0]?.givenTotal || 0) - (parseFloat(total?.givenTotal) || 0)) < 0.001) {
+      console.log("Duplicate jobcard creation detected, returning existing one.");
+      const allJobCards = await prisma.jobcard.findMany({
+        where: {
+          goldsmithId: parseInt(goldSmithId),
+        },
+        include: {
+          givenGold: true,
+          deliveries: {
+            include: {
+              deduction: true,
+              productStock: true,
+            },
+          },
+          received: true,
+          total: true,
+        },
+      });
+      return res.status(200).json({
+        success: "true",
+        message: "JobCard already created recently",
+        allJobCards,
+        jobCardLength: allJobCards.length,
+      });
+    }
+
     const jobCardTotal = {
       goldsmithId: parseInt(goldSmithId),
       givenTotal: parseFloat(total?.givenTotal) || 0,

@@ -206,9 +206,6 @@ const CustomerReturn = () => {
 
   // ================= FILTER LOGIC =================
 
-  const activeBills = bills.filter(bill =>
-    bill.orders?.some(item => item.repairStatus !== "IN_REPAIR")
-  );
 
 
   const filteredBills = bills.filter((bill) => {
@@ -482,18 +479,39 @@ const CustomerReturn = () => {
   };
 
   const hasRepairItems = selectedBill?.orders?.some(
-    item => item.repairStatus === "IN_REPAIR"
+    item => ["IN_REPAIR", "IN_REPAIR_SPLIT"].includes(item.repairStatus)
   );
 
   const allReturned = selectedBill?.orders?.every(
-    item => ["RETURNED", "REPAIRED"].includes(item.repairStatus)
+    item => ["RETURNED", "REPAIRED", "REPAIRED_TO_STOCK"].includes(item.repairStatus)
   );
+
 
   const safeFixed = (v, d = 3) =>
     isNaN(parseFloat(v)) ? "0.000" : parseFloat(v).toFixed(d);
 
   const showValue = (v) =>
     v === null || v === undefined || v === "" ? "-" : v;
+
+  const getStatusLabel = (status) => {
+    if (!status || status === "Sold" || status === "NONE") return "Sold";
+    const isPartRet = status.includes("PARTIAL_RETURN");
+    const isPartRep = status.includes("PARTIAL_REPAIR");
+    const isRepaired = status.includes("REPAIRED") && !status.includes("IN_REPAIR");
+    const isInRep = status.includes("IN_REPAIR");
+
+    if (isPartRet && isPartRep) return "Partial Ret/Rep";
+    if (isPartRet && isRepaired) return "Partial Ret/Repaired";
+    if (isPartRet && isInRep) return "Partial Ret/In Repair";
+
+    if (isPartRet) return "Partial Return";
+    if (isPartRep) return "Partial Repair";
+    if (isInRep) return "In Repair";
+    if (isRepaired) return "Repaired";
+    if (status.includes("RETURNED")) return "Returned";
+    return status;
+    return status;
+  };
 
   const handlePrint = () => {
     const fmtPrintDate = (d) => {
@@ -513,7 +531,9 @@ const CustomerReturn = () => {
         <td>${i + 1}</td>
         <td>${bill.id}</td>
         <td>${bill.customers?.name || "-"}</td>
-        <td>${bill.orders?.map(o => o.productName).join(", ") || "-"}</td>
+        <td>${bill.orders
+          ?.filter(o => !o.repairStatus?.includes("REPAIRED_TO_STOCK") && !o.repairStatus?.includes("IN_REPAIR_SPLIT"))
+          .map(o => o.productName).join(", ") || "-"}</td>
         <td>${bill.date ? new Date(bill.date).toLocaleDateString("en-IN") : "-"}</td>
       </tr>`
       )
@@ -652,7 +672,9 @@ const CustomerReturn = () => {
                   {showValue(bill.customers?.name)}
                 </TableCell>
                 <TableCell className="BillTable-tb-td">
-                  {bill.orders?.map(o => o.productName).join(", ") || "-"}
+                  {bill.orders
+                    ?.filter(o => !o.repairStatus?.includes("REPAIRED_TO_STOCK") && !o.repairStatus?.includes("IN_REPAIR_SPLIT"))
+                    .map(o => o.productName).join(", ") || "-"}
                 </TableCell>
                 <TableCell className="BillTable-tb-td">
                   {bill.date
@@ -763,7 +785,8 @@ const CustomerReturn = () => {
 
                     <TableBody>
                       {selectedBill.orders
-                        ?.map((item) => (
+                        ?.filter(item => !item.repairStatus?.includes("REPAIRED_TO_STOCK") && !item.repairStatus?.includes("IN_REPAIR_SPLIT"))
+                        .map((item) => (
                           <TableRow key={item.id}>
                             <TableCell>{item.productName}</TableCell>
                             <TableCell>{item.weight}</TableCell>
@@ -776,26 +799,22 @@ const CustomerReturn = () => {
                                   fontSize: "12px",
                                   fontWeight: "600",
                                   backgroundColor:
-                                    item.repairStatus === "IN_REPAIR" ? "#ff9800"
-                                      : item.repairStatus === "PARTIAL_REPAIR" ? "#ffb74d"
-                                        : item.repairStatus === "RETURNED" ? "#4caf50"
-                                          : item.repairStatus === "REPAIRED" ? "#2196f3"
-                                          : item.repairStatus === "PARTIAL_RETURN" ? "#81c784"
-                                            : "#9e9e9e",
+                                    item.repairStatus?.startsWith("IN_REPAIR") ? "#ff9800"
+                                      : item.repairStatus?.startsWith("REPAIRED") ? "#2196f3"
+                                        : item.repairStatus?.startsWith("RETURNED") ? "#4caf50"
+                                          : item.repairStatus?.startsWith("PARTIAL_REPAIR") ? "#ffb74d"
+                                            : item.repairStatus?.startsWith("PARTIAL_RETURN") ? "#81c784"
+                                              : (item.repairStatus === "NONE" || !item.repairStatus || item.repairStatus === "Sold") ? "#9e9e9e"
+                                                : "#9e9e9e",
                                   color: "white",
+                                  whiteSpace: "nowrap",
                                 }}
                               >
-                                {item.repairStatus === "IN_REPAIR" ? "In Repair"
-                                  : item.repairStatus === "PARTIAL_REPAIR" ? "Partial Repair"
-                                    : item.repairStatus === "RETURNED" ? "Returned"
-                                      : item.repairStatus === "REPAIRED" ? "Repaired"
-                                        : item.repairStatus === "PARTIAL_RETURN" ? "Partial Return"
-                                          : item.repairStatus === "PARTIAL_REPAIR_RETURN" ? "Partial Rep/Ret"
-                                            : "Sold"}
+                                {getStatusLabel(item.repairStatus)}
                               </span>
                             </TableCell>
                             <TableCell>
-                              {!["RETURNED", "IN_REPAIR", "REPAIRED"].includes(item.repairStatus) ? (
+                              {!item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") && !item.repairStatus?.includes("REPAIRED") ? (
                                 <Button
                                   color="error"
                                   variant="outlined"
@@ -851,7 +870,8 @@ const CustomerReturn = () => {
 
                     <TableBody>
                       {selectedBill.orders
-                        ?.map((item) => (
+                        ?.filter(item => !item.repairStatus?.includes("REPAIRED_TO_STOCK") && !item.repairStatus?.includes("IN_REPAIR_SPLIT"))
+                        .map((item) => (
                           <TableRow key={item.id}>
                             <TableCell>{item.productName}</TableCell>
                             <TableCell>{item.weight}</TableCell>
@@ -863,26 +883,22 @@ const CustomerReturn = () => {
                                   fontSize: "12px",
                                   fontWeight: "600",
                                   backgroundColor:
-                                    item.repairStatus === "IN_REPAIR" ? "#ff9800"
-                                      : item.repairStatus === "PARTIAL_REPAIR" ? "#ffb74d"
-                                        : item.repairStatus === "RETURNED" ? "#4caf50"
-                                          : item.repairStatus === "REPAIRED" ? "#2196f3"
-                                            : item.repairStatus === "PARTIAL_RETURN" ? "#81c784"
-                                              : "#9e9e9e",
+                                    item.repairStatus?.startsWith("IN_REPAIR") ? "#ff9800"
+                                      : item.repairStatus?.startsWith("REPAIRED") ? "#2196f3"
+                                        : item.repairStatus?.startsWith("RETURNED") ? "#4caf50"
+                                          : item.repairStatus?.startsWith("PARTIAL_REPAIR") ? "#ffb74d"
+                                            : item.repairStatus?.startsWith("PARTIAL_RETURN") ? "#81c784"
+                                              : (item.repairStatus === "NONE" || !item.repairStatus || item.repairStatus === "Sold") ? "#9e9e9e"
+                                                : "#9e9e9e",
                                   color: "white",
+                                  whiteSpace: "nowrap",
                                 }}
                               >
-                                {item.repairStatus === "IN_REPAIR" ? "In Repair"
-                                  : item.repairStatus === "PARTIAL_REPAIR" ? "Partial Repair"
-                                    : item.repairStatus === "RETURNED" ? "Returned"
-                                      : item.repairStatus === "REPAIRED" ? "Repaired"
-                                        : item.repairStatus === "PARTIAL_RETURN" ? "Partial Return"
-                                          : item.repairStatus === "PARTIAL_REPAIR_RETURN" ? "Partial Rep/Ret"
-                                            : "Sold"}
+                                {getStatusLabel(item.repairStatus)}
                               </span>
                             </TableCell>
                             <TableCell>
-                              {!["RETURNED", "IN_REPAIR", "REPAIRED"].includes(item.repairStatus) ? (
+                              {!item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") && !item.repairStatus?.includes("REPAIRED") ? (
                                 <Button
                                   variant="contained"
                                   size="small"

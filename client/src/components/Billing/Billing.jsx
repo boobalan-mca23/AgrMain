@@ -401,11 +401,11 @@ const Billing = () => {
         const remaining = getRemainingCount(currentRow.uniqueId, productStock.count)
           + toNumber(countAllocations[currentRow.uniqueId]?.[currentRow.id] || 0);
         // allow current row’s existing allocation
-        if (toNumber(value) > remaining) {
-          toast.error(`Entered count (${value}) exceeds remaining count (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
-          alert(`Entered count (${value}) exceeds remaining count (${remaining}) for ${currentRow.productName}`);
-          return; // abort update
-        }
+        // if (toNumber(value) > remaining) {
+        //   toast.error(`Entered count (${value}) exceeds remaining count (${remaining.toFixed(3)}) for ${currentRow.productName}`, { autoClose: 3000 });
+        //   alert(`Entered count (${value}) exceeds remaining count (${remaining}) for ${currentRow.productName}`);
+        //   return; // abort update
+        // }
       }
     }
 
@@ -881,7 +881,7 @@ const Billing = () => {
             touch,
             netWeight: awt,
             wastageValue,
-            repairStatus: row.repairStatus || "NONE",
+            repairStatus: row.repairStatus || "Sold",
           };
         }),
       };
@@ -1235,7 +1235,7 @@ const Billing = () => {
           awt: item.afterWeight?.toString() || "",
           percent: item.percentage?.toString() || "",
           fwt: item.finalWeight?.toString() || "",
-          repairStatus: item.repairStatus || "NONE",
+          repairStatus: item.repairStatus || "Sold",
           orderItemId: item.id, // Store original ID from DB
         });
 

@@ -134,7 +134,7 @@ const BillView = () => {
             awt: item.afterWeight?.toString() || "",
             percent: item.percentage?.toString() || "",
             fwt: item.finalWeight?.toString() || "",
-            repairStatus: item.repairStatus || "SOLD",
+            repairStatus: item.repairStatus === "NONE" ? "Sold" : (item.repairStatus || "Sold"),
           }))
         );
 
@@ -406,8 +406,10 @@ const BillView = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {billDetailRows.length > 0 ? (
-                billDetailRows.map((row, index) => (
+              {(() => {
+                const filteredRows = billDetailRows.filter(item => item.repairStatus !== "REPAIRED_TO_STOCK");
+                return filteredRows.length > 0 ? (
+                  filteredRows.map((row, index) => (
                   <TableRow key={row.id} style={{ backgroundColor: "" }}>
                     <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
                     <TableCell className="td">
@@ -489,48 +491,53 @@ const BillView = () => {
                           fontSize: "12px",
                           fontWeight: "500",
                           backgroundColor:
-                            row.repairStatus === "IN_REPAIR"
+                            row.repairStatus?.startsWith("IN_REPAIR")
                               ? "#ff9800"
-                              : row.repairStatus === "PARTIAL_REPAIR"
+                              : row.repairStatus?.startsWith("PARTIAL_REPAIR")
                                 ? "#ffb74d" // lighter orange
-                                : row.repairStatus === "RETURNED"
+                                : row.repairStatus?.startsWith("RETURNED")
                                   ? "#4caf50"
-                                  : row.repairStatus === "REPAIRED"
+                                  : row.repairStatus?.startsWith("REPAIRED")
                                     ? "#2196f3"
-                                    : row.repairStatus === "PARTIAL_RETURN"
+                                    : row.repairStatus?.startsWith("PARTIAL_RETURN")
                                       ? "#81c784" // lighter green
-                                    : row.repairStatus === "PARTIAL_REPAIR_RETURN"
-                                      ? "#795548" // Brown for mixed state
                                       : "#9e9e9e",
                           color: "white",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {row.repairStatus === "IN_REPAIR"
-                          ? "In Repair"
-                          : row.repairStatus === "PARTIAL_REPAIR"
-                            ? "Partial Repair"
-                            : row.repairStatus === "RETURNED"
-                              ? "Returned"
-                              : row.repairStatus === "REPAIRED"
-                                ? "Repaired"
-                                : row.repairStatus === "PARTIAL_RETURN"
-                                  ? "Partial Return"
-                                : row.repairStatus === "PARTIAL_REPAIR_RETURN"
-                                  ? "Partial Rep/Ret"
-                                  : "Sold"}
+                        {(() => {
+                          const status = row.repairStatus || "";
+                          if (!status || status === "Sold" || status === "NONE") return "Sold";
+                          
+                          const isPartRet = status.includes("PARTIAL_RETURN");
+                          const isPartRep = status.includes("PARTIAL_REPAIR");
+                          const isRepaired = status.includes("REPAIRED") && !status.includes("IN_REPAIR");
+                          const isInRep = status.includes("IN_REPAIR");
+
+                          if (isPartRet && isPartRep) return "Partial Ret/Rep";
+                          if (isPartRet && isRepaired) return "Partial Ret/Repaired";
+                          if (isPartRet && isInRep) return "Partial Ret/In Repair";
+
+                          if (isPartRet) return "Partial Return";
+                          if (isPartRep) return "Partial Repair";
+                          if (isInRep) return "In Repair";
+                          if (isRepaired) return "Repaired";
+                          if (status.includes("RETURNED")) return "Returned";
+                          return status;
+                        })()}
                       </span>
                     </TableCell>
 
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={9} className="no-products-message">
-                    No Bill details added
-                  </TableCell>
-                </TableRow>
-              )}
+                ))) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="no-products-message">
+                      No Bill details added
+                    </TableCell>
+                  </TableRow>
+                );
+              })()}
             </TableBody>
           </Table>
 
