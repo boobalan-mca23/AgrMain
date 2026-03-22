@@ -8,6 +8,8 @@ import {
   DialogActions,
   TextField,
   Paper,
+  ButtonGroup,
+  MenuItem,
 } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
@@ -71,6 +73,10 @@ function ItemPurchaseEntry() {
 
   const [saving, setSaving] = useState(false);
 
+  // New states for advanced filtering and initial/current toggle
+  const [valueView, setValueView] = useState("current"); // "initial" or "current"
+  const [statusFilter, setStatusFilter] = useState("All");
+
 
   useEffect(() => {
 
@@ -87,7 +93,7 @@ function ItemPurchaseEntry() {
 
     applyFilters();
 
-  }, [entries, itemFilter, touchFilter]);
+  }, [entries, itemFilter, touchFilter, statusFilter]);
 
 
   const fetchSupplierName = async () => {
@@ -151,6 +157,17 @@ function ItemPurchaseEntry() {
         String(e.touch) === String(touchFilter)
       );
 
+    if (statusFilter !== "All") {
+      filtered = filtered.filter(e => {
+        const s = (e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "In Repair"
+          : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "Repaired"
+          : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "Returned"
+          : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "Sold"
+          : "In Stock";
+        return s === statusFilter;
+      });
+    }
+
     setFilteredEntries(filtered);
 
   };
@@ -161,6 +178,8 @@ function ItemPurchaseEntry() {
     setItemFilter("");
 
     setTouchFilter("");
+
+    setStatusFilter("All");
 
   };
 
@@ -440,26 +459,67 @@ function ItemPurchaseEntry() {
             style={{ minWidth: 200 }}
           />
 
+          <TextField
+            select
+            label="Status Filter"
+            size="small"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            variant="outlined"
+            style={{ minWidth: 160 }}
+          >
+            {["All", "In Repair", "Repaired", "Returned", "Sold", "In Stock"].map((s) => (
+              <MenuItem key={s} value={s}>
+                {s}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: "14px", fontWeight: "600", color: "#555" }}>View:</span>
+            <ButtonGroup size="small">
+              <Button
+                variant={valueView === "initial" ? "contained" : "outlined"}
+                onClick={() => setValueView("initial")}
+                style={{
+                  borderRadius: "20px 0 0 20px",
+                  textTransform: "none",
+                  fontWeight: valueView === "initial" ? "700" : "500",
+                }}
+              >
+                Initial
+              </Button>
+              <Button
+                variant={valueView === "current" ? "contained" : "outlined"}
+                onClick={() => setValueView("current")}
+                style={{
+                  borderRadius: "0 20px 20px 0",
+                  textTransform: "none",
+                  fontWeight: valueView === "current" ? "700" : "500",
+                }}
+              >
+                Current
+              </Button>
+            </ButtonGroup>
+          </div>
+
 
           {/* Touch dropdown */}
 
           <TextField
             select
+            label="Touch"
             size="small"
             value={touchFilter}
             onChange={(e) =>
               setTouchFilter(e.target.value)
             }
-            SelectProps={{ native: true }}
             style={{ minWidth: 150 }}
           >
-
-            <option value="">Filter by Touch</option>
-
+            <MenuItem value="">All Touches</MenuItem>
             {touchOptions.map(t => (
-              <option key={t} value={t}>{t}</option>
+              <MenuItem key={t} value={t}>{t}</MenuItem>
             ))}
-
           </TextField>
 
 
@@ -489,8 +549,9 @@ function ItemPurchaseEntry() {
           <thead>
 
             <tr>
-              <th>S.No</th>
-              <th>Item</th>
+              <th>#</th>
+              <th>ID</th>
+              <th>Item Name</th>
               <th>Gross Wt. (g)</th>
               <th>Stone Wt. (g)</th>
               <th>Net Wt. (g)</th>
@@ -500,27 +561,65 @@ function ItemPurchaseEntry() {
               <th>Final Purity (g)</th>
               <th>Advance Gold (g)</th>
               <th>Gold Balance (g)</th>
+              <th>Status</th>
               <th>Action</th>
             </tr>
-
           </thead>
-
 
           <tbody>
             {filteredEntries.length > 0 ? (
-              filteredEntries.map((e, i) => (
-                <tr key={e.id}>
-                  <td>{i + 1}</td>
-                  <td>{e.itemName}</td>
-                  <td>{e.grossWeight}</td>
-                  <td>{e.stoneWeight}</td>
-                  <td>{e.netWeight}</td>
-                  <td>{e.touch}</td>
-                  <td>{e.wastage} ({e.wastageType})</td>
-                  <td>{e.wastagePure}</td>
-                  <td>{e.finalPurity}</td>
-                  <td>{e.advanceGold}</td>
-                  <td>{e.goldBalance}</td>
+              filteredEntries.map((e, i) => {
+                const isInitial = valueView === "initial";
+                const safeFmt = (val) => {
+                  const num = Number(val);
+                  return Number.isFinite(num) ? num.toFixed(3) : "0.000";
+                };
+
+                const displayGross = safeFmt(isInitial ? (e.initialGrossWeight ?? e.grossWeight) : e.grossWeight);
+                const displayStone = safeFmt(isInitial ? (e.initialStoneWeight ?? e.stoneWeight) : e.stoneWeight);
+                const displayNet = safeFmt(isInitial ? (e.initialNetWeight ?? e.netWeight) : e.netWeight);
+                const displayWastagePure = safeFmt(isInitial ? (e.initialWastagePure ?? e.wastagePure) : e.wastagePure);
+                const displayFinal = safeFmt(isInitial ? (e.initialFinalPurity ?? e.finalPurity) : e.finalPurity);
+                const displayAdvance = safeFmt(isInitial ? (e.initialAdvanceGold ?? e.advanceGold) : e.advanceGold);
+                const displayGoldBalance = safeFmt(isInitial ? (e.initialGoldBalance ?? e.goldBalance) : e.goldBalance);
+
+                return (
+                  <tr key={e.id}>
+                    <td>{i + 1}</td>
+                    <td>{e.id}</td>
+                    <td>{e.itemName}</td>
+                    <td>{displayGross}</td>
+                    <td>{displayStone}</td>
+                    <td>{displayNet}</td>
+                    <td>{safeFmt(e.touch)}</td>
+                    <td>{safeFmt(e.wastage)} ({e.wastageType})</td>
+                    <td>{displayWastagePure}</td>
+                    <td>{displayFinal}</td>
+                    <td>{displayAdvance}</td>
+                    <td>{displayGoldBalance}</td>
+                    <td>
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          backgroundColor:
+                            (e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "#ff9800"
+                              : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "#fbc02d"
+                                : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "#2196f3"
+                                  : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "#4caf50"
+                                    : "#9e9e9e",
+                          color: "white",
+                        }}
+                      >
+                        {(e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "In Repair"
+                          : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "Repaired"
+                            : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "Returned"
+                              : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "Sold"
+                                : "In Stock"}
+                      </span>
+                    </td>
                   <td>
                     <EditIcon
                       style={{ cursor: "pointer", marginRight: 8 }}
@@ -532,10 +631,11 @@ function ItemPurchaseEntry() {
                     />
                   </td>
                 </tr>
-              ))
-            ) : (
+              );
+            })
+          ) : (
               <tr>
-                <td colSpan="12" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
+                <td colSpan="14" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
                   No Item Purchase Entry Added
                 </td>
               </tr>

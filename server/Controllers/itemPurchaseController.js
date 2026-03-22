@@ -191,8 +191,16 @@ exports.createEntry = async (req, res) => {
 
           finalPurity: calc.finalPurity,
 
-          goldBalance: finalGoldBalance
+          goldBalance: finalGoldBalance,
 
+          initialGrossWeight: calc.grossWeight,
+          initialStoneWeight: calc.stoneWeight,
+          initialNetWeight: calc.netWeight,
+          initialActualPure: calc.actualPure,
+          initialWastagePure: calc.wastagePure,
+          initialFinalPurity: calc.finalPurity,
+          initialAdvanceGold: calc.advanceGold,
+          initialGoldBalance: finalGoldBalance,
         }
 
       });
@@ -266,8 +274,14 @@ exports.getEntries = async (req, res) => {
       await prisma.itemPurchaseEntry.findMany({
 
         where: {
-          source: "PURCHASE",
+          source: { in: ["PURCHASE", "CUSTOMER_RETURN"] },
           ...(supplierId ? { supplierId: Number(supplierId) } : {})
+        },
+
+        include: {
+          repairStocks: {
+            where: { status: "InRepair" }
+          }
         },
 
         orderBy: {
@@ -556,7 +570,7 @@ exports.getItemPurchaseReport = async (req, res) => {
 
     }
 
-    where.source = "PURCHASE";
+    where.source = { in: ["PURCHASE", "CUSTOMER_RETURN"] };
 
     // Date filter
     if (from && to) {
@@ -577,14 +591,15 @@ exports.getItemPurchaseReport = async (req, res) => {
         where,
 
         include: {
-
           supplier: {
             select: {
               id: true,
               name: true
             }
+          },
+          repairStocks: {
+            where: { status: "InRepair" }
           }
-
         },
 
         orderBy: {
@@ -708,8 +723,6 @@ exports.markItemSold = async (req, res) => {
           isSold: true,
 
           soldAt: new Date(),
-
-          netWeight: 0
 
         }
 

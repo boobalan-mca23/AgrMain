@@ -315,9 +315,11 @@ export default function ItemPurchaseReport() {
 
             <tr>
 
-              <th>S.No</th>
+              <th>#</th>
+              <th>ID</th>
               <th>Supplier</th>
-              <th>Item</th>
+              <th>Item Name</th>
+              <th>Status</th>
               <th>Gross wt (g)</th>
               <th>Stone wt (g)</th>
               <th>Net wt (g)</th>
@@ -336,7 +338,7 @@ export default function ItemPurchaseReport() {
             {rows.length === 0 && (
 
               <tr>
-                <td colSpan="11">
+                <td colSpan="12">
                   No Data Found
                 </td>
               </tr>
@@ -349,10 +351,34 @@ export default function ItemPurchaseReport() {
 
                 <td>{page * rowsPerPage + i + 1}</td>
 
+                <td>{r.id}</td>
+
                 <td>{r.supplier?.name}</td>
 
                 <td>{r.itemName}</td>
-
+                <td>
+                  <span
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      backgroundColor:
+                        (r.repairStocks?.length > 0 || r.isInRepair === true || r.isInRepair === 1 || r.isInRepair === "true") ? "#ff9800"
+                          : (r.moveTo === "REPAIR_RETURN" || r.moveTo === "REPAIRED" || r.moveTo === "repaired") ? "#fbc02d"
+                            : (r.moveTo === "CUSTOMER_RETURN" || r.source === "CUSTOMER_RETURN" || r.moveTo === "returned") ? "#2196f3"
+                              : (r.isSold || r.isBilled || r.moveTo === "billed" || r.isSold === 1 || r.isSold === "true") ? "#4caf50"
+                                : "#9e9e9e",
+                      color: "white",
+                    }}
+                  >
+                    {(r.repairStocks?.length > 0 || r.isInRepair === true || r.isInRepair === 1 || r.isInRepair === "true") ? "In Repair"
+                      : (r.moveTo === "REPAIR_RETURN" || r.moveTo === "REPAIRED" || r.moveTo === "repaired") ? "Repaired"
+                        : (r.moveTo === "CUSTOMER_RETURN" || r.source === "CUSTOMER_RETURN" || r.moveTo === "returned") ? "Returned"
+                          : (r.isSold || r.isBilled || r.moveTo === "billed" || r.isSold === 1 || r.isSold === "true") ? "Sold"
+                            : "In Stock"}
+                  </span>
+                </td>
                 <td>{format3(r.grossWeight)}</td>
 
                 <td>{format3(r.stoneWeight)}</td>
@@ -384,7 +410,7 @@ export default function ItemPurchaseReport() {
                 }}
               >
 
-                <td colSpan="5">
+                <td colSpan="6">
                   TOTAL
                 </td>
 

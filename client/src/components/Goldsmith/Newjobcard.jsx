@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ const NewJobCard = ({
   const [assignmentId, setAssignmentId] = useState(null);
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const [goldRows, setGoldRows] = useState([
     { id: null, weight: "", touch: "", purity: "" },
@@ -304,6 +305,14 @@ const NewJobCard = ({
   const isReceivedSectionEnabled = isEditing;
 
   const handleSave = async () => {
+    if (isLoading || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
+    // Reset after a delay to allow further interactions if dialog stays open
+    setTimeout(() => {
+      isSubmittingRef.current = false;
+    }, 2000);
+
     setIsLoading(true);
     setError(null);
     setMessage("");

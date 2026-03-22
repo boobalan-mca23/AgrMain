@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { MdDeleteForever } from "react-icons/md";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "./AgrNewJobCard.css";
 import React from "react";
@@ -64,6 +64,7 @@ function AgrNewJobCard({
 }) {
   const today = new Date().toLocaleDateString("en-IN");
   const [time, setTime] = useState(null);
+  const isSubmittingRef = useRef(false);
   const [givenGoldErrors, setGivenGoldErrors] = useState([]);
   const [itemDeliveryErrors, setItemDeliveryErrors] = useState([]);
   const [deductionErrors, setDeductionErrors] = useState([]);
@@ -323,7 +324,15 @@ function AgrNewJobCard({
   );
 
   const handleSave = (print = "noprint") => {
-    if (saveDisable) return;
+    if (saveDisable || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
+    // Reset the ref after a delay to allow future saves if the user doesn't close the dialog
+    // or if the parent's saveDisable is reset.
+    setTimeout(() => {
+      isSubmittingRef.current = false;
+    }, 2000);
+
     const goldIsTrue = goldRowValidation(givenGold, setGivenGoldErrors);
     const usedTouches = givenGold.map(g => parseFloat(g.touch)).filter(t => !isNaN(t));
     const existStock = checkAvailabilityStock(rawGoldStock, usedTouches);

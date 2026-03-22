@@ -147,11 +147,38 @@ const createBill = async (req, res) => {
             });
 
             if (itemPurchaseEntry) {
-              // Split logic for item purchase bill deductions
+              const netWeight = item.netWeight ? parseFloat(item.netWeight) : itemPurchaseEntry.netWeight;
+              const touch = itemPurchaseEntry.touch;
+              const wastage = itemPurchaseEntry.wastage;
+              const wastageType = itemPurchaseEntry.wastageType;
+
+              const actualPure = (netWeight * touch) / 100;
+              let finalPurity = 0;
+
+              if (wastageType === "%") {
+                const wastageWeight = (netWeight * wastage) / 100;
+                finalPurity = ((netWeight + wastageWeight) * touch) / 100;
+              } else if (wastageType === "Touch") {
+                finalPurity = (netWeight * wastage) / 100;
+              } else if (wastageType === "+") {
+                finalPurity = ((netWeight + wastage) * touch) / 100;
+              } else {
+                finalPurity = actualPure;
+              }
+
+              const wastagePure = finalPurity - actualPure;
+              const goldBalance = (itemPurchaseEntry.advanceGold || 0) - finalPurity;
+
               await tx.itemPurchaseEntry.update({
                 where: { id: parseInt(item.stockId) },
                 data: {
-                  netWeight: 0,
+                  grossWeight: item.weight ? parseFloat(item.weight) : itemPurchaseEntry.grossWeight,
+                  stoneWeight: item.stoneWeight ? parseFloat(item.stoneWeight) : itemPurchaseEntry.stoneWeight,
+                  netWeight: netWeight,
+                  actualPure: actualPure,
+                  wastagePure: wastagePure,
+                  finalPurity: finalPurity,
+                  goldBalance: goldBalance,
                   isSold: true,
                   soldAt: new Date(),
                   moveTo: "billed",

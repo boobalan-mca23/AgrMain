@@ -111,7 +111,9 @@ const PrintableBill = React.forwardRef((props, ref) => {
             </tr>
           </thead>
           <tbody>
-            {billItems.map((item, index) => (
+            {billItems
+              .filter(item => item.repairStatus !== "REPAIRED_TO_STOCK")
+              .map((item, index) => (
               <tr key={index}>
                 <td style={styles.td}>{index + 1}</td>
                 <td style={styles.td}>{item.productName}</td>
@@ -121,19 +123,28 @@ const PrintableBill = React.forwardRef((props, ref) => {
                 <td style={styles.td}>{formatToFixed3Strict(item.afterWeight)}</td>
                 <td style={styles.td}>{item.percentage}</td>
                 <td style={styles.td}>{formatToFixed3Strict(item.finalWeight)}</td>
-                {/* <td style={styles.td}>
-                  {item.repairStatus === "IN_REPAIR"
-                    ? "Repair"
-                    : item.repairStatus === "PARTIAL_REPAIR"
-                      ? "Partial Repair"
-                      : item.repairStatus === "RETURNED"
-                        ? "Return"
-                        : item.repairStatus === "REPAIRED"
-                          ? "Repaired"
-                          : item.repairStatus === "PARTIAL_RETURN"
-                            ? "Partial Return"
-                            : "Sold"}
-                </td> */}
+                   {/* <td style={styles.td}>
+                    {(() => {
+                      const status = item.repairStatus || "";
+                      if (!status || status === "Sold" || status === "NONE") return "Sold";
+                      
+                      const isPartRet = status.includes("PARTIAL_RETURN");
+                      const isPartRep = status.includes("PARTIAL_REPAIR");
+                      const isRepaired = status.includes("REPAIRED") && !status.includes("IN_REPAIR");
+                      const isInRep = status.includes("IN_REPAIR");
+
+                      if (isPartRet && isPartRep) return "Partial Ret/Rep";
+                      if (isPartRet && isRepaired) return "Partial Ret/Repaired";
+                      if (isPartRet && isInRep) return "Partial Ret/In Repair";
+
+                      if (isPartRet) return "Partial Return";
+                      if (isPartRep) return "Partial Repair";
+                      if (isInRep) return "In Repair";
+                      if (isRepaired) return "Repaired";
+                      if (status.includes("RETURNED")) return "Returned";
+                      return status;
+                    })()}
+                  </td> */}
               </tr>
             ))}
             {billItems.length === 0 && (
