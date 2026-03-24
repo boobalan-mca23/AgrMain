@@ -246,6 +246,7 @@ const DailySalesReport = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell className="table-header">S.No</TableCell>
                 <TableCell className="table-header">Bill No</TableCell>
                 <TableCell className="table-header">Date</TableCell>
                 <TableCell className="table-header">Name</TableCell>
@@ -260,7 +261,7 @@ const DailySalesReport = () => {
             <TableBody>
               {visibleBills
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((bill) => {
+                .map((bill, index) => {
                   const totalWeight =
                     bill.orders?.reduce((sum, item) => sum + (item.weight || 0), 0) || 0;
                   const totalReceivedPurity =
@@ -281,6 +282,7 @@ const DailySalesReport = () => {
 
                   return (
                     <TableRow key={bill.id}>
+                      <TableCell className="table-cell">{page * rowsPerPage + index + 1}</TableCell>
                       <TableCell className="table-cell">BILL-{bill.id}</TableCell>
                       <TableCell className="table-cell">
                         {dayjs(bill.date || bill.createdAt).format("DD/MM/YYYY")}
@@ -310,7 +312,7 @@ const DailySalesReport = () => {
                 })}
               {/* Totals Row */}
               <TableRow className="totals-row">
-                <TableCell colSpan={3} className="totals-cell" style={{ textAlign: "center" }}>
+                <TableCell colSpan={4} className="totals-cell" style={{ textAlign: "center" }}>
                   Total
                 </TableCell>
                 <TableCell className="totals-cell">{topTotalsVisible.totalWeight.toFixed(3)}</TableCell>

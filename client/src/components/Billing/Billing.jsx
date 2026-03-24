@@ -913,7 +913,11 @@ const Billing = () => {
 
       setIsEditMode(false);
       setEditBillId(null);
-      navigate("/bill", { replace: true });
+      
+      const isFromUrl = new URLSearchParams(location.search).get("edit");
+      if (isFromUrl) {
+        navigate(-1);
+      }
 
       await fetchAllBills();
       await fetchCustomers();
@@ -1266,7 +1270,11 @@ const Billing = () => {
   const cancelEditMode = () => {
     setIsEditMode(false);
     setEditBillId(null);
-    navigate("/bill", { replace: true });
+    
+    const isFromUrl = new URLSearchParams(location.search).get("edit");
+    if (isFromUrl) {
+      navigate(-1);
+    }
     setBillDetailRows([]);
     setSelectedCustomer(null);
     setBillHallmark("");
@@ -1953,14 +1961,16 @@ const Billing = () => {
               </Button>
             )}
 
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handlePrintWithSave}
-              disabled={isSaving}
-              className="save-button no-print"
-            >
-              Print </Button>
+            {!isEditMode && (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handlePrintWithSave}
+                disabled={isSaving}
+                className="save-button no-print"
+              >
+                Print </Button>
+            )}
           </Box>
         </Box>
       </Box>

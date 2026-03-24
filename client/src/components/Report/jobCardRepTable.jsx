@@ -42,16 +42,16 @@ const JobCardRepTable = forwardRef((props, ref) => {
             <th>Item Name</th>
             <th>Wt</th>
             <th>Count</th>
-            <th>tch</th>
-            <th>stoneWt</th>
-            <th>NetWt</th>
-            <th>wastageType</th>
-            <th>w.Value</th>
-            <th>w.Pure</th>
-            <th>FinalPurity</th>
-            <th>weight</th>
-            <th>touch</th>
-            <th>purity</th>
+            <th>Touch</th>
+            <th>Stone Wt</th>
+            <th>Net Wt</th>
+            <th>Wastage Type</th>
+            <th>W.Value</th>
+            <th>W.Pure</th>
+            <th>Final Purity</th>
+            <th>Weight</th>
+            <th>Touch</th>
+            <th>Purity</th>
           </tr>
         </thead>
         <tbody className="reportTbody">

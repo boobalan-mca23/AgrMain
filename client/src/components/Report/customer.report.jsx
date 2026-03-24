@@ -246,7 +246,7 @@ const CustReport = () => {
                   <th>S.no</th>
                   <th>Bill No</th>
                   <th>Date</th>
-                  <th>Bill&Receive</th>
+                  <th>Bill & Receive</th>
                   <th>View bill</th>
                   <th>Received Amount</th>
                   <th>Bill Amount</th>
@@ -307,12 +307,12 @@ const CustReport = () => {
                             <tr>
                               <th>Entry Type</th>
                               <th>Date</th>
-                              <th>goldRate</th>
-                              <th>gold</th>
-                              <th>touch</th>
-                              <th>purity</th>
-                              <th>amount</th>
-                              <th>hallMark</th>
+                              <th>Gold Rate</th>
+                              <th>Gold</th>
+                              <th>Touch</th>
+                              <th>Purity</th>
+                              <th>Amount</th>
+                              <th>Hall Mark</th>
                             </tr>
                           </thead>
                           <tbody className="receiveTableBody">
