@@ -416,7 +416,11 @@ function PurchaseEntry() {
 
               <th>Stone wt. (g)</th>
 
-              <th>Net wt. (g)</th>
+              <th>Original Net Wt. (g)</th>
+
+              <th>Current Net Wt. (g)</th>
+
+              <th>Used Wt. (g)</th>
 
               <th>Touch</th>
 
@@ -446,6 +450,8 @@ function PurchaseEntry() {
                   <td>{e.grossWeight}</td>
                   <td>{e.stoneWeight}</td>
                   <td>{e.netWeight}</td>
+                  <td>{e.stock?.length > 0 ? Number(e.stock[0].netWeight).toFixed(3) : 0}</td>
+                  <td>{Number(e.netWeight - (e.stock?.length > 0 ? e.stock[0].netWeight : 0)).toFixed(3)}</td>
                   <td>{e.touch}</td>
                   <td>{e.wastage} ({e.wastageType})</td>
                   <td>{e.wastagePure}</td>
@@ -466,7 +472,7 @@ function PurchaseEntry() {
               ))
             ) : (
               <tr>
-                <td colSpan="12" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
+                <td colSpan="14" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
                   No BC Purchase Entry Added
                 </td>
               </tr>
