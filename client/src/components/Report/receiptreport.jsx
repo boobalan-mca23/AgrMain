@@ -211,10 +211,10 @@ const ReceiptReport = () => {
           <p style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <strong>
               {selectedCustomer?.customerBillBalance?.balance > 0
-                ? "Old Balance: "
+                ? "Old Pure Balance: "
                 : selectedCustomer?.customerBillBalance?.balance < 0
-                  ? "Excess  Balance: "
-                  : " Balance "}
+                  ? "Excess Pure Balance: "
+                  : " Pure Balance "}
               {Number(
                 selectedCustomer?.customerBillBalance?.balance || 0
               ).toFixed(3)}

@@ -20,7 +20,7 @@ const CustomerReportPrint=(props)=>{
               <thead >
                 <tr>
                   <th style={style.customerReportBorder}>S.no</th>
-                  <th style={style.customerReportBorder}>Bill Id</th>
+                  <th style={style.customerReportBorder}>Bill No</th>
                   <th style={style.customerReportBorder}>Date</th>
                   <th style={style.customerReportBorder}>Bill & Receive</th>
                   <th style={style.customerReportBorder}>Received Amount</th>
@@ -82,12 +82,12 @@ const CustomerReportPrint=(props)=>{
                             <tr>
                               <th style={style.customerReportBorder}>Entry Type</th>
                               <th style={style.customerReportBorder}>Date</th>
-                              <th style={style.customerReportBorder}>goldRate</th>
-                              <th style={style.customerReportBorder}>gold</th>
-                              <th style={style.customerReportBorder}>touch</th>
-                              <th style={style.customerReportBorder}>purity</th>
-                              <th style={style.customerReportBorder}>amount</th>
-                              <th style={style.customerReportBorder}>hallMark</th>
+                              <th style={style.customerReportBorder}>Gold Rate</th>
+                              <th style={style.customerReportBorder}>Gold</th>
+                              <th style={style.customerReportBorder}>Touch</th>
+                              <th style={style.customerReportBorder}>Purity</th>
+                              <th style={style.customerReportBorder}>Amount</th>
+                              <th style={style.customerReportBorder}>Hall Mark</th>
                             </tr>
                           </thead>
                           <tbody >

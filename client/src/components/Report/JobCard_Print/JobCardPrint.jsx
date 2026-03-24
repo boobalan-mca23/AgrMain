@@ -74,16 +74,16 @@ const JobCardPrintLayout = (props) => {
               <th style={style.jobReportBorder}>Item Name</th>
               <th style={style.jobReportBorder}>Wt</th>
               <th style={style.jobReportBorder}>Count</th>
-              <th style={style.jobReportBorder}>tch</th>
-              <th style={style.jobReportBorder}>stoneWt</th>
-              <th style={style.jobReportBorder}>NetWt</th>
-              <th style={style.jobReportBorder}>wastageTyp</th>
-              <th style={style.jobReportBorder}>w.Value</th>
-              <th style={style.jobReportBorder}>w.Pure</th>
+              <th style={style.jobReportBorder}>Touch</th>
+              <th style={style.jobReportBorder}>Stone Wt</th>
+              <th style={style.jobReportBorder}>Net Wt</th>
+              <th style={style.jobReportBorder}>Wastage Type</th>
+              <th style={style.jobReportBorder}>W.Value</th>
+              <th style={style.jobReportBorder}>W.Pure</th>
               <th style={style.jobReportBorder}>FinalPurity</th>
-              <th style={style.jobReportBorder}>weight</th>
-              <th style={style.jobReportBorder}>touch</th>
-              <th style={style.jobReportBorder}>purity</th>
+              <th style={style.jobReportBorder}>Weight</th>
+              <th style={style.jobReportBorder}>Touch</th>
+              <th style={style.jobReportBorder}>Purity</th>
             </tr>
           </thead>
           <tbody className="reportTbody">
@@ -172,7 +172,7 @@ const JobCardPrintLayout = (props) => {
               <td style={style.jobReportBorder}>
                 <b>{currentPageTotal.receive.toFixed(3)}</b>
               </td>
-              <td colSpan={2} style={style.jobReportBorder}></td>
+              <td colSpan={3} style={style.jobReportBorder}></td>
             </tr>
           </tfoot>
         </table>
