@@ -680,8 +680,8 @@ const handleSaveAddWeight = async () => {
           />
 
           {selectedPurchase && (
-            <p style={{ color: "gray" }}>
-              Available: {safeFixed(selectedPurchase.netWeight)} g
+            <p style={{ color: Number(addNetWeight || 0) > selectedPurchase.netWeight ? "red" : "gray" }}>
+              Available: {safeFixed(selectedPurchase.netWeight - Number(addNetWeight || 0))} g
             </p>
           )}
         </DialogContent>
