@@ -112,7 +112,14 @@ const PrintableBill = React.forwardRef((props, ref) => {
           </thead>
           <tbody>
             {billItems
-              .filter(item => item.repairStatus !== "REPAIRED_TO_STOCK")
+              .filter(item => {
+                const weight = parseFloat(item.weight) || 0;
+                const status = item.repairStatus || "";
+                const isRepairOrReturn = status !== "Sold" && status !== "NONE" && status !== "";
+                // If it's a full repair/return (weight 0), hide it
+                if (isRepairOrReturn && weight <= 0) return false;
+                return true;
+              })
               .map((item, index) => (
               <tr key={index}>
                 <td style={styles.td}>{index + 1}</td>
@@ -123,33 +130,35 @@ const PrintableBill = React.forwardRef((props, ref) => {
                 <td style={styles.td}>{formatToFixed3Strict(item.afterWeight)}</td>
                 <td style={styles.td}>{item.percentage}</td>
                 <td style={styles.td}>{formatToFixed3Strict(item.finalWeight)}</td>
-                   {/* <td style={styles.td}>
-                    {(() => {
-                      const status = item.repairStatus || "";
-                      if (!status || status === "Sold" || status === "NONE") return "Sold";
-                      
-                      const isPartRet = status.includes("PARTIAL_RETURN");
-                      const isPartRep = status.includes("PARTIAL_REPAIR");
-                      const isRepaired = status.includes("REPAIRED") && !status.includes("IN_REPAIR");
-                      const isInRep = status.includes("IN_REPAIR");
+                {/* <td style={styles.td}>
+                  {(() => {
+                    const s = item.repairStatus || "";
+                    if (!s || s === "Sold" || s === "NONE") return "Sold";
+                    
+                    // Hybrid Statuses
+                    const isRepaired = s.includes("REPAIRED") || s.includes("PARTIALLY_REPAIRED");
+                    const isInRepair = s.includes("IN_REPAIR") || s.includes("PARTIALLY_IN_REPAIR");
+                    const isReturned = s.includes("RETURNED") || s.includes("PARTIAL_RETURN");
 
-                      if (isPartRet && isPartRep) return "Partial Ret/Rep";
-                      if (isPartRet && isRepaired) return "Partial Ret/Repaired";
-                      if (isPartRet && isInRep) return "Partial Ret/In Repair";
+                    if (isRepaired && isReturned) return "Repaired & Returned";
+                    if (isInRepair && isReturned) return "In Repair & Returned";
 
-                      if (isPartRet) return "Partial Return";
-                      if (isPartRep) return "Partial Repair";
-                      if (isInRep) return "In Repair";
-                      if (isRepaired) return "Repaired";
-                      if (status.includes("RETURNED")) return "Returned";
-                      return status;
-                    })()}
-                  </td> */}
+                    // Standard Statuses
+                    if (s.includes("PARTIALLY_IN_REPAIR")) return "Partially In Repair";
+                    if (s.includes("IN_REPAIR")) return "In Repair";
+                    if (s.includes("PARTIALLY_REPAIRED")) return "Partially Repaired";
+                    if (s.includes("REPAIRED_TO_STOCK")) return "Repaired (Stock)";
+                    if (s.includes("REPAIRED")) return "Repaired";
+                    if (s.includes("RETURNED")) return "Returned";
+                    
+                    return s;
+                  })()}
+                </td> */}
               </tr>
             ))}
             {billItems.length === 0 && (
               <tr>
-                <td colSpan={8} style={styles.td}>
+                <td colSpan={isEditMode ? 9 : 8} style={styles.td}>
                   No Bill Details
                 </td>
               </tr>

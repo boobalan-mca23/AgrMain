@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const recalculateBillProfit = require("../Utils/recalculateBillProfit");
 
 // const returnCustomerItem = async (req, res) => {
 //   const { billId, orderItemId, reason } = req.body;
@@ -293,12 +294,23 @@ const returnCustomerItem = async (req, res) => {
         await tx.orderItems.update({
           where: { id: item.id },
           data: { 
-            repairStatus: combineStatus(item.repairStatus, "RETURNED") 
+            repairStatus: combineStatus(item.repairStatus, "RETURNED"),
+            weight: 0,
+            count: 0,
+            netWeight: 0,
+            afterWeight: 0,
+            finalWeight: 0,
+            actualPurity: 0,
+            wastagePure: 0,
+            finalPurity: 0
           }
         });
 
-        // All items returned logic removed because Bill model does not have a status field.
-        // The frontend already handles bill filtering based on OrderItems repairStatus.
+        // Decrement Hallmark Qty on Bill
+        await tx.bill.update({
+          where: { id: Number(billId) },
+          data: { hallmarkQty: { decrement: 1 } }
+        });
       }
 
       //  RETURN LOG
@@ -315,6 +327,9 @@ const returnCustomerItem = async (req, res) => {
           source: "CUSTOMER"
         }
       });
+
+      // Recalculate Bill Profits
+      await recalculateBillProfit(Number(billId), tx);
     });
 
     const updatedOrderItem = await prisma.orderItems.findUnique({

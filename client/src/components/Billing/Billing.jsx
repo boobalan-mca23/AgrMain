@@ -828,7 +828,8 @@ const Billing = () => {
         return;
       }
 
-      const FWT = billDetailRows.reduce((total, row) => total + (toNumber(row.fwt) || 0), 0);
+      const FWT = visibleRows.reduce((total, row) => total + (toNumber(row.fwt) || 0), 0);
+      const hallmarkQtyToSave = visibleRows.length;
       const now = new Date();
 
       const billData = {
@@ -845,7 +846,7 @@ const Billing = () => {
         billDetailsprofit: billDetailsProfit,
         Stoneprofit: stoneProfit,
         Totalprofit: totalBillProfit,
-        hallmarkQty,
+        hallmarkQty: hallmarkQtyToSave,
 
         orderItems: billDetailRows.map((row) => {
           const productStock = row.stockType === "ITEM_PURCHASE"
@@ -934,7 +935,24 @@ const Billing = () => {
     }
   };
 
-  const FWT = useMemo(() => billDetailRows.reduce((total, row) => total + (toNumber(row.fwt) || 0), 0), [billDetailRows]);
+  const visibleRows = useMemo(() => {
+    return billDetailRows.filter(row => {
+      const weight = toNumber(row.wt);
+      const isRepairOrReturn = row.repairStatus && row.repairStatus !== "Sold" && row.repairStatus !== "NONE";
+      // Hide if it's a full repair/return (weight 0)
+      if (isRepairOrReturn && weight <= 0) return false;
+      return true;
+    });
+  }, [billDetailRows]);
+
+  // Keep hallmarkQty in sync with bill rows for new bills
+  useEffect(() => {
+    if (!isEditMode) {
+      setHallmarkQty(visibleRows.length);
+    }
+  }, [visibleRows.length, isEditMode]);
+
+  const FWT = useMemo(() => visibleRows.reduce((total, row) => total + (toNumber(row.fwt) || 0), 0), [visibleRows]);
   console.log("FWT Calculation:", FWT);
   const { billDetailsProfit, stoneProfit, totalBillProfit, billProfitPercentage } = useMemo(() => {
     let detailsProfit = 0;
@@ -1002,7 +1020,11 @@ const Billing = () => {
   // Hide Count column when every row is from Item Purchase
   const showCountCol = true; // Always show Count column, including for item purchase rows
 
-  const hallmarkAmount = useMemo(() => toNumber(hallmarkQty) * toNumber(billHallmark), [hallmarkQty, billHallmark]);
+  const currentHallmarkQty = useMemo(() => {
+    return hallmarkQty;
+  }, [hallmarkQty]);
+
+  const hallmarkAmount = useMemo(() => toNumber(currentHallmarkQty) * toNumber(billHallmark), [currentHallmarkQty, billHallmark]);
   const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
 
   const totalBillHallmark = toNumber(totalHallmark);
@@ -1413,7 +1435,9 @@ const Billing = () => {
         afterWeight: row.awt,
         percentage: row.percent,
         finalWeight: row.fwt,
+        repairStatus: row.repairStatus || "Sold",
       })),
+      isEditMode,
 
       // balances
       pureBalance,
@@ -1660,12 +1684,13 @@ const Billing = () => {
                 <TableCell className="th">AWT</TableCell>
                 <TableCell className="th">Touch</TableCell>
                 <TableCell className="th">FWT</TableCell>
+                {isEditMode && <TableCell className="th">Status</TableCell>}
                 <TableCell className="th no-print">Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {billDetailRows.length > 0 ? (
-                billDetailRows.map((row, index) => (
+              {visibleRows.length > 0 ? (
+                visibleRows.map((row, index) => (
                   <TableRow key={row.id}>
                     <TableCell className="td">{index + 1}</TableCell>
                     <TableCell className="td">
@@ -1762,6 +1787,51 @@ const Billing = () => {
                         inputProps={{ style: inputStyle }}
                       />
                     </TableCell>
+                    {isEditMode && (
+                      <TableCell className="td">
+                        <span
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            backgroundColor:
+                              (row.repairStatus || "").includes("IN_REPAIR") ? "#ff9800"
+                              : (row.repairStatus || "").includes("PARTIALLY_IN_REPAIR") ? "#ffb74d"
+                              : (row.repairStatus || "").includes("REPAIRED_TO_STOCK") ? "#757575"
+                              : (row.repairStatus || "").includes("REPAIRED") ? "#2196f3"
+                              : (row.repairStatus || "").includes("PARTIALLY_REPAIRED") ? "#4caf50"
+                              : (row.repairStatus || "").includes("RETURNED") ? "#4caf50"
+                              : "#9e9e9e",
+                            color: "white",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {(() => {
+                            const s = row.repairStatus || "";
+                            if (!s || s === "Sold" || s === "NONE") return "Sold";
+                            
+                            // Hybrid Statuses
+                            const isRepaired = s.includes("REPAIRED") || s.includes("PARTIALLY_REPAIRED");
+                            const isInRepair = s.includes("IN_REPAIR") || s.includes("PARTIALLY_IN_REPAIR");
+                            const isReturned = s.includes("RETURNED") || s.includes("PARTIAL_RETURN");
+
+                            if (isRepaired && isReturned) return "Repaired & Returned";
+                            if (isInRepair && isReturned) return "In Repair & Returned";
+
+                            // Standard Statuses
+                            if (s.includes("PARTIALLY_IN_REPAIR")) return "Partially In Repair";
+                            if (s.includes("IN_REPAIR")) return "In Repair";
+                            if (s.includes("PARTIALLY_REPAIRED")) return "Partially Repaired";
+                            if (s.includes("REPAIRED_TO_STOCK")) return "Repaired (Stock)";
+                            if (s.includes("REPAIRED")) return "Repaired";
+                            if (s.includes("RETURNED")) return "Returned";
+                            
+                            return s;
+                          })()}
+                        </span>
+                      </TableCell>
+                    )}
                     <TableCell className="td no-print">
                       <IconButton onClick={() => handleDeleteBillDetailRow(index)}>
                         <MdDeleteForever style={{ color: "red", fontSize: "20px" }} />

@@ -35,7 +35,7 @@ const toFixedStr = (v, d = 3) => {
   ).toFixed(d);
 };
 
-const BillView = () => {
+export default function BillView() {
   const { billId } = useParams();
   const navigate = useNavigate();
   const [bill, setBill] = useState(null);
@@ -171,12 +171,22 @@ const BillView = () => {
     fetchBill();
   }, [billId]);
 
-  const FWT = useMemo(() => billDetailRows.reduce((total, row) => total + (toNumber(row.fwt) || 0), 0), [billDetailRows]);
+  const visibleRows = useMemo(() => {
+    return billDetailRows.filter(row => {
+      const weight = toNumber(row.wt);
+      const isRepairOrReturn = row.repairStatus && row.repairStatus !== "Sold" && row.repairStatus !== "NONE";
+      // Hide if it's a full repair/return (weight 0)
+      if (isRepairOrReturn && weight <= 0) return false;
+      return true;
+    });
+  }, [billDetailRows]);
 
   const totalReceivedPurity = useMemo(
     () => rows.reduce((acc, row) => acc + (toNumber(row.purityWeight) || 0), 0),
     [rows]
   );
+
+  const FWT = useMemo(() => visibleRows.reduce((total, row) => total + (toNumber(row.fwt) || 0), 0), [visibleRows]);
 
   const TotalFWT = previousBalance > 0
     ? toNumber(FWT) + toNumber(previousBalance)
@@ -184,10 +194,15 @@ const BillView = () => {
       ? toNumber(FWT) - Math.abs(toNumber(previousBalance))
       : toNumber(FWT);
 
-  const hallmarkAmount = useMemo(() => toNumber(hallmarkQty) * toNumber(billHallmark), [hallmarkQty, billHallmark]);
-  const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
   const pureBalance = TotalFWT - totalReceivedPurity;
-  const totalBillHallmark = toNumber(hallmarkQty) * toNumber(billHallmark) + toNumber(prevHallmark);
+
+  const currentHallmarkQty = useMemo(() => {
+    return toNumber(currentBill?.hallmarkQty ?? visibleRows.length);
+  }, [currentBill, visibleRows]);
+
+  const hallmarkAmount = useMemo(() => toNumber(currentHallmarkQty) * toNumber(billHallmark), [currentHallmarkQty, billHallmark]);
+  const totalHallmark = useMemo(() => toNumber(prevHallmark) + toNumber(hallmarkAmount), [prevHallmark, hallmarkAmount]);
+  const totalBillHallmark = toNumber(currentHallmarkQty) * toNumber(billHallmark) + toNumber(prevHallmark);
   const totalReceivedHallmark = rows.reduce((total, row) => total + (toNumber(row.hallmark) || 0), 0);
   const hallmarkBalance = totalBillHallmark - totalReceivedHallmark;
   const hasCash = rows.some(r => r.type === "Cash");
@@ -258,7 +273,7 @@ const BillView = () => {
     const printContent = (
       <PrintableBill
         {...billData}
-        viewMode={true}
+        isEditMode={true}
         selectedBill={billData}
       />
     );
@@ -406,10 +421,8 @@ const BillView = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {(() => {
-                const filteredRows = billDetailRows.filter(item => item.repairStatus !== "REPAIRED_TO_STOCK");
-                return filteredRows.length > 0 ? (
-                  filteredRows.map((row, index) => (
+              {visibleRows.length > 0 ? (
+                visibleRows.map((row, index) => (
                   <TableRow key={row.id} style={{ backgroundColor: "" }}>
                     <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
                     <TableCell className="td">
@@ -491,53 +504,51 @@ const BillView = () => {
                           fontSize: "12px",
                           fontWeight: "500",
                           backgroundColor:
-                            row.repairStatus?.startsWith("IN_REPAIR")
-                              ? "#ff9800"
-                              : row.repairStatus?.startsWith("PARTIAL_REPAIR")
-                                ? "#ffb74d" // lighter orange
-                                : row.repairStatus?.startsWith("RETURNED")
-                                  ? "#4caf50"
-                                  : row.repairStatus?.startsWith("REPAIRED")
-                                    ? "#2196f3"
-                                    : row.repairStatus?.startsWith("PARTIAL_RETURN")
-                                      ? "#81c784" // lighter green
-                                      : "#9e9e9e",
+                            (row.repairStatus || "").includes("IN_REPAIR") ? "#ff9800"
+                            : (row.repairStatus || "").includes("PARTIALLY_IN_REPAIR") ? "#ffb74d"
+                            : (row.repairStatus || "").includes("REPAIRED_TO_STOCK") ? "#757575"
+                            : (row.repairStatus || "").includes("REPAIRED") ? "#2196f3"
+                            : (row.repairStatus || "").includes("PARTIALLY_REPAIRED") ? "#4caf50"
+                            : (row.repairStatus || "").includes("RETURNED") ? "#4caf50"
+                            : "#9e9e9e",
                           color: "white",
                           whiteSpace: "nowrap",
                         }}
                       >
                         {(() => {
-                          const status = row.repairStatus || "";
-                          if (!status || status === "Sold" || status === "NONE") return "Sold";
+                          const s = row.repairStatus || "";
+                          if (!s || s === "Sold" || s === "NONE") return "Sold";
                           
-                          const isPartRet = status.includes("PARTIAL_RETURN");
-                          const isPartRep = status.includes("PARTIAL_REPAIR");
-                          const isRepaired = status.includes("REPAIRED") && !status.includes("IN_REPAIR");
-                          const isInRep = status.includes("IN_REPAIR");
+                          // Hybrid Statuses
+                          const isRepaired = s.includes("REPAIRED") || s.includes("PARTIALLY_REPAIRED");
+                          const isInRepair = s.includes("IN_REPAIR") || s.includes("PARTIALLY_IN_REPAIR");
+                          const isReturned = s.includes("RETURNED") || s.includes("PARTIAL_RETURN");
 
-                          if (isPartRet && isPartRep) return "Partial Ret/Rep";
-                          if (isPartRet && isRepaired) return "Partial Ret/Repaired";
-                          if (isPartRet && isInRep) return "Partial Ret/In Repair";
+                          if (isRepaired && isReturned) return "Repaired & Returned";
+                          if (isInRepair && isReturned) return "In Repair & Returned";
 
-                          if (isPartRet) return "Partial Return";
-                          if (isPartRep) return "Partial Repair";
-                          if (isInRep) return "In Repair";
-                          if (isRepaired) return "Repaired";
-                          if (status.includes("RETURNED")) return "Returned";
-                          return status;
+                          // Standard Statuses
+                          if (s.includes("PARTIALLY_IN_REPAIR")) return "Partially In Repair";
+                          if (s.includes("IN_REPAIR")) return "In Repair";
+                          if (s.includes("PARTIALLY_REPAIRED")) return "Partially Repaired";
+                          if (s.includes("REPAIRED_TO_STOCK")) return "Repaired (Stock)";
+                          if (s.includes("REPAIRED")) return "Repaired";
+                          if (s.includes("RETURNED")) return "Returned";
+                          
+                          return s;
                         })()}
                       </span>
                     </TableCell>
 
                   </TableRow>
-                ))) : (
-                  <TableRow>
-                    <TableCell colSpan={9} className="no-products-message">
-                      No Bill details added
-                    </TableCell>
-                  </TableRow>
-                );
-              })()}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={10} className="no-products-message">
+                    No Bill details added
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
 
@@ -869,4 +880,4 @@ const BillView = () => {
   );
 };
 
-export default BillView;
+

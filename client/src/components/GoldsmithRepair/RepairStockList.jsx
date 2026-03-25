@@ -143,26 +143,32 @@ const RepairStockList = () => {
     setOpenReceiveDialog(true);
   };
 
-  const handleReceive = async () => {
+  const handleReceive = async (destination = "STOCK") => {
     const weight = Number(qc.itemWeight || 0);
     if (weight <= 0) {
       toast.error("Item weight must be greater than zero");
       return;
     }
 
-    await axios.post(`${BACKEND_SERVER_URL}/api/repair/return`, {
-      repairId: selectedRepair.id,
-      itemWeight: qc.itemWeight,
-      stoneWeight: qc.stoneWeight,
-      netWeight,
-      wastagePure: updatedWastagePure,
-      wastageDelta: qc.wastageDelta,
-      finalPurity,
-      ...qc
-    });
+    try {
+      await axios.post(`${BACKEND_SERVER_URL}/api/repair/return`, {
+        repairId: selectedRepair.id,
+        itemWeight: qc.itemWeight,
+        stoneWeight: qc.stoneWeight,
+        netWeight,
+        wastagePure: updatedWastagePure,
+        wastageDelta: qc.wastageDelta,
+        finalPurity,
+        returnedTo: destination,
+        ...qc
+      });
 
-    setOpenReceiveDialog(false);
-    fetchRepairStock();
+      toast.success(`Item successfully returned to ${destination === "STOCK" ? "Stock" : "Customer"}`);
+      setOpenReceiveDialog(false);
+      fetchRepairStock();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to return repair");
+    }
   };
 
   return (
@@ -521,15 +527,17 @@ const RepairStockList = () => {
 
         </DialogContent>
 
-        <DialogActions>
-          <Button onClick={() => setOpenReceiveDialog(false)}>Cancel</Button>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setOpenReceiveDialog(false)} color="inherit">
+            Cancel
+          </Button>
 
           <Button
             variant="contained"
             color="success"
-            onClick={handleReceive}
+            onClick={() => handleReceive("STOCK")}
           >
-            Confirm & Return to Stock
+            Confirm & Return
           </Button>
         </DialogActions>
 
