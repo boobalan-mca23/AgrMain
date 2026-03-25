@@ -30,6 +30,17 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 
+// Helper utilities
+const toNumber = (v) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+};
+
+const safeFixed = (v, d = 3) => {
+  const n = toNumber(v);
+  return n.toFixed(d);
+};
+
 // import "./Stock.css";
 const modalStyle = {
   position: "absolute",
@@ -497,20 +508,26 @@ const CustomerReturn = () => {
     if (!status || status === "Sold" || status === "NONE") return "Sold";
     const isPartRet = status.includes("PARTIAL_RETURN");
     const isPartRep = status.includes("PARTIAL_REPAIR");
-    const isRepaired = status.includes("REPAIRED") && !status.includes("IN_REPAIR");
-    const isInRep = status.includes("IN_REPAIR");
+    const s = status || "";
+    if (!s || s === "Sold" || s === "NONE") return "Sold";
 
-    if (isPartRet && isPartRep) return "Partial Ret/Rep";
-    if (isPartRet && isRepaired) return "Partial Ret/Repaired";
-    if (isPartRet && isInRep) return "Partial Ret/In Repair";
+    // Hybrid Statuses
+    const isRepaired = s.includes("REPAIRED") || s.includes("PARTIALLY_REPAIRED");
+    const isInRepair = s.includes("IN_REPAIR") || s.includes("PARTIALLY_IN_REPAIR");
+    const isReturned = s.includes("RETURNED") || s.includes("PARTIAL_RETURN");
 
-    if (isPartRet) return "Partial Return";
-    if (isPartRep) return "Partial Repair";
-    if (isInRep) return "In Repair";
-    if (isRepaired) return "Repaired";
-    if (status.includes("RETURNED")) return "Returned";
-    return status;
-    return status;
+    if (isRepaired && isReturned) return "Repaired & Returned";
+    if (isInRepair && isReturned) return "In Repair & Returned";
+
+    // Standard Statuses
+    if (s.includes("PARTIALLY_IN_REPAIR")) return "Partially In Repair";
+    if (s.includes("IN_REPAIR")) return "In Repair";
+    if (s.includes("PARTIALLY_REPAIRED")) return "Partially Repaired";
+    if (s.includes("REPAIRED_TO_STOCK")) return "Repaired (Stock)";
+    if (s.includes("REPAIRED")) return "Repaired";
+    if (s.includes("RETURNED")) return "Returned";
+
+    return s;
   };
 
   const handlePrint = () => {
@@ -532,8 +549,7 @@ const CustomerReturn = () => {
         <td>${bill.id}</td>
         <td>${bill.customers?.name || "-"}</td>
         <td>${bill.orders
-          ?.filter(o => !o.repairStatus?.includes("REPAIRED_TO_STOCK") && !o.repairStatus?.includes("IN_REPAIR_SPLIT"))
-          .map(o => o.productName).join(", ") || "-"}</td>
+          ?.map(o => o.productName).join(", ") || "-"}</td>
         <td>${bill.date ? new Date(bill.date).toLocaleDateString("en-IN") : "-"}</td>
       </tr>`
       )
@@ -814,7 +830,7 @@ const CustomerReturn = () => {
                               </span>
                             </TableCell>
                             <TableCell>
-                              {!item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") && !item.repairStatus?.includes("REPAIRED") ? (
+                              {toNumber(item.weight) > 0 && !item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") ? (
                                 <Button
                                   color="error"
                                   variant="outlined"
@@ -863,6 +879,7 @@ const CustomerReturn = () => {
                       <TableRow>
                         <TableCell className="BillTable-th-td">Product</TableCell>
                         <TableCell className="BillTable-th-td">Weight</TableCell>
+                        <TableCell className="BillTable-th-td">Count</TableCell>
                         <TableCell className="BillTable-th-td">Status</TableCell>
                         <TableCell className="BillTable-th-td">Action</TableCell>
                       </TableRow>
@@ -875,6 +892,7 @@ const CustomerReturn = () => {
                           <TableRow key={item.id}>
                             <TableCell>{item.productName}</TableCell>
                             <TableCell>{item.weight}</TableCell>
+                            <TableCell>{item.count}</TableCell>
                             <TableCell>
                               <span
                                 style={{
@@ -898,7 +916,7 @@ const CustomerReturn = () => {
                               </span>
                             </TableCell>
                             <TableCell>
-                              {!item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") && !item.repairStatus?.includes("REPAIRED") ? (
+                              {toNumber(item.weight) > 0 && !item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") ? (
                                 <Button
                                   variant="contained"
                                   size="small"

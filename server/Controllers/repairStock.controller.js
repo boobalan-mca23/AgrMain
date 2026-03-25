@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const recalculateBillProfit = require("../Utils/recalculateBillProfit");
 
 const getAllRepairStock = async (req, res) => {
   try {
@@ -377,7 +378,8 @@ const returnFromRepair = async (req, res) => {
     wastagePure,
     wastageDelta,
     wastageValue,
-    wastageType
+    wastageType,
+    returnedTo // "STOCK" or "CUSTOMER" (for order items)
   } = req.body;
 
   try {
@@ -525,30 +527,32 @@ const returnFromRepair = async (req, res) => {
         }
       });
 
-      // Update OrderItem status if linked
+      // Update OrderItem data if linked (Customer Item)
+      // Update OrderItem status only (No weight restoration per user request)
       if (repair.orderItemId) {
         const orderItem = await tx.orderItems.findUnique({
           where: { id: repair.orderItemId },
-          select: { repairStatus: true }
+          include: { bill: true }
         });
 
-        const currentStatus = orderItem?.repairStatus || "";
-        let nextStatus;
-        if (currentStatus === "IN_REPAIR_SPLIT") {
-          nextStatus = "REPAIRED_TO_STOCK";
-        } else {
-          // If it was "IN_REPAIR (PARTIAL_RETURN)", it should become "REPAIRED (PARTIAL_RETURN)"
-          // If it was "IN_REPAIR", it should become "REPAIRED"
-          nextStatus = currentStatus.replace("IN_REPAIR", "REPAIRED");
-          if (nextStatus === currentStatus) {
-              nextStatus = combineStatus(currentStatus, "REPAIRED");
+        if (orderItem) {
+          const currentStatus = orderItem.repairStatus || "";
+          let nextStatus;
+          
+          if (currentStatus.includes("PARTIALLY_IN_REPAIR")) {
+            nextStatus = currentStatus.replace("PARTIALLY_IN_REPAIR", "PARTIALLY_REPAIRED");
+          } else if (currentStatus.includes("IN_REPAIR")) {
+            nextStatus = currentStatus.replace("IN_REPAIR", "REPAIRED");
+          } else {
+            nextStatus = combineStatus(currentStatus, "REPAIRED");
           }
-        }
 
-        await tx.orderItems.update({
-          where: { id: repair.orderItemId },
-          data: { repairStatus: nextStatus }
-        });
+          await tx.orderItems.update({
+            where: { id: repair.orderItemId },
+            data: { repairStatus: nextStatus }
+          });
+          // No customer balance update here. Customer will be billed separately for the repaired item.
+        }
       }
 
 
@@ -828,87 +832,28 @@ const sendCustomerItemToRepair = async (req, res) => {
         });
       }
 
-      // Split logic to support partial repairs
-      if (orderItem.stockType !== "ITEM_PURCHASE" && Number(originalWeight) > Number(sentWeight)) {
-        // Partial Repair:
-        // 1. Create a NEW OrderItem for the repaired portion
-        const newRepairOrderItem = await tx.orderItems.create({
-          data: {
-            billId: orderItem.billId,
-            productName: orderItem.productName,
-            weight: Number(sentWeight),
-            stoneWeight: Number(repairProduct.stoneWeight) || 0,
-            netWeight: Number(repairProduct.netWeight),
-            afterWeight: Number(repairProduct.netWeight),
-            count: Number(repairProduct.count) || 1,
-            touch: Number(repairProduct.touch),
-            percentage: Number(orderItem.percentage || 0),
-            actualPurity: actualPurityDelta,
-            wastageType: repairProduct.wastageType,
-            wastageValue: Number(repairProduct.wastageValue),
-            wastagePure: wastagePureDelta,
-            finalPurity: finalPurityDelta,
-            finalWeight: (Number(repairProduct.netWeight) * Number(orderItem.percentage || 0)) / 100,
-            stockType: orderItem.stockType,
-            stockId: orderItem.stockId,
-            repairStatus: "IN_REPAIR_SPLIT"
-          }
-        });
+      // Determine next status and weight reduction
+      const isFullRepair = Number(repairProduct.count || 1) >= Number(orderItem.count) && Number(sentWeight) >= Number(originalWeight);
+      const nextStatus = isFullRepair ? combineStatus(orderItem.repairStatus, "IN_REPAIR") : combineStatus(orderItem.repairStatus, "PARTIALLY_IN_REPAIR");
+      
+      const newWeight = Math.max(0, Number(originalWeight) - Number(sentWeight));
+      const newCount = Math.max(0, (Number(orderItem.count) || 0) - (Number(repairProduct.count) || 1));
+      const newStoneWeight = Math.max(0, (Number(orderItem.stoneWeight) || 0) - (Number(repairProduct.stoneWeight) || 0));
+      const newNetWeight = Math.max(0, (Number(orderItem.netWeight) || 0) - Number(repairNetWeight));
+      const newFinalWeight = (newNetWeight * (Number(orderItem.percentage || 0))) / 100;
 
-        // 2. Update the RepairStock to point to the new OrderItem
-        await tx.repairStock.update({
-          where: { id: repair.id },
-          data: { orderItem: { connect: { id: newRepairOrderItem.id } } }
-        });
-
-        // 3. Update the ORIGINAL OrderItem with remaining values
-        const remainingWeight = originalWeight - sentWeight;
-        const remainingStoneWeight = (Number(orderItem.stoneWeight) || 0) - (Number(repairProduct.stoneWeight) || 0);
-        const remainingNetWeight = (Number(orderItem.netWeight) || 0) - (Number(repairProduct.netWeight) || 0);
-        const remainingCount = (Number(orderItem.count) || 0) - (Number(repairProduct.count) || 1);
-
-        const remActualPurity = (remainingNetWeight * Number(orderItem.touch || 0)) / 100;
-        let remWastagePure = 0;
-        let remFinalPurity = 0;
-
-        if (orderItem.wastageType === "Touch") {
-          remFinalPurity = (remainingNetWeight * Number(orderItem.wastageValue || 0)) / 100;
-          remWastagePure = remFinalPurity - remActualPurity;
-        } else if (orderItem.wastageType === "%") {
-          const wWeight = (remainingNetWeight * Number(orderItem.wastageValue || 0)) / 100;
-          remFinalPurity = ((remainingNetWeight + wWeight) * Number(orderItem.touch || 0)) / 100;
-          remWastagePure = remFinalPurity - remActualPurity;
-        } else if (orderItem.wastageType === "+") {
-          remFinalPurity = ((remainingNetWeight + Number(orderItem.wastageValue || 0)) * Number(orderItem.touch || 0)) / 100;
-          remWastagePure = remFinalPurity - remActualPurity;
+      await tx.orderItems.update({
+        where: { id: Number(orderItemId) },
+        data: {
+          repairStatus: nextStatus,
+          count: newCount,
+          weight: Number(newWeight.toFixed(3)),
+          stoneWeight: Number(newStoneWeight.toFixed(3)),
+          netWeight: Number(newNetWeight.toFixed(3)),
+          afterWeight: Number(newNetWeight.toFixed(3)),
+          finalWeight: Number(newFinalWeight.toFixed(3))
         }
-
-        await tx.orderItems.update({
-          where: { id: Number(orderItemId) },
-          data: {
-            weight: Number(remainingWeight.toFixed(3)),
-            stoneWeight: Number(remainingStoneWeight.toFixed(3)),
-            netWeight: Number(remainingNetWeight.toFixed(3)),
-            afterWeight: Number(remainingNetWeight.toFixed(3)),
-            count: remainingCount,
-            actualPurity: Number(remActualPurity.toFixed(3)),
-            wastagePure: Number(remWastagePure.toFixed(3)),
-            finalPurity: Number(remFinalPurity.toFixed(3)),
-            finalWeight: Number(((remainingNetWeight * Number(orderItem.percentage || 0)) / 100).toFixed(3)),
-            repairStatus: combineStatus(orderItem.repairStatus, "PARTIAL_REPAIR")
-          }
-        });
-
-      } else {
-        // Full Repair
-        await tx.orderItems.update({
-          where: { id: Number(orderItemId) },
-          data: { 
-            repairStatus: combineStatus(orderItem.repairStatus, "IN_REPAIR") 
-          }
-        });
-      }
-
+      });
 
       await tx.repairLogs.create({
         data: {
@@ -917,6 +862,14 @@ const sendCustomerItemToRepair = async (req, res) => {
           note: reason || null
         }
       });
+
+      // Update Bill Hallmark Quantity if it's a FULL repair
+      if (isFullRepair) {
+        await tx.bill.update({
+          where: { id: Number(billId) },
+          data: { hallmarkQty: { decrement: 1 } }
+        });
+      }
 
       const goldsmith = await tx.goldsmith.findUnique({
         where: { id: goldsmithId }
@@ -963,6 +916,9 @@ const sendCustomerItemToRepair = async (req, res) => {
       const updatedOrderItem = await tx.orderItems.findUnique({
         where: { id: Number(orderItemId) }
       });
+
+      // Recalculate Bill Profits
+      await recalculateBillProfit(Number(billId), tx);
 
       return { repair, updatedOrderItem };
     });

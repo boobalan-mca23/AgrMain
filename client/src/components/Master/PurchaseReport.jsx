@@ -356,7 +356,17 @@ export default function BCPurchaseReport() {
 
                 <td>{format3(r.stoneWeight)}</td>
 
-                <td>{format3(r.netWeight)}</td>
+                <td>
+                  {format3(r.netWeight)}
+                  <br />
+                  <span style={{ color: "red", fontSize: "0.85em" }}>
+                    Used: {format3(r.netWeight - (r.stock?.length > 0 ? r.stock[0].netWeight : 0))}g
+                  </span>
+                  <br />
+                  <span style={{ color: "green", fontSize: "0.85em" }}>
+                    Balance: {format3(r.stock?.length > 0 ? r.stock[0].netWeight : 0)}g
+                  </span>
+                </td>
 
                 <td>{r.touch}</td>
 

@@ -398,10 +398,10 @@ function PurchaseEntry() {
 
       {/* TABLE */}
 
-      <Paper style={{ overflowX: "auto", marginTop: "60px", marginLeft: "60px", position: "absolute" }}>
+      <Paper style={{ overflowX: "auto", marginTop: "20px" }}>
         <table
           className="item-list"
-          style={{ minWidth: "1400px", width: "100%" }}
+          style={{ width: "100%" }}
         >
 
           <thead>
@@ -416,11 +416,7 @@ function PurchaseEntry() {
 
               <th>Stone wt. (g)</th>
 
-              <th>Original Net Wt. (g)</th>
-
-              <th>Current Net Wt. (g)</th>
-
-              <th>Used Wt. (g)</th>
+              <th>Net wt. (g)</th>
 
               <th>Touch</th>
 
@@ -449,9 +445,19 @@ function PurchaseEntry() {
                   <td>{e.jewelName}</td>
                   <td>{e.grossWeight}</td>
                   <td>{e.stoneWeight}</td>
-                  <td>{e.netWeight}</td>
-                  <td>{e.stock?.length > 0 ? Number(e.stock[0].netWeight).toFixed(3) : 0}</td>
-                  <td>{Number(e.netWeight - (e.stock?.length > 0 ? e.stock[0].netWeight : 0)).toFixed(3)}</td>
+                  <td>
+                    {e.netWeight}
+                    <br />
+                    <span style={{ color: "red", fontSize: "0.85em" }}>
+                      Used: {Number(e.netWeight - (e.stock?.length > 0 ? e.stock[0].netWeight : 0)).toFixed(3)}g
+                    </span>
+                    <br />
+                    <span style={{ color: "green", fontSize: "0.85em" }}>
+                      Balance: {Number(e.stock?.length > 0 ? e.stock[0].netWeight : 0).toFixed(3)}g
+                    </span>
+
+
+                  </td>
                   <td>{e.touch}</td>
                   <td>{e.wastage} ({e.wastageType})</td>
                   <td>{e.wastagePure}</td>
@@ -472,7 +478,7 @@ function PurchaseEntry() {
               ))
             ) : (
               <tr>
-                <td colSpan="14" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
+                <td colSpan="12" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
                   No BC Purchase Entry Added
                 </td>
               </tr>
@@ -500,12 +506,11 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.advanceGold}
-            onChange={(e) =>
-              {
+            onChange={(e) => {
               const value = e.target.value;
 
               if (/^\d*\.?\d*$/.test(value)) {
-              handleChange("advanceGold", e.target.value)
+                handleChange("advanceGold", e.target.value)
               }
             }
             }
@@ -529,12 +534,11 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.grossWeight}
-            onChange={(e) =>
-              {
+            onChange={(e) => {
               const value = e.target.value;
 
               if (/^\d*\.?\d*$/.test(value)) {
-              handleChange("grossWeight", e.target.value)
+                handleChange("grossWeight", e.target.value)
               }
             }
             }
@@ -545,12 +549,11 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.stoneWeight}
-            onChange={(e) =>
-              {
+            onChange={(e) => {
               const value = e.target.value;
 
               if (/^\d*\.?\d*$/.test(value)) {
-              handleChange("stoneWeight", e.target.value)
+                handleChange("stoneWeight", e.target.value)
               }
             }
             }
@@ -569,12 +572,11 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.touch}
-            onChange={(e) =>
-              {
+            onChange={(e) => {
               const value = e.target.value;
 
               if (/^\d*\.?\d*$/.test(value)) {
-              handleChange("touch", e.target.value)
+                handleChange("touch", e.target.value)
               }
             }
             }
@@ -606,14 +608,13 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.wastage}
-            onChange={(e) =>
-              {
+            onChange={(e) => {
               const value = e.target.value;
 
               if (/^\d*\.?\d*$/.test(value)) {
-              handleChange("wastage", e.target.value)
+                handleChange("wastage", e.target.value)
               }
-              }
+            }
             }
           />
 
@@ -638,16 +639,15 @@ function PurchaseEntry() {
             fullWidth
             margin="dense"
             value={form.goldBalance}
-            onChange={(e) =>
-            {
+            onChange={(e) => {
               const value = e.target.value;
 
               if (/^\d*\.?\d*$/.test(value)) {
-              setForm({
-                ...form,
-                goldBalance: value
-              })
-            }
+                setForm({
+                  ...form,
+                  goldBalance: value
+                })
+              }
             }
             }
           />
