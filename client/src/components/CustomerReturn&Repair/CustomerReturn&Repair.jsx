@@ -1114,7 +1114,7 @@ const CustomerReturn = () => {
                 </td>
               </tr>
               {/* DEBUG ROWS */}
-              <tr>
+              {/* <tr>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', color: '#666', textAlign: 'center' }}>Touch</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   {safeFixed(selectedProduct?.touch)}
@@ -1151,7 +1151,7 @@ const CustomerReturn = () => {
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(selectedProduct?.finalPurity)}</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(currentRepairFinalPurity)}</td>
-              </tr>
+              </tr> */}
             </tbody>
           </table>
 
@@ -1359,7 +1359,7 @@ const CustomerReturn = () => {
                 </td>
               </tr>
               {/* DEBUG ROWS */}
-              <tr>
+              {/* <tr>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>Touch</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   {safeFixed(selectedProduct?.touch)}
@@ -1396,7 +1396,7 @@ const CustomerReturn = () => {
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(selectedProduct?.finalPurity)}</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>-</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>{safeFixed(currentFinalPurity)}</td>
-              </tr>
+              </tr> */}
             </tbody>
           </table>
 
