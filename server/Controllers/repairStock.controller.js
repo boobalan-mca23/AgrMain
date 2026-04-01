@@ -272,26 +272,75 @@ const sendToRepair = async (req, res) => {
 
         const updatedPurity = getPurity(reqNetWeight, item.touch, item.wastageType, item.wastage);
 
-        const actualPure = updatedPurity.actual;
-        const goldBalance = (item.advanceGold || 0) - updatedPurity.final;
+        let targetItemId = item.id;
 
-        await tx.itemPurchaseEntry.update({
-          where: { id: item.id },
-          data: {
-            grossWeight: reqWeight,
-            stoneWeight: reqStoneWeight,
-            netWeight: reqNetWeight,
-            actualPure: actualPure,
-            wastagePure: updatedPurity.wastage,
-            finalPurity: updatedPurity.final,
-            goldBalance: goldBalance,
-            isInRepair: true,
-            isSold: false,
-            isBilled: false
-          }
-        });
+        if (reqCount < item.count) {
+          // Partial Repair: Split Item Purchase Entry
+          const remCount = item.count - reqCount;
+          const remGross = item.grossWeight - reqWeight;
+          const remStone = item.stoneWeight - reqStoneWeight;
+          const remNet = remGross - remStone;
+          const remPurity = getPurity(remNet, item.touch, item.wastageType, item.wastage);
 
-        const targetItemId = item.id;
+          // Update original with remaining
+          await tx.itemPurchaseEntry.update({
+            where: { id: item.id },
+            data: {
+              count: remCount,
+              grossWeight: remGross,
+              stoneWeight: remStone,
+              netWeight: remNet,
+              actualPure: remPurity.actual,
+              wastagePure: remPurity.wastage,
+              finalPurity: remPurity.final,
+              // We keep the balance logic consistent or split it proportionally? 
+              // Proportional split of advance gold:
+              advanceGold: (item.advanceGold * remCount) / item.count,
+              goldBalance: ((item.advanceGold * remCount) / item.count) - remPurity.final
+            }
+          });
+
+          // Create new record for repair portion
+          const repairPartPurity = getPurity(reqNetWeight, item.touch, item.wastageType, item.wastage);
+          const repairItemRecord = await tx.itemPurchaseEntry.create({
+            data: {
+              ...item,
+              id: undefined,
+              count: reqCount,
+              grossWeight: reqWeight,
+              stoneWeight: reqStoneWeight,
+              netWeight: reqNetWeight,
+              actualPure: repairPartPurity.actual,
+              wastagePure: repairPartPurity.wastage,
+              finalPurity: repairPartPurity.final,
+              advanceGold: (item.advanceGold * reqCount) / item.count,
+              goldBalance: ((item.advanceGold * reqCount) / item.count) - repairPartPurity.final,
+              isInRepair: true,
+              isSold: false,
+              isBilled: false,
+              createdAt: undefined
+            }
+          });
+          targetItemId = repairItemRecord.id;
+        } else {
+          // Full Repair
+          const goldBalance = (item.advanceGold || 0) - updatedPurity.final;
+          await tx.itemPurchaseEntry.update({
+            where: { id: item.id },
+            data: {
+              grossWeight: reqWeight,
+              stoneWeight: reqStoneWeight,
+              netWeight: reqNetWeight,
+              actualPure: updatedPurity.actual,
+              wastagePure: updatedPurity.wastage,
+              finalPurity: updatedPurity.final,
+              goldBalance: goldBalance,
+              isInRepair: true,
+              isSold: false,
+              isBilled: false
+            }
+          });
+        }
 
         const repairItemFinal = await tx.itemPurchaseEntry.findUnique({ where: { id: targetItemId } });
 
@@ -441,33 +490,33 @@ const returnFromRepair = async (req, res) => {
       // =================================
 
       if (repair.productId) {
-
-        await tx.productStock.update({
-
-          where: { id: repair.productId },
-
+        // Create a NEW ProductStock record instead of updating original
+        const originalProduct = await tx.productStock.findUnique({ where: { id: repair.productId } });
+        
+        await tx.productStock.create({
           data: {
-
+            itemName: originalProduct?.itemName || repair.itemName,
             itemWeight: itemWt,
-
             stoneWeight: stoneWt,
-
             netWeight,
-
+            touch: Number(touch) || 0,
             wastagePure: updatedWastagePure,
-
             wastageValue: Number(wastageValue) || 0,
-
             wastageType: wastageType || null,
-
             finalPurity: computedFinalPurity,
-
-            isActive: true
-
+            isActive: true,
+            source: "REPAIR_RETURN",
+            categoryId: originalProduct?.categoryId,
+            itemGroupId: originalProduct?.itemGroupId,
+            unitId: originalProduct?.unitId,
           }
-
         });
 
+        // Deactivate the original product that was sent to repair
+        await tx.productStock.update({
+          where: { id: repair.productId },
+          data: { isActive: false, isBillProduct: false }
+        });
       }
 
 
@@ -476,42 +525,46 @@ const returnFromRepair = async (req, res) => {
       // =================================
 
       if (repair.itemPurchaseId) {
-
         const goldBalance = (repair.itemPurchase.advanceGold || 0) - computedFinalPurity;
 
-        await tx.itemPurchaseEntry.update({
-
-          where: { id: repair.itemPurchaseId },
-
+        // Create a NEW ItemPurchaseEntry record instead of updating original
+        await tx.itemPurchaseEntry.create({
           data: {
-
+            itemName: repair.itemPurchase.itemName || repair.itemName,
+            supplierId: repair.itemPurchase.supplierId,
+            categoryId: repair.itemPurchase.categoryId,
+            itemGroupId: repair.itemPurchase.itemGroupId,
+            unitId: repair.itemPurchase.unitId,
+            count: repair.itemPurchase.count || 1,
             grossWeight: itemWt,
-
             stoneWeight: stoneWt,
-
             netWeight,
-
             actualPure: actualPurity,
-
             wastagePure: updatedWastagePure,
-
             wastage: Number(wastageValue) || 0,
-
             wastageType: wastageType || null,
-
             finalPurity: computedFinalPurity,
-
             goldBalance: goldBalance,
-
+            advanceGold: repair.itemPurchase.advanceGold || 0,
             isInRepair: false,
             isSold: false,
             isBilled: false,
-            moveTo: "REPAIR_RETURN"
-
+            source: "REPAIR_RETURN",
+            moveTo: "REPAIR_RETURN",
+            createdAt: new Date()
           }
-
         });
 
+        // Mark the original entry as completed/sold so it doesn't show in stock
+        await tx.itemPurchaseEntry.update({
+          where: { id: repair.itemPurchaseId },
+          data: {
+            isInRepair: false,
+            isSold: true,
+            isBilled: true,
+            moveTo: "PROCESSED_BY_REPAIR"
+          }
+        });
       }
 
 

@@ -176,6 +176,40 @@ const JobCardPrintLayout = (props) => {
             </tr>
           </tfoot>
         </table>
+
+        {props.repairs && props.repairs.length > 0 && (
+          <div style={{ marginTop: "20px" }}>
+            <h3 style={{ ...style.jobHead, color: "black", fontSize: "14px", textDecoration: "underline" }}>Repaired Products</h3>
+            <table style={style.jobReportTable}>
+              <thead>
+                <tr style={style.jobReportThead}>
+                  <th style={style.jobReportBorder}>S.No</th>
+                  <th style={style.jobReportBorder}>Sent Date</th>
+                  <th style={style.jobReportBorder}>Item Name</th>
+                  <th style={style.jobReportBorder}>Gross Wt</th>
+                  <th style={style.jobReportBorder}>Net Wt</th>
+                  <th style={style.jobReportBorder}>Purity</th>
+                  <th style={style.jobReportBorder}>Reason</th>
+                  <th style={style.jobReportBorder}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {props.repairs.map((repair, index) => (
+                  <tr key={repair.id}>
+                    <td style={style.jobReportBorder}>{index + 1}</td>
+                    <td style={style.jobReportBorder}>{new Date(repair.sentDate).toLocaleDateString("en-GB")}</td>
+                    <td style={style.jobReportBorder}>{repair.itemName || "-"}</td>
+                    <td style={style.jobReportBorder}>{(Number(repair.grossWeight) || 0).toFixed(3)}</td>
+                    <td style={style.jobReportBorder}>{(Number(repair.netWeight) || 0).toFixed(3)}</td>
+                    <td style={style.jobReportBorder}>{(Number(repair.purity) || 0).toFixed(3)}</td>
+                    <td style={style.jobReportBorder}>{repair.reason || "-"}</td>
+                    <td style={style.jobReportBorder}>{repair.status || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </>
   );

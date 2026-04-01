@@ -161,72 +161,35 @@ const returnCustomerItem = async (req, res) => {
       //  CREATE STOCK ENTRY BASED ON STOCK TYPE
       let product;
       if (item.stockType === "ITEM_PURCHASE") {
-
-        // Return to Item Purchase Stock (Update existing entry to avoid status "Sold" staying sticky)
-        let targetStockId = item.stockId;
-
-        if (!targetStockId) {
-          console.log("stockId missing, trying fallback lookup by itemName and supplier...");
-          const lookup = await tx.itemPurchaseEntry.findFirst({
-            where: {
-              itemName: item.productName,
-              supplierId: Number(supplierId),
-              isSold: true
-            },
-            orderBy: { createdAt: "desc" }
-          });
-          if (lookup) {
-            console.log("Fallback found original entry. ID:", lookup.id);
-            targetStockId = lookup.id;
+        // ALWAYS Create a NEW ItemPurchaseEntry record for returns
+        product = await tx.itemPurchaseEntry.create({
+          data: {
+            itemName: item.productName || "Returned Item",
+            supplierId: item.itemPurchase?.supplierId || null,
+            categoryId: item.categoryId || null,
+            itemGroupId: item.itemGroupId || null,
+            unitId: item.unitId || null,
+            count: Number(count) || 1,
+            grossWeight: Number(itemWeight),
+            stoneWeight: Number(stoneWeight) || 0,
+            netWeight: Number(netWeight),
+            touch: Number(touch) || 0,
+            wastageType: item.wastageType || "None",
+            wastage: Number(wastageValue) || 0,
+            wastagePure: Number(wastagePureDelta) || 0,
+            actualPure: Number(actualPurityDelta) || 0,
+            finalPurity: Number(finalPurityDelta),
+            isSold: false,
+            isBilled: false,
+            isInRepair: false,
+            source: "CUSTOMER_RETURN",
+            moveTo: "CUSTOMER_RETURN",
+            createdAt: new Date()
           }
-        }
-
-        if (targetStockId) {
-          product = await tx.itemPurchaseEntry.update({
-            where: { id: targetStockId },
-            data: {
-              grossWeight: Number(itemWeight || req.body.weight),
-              stoneWeight: Number(stoneWeight) || 0,
-              netWeight: Number(netWeight),
-              touch: Number(touch) || 0,
-              wastageType: item.wastageType || "None",
-              wastage: Number(wastageValue) || 0,
-              wastagePure: Number(wastagePureDelta) || 0,
-              actualPure: Number(actualPurityDelta) || 0,
-              finalPurity: Number(finalPurityDelta),
-              isSold: false,
-              isBilled: false,
-              isInRepair: false,
-              source: "CUSTOMER_RETURN",
-              moveTo: "CUSTOMER_RETURN",
-            }
-          });
-          console.log("SUCCESS: Updated existing ItemPurchaseEntry ID:", targetStockId);
-        } else {
-          // Fallback if stockId is missing (should not happen for full returns handled correctly)
-          console.log("WARNING: No stock link found. Creating NEW ItemPurchaseEntry record.");
-          product = await tx.itemPurchaseEntry.create({
-            data: {
-              itemName: item.productName,
-              grossWeight: Number(itemWeight),
-              stoneWeight: Number(stoneWeight) || 0,
-              netWeight: Number(netWeight),
-              touch: Number(touch) || 0,
-              wastageType: item.wastageType || "None",
-              wastage: Number(wastageValue) || 0,
-              wastagePure: Number(wastagePureDelta) || 0,
-              actualPure: Number(actualPurityDelta) || 0,
-              finalPurity: Number(finalPurityDelta),
-              isSold: false,
-              isBilled: false,
-              isInRepair: false,
-              source: "CUSTOMER_RETURN",
-              moveTo: "CUSTOMER_RETURN",
-            }
-          });
-        }
-
-      } else {
+        });
+        console.log("SUCCESS: Created NEW ItemPurchaseEntry for return. ID:", product.id);
+      }
+ else {
         // Return to Product Stock
         product = await tx.productStock.create({
           data: {
@@ -247,7 +210,7 @@ const returnCustomerItem = async (req, res) => {
         });
       }
 
-      if (item.stockType !== "ITEM_PURCHASE" && Number(originalWeight) > Number(returnedWeight)) {
+      if (Number(originalWeight) > Number(returnedWeight)) {
         // Partial Return: Deduct from original
         const remainingWeight = originalWeight - returnedWeight;
         const remainingStoneWeight = (Number(item.stoneWeight) || 0) - (Number(stoneWeight) || 0);

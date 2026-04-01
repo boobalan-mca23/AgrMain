@@ -51,7 +51,7 @@ const NewJobCard = ({
     new Date().toLocaleDateString("en-IN")
   );
 
-  const symbolOptions = ["Touch", "%", "+"];
+  const symbolOptions = ["Touch", "%" /*, "+"*/];
   const [masterItemOptions, setMasterItemOptions] = useState([]);
   const stoneOptions = ["Stone", "Enamel", "Beads", "Others"];
 

@@ -8,20 +8,7 @@
   box-sizing: border-box;
 }
 
-/* Header */
-.report-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-.report-header h2 {
-  color: #2c3e50;
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-}
-.report-subtitle {
-  color: #7f8c8d;
-  font-size: 0.9rem;
-}
+/* Header and Filter styles are now handled by MUI components in the JSX */
 
 .report-cards-container {
   display: grid !important; 
@@ -31,6 +18,7 @@
   width: 100%;
   max-width: 1100px; 
   justify-items: stretch;
+  color: bi;
   align-items: stretch;
   box-sizing: border-box;
   grid-auto-rows: minmax(100px, auto); 

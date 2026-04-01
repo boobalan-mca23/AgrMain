@@ -318,9 +318,15 @@ model RawGoldLogs {
   billReceive      billReceived[]
   givenGold        givenGold[]
   receiptVoucher   receiptVoucher[]
+  purchaseEntries       PurchaseEntry[]
+  purchaseReceived      PurchaseReceivedGold[]
+  itemPurchaseEntries   ItemPurchaseEntry[]
+  itemPurchaseReceived  ItemPurchaseReceivedGold[]
 
+  date                  DateTime          @default(now())
   @@index([rawGoldStockId], map: "RawGoldLogs_rawGoldStockId_fkey")
 }
+
 
 model ExpenseTracker {
   id          Int          @id @default(autoincrement())
@@ -541,9 +547,11 @@ model PurchaseEntry {
   supplierId   Int
   supplierName String?
 
-  // NEW
-  advanceGold Float @default(0)
-  goldBalance Float @default(0)
+  advanceGold  Float @default(0)
+  advanceTouch Float?
+  advanceLogId Int?
+  logId        Int?
+  goldBalance  Float @default(0)
 
   jewelName String
 
@@ -563,13 +571,29 @@ model PurchaseEntry {
   moveTo String
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
 
-  supplier Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  stock    PurchaseStock[]
+  supplier       Supplier               @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  rawGoldLogs    RawGoldLogs?           @relation(fields: [logId], references: [id])
+  stock          PurchaseStock[]
+  receivedGold   PurchaseReceivedGold[]
 
   @@map("purchase_entries")
 }
+
+model PurchaseReceivedGold {
+  id              Int           @id @default(autoincrement())
+  purchaseEntryId Int
+  weight          Float
+  touch           Float
+  date            DateTime      @default(now())
+  logId           Int?
+  createdAt       DateTime      @default(now())
+
+  purchaseEntry   PurchaseEntry @relation(fields: [purchaseEntryId], references: [id], onDelete: Cascade)
+  rawGoldLogs     RawGoldLogs?  @relation(fields: [logId], references: [id], onDelete: Cascade)
+}
+
 
 model ItemPurchaseEntry {
   id Int @id @default(autoincrement())
@@ -577,9 +601,12 @@ model ItemPurchaseEntry {
   supplierId   Int
   supplierName String?
 
-  advanceGold Float @default(0)
+  advanceGold  Float @default(0)
+  advanceTouch Float?
+  advanceLogId Int?
 
   itemName String
+  count    Int?     @default(1)
 
   grossWeight Float
   stoneWeight Float
@@ -618,12 +645,28 @@ model ItemPurchaseEntry {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  repairStocks  RepairStock[]
+  returnLogs    returnLogs[]
+  receivedGold  ItemPurchaseReceivedGold[]
 
-  repairStocks RepairStock[]
-  returnLogs   returnLogs[]
+  rawGoldLogs   RawGoldLogs?  @relation(fields: [advanceLogId], references: [id])
+
+  supplier      Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@map("item_purchase_entries")
+}
+
+model ItemPurchaseReceivedGold {
+  id                  Int               @id @default(autoincrement())
+  itemPurchaseEntryId Int
+  weight              Float
+  touch               Float
+  date                DateTime          @default(now())
+  logId               Int?
+  createdAt           DateTime          @default(now())
+
+  itemPurchaseEntry   ItemPurchaseEntry @relation(fields: [itemPurchaseEntryId], references: [id], onDelete: Cascade)
+  rawGoldLog          RawGoldLogs?      @relation(fields: [logId], references: [id], onDelete: Cascade)
 }
 
 model PurchaseStock {

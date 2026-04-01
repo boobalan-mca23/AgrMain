@@ -6,7 +6,19 @@ const prisma = new PrismaClient();
 ------------------------------------ */
 const getAllProductStock = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+    const where = {};
+    if (startDate && endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt = {
+        gte: new Date(startDate),
+        lte: end,
+      };
+    }
+
     const allStock = await prisma.productStock.findMany({
+      where,
       orderBy: {
         id: "desc", // latest products first
       },

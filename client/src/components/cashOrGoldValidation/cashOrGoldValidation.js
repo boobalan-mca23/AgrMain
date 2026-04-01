@@ -13,8 +13,7 @@ const checkCashOrGold = (payload, setGoldCashError) => {
       errors.touch = "Only positive numeric values allowed !";
     }
 
-  } else {
-
+  } else if (payload.type === "Cash" || payload.type === "Cash RTGS") {
     if (payload.cashAmount <= 0) {
       errors.cashAmount = "cashAmount must be Greater than 0 !"
     }
@@ -40,8 +39,7 @@ const checkTransaction = (payload, setGoldCashError) => {
     if (!/^\d+(\.\d+)?$/.test(payload.touch)) {
       errors.touch = "Only positive numeric values allowed !";
     }
-  } else {
-
+  } else if (payload.type === "Cash" || payload.type === "Cash RTGS") {
     if (payload.amount <= 0) {
       errors.amount = "cashAmount must be Greater than 0 !"
     }
@@ -85,7 +83,7 @@ const checkReceipt = (payload, setGoldCashError) => {
     else if (!/^\d+(\.\d+)?$/.test(payload.touch)) {
       errors.touch = "Only positive numeric values are allowed !";
     }
-  } else {
+  } else if (payload.type === "Cash" || payload.type === "Cash RTGS") {
     if (!payload.amount) {
       errors.amount = "Amount Value is  Required!"
     }

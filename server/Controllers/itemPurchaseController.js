@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { itemPurchaseToRawGold, deleteItemPurchaseFromRawGold, receiveGoldToStock, setTotalRawGold } = require("../Utils/addRawGoldStock");
 
 const prisma = new PrismaClient();
 
@@ -113,17 +114,17 @@ exports.createEntry = async (req, res) => {
   try {
 
     const {
-
       supplierId,
       advanceGold,
+      advanceTouch,
       itemName,
       grossWeight,
       stoneWeight,
       touch,
       wastageType,
       wastage,
-      goldBalance
-
+      goldBalance,
+      count
     } = req.body;
 
 
@@ -140,22 +141,25 @@ exports.createEntry = async (req, res) => {
 
 
     const calc = calculateValues({
-
       advanceGold,
       grossWeight,
       stoneWeight,
       touch,
       wastageType,
       wastage
-
     });
 
 
-    // ✅ manual override allowed
     const finalGoldBalance =
       goldBalance !== undefined
         ? round3(Number(goldBalance))
         : calc.goldBalance;
+
+
+    let advanceLogId = null;
+    if (calc.advanceGold > 0 && advanceTouch) {
+      advanceLogId = await itemPurchaseToRawGold(calc.advanceGold, Number(advanceTouch));
+    }
 
 
     const entry =
@@ -168,12 +172,14 @@ exports.createEntry = async (req, res) => {
           supplierName: supplier.name,
 
           itemName,
-
+          count: count ? Number(count) : 1,
           wastageType,
 
           moveTo: "item",
 
           advanceGold: calc.advanceGold,
+          advanceTouch: advanceTouch ? Number(advanceTouch) : null,
+          advanceLogId,
 
           grossWeight: calc.grossWeight,
 
@@ -279,6 +285,7 @@ exports.getEntries = async (req, res) => {
         },
 
         include: {
+          receivedGold: true,
           repairStocks: {
             where: { status: "InRepair" }
           }
@@ -363,17 +370,17 @@ exports.updateEntry = async (req, res) => {
 
 
     const {
-
       supplierId,
       advanceGold,
+      advanceTouch,
       itemName,
       grossWeight,
       stoneWeight,
       touch,
       wastageType,
       wastage,
-      goldBalance
-
+      goldBalance,
+      count
     } = req.body;
 
 
@@ -400,6 +407,14 @@ exports.updateEntry = async (req, res) => {
         ? round3(Number(goldBalance))
         : calc.goldBalance;
 
+    let advanceLogId = oldEntry.advanceLogId;
+    if (calc.advanceGold > 0 && advanceTouch) {
+      advanceLogId = await itemPurchaseToRawGold(calc.advanceGold, Number(advanceTouch), advanceLogId);
+    } else if (advanceLogId) {
+      await deleteItemPurchaseFromRawGold(advanceLogId);
+      advanceLogId = null;
+    }
+
 
     const updated =
       await prisma.itemPurchaseEntry.update({
@@ -413,10 +428,12 @@ exports.updateEntry = async (req, res) => {
           supplierName: supplier.name,
 
           itemName,
-
+          count: count ? Number(count) : 1,
           wastageType,
 
           advanceGold: calc.advanceGold,
+          advanceTouch: advanceTouch ? Number(advanceTouch) : null,
+          advanceLogId,
 
           grossWeight: calc.grossWeight,
 
@@ -528,6 +545,10 @@ exports.deleteEntry = async (req, res) => {
     });
 
 
+    if (entry.advanceLogId) {
+      await deleteItemPurchaseFromRawGold(entry.advanceLogId);
+    }
+
     await prisma.itemPurchaseEntry.delete({
       where: { id }
     });
@@ -633,16 +654,24 @@ exports.getItemPurchaseReport = async (req, res) => {
 exports.getItemPurchaseStock = async (req, res) => {
   try {
 
+    const { startDate, endDate } = req.query;
+    const where = {
+      isSold: false,
+      isInRepair: false,
+      netWeight: { gt: 0 },
+    };
+
+    if (startDate && endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt = {
+        gte: new Date(startDate),
+        lte: end,
+      };
+    }
+
     const stock = await prisma.itemPurchaseEntry.findMany({
-      where: {
-        isSold: false,
-        isInRepair: false,
-
-        netWeight: {
-          gt: 0
-        },
-      },
-
+      where,
       orderBy: {
         createdAt: "desc"
       }
@@ -664,23 +693,27 @@ exports.itemPurchaseStock = async (req, res) => {
 
   try {
 
+    const { startDate, endDate } = req.query;
+    const where = {
+      isSold: false,
+      isInRepair: false,
+      netWeight: { gt: 0 },
+    };
+
+    if (startDate && endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt = {
+        gte: new Date(startDate),
+        lte: end,
+      };
+    }
+
     const stock = await prisma.itemPurchaseEntry.findMany({
-
-      where: {
-
-        isSold: false,
-        isInRepair: false,
-
-        netWeight: {
-          gt: 0
-        },
-
-      },
-
+      where,
       orderBy: {
         createdAt: "desc"
       }
-
     });
 
     res.json({ allStock: stock });
@@ -906,4 +939,239 @@ exports.reduceStockWeight = async (req, res) => {
 
   }
 
+};
+exports.returnToSupplier = async (req, res) => {
+  const { id } = req.params;
+  const { count, weight, stoneWeight, reason } = req.body;
+
+  try {
+    const entry = await prisma.itemPurchaseEntry.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!entry) return res.status(404).json({ msg: "Entry not found" });
+
+    const reqCount = Number(count) || 1;
+    const reqGross = Number(weight) || entry.grossWeight;
+    const reqStone = Number(stoneWeight) || 0;
+    const reqNet = reqGross - reqStone;
+
+    const round3 = (n) => Number(Number(n).toFixed(3));
+
+    const getPartPurity = (net, touch, wType, wVal) => {
+      const actual = round3((net * touch) / 100);
+      let final = 0;
+      if (wType === "Touch") final = round3((net * wVal) / 100);
+      else if (wType === "%") final = round3((net + (net * wVal / 100)) * touch / 100);
+      else if (wType === "+") final = round3((net + wVal) * touch / 100);
+      else final = actual;
+      return { actual, final };
+    };
+
+    const returningPurity = getPartPurity(reqNet, entry.touch, entry.wastageType, entry.wastage);
+
+    if (reqCount < entry.count) {
+      const remCount = entry.count - reqCount;
+      const remGross = round3(entry.grossWeight - reqGross);
+      const remStone = round3(entry.stoneWeight - reqStone);
+      const remNet = round3(remGross - remStone);
+      const remPurity = getPartPurity(remNet, entry.touch, entry.wastageType, entry.wastage);
+
+      await prisma.itemPurchaseEntry.update({
+        where: { id: entry.id },
+        data: {
+          count: remCount,
+          grossWeight: remGross,
+          stoneWeight: remStone,
+          netWeight: remNet,
+          actualPure: remPurity.actual,
+          finalPurity: remPurity.final,
+          goldBalance: round3((entry.advanceGold * remCount / entry.count) - remPurity.final)
+        }
+      });
+
+      await prisma.itemPurchaseEntry.create({
+        data: {
+          ...entry,
+          id: undefined,
+          count: reqCount,
+          grossWeight: reqGross,
+          stoneWeight: reqStone,
+          netWeight: reqNet,
+          actualPure: returningPurity.actual,
+          finalPurity: returningPurity.final,
+          goldBalance: 0,
+          moveTo: "returned",
+          source: "SUPPLIER_RETURN",
+          createdAt: undefined
+        }
+      });
+    } else {
+      await prisma.itemPurchaseEntry.update({
+        where: { id: entry.id },
+        data: {
+          moveTo: "returned",
+          source: "SUPPLIER_RETURN"
+        }
+      });
+    }
+
+    if (entry.supplierId) {
+      const supplier = await prisma.supplier.findUnique({ where: { id: entry.supplierId } });
+      await prisma.supplier.update({
+        where: { id: entry.supplierId },
+        data: {
+          openingBalance: round3(Number(supplier.openingBalance) - returningPurity.final)
+        }
+      });
+    }
+
+    res.json({ msg: "Returned successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Failed", error: err.message });
+  }
+};
+
+
+// =============================
+// GOLD RECEIPT MANAGEMENT
+// =============================
+
+exports.receiveGold = async (req, res) => {
+  try {
+    const { itemPurchaseEntryId, weight, touch, date } = req.body;
+    const weightToReceive = Number(weight);
+
+    const id = Number(itemPurchaseEntryId);
+    const entry = await prisma.itemPurchaseEntry.findUnique({
+      where: { id },
+      include: { receivedGold: true }
+    });
+
+    if (!entry) return res.status(404).json({ msg: "Entry not found" });
+
+    // Calculate currently received total
+    const alreadyReceived = entry.receivedGold.reduce((sum, r) => sum + r.weight, 0);
+    const pendingBalance = round3(entry.goldBalance - alreadyReceived);
+
+    if (weightToReceive > pendingBalance + 0.001) {
+      return res.status(400).json({
+        msg: `Cannot receive more than pending balance. Max: ${pendingBalance}g`
+      });
+    }
+
+    const logId = await receiveGoldToStock(weightToReceive, Number(touch), date);
+
+    await prisma.itemPurchaseReceivedGold.create({
+      data: {
+        itemPurchaseEntryId: id,
+        weight: weightToReceive,
+        touch: Number(touch),
+        date: new Date(date),
+        logId,
+      },
+    });
+
+    res.json({ msg: "Gold received recorded" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+exports.updateReceivedGold = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { weight, touch, date } = req.body;
+    const receiptId = Number(id);
+
+    const received = await prisma.itemPurchaseReceivedGold.findUnique({
+      where: { id: receiptId },
+      include: { itemPurchaseEntry: { include: { receivedGold: true } } }
+    });
+
+    if (!received) return res.status(404).json({ msg: "Record not found" });
+
+    const weightToReceive = Number(weight);
+    const actualTouch = Number(touch);
+    const actualDate = new Date(date);
+
+    // Calculate pending balance WITHOUT the current receipt
+    const otherAlreadyReceived = received.itemPurchaseEntry.receivedGold
+      .filter(r => r.id !== receiptId)
+      .reduce((sum, r) => sum + r.weight, 0);
+
+    const pendingBalance = round3(received.itemPurchaseEntry.goldBalance - otherAlreadyReceived);
+
+    if (weightToReceive > pendingBalance + 0.001) {
+      return res.status(400).json({
+        msg: `Cannot receive more than pending balance. Max: ${pendingBalance}g`
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Update Stock Log
+      if (received.logId) {
+        const stock = await tx.rawgoldStock.findFirst({
+          where: { touch: actualTouch },
+        });
+        if (!stock) throw new Error(`No stock found for touch: ${actualTouch}`);
+
+        await tx.rawGoldLogs.update({
+          where: { id: received.logId },
+          data: {
+            rawGoldStockId: stock.id,
+            weight: weightToReceive,
+            touch: actualTouch,
+            purity: (weightToReceive * actualTouch) / 100,
+            date: actualDate,
+          }
+        });
+      }
+
+      await tx.itemPurchaseReceivedGold.update({
+        where: { id: receiptId },
+        data: {
+          weight: weightToReceive,
+          touch: actualTouch,
+          date: actualDate,
+        }
+      });
+    });
+
+    await setTotalRawGold();
+
+    res.json({ msg: "Record updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+exports.deleteReceivedGold = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const receivedId = Number(id);
+
+    const received = await prisma.itemPurchaseReceivedGold.findUnique({
+      where: { id: receivedId },
+    });
+
+    if (!received) return res.status(404).json({ msg: "Record not found" });
+
+    await prisma.$transaction(async (tx) => {
+      if (received.logId) {
+        await tx.rawGoldLogs.delete({ where: { id: received.logId } });
+      }
+      await tx.itemPurchaseReceivedGold.delete({ where: { id: receivedId } });
+    });
+
+    await setTotalRawGold();
+
+    res.json({ msg: "Record deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
 };

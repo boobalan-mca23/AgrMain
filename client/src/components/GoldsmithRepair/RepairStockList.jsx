@@ -41,7 +41,7 @@ const RepairStockList = () => {
   const [dateFrom, setDateFrom] = useState(null);
   const [dateTo, setDateTo] = useState(null);
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("PRODUCT");
+  // const [activeTab, setActiveTab] = useState("PRODUCT");
 
   const [qc, setQc] = useState({
     itemWeight: 0,
@@ -70,7 +70,7 @@ const RepairStockList = () => {
 
   useEffect(() => {
     fetchRepairStock();
-  }, [filterGoldsmith, filterStatus, dateFrom, dateTo, search, activeTab]);
+  }, [filterGoldsmith, filterStatus, dateFrom, dateTo, search]);
 
   const fetchRepairStock = async () => {
     const res = await axios.get(
@@ -102,17 +102,7 @@ const RepairStockList = () => {
   const safeFixed = (v, d = 3) =>
     isNaN(parseFloat(v)) ? "0.000" : parseFloat(v).toFixed(d);
 
-  const filteredRepairs = repairList.filter((r) => {
-
-    if (activeTab === "PRODUCT")
-      return r.productId !== null;
-
-    if (activeTab === "ITEM")
-      return r.itemPurchaseId !== null;
-
-    return true;
-
-  });
+  const filteredRepairs = repairList;
 
   const paginated = filteredRepairs.slice(
     page * rowsPerPage,
@@ -263,32 +253,6 @@ const RepairStockList = () => {
         </div>
       </div>
 
-      <div style={{ marginBottom: 15 }}>
-
-        <Button
-          variant={activeTab === "PRODUCT" ? "contained" : "outlined"}
-          onClick={() => setActiveTab("PRODUCT")}
-          style={{ marginRight: 10 }}
-        >
-          Product Stock
-        </Button>
-
-        <Button
-          variant={activeTab === "ITEM" ? "contained" : "outlined"}
-          onClick={() => setActiveTab("ITEM")}
-          style={{ marginRight: 10 }}
-        >
-          Item Purchase Stock
-        </Button>
-
-        {/* <Button
-          variant={activeTab === "ALL" ? "contained" : "outlined"}
-          onClick={() => setActiveTab("ALL")}
-        >
-          All
-        </Button> */}
-
-      </div>
 
       <div className="stock-table-container">
         <table className="stock-table">
@@ -374,7 +338,7 @@ const RepairStockList = () => {
             ) : (
               <tr>
                 <td colSpan={11} style={{ textAlign: "center", color: "red", padding: "20px" }}>
-                  {activeTab === "PRODUCT" ? "No Product Stock Added" : "No Item Purchase Stock Added"}
+                  No repair records found
                 </td>
               </tr>
             )}

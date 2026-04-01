@@ -197,7 +197,10 @@ export default function BillView() {
   const pureBalance = TotalFWT - totalReceivedPurity;
 
   const currentHallmarkQty = useMemo(() => {
-    return toNumber(currentBill?.hallmarkQty ?? visibleRows.length);
+    if (currentBill?.hallmarkQty !== undefined && currentBill?.hallmarkQty !== null && currentBill?.hallmarkQty !== 0) {
+      return toNumber(currentBill.hallmarkQty);
+    }
+    return visibleRows.reduce((sum, row) => sum + (toNumber(row.count) || 0), 0);
   }, [currentBill, visibleRows]);
 
   const hallmarkAmount = useMemo(() => toNumber(currentHallmarkQty) * toNumber(billHallmark), [currentHallmarkQty, billHallmark]);
@@ -588,7 +591,7 @@ export default function BillView() {
                   size="small"
                   type="text"
                   label="Qty"
-                  value={bill.hallmarkQty}
+                  value={hallmarkQty}
                   disabled
                   sx={{ width: 60 }}
                 />

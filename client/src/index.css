@@ -12,3 +12,16 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Fix MUI DatePicker selected date visibility */
+.MuiPickersDay-root.Mui-selected {
+  color: #ffffff !important;
+}
+
+.MuiPickersDay-root.Mui-selected:hover {
+  color: #ffffff !important;
+}
+
+.MuiPickersDay-today {
+  border: 1px solid #1976d2 !important;
+}

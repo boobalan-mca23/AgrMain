@@ -1,25 +1,25 @@
- const validateField = (value, name) => {
-    if (!value) return name;
-    if (value < 0) return "negative value";
-    if (!/^\d*\.?\d*$/.test(value)) return `valid ${name}`;
-    return null;
-  };
-  const validatehallmark=(value,name)=>{
-  
-    if (value < 0) return "negative value";
-    if (!/^\d*\.?\d*$/.test(value)) return `valid ${name}`;
-    return null;
-  }
+const validateField = (value, name) => {
+  if (!value) return name;
+  if (value < 0) return "negative value";
+  if (!/^\d*\.?\d*$/.test(value)) return `valid ${name}`;
+  return null;
+};
+const validatehallmark = (value, name) => {
+
+  if (value < 0) return "negative value";
+  if (!/^\d*\.?\d*$/.test(value)) return `valid ${name}`;
+  return null;
+}
 
 const receiptValidation = (receipt, setReceiptErrors) => {
-    // helper function
+  // helper function
 
-    const errors = receipt.map((item) => {
+  const errors = receipt.map((item) => {
     const rowErrors = {};
     if (!item.date) rowErrors.date = "date";
     if (!item.type) rowErrors.type = "type";
 
-    if (item.type === "Cash") {
+    if (item.type === "Cash" || item.type === "Cash RTGS") {
       ["goldRate", "amount"].forEach((field) => {
         const err = validateField(item[field], field);
         if (err) rowErrors[field] = err;
@@ -40,22 +40,22 @@ const receiptValidation = (receipt, setReceiptErrors) => {
   return errors.every((err) => Object.keys(err).length === 0);
 };
 
- const receiptVoucherHallMark=(receipt,setHallMarkErrors)=>{
-         const errors = receipt.map((item) => {
-         const rowErrors = {};
+const receiptVoucherHallMark = (receipt, setHallMarkErrors) => {
+  const errors = receipt.map((item) => {
+    const rowErrors = {};
 
-      ["hallMark"].forEach((field) => {
-        const err = validatehallmark(item[field], field);
-        if (err) rowErrors[field] = err;
-      });
-    
+    ["hallMark"].forEach((field) => {
+      const err = validatehallmark(item[field], field);
+      if (err) rowErrors[field] = err;
+    });
+
 
     return rowErrors;
   });
   setHallMarkErrors(errors);
   return errors.every((err) => Object.keys(err).length === 0);
- }
+}
 export {
-   receiptValidation,
-   receiptVoucherHallMark
+  receiptValidation,
+  receiptVoucherHallMark
 };

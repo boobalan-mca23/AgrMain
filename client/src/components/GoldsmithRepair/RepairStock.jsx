@@ -18,10 +18,11 @@ import "react-toastify/dist/ReactToastify.css";
 
 const ProductStock = () => {
 
-  const [tab, setTab] = useState(0);
+  // const [tab, setTab] = useState(0);
 
   const [productStock, setProductStock] = useState([]);
   const [itemPurchaseStock, setItemPurchaseStock] = useState([]);
+  const [search, setSearch] = useState("");
 
   const [goldsmiths, setGoldsmiths] = useState([]);
 
@@ -93,9 +94,20 @@ const ProductStock = () => {
     setGoldsmiths(res.data || []);
   };
 
-  const currentStock = tab === 0 ? productStock : itemPurchaseStock;
+  const unifiedStock = [
+    ...(productStock || []).map(p => ({ ...p, stockType: "PRODUCT", displayWt: p.itemWeight })),
+    ...(itemPurchaseStock || []).map(p => ({ ...p, stockType: "ITEM_PURCHASE", displayWt: p.grossWeight, wastageValue: p.wastage }))
+  ].filter(p => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      p.itemName?.toLowerCase().includes(s) ||
+      p.displayWt?.toString().includes(s) ||
+      p.touch?.toString().includes(s)
+    );
+  }).sort((a, b) => b.id - a.id);
 
-  const paginated = currentStock.slice(
+  const paginated = unifiedStock.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -133,7 +145,7 @@ const ProductStock = () => {
 
     await axios.post(`${BACKEND_SERVER_URL}/api/repair/send`, {
 
-      source: tab === 0 ? "GOLDSMITH" : "ITEM_PURCHASE",
+      source: selectedProduct.stockType === "PRODUCT" ? "GOLDSMITH" : "ITEM_PURCHASE",
 
       productId: selectedProduct.id,
 
@@ -169,94 +181,82 @@ const ProductStock = () => {
     <div className="stock-container">
       <ToastContainer position="top-right" autoClose={3000} />
 
-      <h2 className="stock-heading">
-        Stock Management – Repair Module
-      </h2>
-
-      <div className="stock-tabs-wrapper">
-
-        <Tabs
-          value={tab}
-          onChange={(e, v) => {
-            setTab(v);
+      <div style={{ marginBottom: "16px" }}>
+        <h2 className="stock-heading" style={{ margin: "0 0 12px 0" }}>
+          Stock Management – Repair Module
+        </h2>
+        <TextField
+          size="small"
+          label="Search (Item / Item Wt / Touch)"
+          variant="outlined"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
             setPage(0);
           }}
-          variant="fullWidth"
-          TabIndicatorProps={{ style: { display: "none" } }}
-        >
-
-          <Tab
-            label="Product Stock"
-            className={tab === 0 ? "stock-tab active-tab" : "stock-tab"}
-          />
-
-          <Tab
-            label="Item Purchase Stock"
-            className={tab === 1 ? "stock-tab active-tab" : "stock-tab"}
-          />
-
-        </Tabs>
-
+          sx={{ width: "350px" }}
+        />
       </div>
 
+
       <div className="stock-table-container">        <table className="stock-table">
-          <thead>
-            <tr>
-              <th>S.No</th>
-              <th>Item Name</th>
-              <th>Item Wt (g)</th>
-              <th>Stone Wt (g)</th>
-              <th>Net Wt (g)</th>
-              <th>Touch</th>
-              <th>Wastage Val</th>
-              <th>Wastage Pure (g)</th>
-              <th>Final Purity (g)</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.length > 0 ? (
-              paginated.map((p, i) => (
-                <tr key={p.id}>
-                  <td>{page * rowsPerPage + i + 1}</td>
-                  <td>{p.itemName}</td>
-                  <td>{safeFixed(p.itemWeight || p.grossWeight)}</td>
-                  <td>{safeFixed(p.stoneWeight)}</td>
-                  <td>{safeFixed(p.netWeight)}</td>
-                  <td>{p.touch}</td>
-                  <td>{p.wastageValue || p.wastage} ({p.wastageType})</td>
-                  <td>{safeFixed(p.wastagePure)}</td>
-                  <td style={{ fontWeight: "bold" }}>
-                    {safeFixed(p.finalPurity)}
-                  </td>
-                  <td>
-                    {p.isActive !== false ? (
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => openSendPopup(p)}
-                      >
-                        Send to Repair
-                      </Button>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={10} style={{ textAlign: "center", color: "red", padding: "20px" }}>
-                  {tab === 0 ? "No product data found" : "No item purchase stock data"}
+        <thead>
+          <tr>
+            <th>S.No</th>
+            <th>Item Name</th>
+            <th>Item Wt (g)</th>
+            <th>Stone Wt (g)</th>
+            <th>Net Wt (g)</th>
+            <th>Touch</th>
+            <th>Wastage Val</th>
+            <th>Wastage Pure (g)</th>
+            <th>Final Purity (g)</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {paginated.length > 0 ? (
+            paginated.map((p, i) => (
+              <tr key={p.stockType + "_" + p.id}>
+                <td>{page * rowsPerPage + i + 1}</td>
+                <td>{p.itemName}</td>
+                <td>{safeFixed(p.displayWt)}</td>
+                <td>{safeFixed(p.stoneWeight)}</td>
+                <td>{safeFixed(p.netWeight)}</td>
+                <td>{p.touch}</td>
+                <td>{p.wastageValue} ({p.wastageType})</td>
+                <td>{safeFixed(p.wastagePure)}</td>
+                <td style={{ fontWeight: "bold" }}>
+                  {safeFixed(p.finalPurity)}
+                </td>
+                <td>
+                  {p.isActive !== false ? (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => openSendPopup(p)}
+                    >
+                      Repair
+                    </Button>
+                  ) : (
+                    "-"
+                  )}
                 </td>
               </tr>
-            )}
-          </tbody>
-        </table>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={10} style={{ textAlign: "center", color: "red", padding: "20px" }}>
+                No stock data found
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
 
         <TablePagination
           component="div"
-          count={currentStock.length}
+          count={unifiedStock.length}
           page={page}
           rowsPerPage={rowsPerPage}
           onPageChange={(e, p) => setPage(p)}
@@ -345,7 +345,7 @@ const ProductStock = () => {
                       // }
                       setRepairQC({ ...repairQC, count: e.target.value });
                     }}
-                    disabled={tab === 1}
+                    disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
                     sx={{ width: '100px' }}
                   />
                 </td>

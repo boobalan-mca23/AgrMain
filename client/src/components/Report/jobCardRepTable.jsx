@@ -165,6 +165,40 @@ const JobCardRepTable = forwardRef((props, ref) => {
           </tr>
         </tfoot>
       </table>
+
+      {props.repairs && props.repairs.length > 0 && (
+        <div style={{ marginTop: "40px" }}>
+          <h3 style={{ textAlign: "center", marginBottom: "10px" }}>Repaired Products</h3>
+          <table className="reportTable">
+            <thead id="reportHead">
+              <tr className="reportThead">
+                <th>S.No</th>
+                <th>Sent Date</th>
+                <th>Item Name</th>
+                <th>Gross Wt</th>
+                <th>Net Wt</th>
+                <th>Purity</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody className="reportTbody">
+              {props.repairs.map((repair, index) => (
+                <tr key={repair.id}>
+                  <td>{index + 1}</td>
+                  <td>{new Date(repair.sentDate).toLocaleDateString("en-GB")}</td>
+                  <td>{repair.itemName || "-"}</td>
+                  <td>{(Number(repair.grossWeight) || 0).toFixed(3)}</td>
+                  <td>{(Number(repair.netWeight) || 0).toFixed(3)}</td>
+                  <td>{(Number(repair.purity) || 0).toFixed(3)}</td>
+                  <td>{repair.reason || "-"}</td>
+                  <td>{repair.status || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>)
 }
 )

@@ -575,7 +575,32 @@ const jobCardFilter = async (req, res) => {
       },
     });
 
-    res.json(filterJobCards);
+    let repairWhereCondition = {};
+    if (id && id !== "null") {
+      repairWhereCondition.goldsmithId = parseInt(id);
+    }
+    if (fromDate && toDate && fromDate !== "null" && toDate !== "null") {
+      const parsedFromDate = new Date(formatDate(fromDate));
+      const parsedToDate = new Date(formatDate(toDate));
+      parsedToDate.setHours(23, 59, 59, 999);
+      repairWhereCondition.sentDate = {
+        gte: parsedFromDate,
+        lte: parsedToDate,
+      };
+    }
+
+    const filterRepairs = await prisma.repairStock.findMany({
+      where: repairWhereCondition,
+      include: {
+        bill: true,
+        orderItem: true,
+      }
+    });
+
+    res.json({
+      jobCards: filterJobCards,
+      repairs: filterRepairs
+    });
   } catch (error) {
     console.error("Error filtering job cards:", error);
     res.status(500).json({ error: "Something went wrong" });

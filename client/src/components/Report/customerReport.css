@@ -93,21 +93,14 @@
  width: 100%;
  border-collapse:collapse ;
 }
-.orderTableTr tr th{
+.orderTableTr tr th, .receiveTableTr tr th, .repairTableTr tr th, .returnTableTr tr th {
   border: 1px solid #0b0a0a;
   padding: 6px;
   text-align:center;
    background: #427fdb;;
    color: white;
 }
-.receiveTableTr tr th{
-  border: 1px solid #0b0a0a;
-  padding: 6px;
-  text-align:center;
-  background: #427fdb;
-   color: white;
-}
-.orderTableTbody,.receiveTableBody tr td{
+.orderTableTbody tr td, .receiveTableBody tr td, .repairTableBody tr td, .returnTableBody tr td {
   border: 1px solid #0b0a0a;
   padding: 6px;
   text-align:center;

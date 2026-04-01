@@ -12,6 +12,11 @@ body {
   color: #202124
 }
 
+/* Fix MUI DatePicker selected date visibility */
+.MuiPickersDay-root.Mui-selected {
+  color: #fff !important;
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;

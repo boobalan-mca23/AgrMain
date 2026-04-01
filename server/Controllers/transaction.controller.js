@@ -25,18 +25,13 @@ const createTransaction = async (req, res) => {
 const getAllTransactions = async (req, res) => {
   try {
     const { customerId } = req.params;
-    console.log('customerid',customerId)
-    
     if (!customerId) {
       return res.status(400).json({ error: "Customer ID is required" });
     }
-
     const transactions = await prisma.transaction.findMany({
       where: { customerId: parseInt(customerId) },
       orderBy: { id: "desc" },
     });
-     console.log(transactions)
-
     res.status(200).json(transactions);
   } catch (error) {
     console.error("Error fetching transactions:", error);
@@ -44,7 +39,45 @@ const getAllTransactions = async (req, res) => {
   }
 };
 
+const updateTransaction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, type, amount, gold, touch, purity, customerId, goldRate } = req.body;
+
+    if (!id || !date || !type || !customerId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    await directTouch(touch);
+    const updatedTransaction = await transToRawGold.updateTransactionInRawGold(
+      id, date, type, amount, gold, touch, purity, customerId, goldRate
+    );
+
+    res.status(200).json(updatedTransaction);
+  } catch (error) {
+    console.error("Error updating transaction:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const deleteTransaction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: "Transaction ID is required" });
+    }
+
+    await transToRawGold.deleteTransactionFromRawGold(id);
+    res.status(200).json({ message: "Transaction deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting transaction:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 module.exports = {
   createTransaction,
   getAllTransactions,
+  updateTransaction,
+  deleteTransaction,
 };

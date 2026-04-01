@@ -1038,7 +1038,7 @@ const CustomerReturn = () => {
                       }}
                       error={!repairQC.count || Number(repairQC.count) <= 0}
                       helperText={(!repairQC.count || Number(repairQC.count) <= 0) ? "Required" : ""}
-                      disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
+                      // disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
                       sx={{ width: '100px' }}
                     />
                 </td>
@@ -1283,7 +1283,7 @@ const CustomerReturn = () => {
                       }}
                       error={!returnQC.count || Number(returnQC.count) <= 0}
                       helperText={(!returnQC.count || Number(returnQC.count) <= 0) ? "Required" : ""}
-                      disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
+                      // disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
                       sx={{ width: '100px' }}
                     />
                 </td>

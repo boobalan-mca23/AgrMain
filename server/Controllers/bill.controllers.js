@@ -147,43 +147,59 @@ const createBill = async (req, res) => {
             });
 
             if (itemPurchaseEntry) {
-              const netWeight = item.netWeight ? parseFloat(item.netWeight) : itemPurchaseEntry.netWeight;
-              const touch = itemPurchaseEntry.touch;
-              const wastage = itemPurchaseEntry.wastage;
-              const wastageType = itemPurchaseEntry.wastageType;
+              const billedCount = item.count ? parseInt(item.count) : 0;
+              const billedGross = item.weight ? parseFloat(item.weight) : 0;
+              const billedStone = item.stoneWeight ? parseFloat(item.stoneWeight) : 0;
+              const billedNet = billedGross - billedStone;
 
-              const actualPure = (netWeight * touch) / 100;
-              let finalPurity = 0;
+              const remainCount = (itemPurchaseEntry.count || 1) - billedCount;
+              const remainGross = itemPurchaseEntry.grossWeight - billedGross;
+              const round3 = (n) => Number(Number(n).toFixed(3));
 
-              if (wastageType === "%") {
-                const wastageWeight = (netWeight * wastage) / 100;
-                finalPurity = ((netWeight + wastageWeight) * touch) / 100;
-              } else if (wastageType === "Touch") {
-                finalPurity = (netWeight * wastage) / 100;
-              } else if (wastageType === "+") {
-                finalPurity = ((netWeight + wastage) * touch) / 100;
+              if (remainGross > 0.05) {
+                // PARTIAL SALE - Decrement original entry
+                const remainStone = round3(itemPurchaseEntry.stoneWeight - billedStone);
+                const remainNet = round3(remainGross - remainStone);
+
+                const getPartPurity = (net, touch, wType, wVal) => {
+                  const actual = round3((net * touch) / 100);
+                  let final = 0;
+                  if (wType === "Touch") final = round3((net * wVal) / 100);
+                  else if (wType === "%") final = round3((net + (net * wVal / 100)) * touch / 100);
+                  else if (wType === "+") final = round3((net + wVal) * touch / 100);
+                  else final = actual;
+                  return { actual, final };
+                };
+
+                const remPurity = getPartPurity(remainNet, itemPurchaseEntry.touch, itemPurchaseEntry.wastageType, itemPurchaseEntry.wastage);
+                const shareOfAdvance = round3((itemPurchaseEntry.advanceGold || 0) * (remainCount / (itemPurchaseEntry.count || 1)));
+
+                await tx.itemPurchaseEntry.update({
+                  where: { id: itemPurchaseEntry.id },
+                  data: {
+                    count: remainCount > 0 ? remainCount : (itemPurchaseEntry.count || 1),
+                    grossWeight: remainGross,
+                    stoneWeight: remainStone,
+                    netWeight: remainNet,
+                    actualPure: remPurity.actual,
+                    wastagePure: round3(remPurity.final - remPurity.actual),
+                    finalPurity: remPurity.final,
+                    advanceGold: shareOfAdvance,
+                    goldBalance: round3(shareOfAdvance - remPurity.final),
+                    isSold: false,
+                  },
+                });
               } else {
-                finalPurity = actualPure;
+                // FULL SALE
+                await tx.itemPurchaseEntry.update({
+                  where: { id: parseInt(item.stockId) },
+                  data: {
+                    isSold: true,
+                    soldAt: new Date(),
+                    moveTo: "billed",
+                  },
+                });
               }
-
-              const wastagePure = finalPurity - actualPure;
-              const goldBalance = (itemPurchaseEntry.advanceGold || 0) - finalPurity;
-
-              await tx.itemPurchaseEntry.update({
-                where: { id: parseInt(item.stockId) },
-                data: {
-                  grossWeight: item.weight ? parseFloat(item.weight) : itemPurchaseEntry.grossWeight,
-                  stoneWeight: item.stoneWeight ? parseFloat(item.stoneWeight) : itemPurchaseEntry.stoneWeight,
-                  netWeight: netWeight,
-                  actualPure: actualPure,
-                  wastagePure: wastagePure,
-                  finalPurity: finalPurity,
-                  goldBalance: goldBalance,
-                  isSold: true,
-                  soldAt: new Date(),
-                  moveTo: "billed",
-                },
-              });
             }
             continue;
           }
@@ -523,7 +539,19 @@ const getBillById = async (req, res) => {
 
 const geAllBill = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+    const where = {};
+    if (startDate && endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      where.date = {
+        gte: new Date(startDate),
+        lte: end,
+      };
+    }
+
     const allBills = await prisma.bill.findMany({
+      where,
       include: {
         orders: true,
         billReceive: true,
@@ -626,6 +654,31 @@ const customerReport = async (req, res) => {
 
       const allReceive = [...billReceived, ...receipt];
 
+      const allRepairs = await prisma.repairStock.findMany({
+        where: {
+          bill: { customer_id: parseInt(customerId) },
+          ...(fromDate && toDate ? {
+            sentDate: {
+              gte: new Date(fromDate),
+              lte: new Date(toDate + "T23:59:59.999")
+            }
+          } : {})
+        },
+        include: { bill: true, orderItem: true }
+      });
+
+      const allReturns = await prisma.returnLogs.findMany({
+        where: {
+          bill: { customer_id: parseInt(customerId) },
+          ...(fromDate && toDate ? {
+            createdAt: {
+              gte: new Date(fromDate),
+              lte: new Date(toDate + "T23:59:59.999")
+            }
+          } : {})
+        },
+        include: { bill: true, orderItem: true }
+      });
 
       combinedData = [
         ...allBill.map((bill) => ({
@@ -639,8 +692,15 @@ const customerReport = async (req, res) => {
         ...allTransaction.map((tran) => ({
           type: "transaction",
           info: tran
+        })),
+        ...allRepairs.map((repair) => ({
+          type: "repair",
+          info: repair
+        })),
+        ...allReturns.map((ret) => ({
+          type: "return",
+          info: ret
         }))
-
       ];
 
       // get overAll balance

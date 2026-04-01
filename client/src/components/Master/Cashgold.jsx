@@ -3,7 +3,9 @@ import axios from "axios";
 import "./Cashgold.css";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
-import { Button, TablePagination } from "@mui/material";
+import { Button, TablePagination, IconButton } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -69,18 +71,18 @@ function Cashgold() {
   };
 
   useEffect(() => {
-    if (formData.type === "Cash") {
+    if (formData.type === "Cash" || formData.type === "Cash RTGS") {
       const cashAmount = parseFloat(formData.cashAmount);
       const rate = parseFloat(goldRate);
       const touch = parseFloat(formData.touch);
       let calculatedPurity = "";
       let calculatedPureGold = "";
 
-      if (!isNaN(cashAmount) && cashAmount > 0 && !isNaN(rate) && rate > 0) {
-        calculatedPurity = (cashAmount / rate).toFixed(3);
-        if (!isNaN(touch) && touch > 0) {
-          calculatedPureGold = ((parseFloat(calculatedPurity) / touch) * 100).toFixed(3);
-        }
+      if (!isNaN(cashAmount) && cashAmount > 0 && !isNaN(rate) && rate > 0 && !isNaN(touch) && touch > 0) {
+        // Fine gold weight
+        calculatedPurity = ((cashAmount / rate) * (touch / 100)).toFixed(3);
+        // Pure gold (Physical weight)
+        calculatedPureGold = ((parseFloat(calculatedPurity) / touch) * 100).toFixed(3);
       }
 
       setFormData((prevFormData) => ({
@@ -107,12 +109,12 @@ function Cashgold() {
       date: formData.date,
       type: formData.type,
       cashAmount:
-        formData.type === "Cash" ? parseFloat(formData.cashAmount) : null,
+        (formData.type === "Cash" || formData.type === "Cash RTGS") ? parseFloat(formData.cashAmount) : null,
       goldValue:
         formData.type === "Gold" ? parseFloat(formData.goldValue) : null,
       touch: parseFloat(formData.touch) || null,
       purity: parseFloat(calculatedPurity),
-      goldRate: formData.type === "Cash" ? parseFloat(goldRate) : null,
+      goldRate: (formData.type === "Cash" || formData.type === "Cash RTGS") ? parseFloat(goldRate) : null,
     };
     if (payload.type === "Select") {
       return toast.warn("Please Select Gold or Cash Type");
@@ -163,10 +165,21 @@ function Cashgold() {
       goldValue: entry.goldValue || "",
       touch: entry.touch || "",
       purity: entry.purity || "",
-      pureGold: entry.type === "Cash" && entry.touch && entry.purity ? ((parseFloat(entry.purity) / parseFloat(entry.touch)) * 100).toFixed(3) : "",
+      pureGold: (entry.type === "Cash" || entry.type === "Cash RTGS") && entry.touch && entry.purity ? ((parseFloat(entry.purity) / parseFloat(entry.touch)) * 100).toFixed(3) : "",
     });
     setGoldRate(entry.goldRate || 0);
     setShowFormPopup(true);
+  };
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this value?")) return;
+    try {
+      await axios.delete(`${BACKEND_SERVER_URL}/api/entries/${id}`);
+      setEntries((prev) => prev.filter((entry) => entry.id !== id));
+      toast.success("Entry deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast.error("Failed to delete entry.");
+    }
   };
 
   const calculateTotalPurity = () => {
@@ -268,11 +281,12 @@ function Cashgold() {
                 >
                   <option value="Select">Select</option>
                   <option value="Cash">Cash</option>
+                  <option value="Cash RTGS">Cash RTGS</option>
                   <option value="Gold">Gold</option>
                 </select>
               </div>
 
-              {formData.type === "Cash" && (
+              {(formData.type === "Cash" || formData.type === "Cash RTGS") && (
                 <>
                   <div className="form-group">
                     <label>Cash Amount:</label>
@@ -467,7 +481,7 @@ function Cashgold() {
               <th>Rate</th>
               <th>Purity (g)</th>
               <th>Pure Gold (g)</th>
-              {/* <th>Action</th> */}
+              <th style={{ textAlign: "center" }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -479,7 +493,7 @@ function Cashgold() {
                     <td>{new Date(entry.date).toLocaleDateString("en-IN")}</td>
                     <td>{entry.type}</td>
                     <td>
-                      {entry.type === "Cash"
+                      {(entry.type === "Cash" || entry.type === "Cash RTGS")
                         ? `₹${parseFloat(entry.cashAmount).toFixed(2)}`
                         : `${parseFloat(entry.goldValue).toFixed(3)}g`}
                     </td>
@@ -487,15 +501,23 @@ function Cashgold() {
                       {entry.touch ? `${entry.touch}%` : "-"}
                     </td>
                     <td>
-                      {entry.type === "Cash"
+                      {(entry.type === "Cash" || entry.type === "Cash RTGS")
                         ? `₹${parseFloat(entry.goldRate).toFixed(2)}/g`
                         : `-`}
                     </td>
                     <td>{parseFloat(entry.purity).toFixed(3)}</td>
-                    <td>
-                      {entry.type === "Cash" && entry.touch && entry.purity
+                     <td>
+                      {(entry.type === "Cash" || entry.type === "Cash RTGS") && entry.touch && entry.purity
                         ? ((parseFloat(entry.purity) / parseFloat(entry.touch)) * 100).toFixed(3)
                         : "-"}
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <IconButton onClick={() => handleEdit(entry)} style={{ color: "#0074d9" }}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDelete(entry.id)} style={{ color: "red" }}>
+                        <DeleteIcon />
+                      </IconButton>
                     </td>
                   </tr>
                 ))}
@@ -507,12 +529,12 @@ function Cashgold() {
                   <td>
                     <strong>{calculateTotalPurity()}g</strong>
                   </td>
-                  <td colSpan="2"></td>
+                  <td colSpan="3"></td>
                 </tr>
               </>
             ) : (
               <tr>
-                <td colSpan="9" style={{ textAlign: "center" }}>No details found</td>
+                <td colSpan="10" style={{ textAlign: "center" }}>No details found</td>
               </tr>
             )}
           </tbody>

@@ -34,7 +34,7 @@ function JobCardDetails() {
       itemWeight: "",
       count: "",
       touch: "",
-      deduction: [],
+      deduction: [{ type: "Stone", weight: "" }],
       netWeight: "",
       wastageType: "%",
       wastageValue: "",

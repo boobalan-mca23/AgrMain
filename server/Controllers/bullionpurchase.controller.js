@@ -59,6 +59,47 @@ exports.updateGivenDetailsOnly = async (req, res) => {
   }
 };
 
+exports.updateBullionPurchase = async (req, res) => {
+  const { id } = req.params;
+  const { bullionId, grams, rate, amount } = req.body;
+
+  try {
+    const updatedPurchase = await prisma.bullionPurchase.update({
+      where: { id: parseInt(id) },
+      data: {
+        bullionId: parseInt(bullionId),
+        grams: parseFloat(grams),
+        rate: parseFloat(rate),
+        amount: parseFloat(amount),
+        // Note: Balance is calculated on frontend, but we store it too.
+        // If we change grams, balance should ideally be updated.
+        // However, the current schema stores 'balance'.
+        // Let's calculate new balance: grams - sum(givenDetails grams)
+        // For simplicity, let's just update the main fields. 
+        // Logic for balance might be better handled by a recalculation or just updating it from body.
+      },
+    });
+
+    // Recalculate balance
+    const totalGiven = await prisma.givenDetail.aggregate({
+      where: { purchaseId: parseInt(id) },
+      _sum: { grams: true }
+    });
+    
+    const newBalance = parseFloat(grams) - (totalGiven._sum.grams || 0);
+    
+    await prisma.bullionPurchase.update({
+      where: { id: parseInt(id) },
+      data: { balance: newBalance }
+    });
+
+    res.json(updatedPurchase);
+  } catch (error) {
+    console.error("Update Bullion Purchase Error:", error);
+    res.status(500).json({ error: "Failed to update bullion purchase" });
+  }
+};
+
 exports.getAllBullionPurchases = async (req, res) => {
   try {
     const purchases = await prisma.bullionPurchase.findMany({
