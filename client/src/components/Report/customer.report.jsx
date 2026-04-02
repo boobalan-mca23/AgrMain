@@ -92,9 +92,11 @@ const CustReport = () => {
   const currentPageTotal = paginatedData.reduce(
     (acc, bill) => {
       if (bill.type === "bill") {
-        acc.billAmount += bill.info.billAmount
+        acc.billAmount += Number(bill.info.billAmount) || 0;
+      } else if (bill.type === "return") {
+        acc.billReceive += Number(bill.info.weight) || 0;
       } else {
-        acc.billReceive += bill.info.purity
+        acc.billReceive += Number(bill.info.purity) || 0;
       }
       return acc;
     },
@@ -258,7 +260,7 @@ const CustReport = () => {
                     <td>{page * rowsPerPage + index + 1}</td>
                     <td>{bill.type === "bill" ? bill.info.id : "-"}</td>
                     <td>
-                      {new Date(bill.info.createdAt).toLocaleDateString(
+                      {new Date(bill.info.createdAt || bill.info.sentDate).toLocaleDateString(
                         "en-GB"
                       )}
                     </td>
@@ -301,6 +303,58 @@ const CustReport = () => {
                         ) : (
                           <p>No orders to this table</p>
                         )
+                      ) : bill.type === "repair" ? (
+                        <table className="receiveTable">
+                          <thead className="repairTableTr">
+                            <tr>
+                              <th>Entry Type</th>
+                              <th>Date</th>
+                              <th>Item Name</th>
+                              <th>Gross Weight</th>
+                              <th>Net Weight</th>
+                              <th>Purity</th>
+                              <th>Reason</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="repairTableBody">
+                            <tr>
+                              <td>Repair</td>
+                              <td>{new Date(bill.info.sentDate).toLocaleDateString("en-GB")}</td>
+                              <td>{bill.info.itemName}</td>
+                              <td>{(Number(bill.info.grossWeight) || 0).toFixed(3)}</td>
+                              <td>{(Number(bill.info.netWeight) || 0).toFixed(3)}</td>
+                              <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                              <td>{bill.info.reason || "-"}</td>
+                              <td>{bill.info.status || "-"}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      ) : bill.type === "return" ? (
+                        <table className="receiveTable">
+                          <thead className="returnTableTr">
+                            <tr>
+                              <th>Entry Type</th>
+                              <th>Date</th>
+                              <th>Product Name</th>
+                              <th>Weight</th>
+                              <th>Count</th>
+                              <th>Reason</th>
+                              <th>Source</th>
+                            </tr>
+                          </thead>
+                          <tbody className="returnTableBody">
+                            <tr>
+                              <td>Return</td>
+                              <td>{new Date(bill.info.createdAt).toLocaleDateString("en-GB")}</td>
+                              <td>{bill.info.productName}</td>
+                              <td>{(Number(bill.info.weight) || 0).toFixed(3)}</td>
+                              <td>{bill.info.count}</td>
+                              <td>{bill.info.reason || "-"}</td>
+                              <td>{bill.info.source || "-"}</td>
+                            </tr>
+                          </tbody>
+                        </table>
                       ) : (
                         <table className="receiveTable">
                           <thead className="receiveTableTr">
@@ -350,6 +404,11 @@ const CustReport = () => {
                       <>
                         <td>-</td>
                         <td>{(Number(bill.info.billAmount) || 0).toFixed(3)}</td>
+                      </>
+                    ) : bill.type === "return" ? (
+                      <>
+                        <td>{(Number(bill.info.weight) || 0).toFixed(3)}</td>
+                        <td>-</td>
                       </>
                     ) : (
                       <>

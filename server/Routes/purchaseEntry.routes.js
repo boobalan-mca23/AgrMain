@@ -8,5 +8,8 @@ router.get("/", controller.getEntries);
 router.get("/:id", controller.getEntryById);
 router.put("/:id", controller.updateEntry);
 router.delete("/:id", controller.deleteEntry);
+router.post("/receive-gold", controller.receiveGold);
+router.put("/receive-gold/:id", controller.updateReceivedGold);
+router.delete("/receive-gold/:id", controller.deleteReceivedGold);
 
 module.exports = router;

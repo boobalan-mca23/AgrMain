@@ -13,8 +13,11 @@ import {
   Paper,
   Button,
   Box,
-  TablePagination
+  TablePagination,
+  IconButton
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useSearchParams } from "react-router-dom";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
@@ -54,6 +57,7 @@ const Customertrans = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [editId, setEditId] = useState(null);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -91,20 +95,18 @@ const Customertrans = () => {
     const { name, value } = e.target;
     const updatedTransaction = { ...newTransaction, [name]: value };
 
-    if (updatedTransaction.type === "Cash") {
+    if (updatedTransaction.type === "Cash" || updatedTransaction.type === "Cash RTGS") {
       if (name === "amount") updatedTransaction.value = value;
 
       const cash = parseFloat(updatedTransaction.amount);
       const rate = parseFloat(goldRate);
       const touch = parseFloat(updatedTransaction.touch);
 
-      if (!isNaN(cash) && !isNaN(rate) && rate > 0) {
-        updatedTransaction.purity = (cash / rate).toFixed(3);
-        if (!isNaN(touch) && touch > 0) {
-          updatedTransaction.pureGold = ((parseFloat(updatedTransaction.purity) / touch) * 100).toFixed(3);
-        } else {
-          updatedTransaction.pureGold = "";
-        }
+      if (!isNaN(cash) && !isNaN(rate) && rate > 0 && !isNaN(touch) && touch > 0) {
+        // Fine gold weight
+        updatedTransaction.purity = ((cash / rate) * (touch / 100)).toFixed(3);
+        // Pure gold (Physical weight)
+        updatedTransaction.pureGold = ((parseFloat(updatedTransaction.purity) / touch) * 100).toFixed(3);
       } else {
         updatedTransaction.purity = "";
         updatedTransaction.pureGold = "";
@@ -137,7 +139,7 @@ const Customertrans = () => {
       if (!newTransaction.date || newTransaction.type === "Select") {
         throw new Error("Date and transaction type are required");
       }
-      if (newTransaction.type === "Cash") {
+      if (newTransaction.type === "Cash" || newTransaction.type === "Cash RTGS") {
         if (!newTransaction.amount || !goldRate || !newTransaction.touch) {
           throw new Error("Cash value, goldRate, and touch are required");
         }
@@ -160,26 +162,65 @@ const Customertrans = () => {
         gold: parseFloat(newTransaction.gold) || 0,
         purity: parseFloat(newTransaction.purity),
         customerId: parseInt(customerId),
-        goldRate: newTransaction.type === "Cash" ? parseFloat(goldRate) : 0,
+        goldRate: (newTransaction.type === "Cash" || newTransaction.type === "Cash RTGS") ? parseFloat(goldRate) : 0,
         touch: parseFloat(newTransaction.touch) || 0,
       };
       let isTrue = checkTransaction(transactionData, setGoldCashError);
       if (Object.keys(isTrue).length === 0) {
-        const response = await axios.post(
-          `${BACKEND_SERVER_URL}/api/transactions`,
-          transactionData
-        );
-
-        setTransactions([response.data, ...transactions]);
+        if (editId) {
+          const response = await axios.put(
+            `${BACKEND_SERVER_URL}/api/transactions/${editId}`,
+            transactionData
+          );
+          setTransactions(transactions.map(t => t.id === parseInt(editId) ? response.data : t));
+          toast.success("Transaction updated successfully!");
+        } else {
+          const response = await axios.post(
+            `${BACKEND_SERVER_URL}/api/transactions`,
+            transactionData
+          );
+          setTransactions([response.data, ...transactions]);
+          toast.success("Transaction added successfully!");
+        }
         resetForm();
         setShowPopup(false);
-        toast.success("Transaction added successfully!");
       }
     } catch (error) {
-      console.error("Error adding transaction:", error);
-      toast.error(error.message || "Error adding transaction");
+      console.error("Error saving transaction:", error);
+      toast.error(error.message || "Error saving transaction");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleEdit = (transaction) => {
+    setEditId(transaction.id);
+    setNewTransaction({
+      date: dayjs(transaction.date).format("YYYY-MM-DD"),
+      type: transaction.type,
+      amount: transaction.amount || "",
+      gold: transaction.gold || "",
+      purity: transaction.purity,
+      touch: transaction.touch || "",
+      pureGold: transaction.type === "Cash" && transaction.touch && transaction.purity
+        ? ((parseFloat(transaction.purity) / parseFloat(transaction.touch)) * 100).toFixed(3)
+        : "",
+    });
+    if (transaction.type === "Cash" || transaction.type === "Cash RTGS") {
+      setGoldRate(transaction.goldRate || "");
+    }
+    setShowPopup(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this transaction?")) return;
+    try {
+      await axios.delete(`${BACKEND_SERVER_URL}/api/transactions/${id}`);
+      setTransactions(transactions.filter((t) => t.id !== id));
+      toast.success("Transaction deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      toast.error("Failed to delete transaction");
     }
   };
 
@@ -196,6 +237,7 @@ const Customertrans = () => {
     });
     setError("");
     setGoldRate("");
+    setEditId(null);
   };
 
   const filteredTransactions = transactions.filter((transaction) => {
@@ -278,7 +320,7 @@ const Customertrans = () => {
       {showPopup && (
         <div className="popup-overlay">
           <div className="popup-cont">
-            <h3>Add Transaction</h3>
+            <h3>{editId ? "Edit Transaction" : "Add Transaction"}</h3>
             <button
               className="close-btn"
               onClick={() => {
@@ -310,11 +352,12 @@ const Customertrans = () => {
                 >
                   <option value="Select">Select</option>
                   <option value="Cash">Cash</option>
+                  <option value="Cash RTGS">Cash RTGS</option>
                   <option value="Gold">Gold</option>
                 </select>
               </div>
 
-              {newTransaction.type === "Cash" && (
+              {(newTransaction.type === "Cash" || newTransaction.type === "Cash RTGS") && (
                 <>
                   <div className="form-group">
                     <label>Cash Amount (₹):</label>
@@ -552,8 +595,9 @@ const Customertrans = () => {
               <TableCell align="center">Gold</TableCell>
               <TableCell align="center">Purity (grams)</TableCell>
               <TableCell align="center">Pure Gold (grams)</TableCell>
-              <TableCell align="center">Amount</TableCell>
+               <TableCell align="center">Amount</TableCell>
               <TableCell align="center">Touch</TableCell>
+              <TableCell align="center">Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -564,22 +608,30 @@ const Customertrans = () => {
                   <TableCell align="center">{new Date(transaction.date).toLocaleDateString("en-GB")}</TableCell>
                   <TableCell align="center">{transaction.type}</TableCell>
                   <TableCell align="center">{transaction.goldRate && transaction.goldRate !== 0 ? transaction.goldRate : "-"}</TableCell>
-                  <TableCell align="center">{transaction.type === "Cash" ? "-" : `${transaction.gold}gr`}</TableCell>
+                  <TableCell align="center">{(transaction.type === "Cash" || transaction.type === "Cash RTGS") ? "-" : `${transaction.gold}gr`}</TableCell>
                   <TableCell align="center">{transaction.purity.toFixed(3)}</TableCell>
                   <TableCell align="center">
-                    {transaction.type === "Cash" && transaction.touch && transaction.purity
+                    {(transaction.type === "Cash" || transaction.type === "Cash RTGS") && transaction.touch && transaction.purity
                       ? ((parseFloat(transaction.purity) / parseFloat(transaction.touch)) * 100).toFixed(3)
                       : "-"}
                   </TableCell>
                   <TableCell align="center">{transaction.amount}</TableCell>
-                  <TableCell align="center">
+                   <TableCell align="center">
                     {transaction.touch ? `${transaction.touch}%` : "-"}
+                  </TableCell>
+                  <TableCell align="center">
+                    <IconButton onClick={() => handleEdit(transaction)}>
+                      <EditIcon color="primary" />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(transaction.id)}>
+                      <DeleteIcon color="error" />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} align="center">No details available</TableCell>
+                <TableCell colSpan={10} align="center">No details available</TableCell>
               </TableRow>
             )}
           </TableBody>

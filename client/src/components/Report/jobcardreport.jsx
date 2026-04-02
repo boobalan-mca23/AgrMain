@@ -23,6 +23,7 @@ const JobCardReport = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [jobCard, setJobCard] = useState([]);
+  const [repairs, setRepairs] = useState([]);
   const [goldSmith, setGoldSmith] = useState([]);
   const [selectedGoldSmith, setSelectedGoldSmith] = useState({});
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
@@ -43,6 +44,7 @@ const JobCardReport = () => {
         goldSmithName={selectedGoldSmith?.name || ""}
         jobCard={paginatedData}
         totalJobCard={jobCard}
+        repairs={repairs}
         page={page}
         rowsPerPage={rowsPerPage}
       />
@@ -110,7 +112,8 @@ const JobCardReport = () => {
           { params: { fromDate: from, toDate: to } }
         );
         console.log("data", response.data);
-        setJobCard(response.data);
+        setJobCard(response.data.jobCards || []);
+        setRepairs(response.data.repairs || []);
         setPage(0); // reset pagination when filters change
       } catch (error) {
         console.error("Error fetching goldsmith data:", error);
@@ -232,9 +235,9 @@ const JobCardReport = () => {
         </div>
 
         <div className="jobReportTable">
-          {jobCard.length >= 1 ? (
+          {jobCard.length >= 1 || repairs.length >= 1 ? (
             <div className="reportContainer">
-              <JobCardRepTable paginatedData={paginatedData} page={page} rowsPerPage={rowsPerPage} />
+              <JobCardRepTable paginatedData={paginatedData} repairs={repairs} page={page} rowsPerPage={rowsPerPage} />
               <TablePagination
                 component="div"
                 count={jobCard.length}

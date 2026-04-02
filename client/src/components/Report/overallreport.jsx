@@ -3,29 +3,51 @@ import "./overallreport.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Stack,
+  CircularProgress,
+  Paper,
+  IconButton,
+} from "@mui/material";
+import { Search, CalendarToday, FilterList, Clear as ClearIcon, Print } from "@mui/icons-material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 
 const OverallReportNew = () => {
   const [reportData, setReportData] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [filteredCustomers, setFilteredCustomers] = useState([]);
+  const [activeCustomers, setActiveCustomers] = useState([]); // Base list for period
+  const [filteredCustomers, setFilteredCustomers] = useState([]); // Search-filtered list
   const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState(dayjs().subtract(15, "day"));
+  const [endDate, setEndDate] = useState(dayjs());
   const [loading, setLoading] = useState(false);
   const printRef = useRef();
 
   useEffect(() => {
     fetchReportData();
-  }, []);
+  }, [startDate, endDate]);
 
   const fetchReportData = async () => {
     setLoading(true);
     setReportData([]);
     try {
+      const start = startDate ? startDate.format("YYYY-MM-DD") : "";
+      const end = endDate ? endDate.format("YYYY-MM-DD") : "";
+      const queryParams = start && end ? `?startDate=${start}&endDate=${end}` : "";
+      
       const [customersRes, billsRes, stockRes, entriesRes, purchaseStockRes] = await Promise.all([
         fetch(`${BACKEND_SERVER_URL}/api/customers`),
-        fetch(`${BACKEND_SERVER_URL}/api/bill`),
-        fetch(`${BACKEND_SERVER_URL}/api/productStock`),
-        fetch(`${BACKEND_SERVER_URL}/api/entries`),
-        fetch(`${BACKEND_SERVER_URL}/api/item-purchase/itemstock`),
+        fetch(`${BACKEND_SERVER_URL}/api/bill${queryParams}`),
+        fetch(`${BACKEND_SERVER_URL}/api/productStock${queryParams}`),
+        fetch(`${BACKEND_SERVER_URL}/api/entries${queryParams}`),
+        fetch(`${BACKEND_SERVER_URL}/api/item-purchase/itemstock${queryParams}`),
       ]);
 
       if (!customersRes.ok) throw new Error("Failed to fetch Customers data");
@@ -42,23 +64,46 @@ const OverallReportNew = () => {
         purchaseStockRes.json(),
       ]);
 
-      setCustomers(customersData);
-      setFilteredCustomers(customersData);
-
+      const isFiltered = !!(start && end);
       const billData = bills?.data || [];
 
-      const cashBalanceTotal = billData.reduce(
-        (sum, b) => sum + (parseFloat(b.cashBalance) || 0),
-        0
-      );
-      const pureBalanceTotal = customersData.reduce(
-        (sum, c) => sum + (parseFloat(c.customerBillBalance?.balance) || 0),
-        0
-      );
-      const hallmarkBalanceTotal = customersData.reduce(
-        (sum, c) => sum + (parseFloat(c.customerBillBalance?.hallMarkBal) || 0),
-        0
-      );
+      // Calculate totals based on whether filter is applied
+      let pureBalanceTotal, hallmarkBalanceTotal, activeCustomersCount;
+
+      if (isFiltered) {
+        // When filtered: show only activity (gold movement) for that period
+        pureBalanceTotal = billData.reduce(
+          (sum, b) => sum + (parseFloat(b.billPureEffect) || 0),
+          0
+        );
+        hallmarkBalanceTotal = billData.reduce(
+          (sum, b) => sum + (parseFloat(b.billHallmarkEffect) || 0),
+          0
+        );
+        // Count only customers who billed during this period
+        const activeCustomerIds = new Set(billData.map(b => b.customer_id));
+        activeCustomersCount = activeCustomerIds.size;
+
+        // Filter consumers table for only active ones
+        const list = customersData.filter(c => activeCustomerIds.has(c.id));
+        setActiveCustomers(list);
+        setFilteredCustomers(list);
+      } else {
+        // No filter: show absolute current running balances for all time
+        pureBalanceTotal = customersData.reduce(
+          (sum, c) => sum + (parseFloat(c.customerBillBalance?.balance) || 0),
+          0
+        );
+        hallmarkBalanceTotal = customersData.reduce(
+          (sum, c) => sum + (parseFloat(c.customerBillBalance?.hallMarkBal) || 0),
+          0
+        );
+        activeCustomersCount = customersData.length;
+        setActiveCustomers(customersData);
+        setFilteredCustomers(customersData);
+      }
+
+      setCustomers(customersData);
 
       const billDetailsProfit = billData.reduce(
         (sum, b) => sum + (parseFloat(b.billDetailsprofit) || 0),
@@ -81,7 +126,7 @@ const OverallReportNew = () => {
       );
 
       const totalEntriesPurity = entriesData.reduce(
-        (sum, e) => sum + (parseFloat(e.purity) || 0),
+        (sum, e) => sum + (parseFloat(e.finalPurity) || 0),
         0
       );
 
@@ -93,21 +138,16 @@ const OverallReportNew = () => {
       );
 
       setReportData([
-        // { label: "Cash Balance Total", value: `${cashBalanceTotal.toFixed(2)}` },
         { label: "Bill Details Profit", value: `${billDetailsProfit.toFixed(2)}` },
         { label: "Stone Profit", value: `${stoneProfit.toFixed(2)}` },
         { label: "Total Profit", value: `${totalProfit.toFixed(2)}` },
-        { label: "Pure Balance Total", value: `${pureBalanceTotal.toFixed(3)} g` },
-        { label: "Hallmark Balance Total", value: `${hallmarkBalanceTotal.toFixed(3)} g` },
+        { label: isFiltered ? "Pure Sold Total" : "Pure Balance Total", value: `${pureBalanceTotal.toFixed(3)} g` },
+        { label: isFiltered ? "Hallmark Sold Total" : "Hallmark Balance Total", value: `${hallmarkBalanceTotal.toFixed(3)} g` },
         { label: "Entries Gold Purity", value: `${totalEntriesPurity.toFixed(3)} g` },
-        { label: "Total Customers", value: `${customersData.length}` },
+        { label: isFiltered ? "Active Customers" : "Total Customers", value: `${activeCustomersCount}` },
         {
-          label: "Product Stock",
-          value: `${totalStockCount} Items (Touch ${totalStockTouch.toFixed(3)})`,
-        },
-        {
-          label: "Purchase Item Stock",
-          value: `${totalPurchaseStockCount} Items (Touch ${totalPurchaseStockTouch.toFixed(3)})`,
+          label: isFiltered ? "Stock Added" : "Stock",
+          value: `${totalStockCount + totalPurchaseStockCount} Items (Touch ${(totalStockTouch + totalPurchaseStockTouch).toFixed(3)})`,
         },
       ]);
     } catch (err) {
@@ -122,9 +162,9 @@ const OverallReportNew = () => {
   useEffect(() => {
     const lower = searchTerm.toLowerCase();
     setFilteredCustomers(
-      customers.filter((c) => c.name?.toLowerCase().includes(lower))
+      activeCustomers.filter((c) => c.name?.toLowerCase().includes(lower))
     );
-  }, [searchTerm, customers]);
+  }, [searchTerm, activeCustomers]);
 
   const handlePrint = () => {
     const printContent = printRef.current.innerHTML;
@@ -157,13 +197,57 @@ const OverallReportNew = () => {
   return (
     <div className="overall-report-container">
       <ToastContainer position="top-right" autoClose={3000} />
-      <div className="report-header">
-        <h2>Overall Report (New)</h2>
-        <p className="report-subtitle">Summary of all balances, stock, and profits</p>
-      </div>
+      <Box sx={{ mb: 4, textAlign: "center" }}>
+        <Typography variant="h4" sx={{ fontWeight: 600, color: "#2c3e50" }}>
+          Overall Report
+        </Typography>
+        <Typography variant="subtitle1" sx={{ color: "#7f8c8d", mb: 2 }}>
+          Summary of all balances, stock, and profits
+        </Typography>
+
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            justifyContent="center"
+            alignItems="center"
+            className="no-print"
+            sx={{ mt: 3 }}
+          >
+            <DatePicker
+              label="From"
+              value={startDate}
+              onChange={(newValue) => setStartDate(newValue)}
+              format="DD/MM/YYYY"
+              slotProps={{ textField: { size: "small", sx: { width: { xs: "100%", sm: 200 } } } }}
+            />
+            <DatePicker
+              label="To"
+              value={endDate}
+              onChange={(newValue) => setEndDate(newValue)}
+              format="DD/MM/YYYY"
+              slotProps={{ textField: { size: "small", sx: { width: { xs: "100%", sm: 200 } } } }}
+              minDate={startDate}
+            />
+            <Button
+              variant="outlined"
+              startIcon={<ClearIcon />}
+              onClick={() => {
+                setStartDate(null);
+                setEndDate(null);
+              }}
+              sx={{ textTransform: "none", color: "#7f8c8d", borderColor: "#7f8c8d", height: 40 }}
+            >
+              Clear
+            </Button>
+          </Stack>
+        </LocalizationProvider>
+      </Box>
 
       {loading ? (
-        <p>Loading report...</p>
+        <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+          <CircularProgress />
+        </Box>
       ) : (
         <>
           <div className="report-cards-container no-print">
@@ -176,16 +260,19 @@ const OverallReportNew = () => {
           </div>
 
           <div className="customer-balances-section">
-            <div className="no-print">
-              {/* <h3>Customer Bill Balances</h3> */}
-              <input
-                type="text"
-                className="customer-search-input"
+            <Box className="no-print" sx={{ mb: 2 }}>
+              <TextField
+                variant="outlined"
+                size="small"
                 placeholder="Search customer..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <Search sx={{ mr: 1, color: "action.active" }} />
+                }}
+                sx={{ width: { xs: "100%", sm: 300 } }}
               />
-            </div>
+            </Box>
 
             <div ref={printRef}>
               <h2>Customer Bill Balances</h2>

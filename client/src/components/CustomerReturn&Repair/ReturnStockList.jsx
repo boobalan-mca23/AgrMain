@@ -164,7 +164,7 @@ const ReturnStockList = () => {
       <ToastContainer position="top-right" autoClose={3000} />
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5">Customer Returned Products</Typography>
-        <Box display="flex" gap={1}>
+        {/* <Box display="flex" gap={1}>
           <Button
             variant={stockFilter === "ALL" ? "contained" : "outlined"}
             onClick={() => { setStockFilter("ALL"); setPage(0); }}
@@ -189,7 +189,7 @@ const ReturnStockList = () => {
           >
             Item Purchase Products
           </Button>
-        </Box>
+        </Box> */}
       </Box>
 
       {/* Filters + Print */}

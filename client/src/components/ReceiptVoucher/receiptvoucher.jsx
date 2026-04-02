@@ -23,7 +23,7 @@ const Receipt = () => {
     oldbalance: 0,
     hallMark: 0,
   });
-  const selectedType = ["Cash", "Gold"];
+  const selectedType = ["Cash", "Cash RTGS", "Gold"];
   const [masterTouch, setMasterTouch] = useState([]);
   const [receipt, setReceipt] = useState([
     {
@@ -35,6 +35,7 @@ const Receipt = () => {
       purity: "",
       amount: "",
       hallMark: "",
+      pureGold: "",
     },
   ]);
   const [receiptErrors, setReceiptErrors] = useState([]);
@@ -78,6 +79,7 @@ const Receipt = () => {
       purity: "",
       amount: "",
       hallMark: "",
+      pureGold: "",
     };
     setReceipt((prev) => [...prev, newRow]);
   };
@@ -101,6 +103,7 @@ const Receipt = () => {
       updatedRows[index].amount = "";
       updatedRows[index].goldRate = "";
       updatedRows[index].purity = "";
+      updatedRows[index].pureGold = "";
     }
     updatedRows[index][field] = value;
     const goldRate = parseFloat(updatedRows[index].goldRate) || 0;
@@ -108,15 +111,20 @@ const Receipt = () => {
     const touch = parseFloat(updatedRows[index].touch) || 0;
     const amount = parseFloat(updatedRows[index].amount) || 0;
 
-    let calculatedPurity = 0;
+    let calculatedPurity = "";
+    let calculatedPureGold = "";
 
-    if (goldRate > 0 && amount > 0) {
-      calculatedPurity = amount / goldRate;
+    if ((updatedRows[index].type === "Cash" || updatedRows[index].type === "Cash RTGS") && goldRate > 0 && amount > 0 && touch > 0) {
+      // Purity is the fine gold weight, formatted first to 3 decimals
+      calculatedPurity = ((amount / goldRate) * (touch / 100)).toFixed(3);
+      // Pure Gold is (Purity / Touch) * 100, using the formatted purity
+      calculatedPureGold = ((parseFloat(calculatedPurity) / touch) * 100).toFixed(3);
     } else if (gold > 0 && touch > 0) {
-      calculatedPurity = gold * (touch / 100);
+      calculatedPurity = (gold * (touch / 100)).toFixed(3);
     }
 
-    updatedRows[index].purity = calculatedPurity.toFixed(3);
+    updatedRows[index].purity = calculatedPurity;
+    updatedRows[index].pureGold = calculatedPureGold;
 
     setReceipt(updatedRows);
 
@@ -152,10 +160,11 @@ const Receipt = () => {
       setReceiptBalances({ oldbalance: 0, hallMark: 0 });
     }
   };
-  const totalReceivedPurity = receipt.reduce(
-    (acc, row) => acc + (parseFloat(row.purity) || 0),
-    0
-  );
+  const totalReceivedPurity = receipt.reduce((acc, row) => {
+    const isCashType = row.type === "Cash" || row.type === "Cash RTGS";
+    const valueToUse = isCashType ? row.pureGold : row.purity;
+    return acc + (parseFloat(valueToUse) || 0);
+  }, 0);
   const pureBalance = receiptBalances.oldbalance - totalReceivedPurity;
   const lastGoldRate = [...receipt]
     .reverse()
@@ -392,11 +401,11 @@ const handleSaveReeceipt = async () => {
                   <th>S.no</th>
                   <th>Date</th>
                   <th>Type</th>
-                  <th>GoldRate</th>
-                  <th>Gold</th>
+                  <th>Rate</th>
+                  <th>Value</th>
                   <th>Touch</th>
                   <th>Purity</th>
-                  <th>Amount</th>
+                  <th>Pure Gold</th>
                   <th>Hall Mark</th>
                   <th>Action</th>
                 </tr>
@@ -445,90 +454,112 @@ const handleSaveReeceipt = async () => {
                       )}
                     </td>
                     <td>
-                      <input
-                        disabled={item.type === "Cash" ? false : true}
-                        className="receiptTableInput"
-                        value={item.goldRate}
-                        onChange={(e) =>
-                          handleChangeReceipt(index, "goldRate", e.target.value)
-                        }
-                      />
-                      <br></br>
-                      {receiptErrors[index]?.goldRate && (
-                        <span className="error">
-                          {receiptErrors[index]?.goldRate}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <input
-                        disabled={item.type === "Gold" ? false : true}
-                        className="receiptTableInput"
-                        value={item.gold}
-                        onChange={(e) =>
-                          handleChangeReceipt(index, "gold", e.target.value)
-                        }
-                      />
-                      <br></br>
-                      {receiptErrors[index]?.gold && (
-                        <span className="error">
-                          {receiptErrors[index]?.gold}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <Autocomplete
-                      // className="receiptTableInput"
-                        freeSolo
-                        disableClearable
-                        disabled={item.type !== "Gold"}
-                        options={masterTouch.map((t) => t.touch.toString())}
-                        value={item.touch?.toString() || ""}
-                        onChange={(_, newValue) => {
-                          handleChangeReceipt(index, "touch", newValue);
-                        }}
-                        onInputChange={(_, newInputValue) => {
-                          handleChangeReceipt(index, "touch", newInputValue);
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            placeholder="touch"
-                            size="small"
-                            style={{
-                                padding: 5,
-                                fontSize: "1rem",
-                                width: 95,
-                                borderRadius: 6,
-                                verticalAlign: "middle",
-                            }}
-                            error={!!receiptErrors[index]?.touch}
-                            helperText={receiptErrors[index]?.touch || ""}
+                      {(item.type === "Cash" || item.type === "Cash RTGS") && (
+                        <>
+                          <input
+                            className="receiptTableInput"
+                            value={item.goldRate}
+                            onChange={(e) =>
+                              handleChangeReceipt(index, "goldRate", e.target.value)
+                            }
                           />
-                        )}
-                      />
+                          <br></br>
+                          {receiptErrors[index]?.goldRate && (
+                            <span className="error">
+                              {receiptErrors[index]?.goldRate}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </td>
                     <td>
-                      <input
-                        value={item.purity}
-                        readOnly
-                        className="receiptTableInput"
-                      />
+                      {item.type === "Gold" && (
+                        <>
+                          <input
+                            className="receiptTableInput"
+                            value={item.gold}
+                            onChange={(e) =>
+                              handleChangeReceipt(index, "gold", e.target.value)
+                            }
+                            placeholder="weight"
+                          />
+                          <br></br>
+                          {receiptErrors[index]?.gold && (
+                            <span className="error">
+                              {receiptErrors[index]?.gold}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {(item.type === "Cash" || item.type === "Cash RTGS") && (
+                        <>
+                          <input
+                            className="receiptTableInput"
+                            value={item.amount}
+                            onChange={(e) =>
+                              handleChangeReceipt(index, "amount", e.target.value)
+                            }
+                            placeholder="amount"
+                          />
+                          <br></br>
+                          {receiptErrors[index]?.amount && (
+                            <span className="error">
+                              {receiptErrors[index]?.amount}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </td>
                     <td>
-                      <input
-                        disabled={item.type === "Cash" ? false : true}
-                        className="receiptTableInput"
-                        value={item.amount}
-                        onChange={(e) =>
-                          handleChangeReceipt(index, "amount", e.target.value)
-                        }
-                      />
-                      <br></br>
-                      {receiptErrors[index]?.amount && (
-                        <span className="error">
-                          {receiptErrors[index]?.amount}
-                        </span>
+                      {(item.type !== "" && item.type !== "Select Type") && (
+                        <Autocomplete
+                        // className="receiptTableInput"
+                          freeSolo
+                          disableClearable
+                          options={masterTouch.map((t) => t.touch.toString())}
+                          value={item.touch?.toString() || ""}
+                          onChange={(_, newValue) => {
+                            handleChangeReceipt(index, "touch", newValue);
+                          }}
+                          onInputChange={(_, newInputValue) => {
+                            handleChangeReceipt(index, "touch", newInputValue);
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              placeholder="touch"
+                              size="small"
+                              style={{
+                                  padding: 5,
+                                  fontSize: "1rem",
+                                  width: 95,
+                                  borderRadius: 6,
+                                  verticalAlign: "middle",
+                              }}
+                              error={!!receiptErrors[index]?.touch}
+                              helperText={receiptErrors[index]?.touch || ""}
+                            />
+                          )}
+                        />
+                      )}
+                    </td>
+                    <td>
+                      {(item.purity || (item.goldRate > 0 && item.amount > 0 && item.touch > 0) || (item.gold > 0 && item.touch > 0)) && (
+                        <input
+                          value={item.purity}
+                          readOnly
+                          className="receiptTableInput"
+                        />
+                      )}
+                    </td>
+                    <td>
+                      {(item.type === "Cash" || item.type === "Cash RTGS") && item.pureGold && (
+                        <input
+                          value={item.pureGold}
+                          readOnly
+                          className="receiptTableInput"
+                          placeholder="pure"
+                        />
                       )}
                     </td>
                     <td>
@@ -547,7 +578,7 @@ const handleSaveReeceipt = async () => {
                       )}
                     </td>
                     <td className="delIcon">
-                      <MdDeleteForever
+                      <MdDeleteForever  
                         onClick={() => {
                           handleRemoveRow(index);
                         }}

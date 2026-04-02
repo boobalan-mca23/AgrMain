@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import axios from "axios";
 import {
@@ -255,15 +256,24 @@ const Bullion = () => {
         });
         toast.success("Bullion purchase created successfully");
       } else {
+        // Update main fields
+        await axios.put(`${BACKEND_SERVER_URL}/api/bullion-purchase/update/${editId}`, {
+          bullionId: selectedNameId,
+          grams: parseFloat(grams),
+          rate: parseFloat(rate),
+          amount: parseFloat(totalPurchaseAmount.toFixed(2)),
+        });
+
+        // Also check if there's a new installment to add
         const newEntries = finalGivenEntries.slice(givenEntries.length);
         if (newEntries.length > 0) {
           await axios.put(
             `${BACKEND_SERVER_URL}/api/bullion-purchase/given-details/${editId}`,
             { givenDetails: newEntries }
           );
-          toast.success("Installments updated successfully");
+          toast.success("Bullion purchase and installments updated successfully");
         } else {
-          toast.info("No new installments to update");
+          toast.success("Bullion purchase updated successfully");
         }
       }
 
@@ -376,7 +386,7 @@ const Bullion = () => {
                   </TableCell>
                   <TableCell align="center">
                     <IconButton onClick={() => openDialog(row)}>
-                      <VisibilityIcon />
+                      <EditIcon color="primary" />
                     </IconButton>
                     <IconButton onClick={() => handleDelete(row.id)}>
                       <DeleteIcon color="error" />
@@ -417,7 +427,6 @@ const Bullion = () => {
             margin="normal"
             value={selectedNameId}
             onChange={(e) => setSelectedNameId(e.target.value)}
-            disabled={isEditMode}
           >
             {names.map((item) => (
               <MenuItem key={item.id} value={item.id}>
@@ -433,7 +442,6 @@ const Bullion = () => {
               value={grams}
               onChange={(e) => setGrams(e.target.value)}
               fullWidth
-              disabled={isEditMode}
               onWheel={(e) => e.target.blur()}
             />
             <TextField

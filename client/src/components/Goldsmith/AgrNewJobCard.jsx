@@ -82,7 +82,7 @@ function AgrNewJobCard({
     "Thread",
     "Antic",
   ];
-  const symbolOptions = ["Touch", "%", "+"];
+  const symbolOptions = ["Touch", "%" /*, "+"*/];
 
   const recalculateWastagePurity = (item) => {
     const totalItemDeductions = item.deduction.reduce(
@@ -246,7 +246,7 @@ function AgrNewJobCard({
   };
 
   const handlededuction = (index) => {
-    let newDeduction = { type: "", weight: "" };
+    let newDeduction = { type: "Stone", weight: "" };
 
     let updated = [...itemDelivery];
     updated[index].deduction.push(newDeduction);
@@ -1263,7 +1263,7 @@ function AgrNewJobCard({
                     itemWeight: "",
                     count: "",
                     touch: "",
-                    deduction: [],
+                    deduction: [{ type: "Stone", weight: "" }],
                     netWeight: "",
                     wastageType: "%",
                     wastageValue: "",

@@ -32,11 +32,11 @@ const CustomerReportPrint=(props)=>{
                   <tr key={index + 1}>
                     <td style={style.customerReportBorder}>{index + 1}</td>
                     <td style={style.customerReportBorder}>{bill.type==="bill"?bill.info.id:"-"}</td>
-                    <td style={style.customerReportBorder}>
-                      {new Date(bill.info.createdAt).toLocaleDateString(
-                        "en-GB"
-                      )}
-                    </td>
+                     <td style={style.customerReportBorder}>
+                       {new Date(bill.info.createdAt || bill.info.sentDate).toLocaleDateString(
+                         "en-GB"
+                       )}
+                     </td>
 
                     <td style={style.customerReportBorder}>
                       {bill.type === "bill" ? (
@@ -76,51 +76,108 @@ const CustomerReportPrint=(props)=>{
                         ) : (
                           <p>No orders to this table</p>
                         )
-                      ) : (
-                        <table style={style.customerReportTable}>
-                          <thead >
-                            <tr>
-                              <th style={style.customerReportBorder}>Entry Type</th>
-                              <th style={style.customerReportBorder}>Date</th>
-                              <th style={style.customerReportBorder}>Gold Rate</th>
-                              <th style={style.customerReportBorder}>Gold</th>
-                              <th style={style.customerReportBorder}>Touch</th>
-                              <th style={style.customerReportBorder}>Purity</th>
-                              <th style={style.customerReportBorder}>Amount</th>
-                              <th style={style.customerReportBorder}>Hall Mark</th>
-                            </tr>
-                          </thead>
-                          <tbody >
-                            <tr key={index+1}>
-                              <td style={style.customerReportBorder}>{bill.type||""}</td>
-                              <td style={style.customerReportBorder}>
-                                {new Date(
-                                  bill.info.createdAt
-                                ).toLocaleDateString("en-GB")}
-                              </td>
-                              <td style={style.customerReportBorder}>{(Number(bill.info.goldRate) || 0).toFixed(3)}</td>
-                              <td style={style.customerReportBorder}>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
-                              <td style={style.customerReportBorder}>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
-                              <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
-                              <td style={style.customerReportBorder}>{(Number(bill.info.amount) || 0).toFixed(3)}</td>
-                              <td style={style.customerReportBorder}>{(Number(bill.info.receiveHallMark) || 0).toFixed(3)}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      )}
+                      ) : bill.type === "repair" ? (
+                         <table style={style.customerReportTable}>
+                           <thead>
+                             <tr>
+                               <th style={style.customerReportBorder}>Entry Type</th>
+                               <th style={style.customerReportBorder}>Date</th>
+                               <th style={style.customerReportBorder}>Item Name</th>
+                               <th style={style.customerReportBorder}>Gross Weight</th>
+                               <th style={style.customerReportBorder}>Net Weight</th>
+                               <th style={style.customerReportBorder}>Purity</th>
+                               <th style={style.customerReportBorder}>Reason</th>
+                               <th style={style.customerReportBorder}>Status</th>
+                             </tr>
+                           </thead>
+                           <tbody>
+                             <tr>
+                               <td style={style.customerReportBorder}>Repair</td>
+                               <td style={style.customerReportBorder}>{new Date(bill.info.sentDate).toLocaleDateString("en-GB")}</td>
+                               <td style={style.customerReportBorder}>{bill.info.itemName}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.grossWeight) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.netWeight) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{bill.info.reason || "-"}</td>
+                               <td style={style.customerReportBorder}>{bill.info.status || "-"}</td>
+                             </tr>
+                           </tbody>
+                         </table>
+                       ) : bill.type === "return" ? (
+                         <table style={style.customerReportTable}>
+                           <thead>
+                             <tr>
+                               <th style={style.customerReportBorder}>Entry Type</th>
+                               <th style={style.customerReportBorder}>Date</th>
+                               <th style={style.customerReportBorder}>Product Name</th>
+                               <th style={style.customerReportBorder}>Weight</th>
+                               <th style={style.customerReportBorder}>Count</th>
+                               <th style={style.customerReportBorder}>Reason</th>
+                               <th style={style.customerReportBorder}>Source</th>
+                             </tr>
+                           </thead>
+                           <tbody>
+                             <tr>
+                               <td style={style.customerReportBorder}>Return</td>
+                               <td style={style.customerReportBorder}>{new Date(bill.info.createdAt).toLocaleDateString("en-GB")}</td>
+                               <td style={style.customerReportBorder}>{bill.info.productName}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.weight) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{bill.info.count}</td>
+                               <td style={style.customerReportBorder}>{bill.info.reason || "-"}</td>
+                               <td style={style.customerReportBorder}>{bill.info.source || "-"}</td>
+                             </tr>
+                           </tbody>
+                         </table>
+                       ) : (
+                         <table style={style.customerReportTable}>
+                           <thead >
+                             <tr>
+                               <th style={style.customerReportBorder}>Entry Type</th>
+                               <th style={style.customerReportBorder}>Date</th>
+                               <th style={style.customerReportBorder}>Gold Rate</th>
+                               <th style={style.customerReportBorder}>Gold</th>
+                               <th style={style.customerReportBorder}>Touch</th>
+                               <th style={style.customerReportBorder}>Purity</th>
+                               <th style={style.customerReportBorder}>Amount</th>
+                               <th style={style.customerReportBorder}>Hall Mark</th>
+                             </tr>
+                           </thead>
+                           <tbody >
+                             <tr key={index+1}>
+                               <td style={style.customerReportBorder}>{bill.type||""}</td>
+                               <td style={style.customerReportBorder}>
+                                 {new Date(
+                                   bill.info.createdAt
+                                 ).toLocaleDateString("en-GB")}
+                               </td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.goldRate) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.amount) || 0).toFixed(3)}</td>
+                               <td style={style.customerReportBorder}>{(Number(bill.info.receiveHallMark) || 0).toFixed(3)}</td>
+                             </tr>
+                           </tbody>
+                         </table>
+                       )}
                     </td>
 
-                    {bill.type === "bill" ? (
-                      <>
-                        <td style={style.customerReportBorder}>-</td>
-                        <td style={style.customerReportBorder}>{(Number(bill.info.billAmount) || 0).toFixed(3)}</td>
-                      </>
-                    ) : (
-                      <>
-                        <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
-                        <td style={style.customerReportBorder}>-</td>
-                      </>
-                    )}
+                     {bill.type === "bill" ? (
+                       <>
+                         <td style={style.customerReportBorder}>-</td>
+                         <td style={style.customerReportBorder}>{(Number(bill.info.billAmount) || 0).toFixed(3)}</td>
+                       </>
+                     ) : bill.type === "return" ? (
+                        <>
+                          <td style={style.customerReportBorder}>{(Number(bill.info.weight) || 0).toFixed(3)}</td>
+                          <td style={style.customerReportBorder}>-</td>
+                        </>
+                      ) : (
+                       <>
+                         <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                         <td style={style.customerReportBorder}>-</td>
+                       </>
+                     )}
                   </tr>
                 ))}
                

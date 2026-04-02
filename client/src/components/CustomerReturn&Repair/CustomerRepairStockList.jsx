@@ -188,7 +188,7 @@ const CustomerRepairStockList = () => {
         <Box p={3}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5">Customer Repair Stock</Typography>
-                <Box display="flex" gap={1}>
+                {/* <Box display="flex" gap={1}>
                     <Button
                         variant={stockFilter === "ALL" ? "contained" : "outlined"}
                         onClick={() => { setStockFilter("ALL"); setPage(0); }}
@@ -213,7 +213,7 @@ const CustomerRepairStockList = () => {
                     >
                         Item Purchase Products
                     </Button>
-                </Box>
+                </Box> */}
             </Box>
 
             {/* Filters + Print */}
@@ -347,7 +347,7 @@ const CustomerRepairStockList = () => {
                 onPageChange={(e, p) => setPage(p)}
                 onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
             />
-        <ToastContainer position="top-right" autoClose={3000} />
+            <ToastContainer position="top-right" autoClose={3000} />
         </Box>
     );
 };

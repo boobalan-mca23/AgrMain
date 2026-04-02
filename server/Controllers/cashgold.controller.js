@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const { entryToRawGold } = require('../Utils/addRawGoldStock')
+const { entryToRawGold, deleteEntryFromRawGold } = require('../Utils/addRawGoldStock')
 const { directTouch } = require('../Utils/directTouch')
 
 exports.getAllEntries = async (req, res) => {
@@ -46,6 +46,17 @@ exports.updateEntry = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to update Entry" });
+  }
+};
+
+exports.deleteEntry = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await deleteEntryFromRawGold(id);
+    res.status(200).json({ message: "Entry deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to delete Entry" });
   }
 };
 

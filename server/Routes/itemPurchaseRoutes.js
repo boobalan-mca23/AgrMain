@@ -25,4 +25,11 @@ router.put("/stock/reduce", controller.reduceStockWeight);
 
 router.put("/sold/:id", controller.markItemSold);
 
+router.post("/return/:id", controller.returnToSupplier);
+
+// Gold Receipt routes
+router.post("/receive-gold", controller.receiveGold);
+router.put("/receive-gold/:id", controller.updateReceivedGold);
+router.delete("/receive-gold/:id", controller.deleteReceivedGold);
+
 module.exports = router;

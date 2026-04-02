@@ -5,6 +5,7 @@ const controller = require("../Controllers/bullionpurchase.controller");
 
 router.post("/create", controller.createBullionPurchase);
 router.put("/given-details/:id", controller.updateGivenDetailsOnly);
+router.put("/update/:id", controller.updateBullionPurchase);
 router.get("/", controller.getAllBullionPurchases);
 router.delete("/delete/:id", controller.deleteBullionPurchase);
 

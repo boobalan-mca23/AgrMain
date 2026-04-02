@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
+const { purchaseEntryToRawGold, deletePurchaseEntryFromRawGold, receiveGoldToStock, setTotalRawGold } = require("../Utils/addRawGoldStock");
 
 const prisma = new PrismaClient();
-
 
 // =============================
 // HELPERS
@@ -125,6 +125,7 @@ exports.createEntry = async (req, res) => {
       wastage,
       moveTo,
       advanceGold,
+      advanceTouch,
       goldBalance // allow manual override
     } = req.body;
 
@@ -166,6 +167,24 @@ exports.createEntry = async (req, res) => {
         : calc.goldBalance;
 
 
+    let logId = null;
+    let actualAdvanceTouch = null;
+
+    if (calc.advanceGold > 0 && advanceTouch) {
+      actualAdvanceTouch = parseFloat(advanceTouch);
+      const stock = await prisma.rawgoldStock.findFirst({
+        where: { touch: actualAdvanceTouch }
+      });
+
+      if (!stock || stock.remainingWt < calc.advanceGold) {
+        return res.status(400).json({
+          msg: "Insufficient Raw Gold Stock for selected Advance Touch"
+        });
+      }
+
+      logId = await purchaseEntryToRawGold(calc.advanceGold, actualAdvanceTouch);
+    }
+
     const entry = await prisma.purchaseEntry.create({
 
       data: {
@@ -175,6 +194,10 @@ exports.createEntry = async (req, res) => {
         supplierName: supplier.name,
 
         advanceGold: calc.advanceGold,
+
+        advanceTouch: actualAdvanceTouch,
+
+        logId,
 
         goldBalance: finalGoldBalance,
 
@@ -281,18 +304,24 @@ exports.createEntry = async (req, res) => {
 // =============================
 
 exports.getEntries = async (req, res) => {
-
   try {
+    const { supplierId, startDate, endDate } = req.query;
+    const where = {};
 
-    const supplierId = req.query.supplierId;
+    if (supplierId) {
+      where.supplierId = Number(supplierId);
+    }
 
-    const where = supplierId
-      ? { supplierId: Number(supplierId) }
-      : {};
-
+    if (startDate && endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt = {
+        gte: new Date(startDate),
+        lte: end,
+      };
+    }
 
     const entries = await prisma.purchaseEntry.findMany({
-
       where,
 
       orderBy: {
@@ -302,11 +331,9 @@ exports.getEntries = async (req, res) => {
       },
 
       include: {
-
         supplier: true,
-
-        stock: true
-
+        stock: true,
+        receivedGold: true
       }
 
     });
@@ -393,9 +420,12 @@ exports.updateEntry = async (req, res) => {
       wastage,
       moveTo,
       advanceGold,
+      advanceTouch,
       goldBalance
     } = req.body;
 
+
+    const oldEntry = await prisma.purchaseEntry.findUnique({ where: { id } });
 
     const supplier = await prisma.supplier.findUnique({
 
@@ -426,6 +456,33 @@ exports.updateEntry = async (req, res) => {
         : calc.goldBalance;
 
 
+    let logId = oldEntry?.logId || null;
+    let actualAdvanceTouch = advanceTouch ? parseFloat(advanceTouch) : null;
+
+    if (calc.advanceGold > 0 && actualAdvanceTouch) {
+      const stock = await prisma.rawgoldStock.findFirst({
+        where: { touch: actualAdvanceTouch }
+      });
+
+      let requiredStock = calc.advanceGold;
+      if (oldEntry && oldEntry.advanceTouch === actualAdvanceTouch && oldEntry.advanceGold) {
+        requiredStock = calc.advanceGold - oldEntry.advanceGold;
+      }
+
+      if (requiredStock > 0 && (!stock || stock.remainingWt < requiredStock)) {
+        return res.status(400).json({
+          msg: "Insufficient Raw Gold Stock for selected Advance Touch"
+        });
+      }
+
+      logId = await purchaseEntryToRawGold(calc.advanceGold, actualAdvanceTouch, logId);
+    } else if (logId) {
+      // If advanceGold became 0 or advanceTouch removed, delete the log
+      await deletePurchaseEntryFromRawGold(logId);
+      logId = null;
+      actualAdvanceTouch = null;
+    }
+
     const updated = await prisma.purchaseEntry.update({
 
       where: { id },
@@ -437,6 +494,10 @@ exports.updateEntry = async (req, res) => {
         supplierName: supplier?.name,
 
         advanceGold: calc.advanceGold,
+
+        advanceTouch: actualAdvanceTouch,
+
+        logId,
 
         goldBalance: finalGoldBalance,
 
@@ -617,6 +678,7 @@ exports.deleteEntry = async (req, res) => {
 
     const id = Number(req.params.id);
 
+    const entry = await prisma.purchaseEntry.findUnique({ where: { id } });
 
     await prisma.purchaseStock.deleteMany({
 
@@ -639,6 +701,9 @@ exports.deleteEntry = async (req, res) => {
 
     });
 
+    if (entry && entry.logId) {
+      await deletePurchaseEntryFromRawGold(entry.logId);
+    }
 
     res.json({
 
@@ -745,4 +810,156 @@ exports.getPuritySummary = async (req, res) => {
 
   }
 
+};
+// =============================
+// RECEIVE GOLD FROM BALANCE
+// =============================
+
+exports.receiveGold = async (req, res) => {
+  try {
+    const { purchaseEntryId, weight, touch, date } = req.body;
+
+    if (!purchaseEntryId || !weight || !touch) {
+      return res.status(400).json({ msg: "Missing required fields" });
+    }
+
+    const id = Number(purchaseEntryId);
+    const entry = await prisma.purchaseEntry.findUnique({
+      where: { id },
+      include: { receivedGold: true }
+    });
+
+    if (!entry) return res.status(404).json({ msg: "Entry not found" });
+
+    // Calculate current pending balance
+    const alreadyReceived = entry.receivedGold.reduce((sum, r) => sum + r.weight, 0);
+    const pendingBalance = round3(entry.goldBalance - alreadyReceived);
+    const weightToReceive = Number(weight);
+
+    if (weightToReceive > pendingBalance + 0.001) { // added small epsilon for Float precision
+      return res.status(400).json({
+        msg: `Cannot receive more than pending balance. Max: ${pendingBalance}g`
+      });
+    }
+
+    const logId = await receiveGoldToStock(weightToReceive, touch, date);
+
+    const received = await prisma.purchaseReceivedGold.create({
+      data: {
+        purchaseEntryId: id,
+        weight: weightToReceive,
+        touch: Number(touch),
+        date: new Date(date),
+        logId,
+      },
+    });
+
+    res.json({ msg: "Gold received safely", received });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+exports.updateReceivedGold = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { weight, touch, date } = req.body;
+
+    const receiptId = Number(id);
+    const received = await prisma.purchaseReceivedGold.findUnique({
+      where: { id: receiptId },
+      include: { purchaseEntry: { include: { receivedGold: true } } }
+    });
+
+    if (!received) return res.status(404).json({ msg: "Record not found" });
+
+    const weightToReceive = Number(weight);
+    const actualTouch = Number(touch);
+    const actualDate = new Date(date);
+
+    // Calculate pending balance WITHOUT the current receipt
+    const otherAlreadyReceived = received.purchaseEntry.receivedGold
+      .filter(r => r.id !== receiptId)
+      .reduce((sum, r) => sum + r.weight, 0);
+
+    const pendingBalance = round3(received.purchaseEntry.goldBalance - otherAlreadyReceived);
+
+    if (weightToReceive > pendingBalance + 0.001) {
+      return res.status(400).json({
+        msg: `Cannot receive more than pending balance. Max: ${pendingBalance}g`
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Update Raw Gold Log if logId exists
+      if (received.logId) {
+        const stock = await tx.rawgoldStock.findFirst({
+          where: { touch: actualTouch },
+          select: { id: true },
+        });
+
+        if (!stock) throw new Error(`No stock found for touch: ${actualTouch}`);
+
+        await tx.rawGoldLogs.update({
+          where: { id: received.logId },
+          data: {
+            rawGoldStockId: stock.id,
+            weight: weightToReceive,
+            touch: actualTouch,
+            purity: (weightToReceive * actualTouch) / 100,
+            date: actualDate,
+          }
+        });
+      }
+
+      // 2. Update Receive Record
+      await tx.purchaseReceivedGold.update({
+        where: { id: receiptId },
+        data: {
+          weight: weightToReceive,
+          touch: actualTouch,
+          date: actualDate,
+        }
+      });
+    });
+
+    await setTotalRawGold();
+
+    res.json({ msg: "Record updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+exports.deleteReceivedGold = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const receivedId = Number(id);
+
+    const received = await prisma.purchaseReceivedGold.findUnique({
+      where: { id: receivedId },
+    });
+
+    if (!received) return res.status(404).json({ msg: "Record not found" });
+
+    await prisma.$transaction(async (tx) => {
+      if (received.logId) {
+        // Deleting RawGoldLogs will cascade delete PurchaseReceivedGold 
+        // IF schema.prisma has onDelete: Cascade. 
+        // Let's assume it does, but we'll try to delete both safely.
+        await tx.rawGoldLogs.delete({ where: { id: received.logId } });
+      } else {
+        await tx.purchaseReceivedGold.delete({ where: { id: receivedId } });
+      }
+    });
+
+    await setTotalRawGold();
+
+    res.json({ msg: "Record deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
 };
