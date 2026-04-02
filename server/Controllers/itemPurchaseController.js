@@ -212,38 +212,9 @@ exports.createEntry = async (req, res) => {
       });
 
 
-    // =============================
-    // UPDATE SUPPLIER BALANCE
-    // =============================
-
-    const newBalance =
-      round3(
-        toNumber(supplier.openingBalance)
-        + finalGoldBalance
-      );
-
-
-    await prisma.supplier.update({
-
-      where: { id: Number(supplierId) },
-
-      data: {
-
-        openingBalance: newBalance
-
-      }
-
-    });
-
-
     res.json({
-
       msg: "Created",
-
-      entry,
-
-      supplierBalance: newBalance
-
+      entry
     });
 
   }
@@ -458,36 +429,9 @@ exports.updateEntry = async (req, res) => {
       });
 
 
-    const balanceAdjustment =
-      finalGoldBalance - oldEntry.goldBalance;
-
-
-    const newBalance =
-      round3(
-        toNumber(supplier.openingBalance)
-        + balanceAdjustment
-      );
-
-
-    await prisma.supplier.update({
-
-      where: { id: Number(supplierId) },
-
-      data: {
-        openingBalance: newBalance
-      }
-
-    });
-
-
     res.json({
-
       msg: "Updated",
-
-      updated,
-
-      supplierBalance: newBalance
-
+      updated
     });
 
   }
@@ -527,36 +471,8 @@ exports.deleteEntry = async (req, res) => {
       });
 
 
-    const newBalance =
-      round3(
-        toNumber(supplier.openingBalance)
-        - entry.goldBalance
-      );
-
-
-    await prisma.supplier.update({
-
-      where: { id: entry.supplierId },
-
-      data: {
-        openingBalance: newBalance
-      }
-
-    });
-
-
-    if (entry.advanceLogId) {
-      await deleteItemPurchaseFromRawGold(entry.advanceLogId);
-    }
-
-    await prisma.itemPurchaseEntry.delete({
-      where: { id }
-    });
-
-
     res.json({
-      msg: "Deleted",
-      supplierBalance: newBalance
+      msg: "Deleted"
     });
 
   }
@@ -1016,15 +932,6 @@ exports.returnToSupplier = async (req, res) => {
       });
     }
 
-    if (entry.supplierId) {
-      const supplier = await prisma.supplier.findUnique({ where: { id: entry.supplierId } });
-      await prisma.supplier.update({
-        where: { id: entry.supplierId },
-        data: {
-          openingBalance: round3(Number(supplier.openingBalance) - returningPurity.final)
-        }
-      });
-    }
 
     res.json({ msg: "Returned successfully" });
   } catch (err) {
@@ -1072,6 +979,7 @@ exports.receiveGold = async (req, res) => {
         logId,
       },
     });
+
 
     res.json({ msg: "Gold received recorded" });
   } catch (err) {
@@ -1138,6 +1046,7 @@ exports.updateReceivedGold = async (req, res) => {
           date: actualDate,
         }
       });
+
     });
 
     await setTotalRawGold();
@@ -1165,6 +1074,7 @@ exports.deleteReceivedGold = async (req, res) => {
         await tx.rawGoldLogs.delete({ where: { id: received.logId } });
       }
       await tx.itemPurchaseReceivedGold.delete({ where: { id: receivedId } });
+
     });
 
     await setTotalRawGold();

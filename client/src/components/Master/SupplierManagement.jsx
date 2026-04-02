@@ -27,7 +27,11 @@ const initialForm = {
   contactNumber: "",
   address: "",
   gstOrBusinessId: "",
-  openingBalance: "",
+  openingBCBalance: 0,
+  openingItemBalance: 0,
+  displayBC: 0,
+  displayItem: 0,
+  displayGrand: 0
 };
 
 
@@ -46,6 +50,7 @@ function SupplierManagement() {
   const [selectedId, setSelectedId] = useState(null);
 
   const [form, setForm] = useState(initialForm);
+  const [moduleTransactions, setModuleTransactions] = useState({ bc: 0, item: 0, general: 0 });
   const [saving, setSaving] = useState(false);
 
 
@@ -117,11 +122,9 @@ function SupplierManagement() {
   const openAddDialog = () => {
 
     setIsEdit(false);
-
     setSelectedId(null);
-
+    setModuleTransactions({ bc: 0, item: 0, general: 0 });
     setForm(initialForm);
-
     setOpenDialog(true);
 
   };
@@ -133,12 +136,26 @@ function SupplierManagement() {
 
     setSelectedId(supplier.id);
 
+    const transBC = (supplier.totalBCBalance || 0) - (supplier.openingBCBalance || 0);
+    const transItem = (supplier.totalItemBalance || 0) - (supplier.openingItemBalance || 0);
+    
+    setModuleTransactions({
+        bc: transBC,
+        item: transItem,
+        general: 0 // No transactions for general currently
+    });
+
     setForm({
       name: supplier.name,
       contactNumber: supplier.contactNumber,
       address: supplier.address,
       gstOrBusinessId: supplier.gstOrBusinessId,
-      openingBalance: supplier.openingBalance,
+      // Removed openingBalance from state
+      openingBCBalance: supplier.openingBCBalance || 0,
+      openingItemBalance: supplier.openingItemBalance || 0,
+      displayBC: supplier.totalBCBalance || 0,
+      displayItem: supplier.totalItemBalance || 0,
+      displayGrand: supplier.totalBalance || 0
     });
 
     setOpenDialog(true);
@@ -171,11 +188,13 @@ function SupplierManagement() {
 
     try {
       setSaving(true);
+      const { displayBC, displayItem, displayGrand, ...payload } = form;
+
       if (isEdit) {
 
         await axios.put(
           `${BACKEND_SERVER_URL}/api/supplier/${selectedId}`,
-          form
+          payload
         );
 
         toast.success("Supplier updated");
@@ -184,7 +203,7 @@ function SupplierManagement() {
 
         await axios.post(
           `${BACKEND_SERVER_URL}/api/supplier/create`,
-          form
+          payload
         );
 
         toast.success("Supplier added");
@@ -316,7 +335,9 @@ function SupplierManagement() {
               <th style={{ textAlign: "center" }}>Contact</th>
               <th style={{ textAlign: "center" }}>Address</th>
               <th style={{ textAlign: "center" }}>GST</th>
-              <th style={{ textAlign: "center" }}>Opening Balance (g)</th>
+              <th style={{ textAlign: "center" }}>BC Balance (g)</th>
+              <th style={{ textAlign: "center" }}>Item Balance (g)</th>
+              <th style={{ textAlign: "center" }}>Total Balance (g)</th>
               <th style={{ textAlign: "center" }}>Action</th>
             </tr>
 
@@ -347,9 +368,13 @@ function SupplierManagement() {
                 <td style={{ textAlign: "center" }}>{supplier.address || "-"}</td>
                 <td style={{ textAlign: "center" }}>{supplier.gstOrBusinessId || "-"}</td>
                 <td style={{ textAlign: "center" }}>
-                  {Number(
-                    supplier.openingBalance || 0
-                  ).toFixed(3)}
+                   {Number(supplier.totalBCBalance || 0).toFixed(3)}
+                </td>
+                <td style={{ textAlign: "center" }}>
+                   {Number(supplier.totalItemBalance || 0).toFixed(3)}
+                </td>
+                <td style={{ textAlign: "center", fontWeight: "bold", background: "#f8f9fa" }}>
+                  {Number(supplier.totalBalance || 0).toFixed(3)}
                 </td>
 
                 <td style={{ textAlign: "center" }}>
@@ -467,26 +492,47 @@ function SupplierManagement() {
           />
 
 
-          <TextField
-            label="Opening Balance (g)"
-            fullWidth
-            margin="dense"
-            value={form.openingBalance}
-            onChange={(e) => {
-
-              const value = e.target.value;
-
-              if (/^\d*\.?\d*$/.test(value)) {
-
-                setForm({
-                  ...form,
-                  openingBalance: value
-                });
-
-              }
-
-            }}
-          />
+           <TextField
+             label="BC Balance (g)"
+             fullWidth
+             margin="dense"
+             value={form.displayBC}
+             onChange={(e) => {
+               const val = Number(e.target.value) || 0;
+               const newOpening = val - moduleTransactions.bc;
+               setForm({
+                 ...form,
+                 displayBC: e.target.value, // Keep literal for typing
+                 openingBCBalance: newOpening,
+                 displayGrand: (Number(val) || 0) + (Number(form.displayItem) || 0)
+               });
+             }}
+           />
+ 
+           <TextField
+             label="Item Balance (g)"
+             fullWidth
+             margin="dense"
+             value={form.displayItem}
+             onChange={(e) => {
+               const val = Number(e.target.value) || 0;
+               const newOpening = val - moduleTransactions.item;
+               setForm({
+                 ...form,
+                 displayItem: e.target.value, // Keep literal for typing
+                 openingItemBalance: newOpening,
+                 displayGrand: (Number(form.displayBC) || 0) + (Number(val) || 0)
+               });
+             }}
+           />
+ 
+           <TextField
+             label="Grand Total Balance (g)"
+             fullWidth
+             margin="dense"
+             value={form.displayGrand}
+             disabled // Grand Total is naturally the sum of the two module inputs
+           />
 
         </DialogContent>
 

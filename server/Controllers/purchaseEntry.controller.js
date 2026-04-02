@@ -272,11 +272,8 @@ exports.createEntry = async (req, res) => {
 
 
     res.json({
-
       msg: "Purchase entry created",
-
       entry
-
     });
 
   }
@@ -641,11 +638,8 @@ exports.updateEntry = async (req, res) => {
 
 
     res.json({
-
       msg: "Purchase entry updated",
-
       updated
-
     });
 
   }
@@ -704,6 +698,7 @@ exports.deleteEntry = async (req, res) => {
     if (entry && entry.logId) {
       await deletePurchaseEntryFromRawGold(entry.logId);
     }
+
 
     res.json({
 
@@ -854,6 +849,7 @@ exports.receiveGold = async (req, res) => {
       },
     });
 
+
     res.json({ msg: "Gold received safely", received });
   } catch (err) {
     console.error(err);
@@ -922,6 +918,7 @@ exports.updateReceivedGold = async (req, res) => {
           date: actualDate,
         }
       });
+
     });
 
     await setTotalRawGold();
@@ -953,6 +950,7 @@ exports.deleteReceivedGold = async (req, res) => {
       } else {
         await tx.purchaseReceivedGold.delete({ where: { id: receivedId } });
       }
+
     });
 
     await setTotalRawGold();
