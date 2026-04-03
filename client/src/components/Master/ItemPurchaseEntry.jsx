@@ -11,6 +11,7 @@ import {
   ButtonGroup,
   MenuItem,
   Typography,
+  Autocomplete,
 } from "@mui/material";
 
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -44,7 +45,7 @@ const initialForm = {
   wastagePure: "",
   finalPurity: "",
   goldBalance: "",
-  count: 1,
+  count: "",
   advanceTouch: "",
 };
 
@@ -56,6 +57,19 @@ const safeFmt = (val) => {
   const num = Number(val);
   return Number.isFinite(num) ? num.toFixed(3) : "0.000";
 };
+
+const getEntryStatus = (e) => {
+  if (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") {
+    return "Sold";
+  }
+  // Check for partial sale: if grossWeight has significantly decreased from initial but not sold
+  if (e.initialGrossWeight && e.grossWeight < (e.initialGrossWeight - 0.01)) {
+    return "Partially Sold";
+  }
+  // All other states (In Stock, In Repair, Returned) are grouped as In Stock
+  return "In Stock";
+};
+
 
 const calcTotalReceived = (entry) => {
   if (!entry || !entry.receivedGold || !Array.isArray(entry.receivedGold)) return 0;
@@ -95,6 +109,7 @@ function ItemPurchaseEntry() {
   const [statusFilter, setStatusFilter] = useState("In Stock");
 
   const [rawGoldStock, setRawGoldStock] = useState([]);
+  const [masterTouchList, setMasterTouchList] = useState([]);
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
   const [selectedEntryForReceive, setSelectedEntryForReceive] = useState(null);
   const [receiveForm, setReceiveForm] = useState({
@@ -116,7 +131,17 @@ function ItemPurchaseEntry() {
     fetchSupplierName();
     fetchEntries();
     fetchRawGoldStock();
+    fetchMasterTouchList();
   }, [supplierId]);
+
+  const fetchMasterTouchList = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+      setMasterTouchList(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setMasterTouchList([]);
+    }
+  };
 
   useEffect(() => {
     generateFilterOptions();
@@ -279,15 +304,11 @@ function ItemPurchaseEntry() {
         String(e.touch) === String(touchFilter)
       );
 
-    if (statusFilter !== "All") {
-      filtered = filtered.filter(e => {
-        const s = (e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "In Repair"
-          : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "Repaired"
-          : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "Returned"
-          : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "Sold"
-          : "In Stock";
-        return s === statusFilter;
-      });
+    if (statusFilter === "All") {
+      // "All" now means all active items (In Stock + Partially Sold), excluding fully Sold items
+      filtered = filtered.filter(e => getEntryStatus(e) !== "Sold");
+    } else {
+      filtered = filtered.filter(e => getEntryStatus(e) === statusFilter);
     }
 
     setFilteredEntries(filtered);
@@ -460,6 +481,7 @@ function ItemPurchaseEntry() {
 
       finalPurity: Number(form.finalPurity),
       goldBalance: Number(form.goldBalance || 0),
+      count: form.count ? Number(form.count) : 1,
       advanceTouch: form.advanceTouch ? Number(form.advanceTouch) : null,
     };
 
@@ -489,8 +511,21 @@ function ItemPurchaseEntry() {
         toast.success("Added successfully");
       }
 
+      const touchNum = Number(form.touch);
+      if (touchNum > 0) {
+        const alreadyExists = masterTouchList.some(
+          (t) => Number(t.touch) === touchNum
+        );
+        if (!alreadyExists) {
+          try {
+            await axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, { touch: touchNum });
+          } catch { /* silent — touch save is non-critical */ }
+        }
+      }
+
       fetchEntries();
       fetchRawGoldStock();
+      fetchMasterTouchList();
       closeDialog();
 
     } catch {
@@ -624,7 +659,7 @@ function ItemPurchaseEntry() {
             variant="outlined"
             style={{ minWidth: 160 }}
           >
-            {["All", "In Repair", "Repaired", "Returned", "Sold", "In Stock"].map((s) => (
+            {["All", "Sold", "Partially Sold", "In Stock"].map((s) => (
               <MenuItem key={s} value={s}>
                 {s}
               </MenuItem>
@@ -707,6 +742,7 @@ function ItemPurchaseEntry() {
             <tr>
               <th>S.No</th>
               <th>Item Name</th>
+              <th style={{ width: "60px" }}>Count</th>
               <th>Gross Wt. (g)</th>
               <th>Stone Wt. (g)</th>
               <th>Net Wt. (g)</th>
@@ -717,7 +753,6 @@ function ItemPurchaseEntry() {
               <th>Adv. Gold (g)</th>
               <th>Adv. Touch</th>
               <th>Gold Balance (g)</th>
-              <th style={{ width: "60px" }}>Count</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -739,6 +774,7 @@ function ItemPurchaseEntry() {
                   <tr key={e.id}>
                     <td>{i + 1}</td>
                     <td style={{ fontWeight: "500" }}>{e.itemName}</td>
+                    <td style={{ textAlign: "center" }}>{e.count || 1}</td>
                     <td>{displayGross}</td>
                     <td>{displayStone}</td>
                     <td>{displayNet}</td>
@@ -766,7 +802,6 @@ function ItemPurchaseEntry() {
                         Receive
                       </Button>
                     </td>
-                    <td style={{ textAlign: "center" }}>{e.count || 1}</td>
                     <td style={{ textAlign: "center" }}>
                       <span
                         style={{
@@ -775,19 +810,13 @@ function ItemPurchaseEntry() {
                            fontSize: "12px",
                            fontWeight: "600",
                            backgroundColor:
-                             (e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "#ff9800"
-                               : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "#fbc02d"
-                                 : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "#2196f3"
-                                   : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "#4caf50"
-                                     : "#9e9e9e",
+                             getEntryStatus(e) === "Sold" ? "#4caf50"
+                               : getEntryStatus(e) === "Partially Sold" ? "#ff9800"
+                                 : "#2196f3",
                            color: "white",
                          }}
                        >
-                         {(e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "In Repair"
-                           : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "Repaired"
-                             : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "Returned"
-                               : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "Sold"
-                                 : "In Stock"}
+                         {getEntryStatus(e)}
                        </span>
                      </td>
                      <td>
@@ -946,21 +975,27 @@ function ItemPurchaseEntry() {
           />
 
 
-          <TextField
-            label="Touch"
-            fullWidth
-            required
-            margin="dense"
-            value={form.touch}
-            onChange={(e) =>
-              {
-              const value = e.target.value;
-
-              if (/^\d*\.?\d*$/.test(value)) {
-              handleChange("touch", e.target.value)
-              }
-            }
-            }
+          <Autocomplete
+            freeSolo
+            forcePopupIcon
+            options={masterTouchList.map((t) => String(t.touch))}
+            value={String(form.touch || "")}
+            onChange={(event, newValue) => {
+              const val = newValue || "";
+              if (/^\d*\.?\d*$/.test(val)) handleChange("touch", val);
+            }}
+            onInputChange={(event, newInputValue) => {
+              if (/^\d*\.?\d*$/.test(newInputValue)) handleChange("touch", newInputValue);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Touch"
+                fullWidth
+                required
+                margin="dense"
+              />
+            )}
           />
 
 

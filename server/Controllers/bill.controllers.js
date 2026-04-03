@@ -184,8 +184,8 @@ const createBill = async (req, res) => {
                     actualPure: remPurity.actual,
                     wastagePure: round3(remPurity.final - remPurity.actual),
                     finalPurity: remPurity.final,
-                    advanceGold: shareOfAdvance,
-                    goldBalance: round3(shareOfAdvance - remPurity.final),
+                    // advanceGold and goldBalance are NOT updated here:
+                    // goldBalance only changes when the supplier receives gold back (receiveGold)
                     isSold: false,
                   },
                 });

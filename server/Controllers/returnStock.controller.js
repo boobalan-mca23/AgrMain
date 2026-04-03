@@ -101,18 +101,24 @@ const returnCustomerItem = async (req, res) => {
 
       const bill = await tx.bill.findUnique({
         where: { id: Number(billId) },
-        select: { customer_id: true }
+        select: { customer_id: true, hallmarkQty: true }
       });
-
+      
       if (!bill) throw new Error("Bill not found");
+
+      const reductionCount = Math.min(Number(count || 1), Number(bill.hallmarkQty || 0));
 
       const customerBalance = await tx.customerBillBalance.findUnique({
         where: { customer_id: bill.customer_id }
       });
 
-      const isFull = item.stockType === "ITEM_PURCHASE" || (Number(originalWeight) <= Number(returnedWeight));
-      const hallmarkReduction = isFull ? Number(currentHallmark) : 0;
-      const fwtReduction = isFull ? (Number(item.finalWeight) || 0) : Number(finalWeight);
+      const isFull = Number(originalWeight) <= Number(returnedWeight);
+      const hallmarkReduction = Number(currentHallmark) * reductionCount;
+      
+      // Use finalPurity as fallback if finalWeight is zero (typical for Item Purchase entries)
+      const fwtReduction = isFull 
+        ? (Number(item.finalWeight) || Number(item.finalPurity) || 0) 
+        : (Number(finalWeight) || Number(finalPurity) || 0);
 
       if (customerBalance) {
         await tx.customerBillBalance.update({
@@ -161,14 +167,25 @@ const returnCustomerItem = async (req, res) => {
       //  CREATE STOCK ENTRY BASED ON STOCK TYPE
       let product;
       if (item.stockType === "ITEM_PURCHASE") {
-        // ALWAYS Create a NEW ItemPurchaseEntry record for returns
+        // Fetch original ItemPurchaseEntry to get supplierId and other required fields
+        let supplierId = null;
+        if (item.stockId) {
+          const originalEntry = await tx.itemPurchaseEntry.findUnique({
+            where: { id: item.stockId }
+          });
+          if (originalEntry) supplierId = originalEntry.supplierId;
+        }
+        // Fallback to first available supplier if still null
+        if (!supplierId) {
+          const firstSupplier = await tx.supplier.findFirst();
+          supplierId = firstSupplier?.id || null;
+        }
+
+        // Create a NEW ItemPurchaseEntry record for the returned portion
         product = await tx.itemPurchaseEntry.create({
           data: {
             itemName: item.productName || "Returned Item",
-            supplierId: item.itemPurchase?.supplierId || null,
-            categoryId: item.categoryId || null,
-            itemGroupId: item.itemGroupId || null,
-            unitId: item.unitId || null,
+            supplierId,
             count: Number(count) || 1,
             grossWeight: Number(itemWeight),
             stoneWeight: Number(stoneWeight) || 0,
@@ -252,6 +269,14 @@ const returnCustomerItem = async (req, res) => {
           }
         });
 
+        // Decrement Hallmark Qty on Bill for partial returns too
+        if (reductionCount > 0) {
+          await tx.bill.update({
+            where: { id: Number(billId) },
+            data: { hallmarkQty: { decrement: reductionCount } }
+          });
+        }
+
       } else {
         // Full Return
         await tx.orderItems.update({
@@ -269,11 +294,13 @@ const returnCustomerItem = async (req, res) => {
           }
         });
 
-        // Decrement Hallmark Qty on Bill
-        await tx.bill.update({
-          where: { id: Number(billId) },
-          data: { hallmarkQty: { decrement: 1 } }
-        });
+        // Decrement Hallmark Qty on Bill for full returns
+        if (reductionCount > 0) {
+          await tx.bill.update({
+            where: { id: Number(billId) },
+            data: { hallmarkQty: { decrement: reductionCount } }
+          });
+        }
       }
 
       //  RETURN LOG

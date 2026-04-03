@@ -9,6 +9,7 @@ import {
   TextField,
   Paper,
   TablePagination,
+  Autocomplete,
 } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
@@ -82,6 +83,7 @@ function PurchaseEntry() {
   const [supplierName, setSupplierName] = useState("");
 
   const [rawGoldStock, setRawGoldStock] = useState([]);
+  const [masterTouchList, setMasterTouchList] = useState([]);
 
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
   const [selectedEntryForReceive, setSelectedEntryForReceive] = useState(null);
@@ -100,7 +102,17 @@ function PurchaseEntry() {
     fetchSupplierName();
     fetchEntries();
     fetchRawGoldStock();
+    fetchMasterTouchList();
   }, [supplierId]);
+
+  const fetchMasterTouchList = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+      setMasterTouchList(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setMasterTouchList([]);
+    }
+  };
 
 
   useEffect(() => {
@@ -473,8 +485,21 @@ function PurchaseEntry() {
         toast.success("Added");
       }
 
+      const touchNum = Number(form.touch);
+      if (touchNum > 0) {
+        const alreadyExists = masterTouchList.some(
+          (t) => Number(t.touch) === touchNum
+        );
+        if (!alreadyExists) {
+          try {
+            await axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, { touch: touchNum });
+          } catch { /* silent — touch save is non-critical */ }
+        }
+      }
+
       fetchEntries();
       fetchRawGoldStock();
+      fetchMasterTouchList();
       closeDialog();
 
     } catch {
@@ -853,19 +878,26 @@ function PurchaseEntry() {
             InputProps={{ readOnly: true }}
           />
 
-          <TextField
-            label="Touch"
-            fullWidth
-            margin="dense"
-            value={form.touch}
-            onChange={(e) => {
-              const value = e.target.value;
-
-              if (/^\d*\.?\d*$/.test(value)) {
-                handleChange("touch", e.target.value)
-              }
-            }
-            }
+          <Autocomplete
+            freeSolo
+            forcePopupIcon
+            options={masterTouchList.map((t) => String(t.touch))}
+            value={String(form.touch || "")}
+            onChange={(event, newValue) => {
+              const val = newValue || "";
+              if (/^\d*\.?\d*$/.test(val)) handleChange("touch", val);
+            }}
+            onInputChange={(event, newInputValue) => {
+              if (/^\d*\.?\d*$/.test(newInputValue)) handleChange("touch", newInputValue);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Touch"
+                fullWidth
+                margin="dense"
+              />
+            )}
           />
 
           {/* ✅ Wastage Type */}

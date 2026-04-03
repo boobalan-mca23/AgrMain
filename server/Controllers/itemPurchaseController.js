@@ -173,6 +173,7 @@ exports.createEntry = async (req, res) => {
 
           itemName,
           count: count ? Number(count) : 1,
+          initialCount: count ? Number(count) : 1,
           wastageType,
 
           moveTo: "item",
@@ -199,6 +200,7 @@ exports.createEntry = async (req, res) => {
 
           goldBalance: finalGoldBalance,
 
+          initialCount: count ? Number(count) : 1,
           initialGrossWeight: calc.grossWeight,
           initialStoneWeight: calc.stoneWeight,
           initialNetWeight: calc.netWeight,
@@ -251,7 +253,12 @@ exports.getEntries = async (req, res) => {
       await prisma.itemPurchaseEntry.findMany({
 
         where: {
-          source: { in: ["PURCHASE", "CUSTOMER_RETURN"] },
+          source: "PURCHASE",
+          isInRepair: false,
+          // Exclude internal split/tracking entries that should not appear as independent entries
+          NOT: {
+            moveTo: { in: ["REPAIR_SPLIT", "PROCESSED_BY_REPAIR", "REPAIR_RETURN", "CUSTOMER_RETURN", "returned"] }
+          },
           ...(supplierId ? { supplierId: Number(supplierId) } : {})
         },
 
@@ -454,38 +461,36 @@ exports.updateEntry = async (req, res) => {
 // =============================
 
 exports.deleteEntry = async (req, res) => {
-
   try {
-
     const id = Number(req.params.id);
 
-    const entry =
-      await prisma.itemPurchaseEntry.findUnique({
-        where: { id }
-      });
-
-
-    const supplier =
-      await prisma.supplier.findUnique({
-        where: { id: entry.supplierId }
-      });
-
-
-    res.json({
-      msg: "Deleted"
+    const entry = await prisma.itemPurchaseEntry.findUnique({
+      where: { id }
     });
 
-  }
+    if (!entry) {
+      return res.status(404).json({ msg: "Entry not found" });
+    }
 
-  catch (err) {
+    // Use transaction to ensure all related data is cleaned up
+    await prisma.$transaction([
+      prisma.repairStock.deleteMany({ where: { itemPurchaseId: id } }),
+      prisma.returnLogs.deleteMany({ where: { itemPurchaseId: id } }),
+      prisma.itemPurchaseEntry.delete({ where: { id } })
+    ]);
 
+    if (entry.advanceLogId) {
+      await deleteItemPurchaseFromRawGold(entry.advanceLogId);
+    }
+
+    res.json({ msg: "Deleted successfully" });
+  } catch (err) {
+    console.error("Delete Error:", err);
     res.status(500).json({
-      msg: "Server error",
+      msg: "Delete failed",
       error: err.message
     });
-
   }
-
 };
 
 // =============================
