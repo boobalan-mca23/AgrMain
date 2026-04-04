@@ -370,7 +370,7 @@ function SupplierManagement() {
 
               <tr>
 
-                <td colSpan="7" style={{ textAlign: "center" }}>
+                <td colSpan="9" style={{ textAlign: "center" }}>
                   No suppliers found
                 </td>
 

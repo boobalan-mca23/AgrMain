@@ -47,7 +47,8 @@ exports.getCustomerStatement = async (req, res) => {
       debitHallmark: rawInitHM > 0 ? rawInitHM : 0,
       creditHallmark: rawInitHM < 0 ? Math.abs(rawInitHM) : 0,
       type: "Opening",
-      sortPriority: 0
+      sortPriority: 0,
+      createdAt: customer.createdAt
     };
     
     ledger.push(openingRow);
@@ -84,41 +85,67 @@ exports.getCustomerStatement = async (req, res) => {
 
     // Normalize Receipt Vouchers
     receiptVouchers.forEach(rv => {
+      let desc = rv.type || "Receipt Voucher";
+      let val = 0;
+      const hmPart = rv.receiveHallMark > 0 ? `, HM: ${rv.receiveHallMark}` : "";
+
+      if (rv.type === "Cash" || rv.type === "Cash RTGS") {
+        const purity = rv.purity || 0;
+        const touch = rv.touch || 0;
+        const pureGold = touch > 0 ? ((purity / touch) * 100) : 0;
+        desc = `${rv.type}: Amt: ₹${rv.amount || 0}, Rate: ₹${rv.goldRate || 0}, Touch: ${touch}%, Prty: ${purity.toFixed(3)}g, Pure G: ${pureGold.toFixed(3)}g${hmPart}`;
+        val = pureGold;
+      } else if (rv.type === "Gold") {
+        const purity = rv.purity || 0;
+        desc = `${rv.type}: ${rv.gold || 0}g, Touch: ${rv.touch || 0}%, Prty: ${purity.toFixed(3)}g${hmPart}`;
+        val = purity;
+      } else {
+        // Hallmark-only entry
+        desc = `Hallmark: ${rv.receiveHallMark || 0}`;
+      }
+
       ledger.push({
-        date: rv.createdAt,
+        date: rv.date || rv.createdAt, // If logical date is available as string, use it
+        createdAt: rv.createdAt, // Physical entry timestamp
         module: "Receipt Voucher",
-        description: `Voucher (Gold: ${rv.gold || 0}, Prty: ${rv.purity || 0})`,
+        description: desc,
         debitAmount: 0,
-        creditAmount: rv.amount || 0,
+        creditAmount: val, // For Cash types, val = pureGold. For Gold types, val = purity.
         debitHallmark: 0,
         creditHallmark: rv.receiveHallMark || 0,
+        cashCredit: rv.type === "Cash" || rv.type === "Cash RTGS" ? rv.amount : 0, 
         refId: rv.id,
         sortPriority: 2
       });
     });
 
-    // Normalize Transactions - User wants these on the main "Balance" columns
+    // Normalize Transactions
     transactions.forEach(t => {
       let desc = t.type || "General Transaction";
       let val = 0;
 
       if (t.type === "Cash" || t.type === "Cash RTGS") {
-        const pureGold = t.touch > 0 ? ((t.purity / t.touch) * 100) : 0;
-        desc = `${t.type}: Amt: ₹${t.amount}, Rate: ₹${t.goldRate}, Touch: ${t.touch}%, Prty: ${t.purity.toFixed(3)}g, Pure G: ${pureGold.toFixed(3)}g`;
+        const purity = t.purity || 0;
+        const touch = t.touch || 0;
+        const pureGold = touch > 0 ? ((purity / touch) * 100) : 0;
+        desc = `${t.type}: Amt: ₹${t.amount || 0}, Rate: ₹${t.goldRate || 0}, Touch: ${touch}%, Prty: ${purity.toFixed(3)}g, Pure G: ${pureGold.toFixed(3)}g`;
         val = pureGold;
       } else if (t.type === "Gold") {
-        desc = `${t.type}: ${t.gold}g, Touch: ${t.touch}%, Prty: ${t.purity.toFixed(3)}g`;
-        val = t.purity;
+        const purity = t.purity || 0;
+        desc = `${t.type}: ${t.gold || 0}g, Touch: ${t.touch || 0}%, Prty: ${purity.toFixed(3)}g`;
+        val = purity;
       }
 
       ledger.push({
-        date: t.date,
+        date: t.date || t.createdAt,
+        createdAt: t.createdAt,
         module: "Transaction",
         description: desc,
         debitAmount: 0,
-        creditAmount: val, 
+        creditAmount: val, // For Cash types, val = pureGold. For Gold types, val = purity.
         debitHallmark: 0,
         creditHallmark: 0,
+        cashCredit: t.type === "Cash" || t.type === "Cash RTGS" ? t.amount : 0,
         refId: t.id,
         sortPriority: 2
       });
@@ -128,6 +155,7 @@ exports.getCustomerStatement = async (req, res) => {
     returns.forEach(ret => {
         ledger.push({
             date: ret.createdAt,
+            createdAt: ret.createdAt,
             module: "Return",
             description: `Returned ${ret.productName} (Qty: ${ret.count})`,
             debitAmount: 0,
@@ -143,6 +171,7 @@ exports.getCustomerStatement = async (req, res) => {
     adjustments.forEach(a => {
       ledger.push({
         date: a.date,
+        createdAt: a.date, // Use the adjustment date as sort anchor
         module: "Audit Correction",
         description: a.description || "Manual Balance Adjustment",
         debitAmount: (a.cashAmount || 0) >= 0 ? Math.abs(a.cashAmount || 0) : 0,
@@ -150,17 +179,20 @@ exports.getCustomerStatement = async (req, res) => {
         debitHallmark: (a.hmAmount || 0) >= 0 ? Math.abs(a.hmAmount || 0) : 0,
         creditHallmark: (a.hmAmount || 0) < 0 ? Math.abs(a.hmAmount || 0) : 0,
         refId: a.id,
-        sortPriority: 1, // Keep near Opening Balance
+        sortPriority: 1,
         isManualAdjustment: true
       });
     });
 
-    // Sort by Priority then Date
+    // Sort for Running Balance Calculation: Opening first, then everything else purely by date
     ledger.sort((a, b) => {
-      if (a.sortPriority !== b.sortPriority) {
-        return a.sortPriority - b.sortPriority;
-      }
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
+      // Always keep Opening row at the very beginning
+      if (a.sortPriority === 0) return -1;
+      if (b.sortPriority === 0) return 1;
+      // Everything else: strict chronological order by createdAt (physical entry time)
+      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
+      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
+      return ctA - ctB;
     });
 
     // Calculate Running Balance
@@ -193,12 +225,24 @@ exports.getCustomerStatement = async (req, res) => {
       entry.runningHallmark = currentHallmark;
     });
 
-    // RE-SORT for display: Opening Balance first, then latest to oldest
-    const openingRows = ledger.filter(r => r.sortPriority === 0);
-    const otherRows = ledger.filter(r => r.sortPriority !== 0).sort((a, b) => {
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    // RE-SORT for display: Latest at top — uses createdAt as physical entry anchor (timezone resilient)
+    const sortedLedger = ledger.sort((a, b) => {
+        const dA = new Date(a.date);
+        const dB = new Date(b.date);
+        const dayA = new Date(dA.getFullYear(), dA.getMonth(), dA.getDate()).getTime();
+        const dayB = new Date(dB.getFullYear(), dB.getMonth(), dB.getDate()).getTime();
+        
+        // Different days: newer day first
+        if (dayB !== dayA) return dayB - dayA;
+        
+        // Same day: use physical createdAt timestamp as tie-breaker
+        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (ctB !== ctA) return ctB - ctA;
+        
+        // Final fallback: sortPriority
+        return (b.sortPriority || 0) - (a.sortPriority || 0);
     });
-    const sortedLedger = [...openingRows, ...otherRows];
 
     res.status(200).json({ 
       customerName: customer.name, 
@@ -314,9 +358,13 @@ exports.getGoldsmithStatement = async (req, res) => {
       });
     });
 
+    // Sort for Running Balance Calculation: Opening first, then everything by actual date
     ledger.sort((a, b) => {
-      if (a.sortPriority !== b.sortPriority) return a.sortPriority - b.sortPriority;
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (a.sortPriority === 0) return -1;
+      if (b.sortPriority === 0) return 1;
+      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
+      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
+      return ctA - ctB;
     });
 
     let runningGold = 0;
@@ -333,12 +381,18 @@ exports.getGoldsmithStatement = async (req, res) => {
       entry.runningGold = runningGold;
     });
 
-    // RE-SORT for display: Opening Balance first, then latest to oldest
-    const openingRows = ledger.filter(r => r.sortPriority === 0);
-    const otherRows = ledger.filter(r => r.sortPriority !== 0).sort((a, b) => {
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    // RE-SORT for display: Latest at top — uses createdAt as physical entry anchor (timezone resilient)
+    const sortedLedger = ledger.sort((a, b) => {
+        const dA = new Date(a.date);
+        const dB = new Date(b.date);
+        const dayA = new Date(dA.getFullYear(), dA.getMonth(), dA.getDate()).getTime();
+        const dayB = new Date(dB.getFullYear(), dB.getMonth(), dB.getDate()).getTime();
+        if (dayB !== dayA) return dayB - dayA;
+        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (ctB !== ctA) return ctB - ctA;
+        return (b.sortPriority || 0) - (a.sortPriority || 0);
     });
-    const sortedLedger = [...openingRows, ...otherRows];
 
     res.status(200).json({ 
       goldsmithName: goldsmith.name, 
@@ -459,9 +513,13 @@ exports.getSupplierStatement = async (req, res) => {
       });
     });
 
+    // Sort for Running Balance Calculation: Opening first, then everything by actual date
     ledger.sort((a, b) => {
-      if (a.sortPriority !== b.sortPriority) return a.sortPriority - b.sortPriority;
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (a.sortPriority === 0) return -1;
+      if (b.sortPriority === 0) return 1;
+      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
+      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
+      return ctA - ctB;
     });
 
     let runningBC = 0, runningItem = 0, runningCash = 0;
@@ -480,13 +538,19 @@ exports.getSupplierStatement = async (req, res) => {
       entry.afterBC = runningBC; entry.afterItem = runningItem; entry.afterCash = runningCash;
     });
 
-    // RE-SORT for display: Opening Balance first, then latest to oldest
-    const openingRows = ledger.filter(r => r.sortPriority === 0);
-    const otherRows = ledger.filter(r => r.sortPriority !== 0).sort((a, b) => {
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    // RE-SORT for display: Latest at top — uses createdAt as physical entry anchor (timezone resilient)
+    const sortedLedger = ledger.sort((a, b) => {
+        const dA = new Date(a.date);
+        const dB = new Date(b.date);
+        const dayA = new Date(dA.getFullYear(), dA.getMonth(), dA.getDate()).getTime();
+        const dayB = new Date(dB.getFullYear(), dB.getMonth(), dB.getDate()).getTime();
+        if (dayB !== dayA) return dayB - dayA;
+        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (ctB !== ctA) return ctB - ctA;
+        return (b.sortPriority || 0) - (a.sortPriority || 0);
     });
-    const sortedLedger = [...openingRows, ...otherRows];
-
+    
     res.status(200).json({ 
       supplierName: supplier.name, 
       ledger: sortedLedger,
