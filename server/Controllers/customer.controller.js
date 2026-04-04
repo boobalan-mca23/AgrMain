@@ -30,6 +30,7 @@ exports.createCustomer = async (req, res) => {
               balance:parseFloat(balance) || 0, 
               hallMarkBal:parseFloat(hallMarkBal) || 0,
               initialBalance:parseFloat(balance) || 0,
+              initialHallmark:parseFloat(hallMarkBal) || 0, // Set initial Hallmark at creation
           }
         }
       },
@@ -85,6 +86,33 @@ exports.updateCustomer = async (req, res) => {
   const { name, phone, address, balance, hallMarkBal } = req.body;
 
   try {
+    const oldCustomer = await prisma.customer.findUnique({
+      where: { id: parseInt(id) },
+      include: { customerBillBalance: true }
+    });
+
+    const oldCash = oldCustomer?.customerBillBalance?.balance || 0;
+    const oldHM = oldCustomer?.customerBillBalance?.hallMarkBal || 0;
+
+    const newCash = balance != null && balance !== "" ? parseFloat(balance) : oldCash;
+    const newHM = hallMarkBal != null && hallMarkBal !== "" ? parseFloat(hallMarkBal) : oldHM;
+
+    const adjustmentData = {
+      entityType: "CUSTOMER",
+      entityId: parseInt(id),
+      description: "Manual Balance adjustment from Master"
+    };
+
+    let hasAdjustment = false;
+    if (newCash !== oldCash) {
+      adjustmentData.cashAmount = newCash - oldCash;
+      hasAdjustment = true;
+    }
+    if (newHM !== oldHM) {
+      adjustmentData.hmAmount = newHM - oldHM;
+      hasAdjustment = true;
+    }
+
     const updatedCustomer = await prisma.customer.update({
       where: { id: parseInt(id) },
       data: {
@@ -94,12 +122,12 @@ exports.updateCustomer = async (req, res) => {
         customerBillBalance: {
           upsert: {
             create: {
-              balance: balance != null && balance !== "" ? parseFloat(balance) : 0,
-              hallMarkBal: hallMarkBal != null && hallMarkBal !== "" ? parseFloat(hallMarkBal) : 0,
+              balance: newCash,
+              hallMarkBal: newHM,
             },
             update: {
-              balance: balance != null && balance !== "" ? parseFloat(balance) : 0,
-              hallMarkBal: hallMarkBal != null && hallMarkBal !== "" ? parseFloat(hallMarkBal) : 0,
+              balance: newCash,
+              hallMarkBal: newHM,
             },
           },
         },
@@ -108,6 +136,10 @@ exports.updateCustomer = async (req, res) => {
         customerBillBalance: true,
       },
     });
+
+    if (hasAdjustment) {
+      await prisma.balanceAdjustment.create({ data: adjustmentData });
+    }
 
     res.status(200).json(updatedCustomer);
   } catch (error) {

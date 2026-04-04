@@ -33,6 +33,7 @@ import ReturnStockList from "./components/CustomerReturn&Repair/ReturnStockList"
 import CustomerRepairStockList from "./components/CustomerReturn&Repair/CustomerRepairStockList";
 import Jewelstockreport from "./components/Report/jewelstockreport";
 import BillView from "./components/Billing/BillView";
+import BalanceStatement from "./components/Reports/BalanceStatement";
 
 function App() {
   return (
@@ -259,6 +260,15 @@ function App() {
             </PageWithNavbar>
           }
         ></Route>
+
+        <Route
+          path="/statement/:type/:id"
+          element={
+            <PageWithNavbar>
+              <BalanceStatement />
+            </PageWithNavbar>
+          }
+        />
 
         <Route path="/master/*" element={<Master />} />
       </Routes>

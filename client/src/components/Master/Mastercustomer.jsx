@@ -17,6 +17,7 @@ import { BACKEND_SERVER_URL } from "../../Config/Config";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { TablePagination } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 function MasterCustomer() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,6 +43,7 @@ function MasterCustomer() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowPerPage] = useState(10);
 
+  const navigate = useNavigate();
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);

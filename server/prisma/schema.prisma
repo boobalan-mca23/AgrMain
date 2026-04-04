@@ -162,9 +162,10 @@ model Goldsmith {
   name        String
   phone       String?
   address     String?
-  balance     Float?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @default(now())
+  balance        Float?
+  initialBalance Float?            @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @default(now()) @updatedAt
   summaries   Balances[]
   jobcards    Jobcard[]
   received    Receivedsection[]
@@ -504,13 +505,14 @@ model receiptVoucher {
 }
 
 model customerBillBalance {
-  id             Int      @id @default(autoincrement())
-  balance        Float?
-  hallMarkBal    Float?
-  initialBalance Float?
-  customer_id    Int      @unique
-  createdAt      DateTime @default(now())
-  customers      Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  id              Int      @id @default(autoincrement())
+  balance         Float?
+  hallMarkBal     Float?
+  initialBalance  Float?
+  initialHallmark Float?   // Added to fix Opening Balance row bug
+  customer_id     Int      @unique
+  createdAt       DateTime @default(now())
+  customers       Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
 }
 
 model Supplier {
@@ -730,4 +732,18 @@ enum StockSource {
   NORMAL
   CUSTOMER_RETURN
   REPAIR_RETURN
+}
+
+model BalanceAdjustment {
+  id          Int      @id @default(autoincrement())
+  entityType  String   // "CUSTOMER", "GOLDSMITH", "SUPPLIER"
+  entityId    Int
+  cashAmount  Float?
+  hmAmount    Float?
+  goldAmount  Float?
+  bcAmount    Float?
+  itemAmount  Float?
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
 }

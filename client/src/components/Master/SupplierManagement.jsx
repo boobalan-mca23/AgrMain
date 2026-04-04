@@ -12,6 +12,16 @@ import {
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import HistoryIcon from "@mui/icons-material/History";
+import { 
+  Menu, 
+  MenuItem, 
+  IconButton, 
+  Tooltip,
+  TablePagination
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 import { ToastContainer, toast } from "react-toastify";
 
@@ -27,11 +37,9 @@ const initialForm = {
   contactNumber: "",
   address: "",
   gstOrBusinessId: "",
-  openingBCBalance: 0,
-  openingItemBalance: 0,
-  displayBC: 0,
-  displayItem: 0,
-  displayGrand: 0
+  totalBCBalance: 0,
+  totalItemBalance: 0,
+  totalBalance: 0
 };
 
 
@@ -52,6 +60,21 @@ function SupplierManagement() {
   const [form, setForm] = useState(initialForm);
   const [moduleTransactions, setModuleTransactions] = useState({ bc: 0, item: 0, general: 0 });
   const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+
+  // Menu-related states
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [menuSupplier, setMenuSupplier] = useState(null);
+
+  const handleMenuOpen = (event, supplier) => {
+    setAnchorEl(event.currentTarget);
+    setMenuSupplier(supplier);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuSupplier(null);
+  };
 
 
   useEffect(() => {
@@ -150,12 +173,9 @@ function SupplierManagement() {
       contactNumber: supplier.contactNumber,
       address: supplier.address,
       gstOrBusinessId: supplier.gstOrBusinessId,
-      // Removed openingBalance from state
-      openingBCBalance: supplier.openingBCBalance || 0,
-      openingItemBalance: supplier.openingItemBalance || 0,
-      displayBC: supplier.totalBCBalance || 0,
-      displayItem: supplier.totalItemBalance || 0,
-      displayGrand: supplier.totalBalance || 0
+      totalBCBalance: supplier.totalBCBalance || 0,
+      totalItemBalance: supplier.totalItemBalance || 0,
+      totalBalance: supplier.totalBalance || 0
     });
 
     setOpenDialog(true);
@@ -188,7 +208,7 @@ function SupplierManagement() {
 
     try {
       setSaving(true);
-      const { displayBC, displayItem, displayGrand, ...payload } = form;
+      const payload = { ...form };
 
       if (isEdit) {
 
@@ -378,28 +398,14 @@ function SupplierManagement() {
                 </td>
 
                 <td style={{ textAlign: "center" }}>
-
-                  <EditIcon
-                    style={{
-                      cursor: "pointer",
-                      marginRight: 8,
-                      color: "#388e3c"
-                    }}
-                    onClick={() =>
-                      openEditDialog(supplier)
-                    }
-                  />
-
-                  <DeleteIcon
-                    style={{
-                      cursor: "pointer",
-                      color: "#d32f2f"
-                    }}
-                    onClick={() =>
-                      handleDelete(supplier.id)
-                    }
-                  />
-
+                  <IconButton
+                    aria-label="more"
+                    aria-controls="supplier-menu"
+                    aria-haspopup="true"
+                    onClick={(e) => handleMenuOpen(e, supplier)}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
                 </td>
 
               </tr>
@@ -496,15 +502,13 @@ function SupplierManagement() {
              label="BC Balance (g)"
              fullWidth
              margin="dense"
-             value={form.displayBC}
+             value={form.totalBCBalance}
              onChange={(e) => {
-               const val = Number(e.target.value) || 0;
-               const newOpening = val - moduleTransactions.bc;
+               const val = e.target.value;
                setForm({
                  ...form,
-                 displayBC: e.target.value, // Keep literal for typing
-                 openingBCBalance: newOpening,
-                 displayGrand: (Number(val) || 0) + (Number(form.displayItem) || 0)
+                 totalBCBalance: val,
+                 totalBalance: (Number(val) || 0) + (Number(form.totalItemBalance) || 0)
                });
              }}
            />
@@ -513,15 +517,13 @@ function SupplierManagement() {
              label="Item Balance (g)"
              fullWidth
              margin="dense"
-             value={form.displayItem}
+             value={form.totalItemBalance}
              onChange={(e) => {
-               const val = Number(e.target.value) || 0;
-               const newOpening = val - moduleTransactions.item;
+               const val = e.target.value;
                setForm({
                  ...form,
-                 displayItem: e.target.value, // Keep literal for typing
-                 openingItemBalance: newOpening,
-                 displayGrand: (Number(form.displayBC) || 0) + (Number(val) || 0)
+                 totalItemBalance: val,
+                 totalBalance: (Number(form.totalBCBalance) || 0) + (Number(val) || 0)
                });
              }}
            />
@@ -530,8 +532,8 @@ function SupplierManagement() {
              label="Grand Total Balance (g)"
              fullWidth
              margin="dense"
-             value={form.displayGrand}
-             disabled // Grand Total is naturally the sum of the two module inputs
+             value={form.totalBalance}
+             disabled 
            />
 
         </DialogContent>
@@ -555,6 +557,36 @@ function SupplierManagement() {
 
       </Dialog>
 
+      {/* ACTION MENU */}
+      <Menu
+        id="supplier-menu"
+        anchorEl={anchorEl}
+        keepMounted
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => {
+          openEditDialog(menuSupplier);
+          handleMenuClose();
+        }}>
+          <EditIcon fontSize="small" style={{ marginRight: 10, color: "#388e3c" }} />
+          Edit
+        </MenuItem>
+        <MenuItem onClick={() => {
+          handleDelete(menuSupplier.id);
+          handleMenuClose();
+        }}>
+          <DeleteIcon fontSize="small" style={{ marginRight: 10, color: "#d32f2f" }} />
+          Delete
+        </MenuItem>
+        <MenuItem onClick={() => {
+          navigate(`/statement/supplier/${menuSupplier.id}`);
+          handleMenuClose();
+        }}>
+          <HistoryIcon fontSize="small" style={{ marginRight: 10, color: "#1976d2" }} />
+          Statement View
+        </MenuItem>
+      </Menu>
 
     </div>
 

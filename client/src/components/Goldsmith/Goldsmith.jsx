@@ -16,9 +16,12 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  IconButton
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AssignmentIndOutlinedIcon from "@mui/icons-material/AssignmentIndOutlined";
+import HistoryIcon from "@mui/icons-material/History";
+import { useNavigate } from "react-router-dom";
 
 import DeleteIcon from "@mui/icons-material/Delete";
 import { toast, ToastContainer } from "react-toastify";
@@ -68,6 +71,7 @@ const Goldsmith = () => {
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState(false);
   const [lastJobCard, setLastJobCard] = useState({});
+  const navigate = useNavigate();
 
   const fetchRawGold = async () => {
     try {
@@ -332,6 +336,12 @@ const Goldsmith = () => {
                           style={{ cursor: "pointer" }}
                         />
                       </Link>
+                    </Tooltip>
+
+                    <Tooltip title="View Statement">
+                      <IconButton onClick={() => navigate(`/statement/goldsmith/${goldsmith.id}`)}>
+                        <HistoryIcon color="secondary" />
+                      </IconButton>
                     </Tooltip>
                   </TableCell>
                 </TableRow>
