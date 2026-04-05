@@ -850,6 +850,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             grossWeight: productStock.grossWeight,
             netWeight: productStock.netWeight,
             purity: productStock.finalPurity,
+            count: Number(repairProduct.count) || 1,
           }
         });
       } else {
@@ -883,6 +884,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             grossWeight: productStock.itemWeight,
             netWeight: productStock.netWeight,
             purity: productStock.finalPurity,
+            count: Number(repairProduct.count) || 1,
           }
         });
       }

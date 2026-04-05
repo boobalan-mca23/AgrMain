@@ -18,6 +18,8 @@ import PrintIcon from '@mui/icons-material/Print';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import ReactDOMServer from "react-dom/server";
 import StatementPrint from "./StatementPrint";
+import ReturnDetailsModal from "../CustomerReturn&Repair/ReturnDetailsModal";
+import RepairDetailsModal from "../CustomerReturn&Repair/RepairDetailsModal";
 import "./BalanceStatement.css";
 
 const BalanceStatement = () => {
@@ -34,6 +36,9 @@ const BalanceStatement = () => {
   
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState(null);
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [repairModalOpen, setRepairModalOpen] = useState(false);
+  const [selectedLogRow, setSelectedLogRow] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -45,6 +50,7 @@ const BalanceStatement = () => {
         }
       });
       setData(response.data.ledger);
+      console.log("data",response.data.ledger)
       setEntityName(response.data.customerName || response.data.goldsmithName || response.data.supplierName || "");
       setCurrentBalances(response.data.currentBalances || { cash: 0, hallmark: 0, gold: 0 });
     } catch (error) {
@@ -61,6 +67,12 @@ const BalanceStatement = () => {
   const handleViewDetails = (row) => {
     if (row.module === "Bill") {
       navigate(`/bill-view/${row.refId}`);
+    } else if (row.module === "Return" && row.metadata) {
+      setSelectedLogRow(row.metadata);
+      setReturnModalOpen(true);
+    } else if (row.module === "Repair" && row.metadata) {
+      setSelectedLogRow(row.metadata);
+      setRepairModalOpen(true);
     } else {
       setSelectedDetail(row);
       setDetailDialogOpen(true);
@@ -407,6 +419,17 @@ const BalanceStatement = () => {
           <Button variant="contained" color="primary" onClick={() => handleViewDetails(selectedDetail)}>View Source</Button>
         </DialogActions>
       </Dialog>
+
+      <ReturnDetailsModal 
+        open={returnModalOpen} 
+        onClose={() => setReturnModalOpen(false)} 
+        selectedReturn={selectedLogRow} 
+      />
+      <RepairDetailsModal 
+        open={repairModalOpen} 
+        onClose={() => setRepairModalOpen(false)} 
+        selectedRepair={selectedLogRow} 
+      />
     </div>
   );
 };

@@ -312,7 +312,14 @@ const returnCustomerItem = async (req, res) => {
           itemPurchaseId: item.stockType === "ITEM_PURCHASE" ? product.id : null,
           productName: item.productName,
           weight: Number(itemWeight),
+          awt: Number(netWeight),
+          pureGoldReduction: Number(fwtReduction),
+          hallmarkReduction: Number(hallmarkReduction),
           count: Number(count) || 1,
+          stoneWeight: Number(stoneWeight || item.stoneWeight || 0),
+          enteredStoneWeight: Number(stoneWeight || 0),
+          touch: Number(touch || item.touch || 0),
+          percentage: Number(item.percentage || 0),
           reason: reason || "Customer return",
           source: "CUSTOMER"
         }

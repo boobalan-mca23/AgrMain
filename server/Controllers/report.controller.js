@@ -32,6 +32,19 @@ exports.getCustomerStatement = async (req, res) => {
       prisma.balanceAdjustment.findMany({ where: { entityType: "CUSTOMER", entityId: parseInt(id), ...createdAtFilter } }),
     ]);
 
+    const repairs = await prisma.repairStock.findMany({
+      where: {
+        bill: {
+          customer_id: parseInt(id)
+        },
+        ...createdAtFilter
+      },
+      include: {
+        bill: true,
+        orderItem: true
+      }
+    });
+
     let ledger = [];
 
     // 1. Initial Balance row - Using fixed Birth values with fallbacks
@@ -55,13 +68,15 @@ exports.getCustomerStatement = async (req, res) => {
 
     // Normalize Bills
     bills.forEach(b => {
+      const hallmarkAmt = (Number(b.hallMark) || 0) * (Number(b.hallmarkQty) || 1);
+      const hmDesc = (hallmarkAmt > 0) ? `, Hallmark: ${hallmarkAmt}` : "";
       ledger.push({
         date: b.date || b.createdAt,
         module: "Bill",
-        description: `Bill #${b.billno || b.id}`,
+        description: `Bill #${b.billno || b.id}${hmDesc}`,
         debitAmount: b.billAmount || 0,
         creditAmount: 0,
-        debitHallmark: b.hallMark || 0,
+        debitHallmark: hallmarkAmt,
         creditHallmark: 0,
         refId: b.id,
         sortPriority: 2
@@ -152,18 +167,81 @@ exports.getCustomerStatement = async (req, res) => {
     });
 
     // Normalize Returns
+    
     returns.forEach(ret => {
+        console.log("ret",ret)
+        const awtVal = ret.awt ?? ret.weight ?? 0;
+        const pureRed = ret.pureGoldReduction ?? 0;
+        const hmRed = ret.hallmarkReduction ?? 0;
+        
+        let desc = `Returned ${ret.productName} (Qty: ${ret.count}, Gross Wt: ${ret.weight}g, AWT: ${awtVal}g)`;
+        if (pureRed > 0) desc += `, Balance Ded: ${pureRed.toFixed(3)}g`;
+        if (hmRed > 0) desc += `, HM Ded: ${hmRed}`;
+
         ledger.push({
             date: ret.createdAt,
             createdAt: ret.createdAt,
             module: "Return",
-            description: `Returned ${ret.productName} (Qty: ${ret.count})`,
+            description: desc,
             debitAmount: 0,
-            creditAmount: 0,
+            creditAmount: pureRed,
             debitHallmark: 0,
-            creditHallmark: 0,
+            creditHallmark: hmRed,
             refId: ret.id,
-            sortPriority: 2
+            sortPriority: 2,
+            metadata: {
+                productName: ret.productName,
+                weight: ret.weight,
+                count: ret.count,
+                stoneWeight: ret.stoneWeight,
+                enteredStoneWeight: ret.enteredStoneWeight,
+                awt: awtVal,
+                percentage: ret.percentage,
+                pureGoldReduction: pureRed,
+                reason: ret.reason
+            }
+        });
+    });
+
+    console.log("repairs",repairs)
+    
+    // Normalize Repairs
+    repairs.forEach(rep => {
+        // Use rep.purity as the primary source - it stores the FWT (pure gold) for the repair record
+        const fwtRed = Number(rep.purity) || 0; 
+        const hallmarkRate = Number(rep.bill?.hallMark) || 0;
+        
+        // Fetch hallmark count (reductionCount from stored repair count)
+        // Since we now store count on RepairStock, we use rep.count
+        const reductionCount = Number(rep.count) || 1;
+        const hmRed = hallmarkRate * reductionCount;
+
+        let desc = `Sent for Repair: ${rep.itemName} (Gross Wt: ${rep.grossWeight}g, Pure Gold Dev: ${fwtRed.toFixed(3)}g)`;
+        if (rep.reason) desc += ` - Reason: ${rep.reason}`;
+        if (hmRed > 0) desc += ` (HM Red: ${hmRed})`;
+
+        ledger.push({
+            date: rep.sentDate || rep.createdAt,
+            createdAt: rep.createdAt,
+            module: "Repair",
+            description: desc,
+            debitAmount: 0,
+            creditAmount: fwtRed,
+            debitHallmark: 0,
+            creditHallmark: hmRed,
+            refId: rep.id,
+            sortPriority: 2,
+            metadata: {
+                productName: rep.itemName,
+                weight: rep.grossWeight,
+                count: rep.orderItem?.count || 1,
+                stoneWeight: rep.orderItem?.stoneWeight || 0,
+                enteredStoneWeight: rep.orderItem?.enteredStoneWeight || 0,
+                awt: rep.netWeight || rep.grossWeight,
+                percentage: rep.orderItem?.percentage || 100,
+                pureGoldReduction: fwtRed,
+                reason: rep.reason
+            }
         });
     });
 
@@ -184,14 +262,23 @@ exports.getCustomerStatement = async (req, res) => {
       });
     });
 
-    // Sort for Running Balance Calculation: Opening first, then everything else purely by date
+    // Sort for Running Balance Calculation:
+    // 1. sortPriority (Opening row first)
+    // 2. Date (Logical date of transaction)
+    // 3. createdAt (Entry order when dates are same)
     ledger.sort((a, b) => {
       // Always keep Opening row at the very beginning
       if (a.sortPriority === 0) return -1;
       if (b.sortPriority === 0) return 1;
-      // Everything else: strict chronological order by createdAt (physical entry time)
-      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
-      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
+
+      // Primary sort by date (Logical)
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+
+      // Secondary sort by createdAt (Entry Order)
+      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : dateA;
+      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : dateB;
       return ctA - ctB;
     });
 
@@ -225,19 +312,21 @@ exports.getCustomerStatement = async (req, res) => {
       entry.runningHallmark = currentHallmark;
     });
 
-    // RE-SORT for display: Latest at top — uses createdAt as physical entry anchor (timezone resilient)
+    // RE-SORT for display: Latest at top — uses logical date, then createdAt sequence
     const sortedLedger = ledger.sort((a, b) => {
-        const dA = new Date(a.date);
-        const dB = new Date(b.date);
-        const dayA = new Date(dA.getFullYear(), dA.getMonth(), dA.getDate()).getTime();
-        const dayB = new Date(dB.getFullYear(), dB.getMonth(), dB.getDate()).getTime();
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
         
-        // Different days: newer day first
+        // Use logic date normalized to Day as primary key (reverse chronological)
+        const dayA = Math.floor(dateA / (1000 * 60 * 60 * 24));
+        const dayB = Math.floor(dateB / (1000 * 60 * 60 * 24));
+        
         if (dayB !== dayA) return dayB - dayA;
         
-        // Same day: use physical createdAt timestamp as tie-breaker
-        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        // Within same day, use strict entry order (Reverse Chronological: Latest Entry on top)
+        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : dateA;
+        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : dateB;
+        
         if (ctB !== ctA) return ctB - ctA;
         
         // Final fallback: sortPriority

@@ -9,8 +9,12 @@ import {
   TableRow,
   TablePagination,
   TextField,
-  Button
+  Button,
+  IconButton,
+  Tooltip
 } from "@mui/material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import ReturnDetailsModal from "./ReturnDetailsModal";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { toast, ToastContainer } from "react-toastify";
@@ -29,6 +33,8 @@ const ReturnStockList = () => {
   const [fromDate, setFromDate] = useState(() => dayjs().subtract(15, "day"));
   const [toDate, setToDate] = useState(() => dayjs());
   const [stockFilter, setStockFilter] = useState("ALL"); // ALL, PRODUCT, ITEM_PURCHASE
+  const [selectedReturn, setSelectedReturn] = useState(null);
+  const [openDetailModal, setOpenDetailModal] = useState(false);
 
   useEffect(() => {
     if (fromDate && toDate && toDate.isBefore(fromDate, "day")) {
@@ -268,6 +274,7 @@ const ReturnStockList = () => {
             <TableCell className="BillTable-th-td">Stone Wt</TableCell>
             <TableCell className="BillTable-th-td">Purity</TableCell>
             <TableCell className="BillTable-th-td BillTable-reason">Reason</TableCell>
+            <TableCell className="BillTable-th-td">Action</TableCell>
           </TableRow>
         </TableHead>
 
@@ -284,6 +291,20 @@ const ReturnStockList = () => {
                 <TableCell className="BillTable-tb-td">{fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</TableCell>
                 <TableCell className="BillTable-tb-td">{fmtNum(item.product?.finalPurity ?? item.itemPurchase?.finalPurity ?? 0)}</TableCell>
                 <TableCell className="BillTable-tb-td BillTable-reason">{item.reason || "-"}</TableCell>
+                <TableCell className="BillTable-tb-td">
+                  <Tooltip title="View Full Details">
+                    <IconButton 
+                      size="small" 
+                      color="primary"
+                      onClick={() => {
+                        setSelectedReturn(item);
+                        setOpenDetailModal(true);
+                      }}
+                    >
+                      <VisibilityIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
               </TableRow>
             ))
           ) : (
@@ -304,6 +325,12 @@ const ReturnStockList = () => {
           setRowsPerPage(parseInt(e.target.value, 10));
           setPage(0);
         }}
+      />
+
+      <ReturnDetailsModal 
+        open={openDetailModal} 
+        onClose={() => setOpenDetailModal(false)} 
+        selectedReturn={selectedReturn} 
       />
     </Box>
   );

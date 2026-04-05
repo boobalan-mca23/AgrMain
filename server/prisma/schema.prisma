@@ -681,6 +681,7 @@ model RepairStock {
   grossWeight    Float?
   netWeight      Float?
   purity         Float?
+  count          Int?
   billId         Int?
   orderItemId    Int?
   bill           Bill?              @relation(fields: [billId], references: [id])
@@ -712,8 +713,15 @@ model returnLogs {
   productStockId Int?
   itemPurchaseId Int?
   productName    String
-  weight         Float
-  count          Int
+  weight             Float
+  awt                Float?
+  pureGoldReduction  Float?
+  hallmarkReduction  Float?
+  count              Int
+  stoneWeight        Float?
+  enteredStoneWeight Float?
+  touch              Float?
+  percentage         Float?
   reason         String?            @db.Text
   source         String
   createdAt      DateTime           @default(now())
