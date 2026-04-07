@@ -66,17 +66,39 @@ exports.getCustomerStatement = async (req, res) => {
     
     ledger.push(openingRow);
 
+    // Group returns and repairs by billId for Hallmark correction
+    // This allows us to reconstruct the "Original" hallmark amount for the ledger
+    const hallmarkReturnMap = returns.reduce((acc, ret) => {
+        if (ret.billId) {
+            acc[ret.billId] = (acc[ret.billId] || 0) + (Number(ret.hallmarkReduction) || 0);
+        }
+        return acc;
+    }, {});
+
+    const hallmarkRepairMap = repairs.reduce((acc, rep) => {
+        if (rep.billId) {
+            const hallmarkRate = Number(rep.bill?.hallMark) || 0;
+            const reductionCount = Number(rep.count) || 0;
+            acc[rep.billId] = (acc[rep.billId] || 0) + (hallmarkRate * reductionCount);
+        }
+        return acc;
+    }, {});
+
     // Normalize Bills
     bills.forEach(b => {
-      const hallmarkAmt = (Number(b.hallMark) || 0) * (Number(b.hallmarkQty) || 1);
-      const hmDesc = (hallmarkAmt > 0) ? `, Hallmark: ${hallmarkAmt}` : "";
+      const returnedHMAmt = hallmarkReturnMap[b.id] || 0;
+      const repairedHMAmt = hallmarkRepairMap[b.id] || 0;
+      const currentHallmarkAmt = (Number(b.hallmarkQty) || 0) * (Number(b.hallMark) || 0);
+      const originalHallmarkAmt = currentHallmarkAmt + returnedHMAmt + repairedHMAmt;
+
+      const hmDesc = (originalHallmarkAmt > 0) ? `, Hallmark: ${originalHallmarkAmt.toFixed(3)}` : "";
       ledger.push({
         date: b.date || b.createdAt,
         module: "Bill",
         description: `Bill #${b.billno || b.id}${hmDesc}`,
         debitAmount: b.billAmount || 0,
         creditAmount: 0,
-        debitHallmark: hallmarkAmt,
+        debitHallmark: originalHallmarkAmt,
         creditHallmark: 0,
         refId: b.id,
         sortPriority: 2
@@ -94,7 +116,16 @@ exports.getCustomerStatement = async (req, res) => {
         debitHallmark: 0,
         creditHallmark: br.receiveHallMark || 0,
         refId: br.id,
-        sortPriority: 2
+        sortPriority: 2,
+        metadata: {
+            type: br.type,
+            amount: br.amount,
+            goldRate: br.goldRate,
+            purity: br.purity,
+            goldWeight: br.gold,
+            touch: br.touch,
+            hallmark: br.receiveHallMark
+        }
       });
     });
 
@@ -130,7 +161,16 @@ exports.getCustomerStatement = async (req, res) => {
         creditHallmark: rv.receiveHallMark || 0,
         cashCredit: rv.type === "Cash" || rv.type === "Cash RTGS" ? rv.amount : 0, 
         refId: rv.id,
-        sortPriority: 2
+        sortPriority: 2,
+        metadata: {
+            type: rv.type,
+            amount: rv.amount,
+            goldRate: rv.goldRate,
+            goldWeight: rv.gold,
+            touch: rv.touch,
+            purity: rv.purity,
+            hallmark: rv.receiveHallMark
+        }
       });
     });
 
@@ -162,7 +202,15 @@ exports.getCustomerStatement = async (req, res) => {
         creditHallmark: 0,
         cashCredit: t.type === "Cash" || t.type === "Cash RTGS" ? t.amount : 0,
         refId: t.id,
-        sortPriority: 2
+        sortPriority: 2,
+        metadata: {
+            type: t.type,
+            amount: t.amount,
+            goldRate: t.goldRate,
+            goldWeight: t.gold,
+            touch: t.touch,
+            purity: t.purity
+        }
       });
     });
 
@@ -198,7 +246,9 @@ exports.getCustomerStatement = async (req, res) => {
                 awt: awtVal,
                 percentage: ret.percentage,
                 pureGoldReduction: pureRed,
-                reason: ret.reason
+                reason: ret.reason,
+                createdAt: ret.createdAt,
+                hallmarkReduction: hmRed
             }
         });
     });
@@ -207,16 +257,15 @@ exports.getCustomerStatement = async (req, res) => {
     
     // Normalize Repairs
     repairs.forEach(rep => {
-        // Use rep.purity as the primary source - it stores the FWT (pure gold) for the repair record
-        const fwtRed = Number(rep.purity) || 0; 
+        // Use rep.fwt if available, otherwise fallback to rep.purity
+        const fwtRed = Number(rep.fwt) || Number(rep.purity) || 0; 
         const hallmarkRate = Number(rep.bill?.hallMark) || 0;
         
         // Fetch hallmark count (reductionCount from stored repair count)
-        // Since we now store count on RepairStock, we use rep.count
         const reductionCount = Number(rep.count) || 1;
         const hmRed = hallmarkRate * reductionCount;
 
-        let desc = `Sent for Repair: ${rep.itemName} (Gross Wt: ${rep.grossWeight}g, Pure Gold Dev: ${fwtRed.toFixed(3)}g)`;
+        let desc = `Sent for Repair: ${rep.itemName} (Gross Wt: ${rep.grossWeight}g, FWT: ${fwtRed.toFixed(3)}g)`;
         if (rep.reason) desc += ` - Reason: ${rep.reason}`;
         if (hmRed > 0) desc += ` (HM Red: ${hmRed})`;
 
@@ -240,7 +289,9 @@ exports.getCustomerStatement = async (req, res) => {
                 awt: rep.netWeight || rep.grossWeight,
                 percentage: rep.orderItem?.percentage || 100,
                 pureGoldReduction: fwtRed,
-                reason: rep.reason
+                reason: rep.reason,
+                createdAt: rep.createdAt || rep.sentDate,
+                hallmarkReduction: hmRed
             }
         });
     });
@@ -249,7 +300,7 @@ exports.getCustomerStatement = async (req, res) => {
     adjustments.forEach(a => {
       ledger.push({
         date: a.date,
-        createdAt: a.date, // Use the adjustment date as sort anchor
+        createdAt: a.createdAt || a.date, // Use physical entry order to help tie-break same-day adjustments
         module: "Audit Correction",
         description: a.description || "Manual Balance Adjustment",
         debitAmount: (a.cashAmount || 0) >= 0 ? Math.abs(a.cashAmount || 0) : 0,
@@ -271,14 +322,25 @@ exports.getCustomerStatement = async (req, res) => {
       if (a.sortPriority === 0) return -1;
       if (b.sortPriority === 0) return 1;
 
-      // Primary sort by date (Logical)
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      if (dateA !== dateB) return dateA - dateB;
+      const d1 = new Date(a.date);
+      const d2 = new Date(b.date);
 
-      // Secondary sort by createdAt (Entry Order)
-      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : dateA;
-      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : dateB;
+      // Normalize to Start of Day for day-to-day comparison
+      const day1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
+      const day2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
+
+      // Primary sort: if different days, sort chronologically
+      if (day1 !== day2) return day1 - day2;
+
+      // Secondary sort: use exact physical entry timestamp to sequence same-day actions
+      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : d1.getTime();
+      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : d2.getTime();
+      
+      // If physical timestamps are identical, fall back to priority
+      if (ctA === ctB && (a.sortPriority || 0) !== (b.sortPriority || 0)) {
+         return (a.sortPriority || 0) - (b.sortPriority || 0);
+      }
+      
       return ctA - ctB;
     });
 
@@ -364,12 +426,29 @@ exports.getGoldsmithStatement = async (req, res) => {
 
     const filterObj = Object.keys(createdAtFilter).length > 0 ? { createdAt: createdAtFilter } : {};
 
-    const [givenGold, receivedSections, deliveries, repairs, adjustments] = await Promise.all([
-      prisma.givenGold.findMany({ where: { goldsmithId: parseInt(id), ...filterObj } }),
-      prisma.receivedsection.findMany({ where: { goldsmithId: parseInt(id), ...filterObj } }),
-      prisma.itemDelivery.findMany({ where: { goldsmithId: parseInt(id), ...filterObj } }),
-      prisma.repair.findMany({ where: { goldsmithId: parseInt(id), ...filterObj } }),
-      prisma.balanceAdjustment.findMany({ where: { entityType: "GOLDSMITH", entityId: parseInt(id), ...filterObj } }),
+    const [givenGold, receivedSections, deliveries, repairs, adjustments, repairStock] = await Promise.all([
+      prisma.givenGold.findMany({ 
+        where: { goldsmithId: parseInt(id), ...filterObj },
+        include: { jobcard: true }
+      }),
+      prisma.receivedsection.findMany({ 
+        where: { goldsmithId: parseInt(id), ...filterObj },
+        include: { jobcard: true }
+      }),
+      prisma.itemDelivery.findMany({ 
+        where: { goldsmithId: parseInt(id), ...filterObj },
+        include: { jobcard: true }
+      }),
+      prisma.repair.findMany({ 
+        where: { goldsmithId: parseInt(id), ...filterObj } 
+      }),
+      prisma.balanceAdjustment.findMany({ 
+        where: { entityType: "GOLDSMITH", entityId: parseInt(id), ...filterObj } 
+      }),
+      prisma.repairStock.findMany({
+        where: { goldsmithId: parseInt(id) }, // We'll filter by date manually for sent/received
+        include: { product: true, itemPurchase: true }
+      })
     ]);
 
     let ledger = [];
@@ -378,6 +457,7 @@ exports.getGoldsmithStatement = async (req, res) => {
     const openingBal = (goldsmith.initialBalance !== null) ? goldsmith.initialBalance : (goldsmith.balance || 0);
     ledger.push({
       date: goldsmith.createdAt,
+      createdAt: goldsmith.createdAt,
       module: openingBal < 0 ? "Excess Balance" : "Opening Balance",
       description: "Initial Balance",
       debitGold: openingBal > 0 ? openingBal : 0,
@@ -389,55 +469,141 @@ exports.getGoldsmithStatement = async (req, res) => {
     givenGold.forEach(gg => {
       ledger.push({
         date: gg.createdAt,
+        createdAt: gg.createdAt,
         module: "Gold Given",
-        description: `Issue to Goldsmith (Touch: ${gg.touch || 0})`,
+        description: `JC#${gg.jobcardId || gg.id}: Issue to Goldsmith (Touch: ${gg.touch || 0})`,
         debitGold: gg.purity || 0,
         creditGold: 0,
         refId: gg.id,
-        sortPriority: 2
+        jobcardId: gg.jobcardId,
+        sortPriority: 2,
+        metadata: {
+            type: "Gold Issue",
+            weight: gg.weight,
+            touch: gg.touch,
+            purity: gg.purity,
+            jobcardId: gg.jobcardId
+        }
       });
     });
 
     receivedSections.forEach(rs => {
       ledger.push({
         date: rs.createdAt,
+        createdAt: rs.createdAt,
         module: "Gold Received",
-        description: `Receipt from Goldsmith (Touch: ${rs.touch || 0})`,
+        description: `JC#${rs.jobcardId || rs.id}: Receipt from Goldsmith (Touch: ${rs.touch || 0})`,
         debitGold: 0,
         creditGold: rs.purity || 0,
         refId: rs.id,
-        sortPriority: 2
+        jobcardId: rs.jobcardId,
+        sortPriority: 2,
+        metadata: {
+            type: "Gold Receipt",
+            weight: rs.weight,
+            touch: rs.touch,
+            purity: rs.purity,
+            jobcardId: rs.jobcardId
+        }
       });
     });
 
     deliveries.forEach(d => {
       ledger.push({
         date: d.createdAt,
+        createdAt: d.createdAt,
         module: "Item Delivery",
-        description: `Finished Item: ${d.itemName} (Net: ${d.netWeight}, Wastage: ${d.wastagePure})`,
+        description: `JC#${d.jobcardId || d.id}: Finished Item: ${d.itemName} (Net: ${d.netWeight}, Wastage: ${d.wastagePure})`,
         debitGold: 0,
         creditGold: d.finalPurity || (d.netWeight + d.wastagePure) || 0,
         refId: d.id,
-        sortPriority: 2
+        jobcardId: d.jobcardId,
+        sortPriority: 2,
+        metadata: {
+            itemName: d.itemName,
+            itemWeight: d.itemWeight,
+            count: d.count,
+            touch: d.touch,
+            netWeight: d.netWeight,
+            wastagePure: d.wastagePure,
+            finalPurity: d.finalPurity,
+            jobcardId: d.jobcardId
+        }
       });
     });
 
     repairs.forEach(r => {
       ledger.push({
         date: r.createdAt,
+        createdAt: r.createdAt,
         module: "Repair",
         description: "Repair Work Done",
         debitGold: 0,
         creditGold: r.netWeight || 0,
         refId: r.id,
-        sortPriority: 2
+        sortPriority: 2,
+        metadata: {
+            netWeight: r.netWeight,
+            totalGiven: r.totalGiven,
+            totalItem: r.totalItem,
+            stone: r.stone
+        }
       });
+    });
+
+    // Handle RepairStock (Sent & Returned)
+    repairStock.forEach(rs => {
+      // 1. Sent to Repair (Debit)
+      const isSentInRange = (!fromDate || rs.sentDate >= new Date(fromDate)) && (!toDate || rs.sentDate <= new Date(toDate));
+      if (isSentInRange) {
+        ledger.push({
+          date: rs.sentDate,
+          createdAt: rs.createdAt,
+          module: "Repair (Sent)",
+          description: `Repair: ${rs.itemName || "Item"} (Source: ${rs.source})`,
+          debitGold: rs.purity || 0,
+          creditGold: 0,
+          refId: rs.id,
+          sortPriority: 2,
+          metadata: {
+            itemName: rs.itemName,
+            grossWeight: rs.grossWeight,
+            purity: rs.purity,
+            reason: rs.reason,
+            source: rs.source
+          }
+        });
+      }
+
+      // 2. Returned from Repair (Credit)
+      if (rs.status === "Returned" && rs.receivedDate) {
+        const isReceivedInRange = (!fromDate || rs.receivedDate >= new Date(fromDate)) && (!toDate || rs.receivedDate <= new Date(toDate));
+        if (isReceivedInRange) {
+          ledger.push({
+            date: rs.receivedDate,
+            createdAt: rs.updatedAt, // Use updatedAt as high-resolution time for return
+            module: "Repair (Returned)",
+            description: `Returned: ${rs.itemName || "Item"}`,
+            debitGold: 0,
+            creditGold: rs.receivedPurity || 0,
+            refId: rs.id,
+            sortPriority: 2,
+            metadata: {
+              itemName: rs.itemName,
+              receivedWeight: rs.receivedWeight,
+              receivedPurity: rs.receivedPurity,
+              status: rs.status
+            }
+          });
+        }
+      }
     });
 
     // Adjustments are already in 'adjustments' variable from Promise.all
     adjustments.forEach(a => {
       ledger.push({
         date: a.date,
+        createdAt: a.createdAt || a.date,
         module: "Audit Correction",
         description: a.description || "Manual Balance Adjustment",
         debitGold: (a.goldAmount || 0) >= 0 ? Math.abs(a.goldAmount || 0) : 0,
@@ -451,8 +617,26 @@ exports.getGoldsmithStatement = async (req, res) => {
     ledger.sort((a, b) => {
       if (a.sortPriority === 0) return -1;
       if (b.sortPriority === 0) return 1;
-      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
-      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
+
+      const d1 = new Date(a.date);
+      const d2 = new Date(b.date);
+
+      // Normalize to Start of Day for day-to-day comparison
+      const day1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
+      const day2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
+
+      // Primary sort: if different days, sort chronologically
+      if (day1 !== day2) return day1 - day2;
+
+      // Secondary sort: use exact physical entry timestamp to sequence same-day actions
+      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : d1.getTime();
+      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : d2.getTime();
+      
+      // If physical timestamps are identical, fall back to priority
+      if (ctA === ctB && (a.sortPriority || 0) !== (b.sortPriority || 0)) {
+         return (a.sortPriority || 0) - (b.sortPriority || 0);
+      }
+      
       return ctA - ctB;
     });
 
@@ -470,16 +654,24 @@ exports.getGoldsmithStatement = async (req, res) => {
       entry.runningGold = runningGold;
     });
 
-    // RE-SORT for display: Latest at top — uses createdAt as physical entry anchor (timezone resilient)
+    // RE-SORT for display: Latest at top — uses logical date, then createdAt sequence
     const sortedLedger = ledger.sort((a, b) => {
-        const dA = new Date(a.date);
-        const dB = new Date(b.date);
-        const dayA = new Date(dA.getFullYear(), dA.getMonth(), dA.getDate()).getTime();
-        const dayB = new Date(dB.getFullYear(), dB.getMonth(), dB.getDate()).getTime();
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        
+        // Use logic date normalized to Day as primary key (reverse chronological)
+        const dayA = Math.floor(dateA / (1000 * 60 * 60 * 24));
+        const dayB = Math.floor(dateB / (1000 * 60 * 60 * 24));
+        
         if (dayB !== dayA) return dayB - dayA;
-        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        
+        // Within same day, use strict entry order (Reverse Chronological: Latest Entry on top)
+        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : dateA;
+        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : dateB;
+        
         if (ctB !== ctA) return ctB - ctA;
+        
+        // Final fallback: sortPriority
         return (b.sortPriority || 0) - (a.sortPriority || 0);
     });
 
@@ -526,6 +718,7 @@ exports.getSupplierStatement = async (req, res) => {
     const cashBal = supplier.openingBalance || 0;
     ledger.push({
       date: supplier.createdAt,
+      createdAt: supplier.createdAt,
       module: cashBal < 0 ? "Excess Balance" : "Opening Balance",
       description: "Initial Balance",
       debitBC: supplier.openingBCBalance || 0,
@@ -541,6 +734,7 @@ exports.getSupplierStatement = async (req, res) => {
     bcPurchases.forEach(pe => {
       ledger.push({
         date: pe.createdAt,
+        createdAt: pe.createdAt,
         module: "BC Purchase",
         description: `Purchase: ${pe.jewelName} (Gross: ${pe.grossWeight}, Prty: ${pe.actualPure})`,
         debitBC: pe.actualPure || 0,
@@ -553,6 +747,7 @@ exports.getSupplierStatement = async (req, res) => {
     itemPurchases.forEach(ipe => {
       ledger.push({
         date: ipe.createdAt,
+        createdAt: ipe.createdAt,
         module: "Item Purchase",
         description: `Purchase: ${ipe.itemName} (Qty: ${ipe.count}, Prty: ${ipe.actualPure})`,
         debitItem: ipe.actualPure || 0,
@@ -565,6 +760,7 @@ exports.getSupplierStatement = async (req, res) => {
     bcReceived.forEach(prg => {
       ledger.push({
         date: prg.date,
+        createdAt: prg.createdAt,
         module: "BC Paid",
         description: `Gold Given to Supplier (${prg.description || "No detail"})`,
         debitBC: 0,
@@ -577,6 +773,7 @@ exports.getSupplierStatement = async (req, res) => {
     itemReceived.forEach(iprg => {
       ledger.push({
         date: iprg.date,
+        createdAt: iprg.createdAt,
         module: "Item Paid",
         description: `Gold Given to Supplier (${iprg.description || "No detail"})`,
         debitItem: 0,
@@ -589,6 +786,7 @@ exports.getSupplierStatement = async (req, res) => {
     adjustments.forEach(a => {
       ledger.push({
         date: a.date,
+        createdAt: a.createdAt || a.date,
         module: "Audit Correction",
         description: a.description || "Manual Balance Adjustment",
         debitBC: (a.bcAmount || 0) >= 0 ? Math.abs(a.bcAmount || 0) : 0,
@@ -606,8 +804,26 @@ exports.getSupplierStatement = async (req, res) => {
     ledger.sort((a, b) => {
       if (a.sortPriority === 0) return -1;
       if (b.sortPriority === 0) return 1;
-      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
-      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
+
+      const d1 = new Date(a.date);
+      const d2 = new Date(b.date);
+
+      // Normalize to Start of Day for day-to-day comparison
+      const day1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
+      const day2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
+
+      // Primary sort: if different days, sort chronologically
+      if (day1 !== day2) return day1 - day2;
+
+      // Secondary sort: use exact physical entry timestamp to sequence same-day actions
+      const ctA = a.createdAt ? new Date(a.createdAt).getTime() : d1.getTime();
+      const ctB = b.createdAt ? new Date(b.createdAt).getTime() : d2.getTime();
+      
+      // If physical timestamps are identical, fall back to priority
+      if (ctA === ctB && (a.sortPriority || 0) !== (b.sortPriority || 0)) {
+         return (a.sortPriority || 0) - (b.sortPriority || 0);
+      }
+      
       return ctA - ctB;
     });
 
@@ -627,16 +843,24 @@ exports.getSupplierStatement = async (req, res) => {
       entry.afterBC = runningBC; entry.afterItem = runningItem; entry.afterCash = runningCash;
     });
 
-    // RE-SORT for display: Latest at top — uses createdAt as physical entry anchor (timezone resilient)
+    // RE-SORT for display: Latest at top — uses logical date, then createdAt sequence
     const sortedLedger = ledger.sort((a, b) => {
-        const dA = new Date(a.date);
-        const dB = new Date(b.date);
-        const dayA = new Date(dA.getFullYear(), dA.getMonth(), dA.getDate()).getTime();
-        const dayB = new Date(dB.getFullYear(), dB.getMonth(), dB.getDate()).getTime();
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        
+        // Use logic date normalized to Day as primary key (reverse chronological)
+        const dayA = Math.floor(dateA / (1000 * 60 * 60 * 24));
+        const dayB = Math.floor(dateB / (1000 * 60 * 60 * 24));
+        
         if (dayB !== dayA) return dayB - dayA;
-        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        
+        // Within same day, use strict entry order (Reverse Chronological: Latest Entry on top)
+        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : dateA;
+        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : dateB;
+        
         if (ctB !== ctA) return ctB - ctA;
+        
+        // Final fallback: sortPriority
         return (b.sortPriority || 0) - (a.sortPriority || 0);
     });
     

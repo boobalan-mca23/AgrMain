@@ -681,7 +681,10 @@ model RepairStock {
   grossWeight    Float?
   netWeight      Float?
   purity         Float?
+  fwt            Float?
   count          Int?
+  receivedWeight Float?
+  receivedPurity Float?
   billId         Int?
   orderItemId    Int?
   bill           Bill?              @relation(fields: [billId], references: [id])
@@ -717,6 +720,7 @@ model returnLogs {
   awt                Float?
   pureGoldReduction  Float?
   hallmarkReduction  Float?
+  fwt                Float?
   count              Int
   stoneWeight        Float?
   enteredStoneWeight Float?

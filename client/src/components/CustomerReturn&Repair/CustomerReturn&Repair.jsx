@@ -1048,7 +1048,23 @@ const CustomerReturn = () => {
               </tr>
 
               <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Stone Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Entered St.WT (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.enteredStoneWeight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+              </tr>
+              {/* <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Actual St.WT (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+              </tr> */}
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Actual St.WT (g)</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
                 </td>
@@ -1067,23 +1083,6 @@ const CustomerReturn = () => {
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
                   {safeFixed(repairQC.stoneWeight)}
                 </td>
-              </tr>
-
-              <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Entered St.WT (g)</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                  <b>{safeFixed(selectedProduct?.enteredStoneWeight)}</b>
-                </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Actual St.WT (g)</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                  <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
-                </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
               </tr>
               <tr>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>AWT (g)</td>
@@ -1293,7 +1292,23 @@ const CustomerReturn = () => {
               </tr>
 
               <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Stone Weight (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Entered St.WT (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.enteredStoneWeight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+              </tr>
+              {/* <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Actual St.WT (g)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+              </tr> */}
+              <tr>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Actual St.WT (g)</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
                 </td>
@@ -1314,22 +1329,6 @@ const CustomerReturn = () => {
                 </td>
               </tr>
 
-              <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Entered St.WT (g)</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                  <b>{safeFixed(selectedProduct?.enteredStoneWeight)}</b>
-                </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Actual St.WT (g)</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                  <b>{safeFixed(selectedProduct?.stoneWeight)}</b>
-                </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-              </tr>
               <tr>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>AWT (g)</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>

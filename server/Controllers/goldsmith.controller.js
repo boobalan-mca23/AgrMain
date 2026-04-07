@@ -131,18 +131,68 @@ exports.updateGoldsmith = async (req, res) => {
 
 exports.deleteGoldsmith = async (req, res) => {
   const { id } = req.params;
+  const goldsmithId = parseInt(id);
+
   try {
-    await prisma.goldsmith.delete({
-      where: { id: parseInt(id) },
-    });
-    res.status(200).json({ message: "Goldsmith deleted successfully" });
-  } catch (error) {
-    if (error.code === "P2003") {
-      return res.status(400).json({
-        message:
-          "Cannot delete this goldsmith because it is linked to other records (e.g., jobcards).",
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete Balances
+      await tx.balances.deleteMany({ where: { goldsmithId } });
+
+      // 2. Delete BalanceAdjustments
+      await tx.balanceAdjustment.deleteMany({
+        where: { entityType: "GOLDSMITH", entityId: goldsmithId },
       });
-    }
-    res.status(500).json({ message: "Error deleting goldsmith", error });
+
+      // 3. Delete RepairStock and associated logs if any (assuming cascade or no dependent logs with weight)
+      // RepairStock logs (if exists in schema, we should check)
+      await tx.repairStock.deleteMany({ where: { goldsmithId } });
+      await tx.repair.deleteMany({ where: { goldsmithId } });
+
+      // 4. Delete Jobcard-related records
+      const jobcards = await tx.jobcard.findMany({
+        where: { goldsmithId },
+        select: { id: true },
+      });
+      const jobcardIds = jobcards.map((j) => j.id);
+
+      if (jobcardIds.length > 0) {
+        // Delete deductions (linked to itemDelivery)
+        const deliveries = await tx.itemDelivery.findMany({
+          where: { jobcardId: { in: jobcardIds } },
+          select: { id: true },
+        });
+        const deliveryIds = deliveries.map((d) => d.id);
+
+        if (deliveryIds.length > 0) {
+          await tx.deduction.deleteMany({
+            where: { deliveryId: { in: deliveryIds } },
+          });
+        }
+
+        // Delete Jobcard children
+        await tx.itemDelivery.deleteMany({ where: { jobcardId: { in: jobcardIds } } });
+        await tx.receivedsection.deleteMany({ where: { jobcardId: { in: jobcardIds } } });
+        await tx.givenGold.deleteMany({ where: { jobcardId: { in: jobcardIds } } });
+        await tx.total.deleteMany({ where: { jobcardId: { in: jobcardIds } } });
+        
+        // Delete Jobcards
+        await tx.jobcard.deleteMany({ where: { goldsmithId } });
+      }
+
+      // 5. Delete direct relationships that might not be under jobcards
+      await tx.receivedsection.deleteMany({ where: { goldsmithId } });
+      await tx.givenGold.deleteMany({ where: { goldsmithId } });
+      await tx.itemDelivery.deleteMany({ where: { goldsmithId } });
+
+      // 6. Finally delete the Goldsmith
+      await tx.goldsmith.delete({
+        where: { id: goldsmithId },
+      });
+    });
+
+    res.status(200).json({ message: "Goldsmith and all related records deleted successfully" });
+  } catch (error) {
+    console.error("Hard delete failed:", error);
+    res.status(500).json({ message: "Error performing hard delete", error: error.message });
   }
 };

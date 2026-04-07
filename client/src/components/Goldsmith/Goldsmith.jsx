@@ -316,7 +316,7 @@ const Goldsmith = () => {
           <TableBody>
             {filteredGoldsmith.length > 0 ? (
               filteredGoldsmith.map((goldsmith, index) => (
-                <TableRow key={index}>
+                <TableRow key={index} style={{}}>
                   <TableCell align="center">{index + 1}</TableCell>
                   <TableCell align="center">{goldsmith.name}</TableCell>
                   <TableCell align="center">{goldsmith.phone || "-"}</TableCell>
@@ -324,18 +324,14 @@ const Goldsmith = () => {
                   <TableCell align="center">{goldsmith.address || "-"}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="View Jobcard">
-                      <Link
-                        to={`/goldsmithcard/${goldsmith.id}/${goldsmith.name}`}
-                        state={{
-                          phone: goldsmith.phone,
-                          address: goldsmith.address,
-                        }}
-                        style={{ marginRight: "10px", color: "#1976d2" }}
+                      <IconButton 
+                        onClick={() => navigate(`/goldsmithcard/${goldsmith.id}/${goldsmith.name}`, { 
+                          state: { phone: goldsmith.phone, address: goldsmith.address } 
+                        })} 
+                        sx={{ color: "#1976d2", mr: 1 }}
                       >
-                        <AssignmentIndOutlinedIcon
-                          style={{ cursor: "pointer" }}
-                        />
-                      </Link>
+                        <AssignmentIndOutlinedIcon />
+                      </IconButton>
                     </Tooltip>
 
                     <Tooltip title="View Statement">
