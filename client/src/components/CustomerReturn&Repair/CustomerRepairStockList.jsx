@@ -24,6 +24,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import RepairDetailsModal from "./RepairDetailsModal";
 import "./Customer.css";
 
 const CustomerRepairStockList = () => {
@@ -35,6 +37,8 @@ const CustomerRepairStockList = () => {
     const [toDate, setToDate] = useState(() => dayjs());
     const [stockFilter, setStockFilter] = useState("ALL"); // ALL, PRODUCT, ITEM_PURCHASE
     const [statusFilter, setStatusFilter] = useState("ALL"); // ALL, InRepair, Returned
+    const [selectedRepair, setSelectedRepair] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
 
     useEffect(() => {
         fetchRepairStock();
@@ -310,6 +314,7 @@ const CustomerRepairStockList = () => {
                         <TableCell className="BillTable-th-td">Purity</TableCell>
                         <TableCell className="BillTable-th-td BillTable-reason">Reason</TableCell>
                         <TableCell className="BillTable-th-td">Status</TableCell>
+                        <TableCell className="BillTable-th-td">Action</TableCell>
 
                     </TableRow>
                 </TableHead>
@@ -328,6 +333,27 @@ const CustomerRepairStockList = () => {
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.purity)}</TableCell>
                                 <TableCell className="BillTable-tb-td BillTable-reason">{item.reason || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{statusChip(item.status)}</TableCell>
+                                <TableCell className="BillTable-tb-td">
+                                    <Button
+                                        size="small"
+                                        onClick={() => {
+                                            setSelectedRepair({
+                                                ...item,
+                                                productName: item.itemName || item.product?.itemName,
+                                                weight: item.grossWeight,
+                                                count: item.orderItem?.count || 1,
+                                                stoneWeight: item.orderItem?.stoneWeight || 0,
+                                                enteredStoneWeight: item.orderItem?.enteredStoneWeight || 0,
+                                                awt: item.netWeight || item.grossWeight,
+                                                percentage: item.orderItem?.percentage || 100,
+                                                pureGoldReduction: item.purity,
+                                            });
+                                            setModalOpen(true);
+                                        }}
+                                    >
+                                        <VisibilityIcon fontSize="small" />
+                                    </Button>
+                                </TableCell>
 
                             </TableRow>
                         ))
@@ -346,6 +372,11 @@ const CustomerRepairStockList = () => {
                 rowsPerPage={rowsPerPage}
                 onPageChange={(e, p) => setPage(p)}
                 onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+            />
+            <RepairDetailsModal 
+                open={modalOpen} 
+                onClose={() => setModalOpen(false)} 
+                selectedRepair={selectedRepair} 
             />
             <ToastContainer position="top-right" autoClose={3000} />
         </Box>

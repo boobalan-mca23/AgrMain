@@ -30,7 +30,8 @@ exports.createGoldsmith = async (req, res) => {
         name: name.trim(),
         phone: phonenumber,
         address,
-        balance:parseFloat(balance)||0
+        balance: parseFloat(balance) || 0,
+        initialBalance: parseFloat(balance) || 0
       },
     });
     res.status(201).json(newGoldsmith);
@@ -90,13 +91,31 @@ exports.updateGoldsmith = async (req, res) => {
   }
 
   try {
+    const oldGoldsmith = await prisma.goldsmith.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    const oldBalance = oldGoldsmith?.balance || 0;
+    const newBalance = parseFloat(balance) || 0;
+
+    if (newBalance !== oldBalance) {
+      await prisma.balanceAdjustment.create({
+        data: {
+          entityType: "GOLDSMITH",
+          entityId: parseInt(id),
+          goldAmount: newBalance - oldBalance,
+          description: "Manual Gold adjustment from Master"
+        }
+      });
+    }
+
     const updatedGoldsmith = await prisma.goldsmith.update({
       where: { id: parseInt(id) },
       data: {
         name: name.trim(),
         phone,
         address,
-        balance:parseFloat(balance)||0
+        balance: newBalance
       },
     });
 

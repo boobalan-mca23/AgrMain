@@ -173,6 +173,7 @@ exports.createEntry = async (req, res) => {
 
           itemName,
           count: count ? Number(count) : 1,
+          initialCount: count ? Number(count) : 1,
           wastageType,
 
           moveTo: "item",
@@ -199,6 +200,7 @@ exports.createEntry = async (req, res) => {
 
           goldBalance: finalGoldBalance,
 
+          initialCount: count ? Number(count) : 1,
           initialGrossWeight: calc.grossWeight,
           initialStoneWeight: calc.stoneWeight,
           initialNetWeight: calc.netWeight,
@@ -212,38 +214,9 @@ exports.createEntry = async (req, res) => {
       });
 
 
-    // =============================
-    // UPDATE SUPPLIER BALANCE
-    // =============================
-
-    const newBalance =
-      round3(
-        toNumber(supplier.openingBalance)
-        + finalGoldBalance
-      );
-
-
-    await prisma.supplier.update({
-
-      where: { id: Number(supplierId) },
-
-      data: {
-
-        openingBalance: newBalance
-
-      }
-
-    });
-
-
     res.json({
-
       msg: "Created",
-
-      entry,
-
-      supplierBalance: newBalance
-
+      entry
     });
 
   }
@@ -280,7 +253,12 @@ exports.getEntries = async (req, res) => {
       await prisma.itemPurchaseEntry.findMany({
 
         where: {
-          source: { in: ["PURCHASE", "CUSTOMER_RETURN"] },
+          source: "PURCHASE",
+          isInRepair: false,
+          // Exclude internal split/tracking entries that should not appear as independent entries
+          NOT: {
+            moveTo: { in: ["REPAIR_SPLIT", "PROCESSED_BY_REPAIR", "REPAIR_RETURN", "CUSTOMER_RETURN", "returned"] }
+          },
           ...(supplierId ? { supplierId: Number(supplierId) } : {})
         },
 
@@ -458,36 +436,9 @@ exports.updateEntry = async (req, res) => {
       });
 
 
-    const balanceAdjustment =
-      finalGoldBalance - oldEntry.goldBalance;
-
-
-    const newBalance =
-      round3(
-        toNumber(supplier.openingBalance)
-        + balanceAdjustment
-      );
-
-
-    await prisma.supplier.update({
-
-      where: { id: Number(supplierId) },
-
-      data: {
-        openingBalance: newBalance
-      }
-
-    });
-
-
     res.json({
-
       msg: "Updated",
-
-      updated,
-
-      supplierBalance: newBalance
-
+      updated
     });
 
   }
@@ -510,66 +461,36 @@ exports.updateEntry = async (req, res) => {
 // =============================
 
 exports.deleteEntry = async (req, res) => {
-
   try {
-
     const id = Number(req.params.id);
 
-    const entry =
-      await prisma.itemPurchaseEntry.findUnique({
-        where: { id }
-      });
-
-
-    const supplier =
-      await prisma.supplier.findUnique({
-        where: { id: entry.supplierId }
-      });
-
-
-    const newBalance =
-      round3(
-        toNumber(supplier.openingBalance)
-        - entry.goldBalance
-      );
-
-
-    await prisma.supplier.update({
-
-      where: { id: entry.supplierId },
-
-      data: {
-        openingBalance: newBalance
-      }
-
+    const entry = await prisma.itemPurchaseEntry.findUnique({
+      where: { id }
     });
 
+    if (!entry) {
+      return res.status(404).json({ msg: "Entry not found" });
+    }
+
+    // Use transaction to ensure all related data is cleaned up
+    await prisma.$transaction([
+      prisma.repairStock.deleteMany({ where: { itemPurchaseId: id } }),
+      prisma.returnLogs.deleteMany({ where: { itemPurchaseId: id } }),
+      prisma.itemPurchaseEntry.delete({ where: { id } })
+    ]);
 
     if (entry.advanceLogId) {
       await deleteItemPurchaseFromRawGold(entry.advanceLogId);
     }
 
-    await prisma.itemPurchaseEntry.delete({
-      where: { id }
-    });
-
-
-    res.json({
-      msg: "Deleted",
-      supplierBalance: newBalance
-    });
-
-  }
-
-  catch (err) {
-
+    res.json({ msg: "Deleted successfully" });
+  } catch (err) {
+    console.error("Delete Error:", err);
     res.status(500).json({
-      msg: "Server error",
+      msg: "Delete failed",
       error: err.message
     });
-
   }
-
 };
 
 // =============================
@@ -1016,15 +937,6 @@ exports.returnToSupplier = async (req, res) => {
       });
     }
 
-    if (entry.supplierId) {
-      const supplier = await prisma.supplier.findUnique({ where: { id: entry.supplierId } });
-      await prisma.supplier.update({
-        where: { id: entry.supplierId },
-        data: {
-          openingBalance: round3(Number(supplier.openingBalance) - returningPurity.final)
-        }
-      });
-    }
 
     res.json({ msg: "Returned successfully" });
   } catch (err) {
@@ -1072,6 +984,7 @@ exports.receiveGold = async (req, res) => {
         logId,
       },
     });
+
 
     res.json({ msg: "Gold received recorded" });
   } catch (err) {
@@ -1138,6 +1051,7 @@ exports.updateReceivedGold = async (req, res) => {
           date: actualDate,
         }
       });
+
     });
 
     await setTotalRawGold();
@@ -1165,6 +1079,7 @@ exports.deleteReceivedGold = async (req, res) => {
         await tx.rawGoldLogs.delete({ where: { id: received.logId } });
       }
       await tx.itemPurchaseReceivedGold.delete({ where: { id: receivedId } });
+
     });
 
     await setTotalRawGold();

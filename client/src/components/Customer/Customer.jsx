@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PreviewIcon from "@mui/icons-material/Preview";
+import HistoryIcon from "@mui/icons-material/History";
 
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useNavigate } from "react-router-dom";
@@ -199,6 +200,12 @@ const Customer = () => {
                           }
                         >
                           <PreviewIcon color="primary" />
+                        </IconButton>
+                      </Tooltip>
+
+                      <Tooltip title="View Statement">
+                        <IconButton onClick={() => navigate(`/statement/customer/${customer.id}`)}>
+                          <HistoryIcon color="secondary" />
                         </IconButton>
                       </Tooltip>
                     </TableCell>

@@ -211,12 +211,12 @@ const sendToRepair = async (req, res) => {
 
         const goldsmith =
           await tx.goldsmith.findUnique({
-            where: { id: goldsmithId }
+            where: { id: Number(goldsmithId) }
           });
 
         await tx.goldsmith.update({
 
-          where: { id: goldsmithId },
+          where: { id: Number(goldsmithId) },
 
           data: {
 
@@ -293,10 +293,8 @@ const sendToRepair = async (req, res) => {
               actualPure: remPurity.actual,
               wastagePure: remPurity.wastage,
               finalPurity: remPurity.final,
-              // We keep the balance logic consistent or split it proportionally? 
-              // Proportional split of advance gold:
-              advanceGold: (item.advanceGold * remCount) / item.count,
-              goldBalance: ((item.advanceGold * remCount) / item.count) - remPurity.final
+              // advanceGold and goldBalance are NOT changed by repair:
+              // goldBalance only changes when supplier receives gold (receiveGold)
             }
           });
 
@@ -313,18 +311,20 @@ const sendToRepair = async (req, res) => {
               actualPure: repairPartPurity.actual,
               wastagePure: repairPartPurity.wastage,
               finalPurity: repairPartPurity.final,
-              advanceGold: (item.advanceGold * reqCount) / item.count,
-              goldBalance: ((item.advanceGold * reqCount) / item.count) - repairPartPurity.final,
+              // advanceGold and goldBalance carry over from original (not recalculated per repair)
+              advanceGold: item.advanceGold,
+              goldBalance: item.goldBalance,
               isInRepair: true,
               isSold: false,
               isBilled: false,
+              // Mark as repair split so it does NOT appear in the main entry list
+              moveTo: "REPAIR_SPLIT",
               createdAt: undefined
             }
           });
           targetItemId = repairItemRecord.id;
         } else {
-          // Full Repair
-          const goldBalance = (item.advanceGold || 0) - updatedPurity.final;
+          // Full Repair — only mark as inRepair, don't touch goldBalance
           await tx.itemPurchaseEntry.update({
             where: { id: item.id },
             data: {
@@ -334,7 +334,7 @@ const sendToRepair = async (req, res) => {
               actualPure: updatedPurity.actual,
               wastagePure: updatedPurity.wastage,
               finalPurity: updatedPurity.final,
-              goldBalance: goldBalance,
+              // goldBalance stays unchanged — repair doesn't affect supplier debt
               isInRepair: true,
               isSold: false,
               isBilled: false
@@ -385,12 +385,12 @@ const sendToRepair = async (req, res) => {
 
         const goldsmith =
           await tx.goldsmith.findUnique({
-            where: { id: goldsmithId }
+            where: { id: Number(goldsmithId) }
           });
 
         await tx.goldsmith.update({
 
-          where: { id: goldsmithId },
+          where: { id: Number(goldsmithId) },
 
           data: {
 
@@ -496,6 +496,7 @@ const returnFromRepair = async (req, res) => {
         await tx.productStock.create({
           data: {
             itemName: originalProduct?.itemName || repair.itemName,
+            count: originalProduct?.count || 1,
             itemWeight: itemWt,
             stoneWeight: stoneWt,
             netWeight,
@@ -536,6 +537,7 @@ const returnFromRepair = async (req, res) => {
             itemGroupId: repair.itemPurchase.itemGroupId,
             unitId: repair.itemPurchase.unitId,
             count: repair.itemPurchase.count || 1,
+            touch: repair.itemPurchase.touch || 0,
             grossWeight: itemWt,
             stoneWeight: stoneWt,
             netWeight,
@@ -848,6 +850,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             grossWeight: productStock.grossWeight,
             netWeight: productStock.netWeight,
             purity: productStock.finalPurity,
+            count: Number(repairProduct.count) || 1,
           }
         });
       } else {
@@ -881,6 +884,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             grossWeight: productStock.itemWeight,
             netWeight: productStock.netWeight,
             purity: productStock.finalPurity,
+            count: Number(repairProduct.count) || 1,
           }
         });
       }
@@ -916,16 +920,19 @@ const sendCustomerItemToRepair = async (req, res) => {
         }
       });
 
-      // Update Bill Hallmark Quantity if it's a FULL repair
-      if (isFullRepair) {
+      // Update Bill Hallmark Quantity proportional to the count being repaired
+      const hallmarkQtyInBill = Number(orderItem.bill.hallmarkQty) || 0;
+      const reductionCount = Math.min(Number(repairProduct.count || 1), hallmarkQtyInBill);
+      
+      if (reductionCount > 0) {
         await tx.bill.update({
           where: { id: Number(billId) },
-          data: { hallmarkQty: { decrement: 1 } }
+          data: { hallmarkQty: { decrement: reductionCount } }
         });
       }
 
       const goldsmith = await tx.goldsmith.findUnique({
-        where: { id: goldsmithId }
+        where: { id: Number(goldsmithId) }
       });
 
       // console.log("goldsmith-Details", goldsmith,"goldsmith-balnce", goldsmith.balance);
@@ -946,8 +953,12 @@ const sendCustomerItemToRepair = async (req, res) => {
           const isFull = orderItem.stockType === "ITEM_PURCHASE" || (Number(originalWeight) <= Number(sentWeight));
 
           const hallmarkRate = Number(orderItem.bill.hallMark) || 0;
-          const hallmarkReduction = isFull ? hallmarkRate : 0;
-          const fwtReduction = isFull ? (Number(orderItem.finalWeight) || 0) : Number(repairProduct.finalWeight);
+          const hallmarkReduction = hallmarkRate * reductionCount;
+          
+          // Use finalPurity as fallback if finalWeight is not set (typical for Item Purchase items with default UI values)
+          const itemFwt = Number(orderItem.finalWeight) || Number(orderItem.finalPurity) || 0;
+          const repairFwt = Number(repairProduct.finalWeight) || Number(repairProduct.finalPurity) || 0;
+          const fwtReduction = isFull ? itemFwt : repairFwt;
 
           await tx.customerBillBalance.update({
             where: { customer_id: customerId },
@@ -960,7 +971,7 @@ const sendCustomerItemToRepair = async (req, res) => {
       }
 
       await tx.goldsmith.update({
-        where: { id: goldsmithId },
+        where: { id: Number(goldsmithId) },
         data: {
           balance: goldsmith.balance + Number(finalPurityDelta),
         }

@@ -12,6 +12,16 @@ import {
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import HistoryIcon from "@mui/icons-material/History";
+import { 
+  Menu, 
+  MenuItem, 
+  IconButton, 
+  Tooltip,
+  TablePagination
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 import { ToastContainer, toast } from "react-toastify";
 
@@ -27,7 +37,9 @@ const initialForm = {
   contactNumber: "",
   address: "",
   gstOrBusinessId: "",
-  openingBalance: "",
+  totalBCBalance: 0,
+  totalItemBalance: 0,
+  totalBalance: 0
 };
 
 
@@ -46,7 +58,23 @@ function SupplierManagement() {
   const [selectedId, setSelectedId] = useState(null);
 
   const [form, setForm] = useState(initialForm);
+  const [moduleTransactions, setModuleTransactions] = useState({ bc: 0, item: 0, general: 0 });
   const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+
+  // Menu-related states
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [menuSupplier, setMenuSupplier] = useState(null);
+
+  const handleMenuOpen = (event, supplier) => {
+    setAnchorEl(event.currentTarget);
+    setMenuSupplier(supplier);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuSupplier(null);
+  };
 
 
   useEffect(() => {
@@ -117,11 +145,9 @@ function SupplierManagement() {
   const openAddDialog = () => {
 
     setIsEdit(false);
-
     setSelectedId(null);
-
+    setModuleTransactions({ bc: 0, item: 0, general: 0 });
     setForm(initialForm);
-
     setOpenDialog(true);
 
   };
@@ -133,12 +159,23 @@ function SupplierManagement() {
 
     setSelectedId(supplier.id);
 
+    const transBC = (supplier.totalBCBalance || 0) - (supplier.openingBCBalance || 0);
+    const transItem = (supplier.totalItemBalance || 0) - (supplier.openingItemBalance || 0);
+    
+    setModuleTransactions({
+        bc: transBC,
+        item: transItem,
+        general: 0 // No transactions for general currently
+    });
+
     setForm({
       name: supplier.name,
       contactNumber: supplier.contactNumber,
       address: supplier.address,
       gstOrBusinessId: supplier.gstOrBusinessId,
-      openingBalance: supplier.openingBalance,
+      totalBCBalance: supplier.totalBCBalance || 0,
+      totalItemBalance: supplier.totalItemBalance || 0,
+      totalBalance: supplier.totalBalance || 0
     });
 
     setOpenDialog(true);
@@ -171,11 +208,13 @@ function SupplierManagement() {
 
     try {
       setSaving(true);
+      const payload = { ...form };
+
       if (isEdit) {
 
         await axios.put(
           `${BACKEND_SERVER_URL}/api/supplier/${selectedId}`,
-          form
+          payload
         );
 
         toast.success("Supplier updated");
@@ -184,7 +223,7 @@ function SupplierManagement() {
 
         await axios.post(
           `${BACKEND_SERVER_URL}/api/supplier/create`,
-          form
+          payload
         );
 
         toast.success("Supplier added");
@@ -316,7 +355,9 @@ function SupplierManagement() {
               <th style={{ textAlign: "center" }}>Contact</th>
               <th style={{ textAlign: "center" }}>Address</th>
               <th style={{ textAlign: "center" }}>GST</th>
-              <th style={{ textAlign: "center" }}>Opening Balance (g)</th>
+              <th style={{ textAlign: "center" }}>BC Balance (g)</th>
+              <th style={{ textAlign: "center" }}>Item Balance (g)</th>
+              <th style={{ textAlign: "center" }}>Total Balance (g)</th>
               <th style={{ textAlign: "center" }}>Action</th>
             </tr>
 
@@ -329,7 +370,7 @@ function SupplierManagement() {
 
               <tr>
 
-                <td colSpan="7" style={{ textAlign: "center" }}>
+                <td colSpan="9" style={{ textAlign: "center" }}>
                   No suppliers found
                 </td>
 
@@ -347,34 +388,24 @@ function SupplierManagement() {
                 <td style={{ textAlign: "center" }}>{supplier.address || "-"}</td>
                 <td style={{ textAlign: "center" }}>{supplier.gstOrBusinessId || "-"}</td>
                 <td style={{ textAlign: "center" }}>
-                  {Number(
-                    supplier.openingBalance || 0
-                  ).toFixed(3)}
+                   {Number(supplier.totalBCBalance || 0).toFixed(3)}
+                </td>
+                <td style={{ textAlign: "center" }}>
+                   {Number(supplier.totalItemBalance || 0).toFixed(3)}
+                </td>
+                <td style={{ textAlign: "center", fontWeight: "bold", background: "#f8f9fa" }}>
+                  {Number(supplier.totalBalance || 0).toFixed(3)}
                 </td>
 
                 <td style={{ textAlign: "center" }}>
-
-                  <EditIcon
-                    style={{
-                      cursor: "pointer",
-                      marginRight: 8,
-                      color: "#388e3c"
-                    }}
-                    onClick={() =>
-                      openEditDialog(supplier)
-                    }
-                  />
-
-                  <DeleteIcon
-                    style={{
-                      cursor: "pointer",
-                      color: "#d32f2f"
-                    }}
-                    onClick={() =>
-                      handleDelete(supplier.id)
-                    }
-                  />
-
+                  <IconButton
+                    aria-label="more"
+                    aria-controls="supplier-menu"
+                    aria-haspopup="true"
+                    onClick={(e) => handleMenuOpen(e, supplier)}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
                 </td>
 
               </tr>
@@ -467,26 +498,43 @@ function SupplierManagement() {
           />
 
 
-          <TextField
-            label="Opening Balance (g)"
-            fullWidth
-            margin="dense"
-            value={form.openingBalance}
-            onChange={(e) => {
-
-              const value = e.target.value;
-
-              if (/^\d*\.?\d*$/.test(value)) {
-
-                setForm({
-                  ...form,
-                  openingBalance: value
-                });
-
-              }
-
-            }}
-          />
+           <TextField
+             label="BC Balance (g)"
+             fullWidth
+             margin="dense"
+             value={form.totalBCBalance}
+             onChange={(e) => {
+               const val = e.target.value;
+               setForm({
+                 ...form,
+                 totalBCBalance: val,
+                 totalBalance: (Number(val) || 0) + (Number(form.totalItemBalance) || 0)
+               });
+             }}
+           />
+ 
+           <TextField
+             label="Item Balance (g)"
+             fullWidth
+             margin="dense"
+             value={form.totalItemBalance}
+             onChange={(e) => {
+               const val = e.target.value;
+               setForm({
+                 ...form,
+                 totalItemBalance: val,
+                 totalBalance: (Number(form.totalBCBalance) || 0) + (Number(val) || 0)
+               });
+             }}
+           />
+ 
+           <TextField
+             label="Grand Total Balance (g)"
+             fullWidth
+             margin="dense"
+             value={form.totalBalance}
+             disabled 
+           />
 
         </DialogContent>
 
@@ -509,6 +557,36 @@ function SupplierManagement() {
 
       </Dialog>
 
+      {/* ACTION MENU */}
+      <Menu
+        id="supplier-menu"
+        anchorEl={anchorEl}
+        keepMounted
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => {
+          openEditDialog(menuSupplier);
+          handleMenuClose();
+        }}>
+          <EditIcon fontSize="small" style={{ marginRight: 10, color: "#388e3c" }} />
+          Edit
+        </MenuItem>
+        <MenuItem onClick={() => {
+          handleDelete(menuSupplier.id);
+          handleMenuClose();
+        }}>
+          <DeleteIcon fontSize="small" style={{ marginRight: 10, color: "#d32f2f" }} />
+          Delete
+        </MenuItem>
+        <MenuItem onClick={() => {
+          navigate(`/statement/supplier/${menuSupplier.id}`);
+          handleMenuClose();
+        }}>
+          <HistoryIcon fontSize="small" style={{ marginRight: 10, color: "#1976d2" }} />
+          Statement View
+        </MenuItem>
+      </Menu>
 
     </div>
 

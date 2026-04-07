@@ -401,17 +401,23 @@ const handleSaveReeceipt = async () => {
                   <th>S.no</th>
                   <th>Date</th>
                   <th>Type</th>
-                  <th>Rate</th>
-                  <th>Value</th>
+                  <th>Amount</th>
+                  {receipt.some(r => r.type === "Cash" || r.type === "Cash RTGS") && <th>Gold Rate</th>}
                   <th>Touch</th>
                   <th>Purity</th>
-                  <th>Pure Gold</th>
+                  {receipt.some(r => r.type === "Cash" || r.type === "Cash RTGS") && <th>Pure Gold</th>}
                   <th>Hall Mark</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody className="receiptbody">
-                {receipt.map((item, index) => (
+                {receipt.map((item, index) => {
+                  const isCash = item.type === "Cash" || item.type === "Cash RTGS";
+                  const isGold = item.type === "Gold";
+                  const hasType = item.type !== "" && item.type !== "Select Type";
+                  const anyCash = receipt.some(r => r.type === "Cash" || r.type === "Cash RTGS");
+
+                  return (
                   <tr key={index + 1}>
                     <td>{index + 1}</td>
                     <td>
@@ -423,119 +429,95 @@ const handleSaveReeceipt = async () => {
                           handleChangeReceipt(index, "date", e.target.value)
                         }
                       />
-
-                      <br></br>
+                      <br />
                       {receiptErrors[index]?.date && (
-                        <span className="error">
-                          {receiptErrors[index]?.date}
-                        </span>
+                        <span className="error">{receiptErrors[index]?.date}</span>
                       )}
                     </td>
                     <td>
                       <select
                         value={item.type}
-                        onChange={(e) => {
-                          handleChangeReceipt(index, "type", e.target.value);
-                        }}
+                        onChange={(e) => handleChangeReceipt(index, "type", e.target.value)}
                         className="receiptSelect"
                       >
                         <option value="">Select Type</option>
                         {selectedType.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
+                          <option key={option} value={option}>{option}</option>
                         ))}
                       </select>
-                      <br></br>
+                      <br />
                       {receiptErrors[index]?.type && (
-                        <span className="error">
-                          {receiptErrors[index]?.type}
-                        </span>
+                        <span className="error">{receiptErrors[index]?.type}</span>
                       )}
                     </td>
+                    
+                      {/* Value — Amount for Cash, Weight for Gold */}
                     <td>
-                      {(item.type === "Cash" || item.type === "Cash RTGS") && (
-                        <>
-                          <input
-                            className="receiptTableInput"
-                            value={item.goldRate}
-                            onChange={(e) =>
-                              handleChangeReceipt(index, "goldRate", e.target.value)
-                            }
-                          />
-                          <br></br>
-                          {receiptErrors[index]?.goldRate && (
-                            <span className="error">
-                              {receiptErrors[index]?.goldRate}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </td>
-                    <td>
-                      {item.type === "Gold" && (
+                      {isGold && (
                         <>
                           <input
                             className="receiptTableInput"
                             value={item.gold}
-                            onChange={(e) =>
-                              handleChangeReceipt(index, "gold", e.target.value)
-                            }
+                            onChange={(e) => handleChangeReceipt(index, "gold", e.target.value)}
                             placeholder="weight"
                           />
-                          <br></br>
+                          <br />
                           {receiptErrors[index]?.gold && (
-                            <span className="error">
-                              {receiptErrors[index]?.gold}
-                            </span>
+                            <span className="error">{receiptErrors[index]?.gold}</span>
                           )}
                         </>
                       )}
-                      {(item.type === "Cash" || item.type === "Cash RTGS") && (
+                      {isCash && (
                         <>
                           <input
                             className="receiptTableInput"
                             value={item.amount}
-                            onChange={(e) =>
-                              handleChangeReceipt(index, "amount", e.target.value)
-                            }
+                            onChange={(e) => handleChangeReceipt(index, "amount", e.target.value)}
                             placeholder="amount"
                           />
-                          <br></br>
+                          <br />
                           {receiptErrors[index]?.amount && (
-                            <span className="error">
-                              {receiptErrors[index]?.amount}
-                            </span>
+                            <span className="error">{receiptErrors[index]?.amount}</span>
                           )}
                         </>
                       )}
                     </td>
+
+                    {/* Rate — only for Cash types */}
+                    {anyCash && (
+                      <td>
+                        {isCash && (
+                          <>
+                            <input
+                              className="receiptTableInput"
+                              value={item.goldRate}
+                              onChange={(e) => handleChangeReceipt(index, "goldRate", e.target.value)}
+                            />
+                            <br />
+                            {receiptErrors[index]?.goldRate && (
+                              <span className="error">{receiptErrors[index]?.goldRate}</span>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    )}
+
+                    {/* Touch */}
                     <td>
-                      {(item.type !== "" && item.type !== "Select Type") && (
+                      {hasType && (
                         <Autocomplete
-                        // className="receiptTableInput"
                           freeSolo
                           disableClearable
                           options={masterTouch.map((t) => t.touch.toString())}
                           value={item.touch?.toString() || ""}
-                          onChange={(_, newValue) => {
-                            handleChangeReceipt(index, "touch", newValue);
-                          }}
-                          onInputChange={(_, newInputValue) => {
-                            handleChangeReceipt(index, "touch", newInputValue);
-                          }}
+                          onChange={(_, newValue) => handleChangeReceipt(index, "touch", newValue)}
+                          onInputChange={(_, newInputValue) => handleChangeReceipt(index, "touch", newInputValue)}
                           renderInput={(params) => (
                             <TextField
                               {...params}
                               placeholder="touch"
                               size="small"
-                              style={{
-                                  padding: 5,
-                                  fontSize: "1rem",
-                                  width: 95,
-                                  borderRadius: 6,
-                                  verticalAlign: "middle",
-                              }}
+                              style={{ padding: 5, fontSize: "1rem", width: 95, borderRadius: 6, verticalAlign: "middle" }}
                               error={!!receiptErrors[index]?.touch}
                               helperText={receiptErrors[index]?.touch || ""}
                             />
@@ -543,49 +525,42 @@ const handleSaveReeceipt = async () => {
                         />
                       )}
                     </td>
+
+                    {/* Purity */}
                     <td>
-                      {(item.purity || (item.goldRate > 0 && item.amount > 0 && item.touch > 0) || (item.gold > 0 && item.touch > 0)) && (
-                        <input
-                          value={item.purity}
-                          readOnly
-                          className="receiptTableInput"
-                        />
+                      {hasType && (
+                        <input value={item.purity} readOnly className="receiptTableInput" placeholder="purity" />
                       )}
                     </td>
-                    <td>
-                      {(item.type === "Cash" || item.type === "Cash RTGS") && item.pureGold && (
-                        <input
-                          value={item.pureGold}
-                          readOnly
-                          className="receiptTableInput"
-                          placeholder="pure"
-                        />
-                      )}
-                    </td>
+
+                    {/* Pure Gold — only for Cash types */}
+                    {anyCash && (
+                      <td>
+                        {isCash && (
+                          <input value={item.pureGold} readOnly className="receiptTableInput" placeholder="pure" />
+                        )}
+                      </td>
+                    )}
+
+                    {/* Hall Mark */}
                     <td>
                       <input
                         className="receiptTableInput"
                         value={item.hallMark}
-                        onChange={(e) =>
-                          handleChangeReceipt(index, "hallMark", e.target.value)
-                        }
+                        onChange={(e) => handleChangeReceipt(index, "hallMark", e.target.value)}
                       />
-                      <br></br>
+                      <br />
                       {hallMarkErrors[index]?.hallMark && (
-                        <span className="error">
-                          {hallMarkErrors[index]?.hallMark}
-                        </span>
+                        <span className="error">{hallMarkErrors[index]?.hallMark}</span>
                       )}
                     </td>
+
                     <td className="delIcon">
-                      <MdDeleteForever  
-                        onClick={() => {
-                          handleRemoveRow(index);
-                        }}
-                      ></MdDeleteForever>
+                      <MdDeleteForever onClick={() => handleRemoveRow(index)} />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

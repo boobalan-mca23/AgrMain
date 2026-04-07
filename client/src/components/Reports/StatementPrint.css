@@ -1,0 +1,61 @@
+.statement-print-container {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    color: #000;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000;
+}
+
+.details {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.statement-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 10pt;
+}
+
+.statement-table th, .statement-table td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+}
+
+.statement-table th {
+    background-color: #f2f2f2;
+}
+
+.footer {
+    margin-top: 30px;
+    font-size: 8pt;
+    text-align: center;
+}
+
+.debit-cell {
+    color: #16a34a !important;
+    font-weight: bold;
+}
+
+.credit-cell {
+    color: #dc2626 !important;
+    font-weight: bold;
+}
+
+.table-header-pos {
+    color: #16a34a !important;
+    font-weight: bold;
+}
+
+.table-header-neg {
+    color: #dc2626 !important;
+    font-weight: bold;
+}
+

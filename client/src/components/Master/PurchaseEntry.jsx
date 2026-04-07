@@ -9,6 +9,7 @@ import {
   TextField,
   Paper,
   TablePagination,
+  Autocomplete,
 } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
@@ -48,6 +49,10 @@ const initialForm = {
 const round3 = (num) =>
   Number.isFinite(num) ? Number(num.toFixed(3)) : 0;
 
+const safeFmt = (val) => {
+  const num = Number(val);
+  return Number.isFinite(num) ? num.toFixed(3) : "0.000";
+};
 
 function PurchaseEntry() {
 
@@ -78,6 +83,7 @@ function PurchaseEntry() {
   const [supplierName, setSupplierName] = useState("");
 
   const [rawGoldStock, setRawGoldStock] = useState([]);
+  const [masterTouchList, setMasterTouchList] = useState([]);
 
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
   const [selectedEntryForReceive, setSelectedEntryForReceive] = useState(null);
@@ -96,7 +102,17 @@ function PurchaseEntry() {
     fetchSupplierName();
     fetchEntries();
     fetchRawGoldStock();
+    fetchMasterTouchList();
   }, [supplierId]);
+
+  const fetchMasterTouchList = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+      setMasterTouchList(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setMasterTouchList([]);
+    }
+  };
 
 
   useEffect(() => {
@@ -289,6 +305,7 @@ function PurchaseEntry() {
       });
       toast.success("Gold received and added to stock");
       fetchEntries();
+      fetchRawGoldStock();
       setReceiveForm(prev => ({ ...prev, weight: "" })); // Reset weight after save
     } catch (err) {
       toast.error(err.response?.data?.msg || "Failed to receive gold");
@@ -301,6 +318,7 @@ function PurchaseEntry() {
       await axios.delete(`${BACKEND_SERVER_URL}/api/purchase-entry/receive-gold/${receiveId}`);
       toast.success("Receive record deleted");
       fetchEntries();
+      fetchRawGoldStock();
       if (isEditReceive && editReceiveId === receiveId) {
         setIsEditReceive(false);
         setEditReceiveId(null);
@@ -345,6 +363,7 @@ function PurchaseEntry() {
       });
       toast.success("Receipt updated");
       fetchEntries();
+      fetchRawGoldStock();
       setIsEditReceive(false);
       setEditReceiveId(null);
       setReceiveForm({
@@ -464,11 +483,23 @@ function PurchaseEntry() {
         );
 
         toast.success("Added");
+      }
 
+      const touchNum = Number(form.touch);
+      if (touchNum > 0) {
+        const alreadyExists = masterTouchList.some(
+          (t) => Number(t.touch) === touchNum
+        );
+        if (!alreadyExists) {
+          try {
+            await axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, { touch: touchNum });
+          } catch { /* silent — touch save is non-critical */ }
+        }
       }
 
       fetchEntries();
-
+      fetchRawGoldStock();
+      fetchMasterTouchList();
       closeDialog();
 
     } catch {
@@ -511,6 +542,30 @@ function PurchaseEntry() {
       <ToastContainer />
 
       <h2>BC Purchase Entry - {supplierName}</h2>
+
+      <div style={{
+        display: "flex",
+        gap: 20,
+        marginBottom: 20,
+        flexWrap: "wrap"
+      }}>
+        <Paper style={{
+          padding: "15px 25px",
+          backgroundColor: "#1976d2",
+          color: "white",
+          borderRadius: "8px",
+          boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          minWidth: "200px"
+        }}>
+          <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>Total BC Balance</span>
+          <span style={{ fontSize: "1.8rem", fontWeight: "bold" }}>
+            {safeFmt(filteredEntries.reduce((sum, e) => sum + round3(Number(e.goldBalance) - calcTotalReceived(e)), 0))}g
+          </span>
+        </Paper>
+      </div>
 
 
       <div style={{
@@ -614,7 +669,7 @@ function PurchaseEntry() {
               <th>Wastage Pure (g)</th>
 
               <th>Final Purity (g)</th>
-
+ 
               <th>Adv. Gold (g)</th>
 
               <th>Adv. Touch</th>
@@ -636,40 +691,38 @@ function PurchaseEntry() {
                   <tr key={e.id}>
                     <td>{page * rowsPerPage + index + 1}</td>
                     <td>{e.jewelName}</td>
-                    <td>{e.grossWeight}</td>
-                    <td>{e.stoneWeight}</td>
+                    <td>{safeFmt(e.grossWeight)}</td>
+                    <td>{safeFmt(e.stoneWeight)}</td>
                     <td>
-                      {e.netWeight}
+                      {safeFmt(e.netWeight)}
                       <br />
                       <span style={{ color: "red", fontSize: "0.85em" }}>
-                        Used: {Number(e.netWeight - (e.stock?.length > 0 ? e.stock[0].netWeight : 0)).toFixed(3)}g
+                        Used: {safeFmt(e.netWeight - (e.stock?.length > 0 ? e.stock[0].netWeight : 0))}g
                       </span>
                       <br />
                       <span style={{ color: "green", fontSize: "0.85em" }}>
-                        Balance: {Number(e.stock?.length > 0 ? e.stock[0].netWeight : 0).toFixed(3)}g
+                        Balance: {safeFmt(e.stock?.length > 0 ? e.stock[0].netWeight : 0)}g
                       </span>
-
-
                     </td>
-                    <td>{e.touch}</td>
-                    <td>{e.wastage} ({e.wastageType})</td>
-                    <td>{e.wastagePure}</td>
-                    <td>{e.finalPurity}</td>
-                    <td>{e.advanceGold}</td>
-                    <td>{e.advanceTouch || "-"}</td>
-                    <td>
-                      {e.goldBalance}
+                    <td>{safeFmt(e.touch)}</td>
+                    <td>{safeFmt(e.wastage)} ({e.wastageType})</td>
+                    <td>{safeFmt(e.wastagePure)}</td>
+                    <td>{safeFmt(e.finalPurity)}</td>
+                    <td>{safeFmt(e.advanceGold)}</td>
+                    <td>{e.advanceTouch ? safeFmt(e.advanceTouch) : "-"}</td>
+                    <td style={{ minWidth: "120px", textAlign: "center" }}>
+                      {safeFmt(e.goldBalance)}
                       {calcTotalReceived(e) > 0 && (
-                        <div style={{ fontSize: "0.85em", color: "#1976d2" }}>
-                          Received: {calcTotalReceived(e)}g
+                        <div style={{ fontSize: "0.85em", color: "#1976d2", marginTop: "4px" }}>
+                          Received: {safeFmt(calcTotalReceived(e))}g
                           <br />
-                          <b>Pending: {round3(e.goldBalance - calcTotalReceived(e))}g</b>
+                          <b>Pending: {safeFmt(round3(e.goldBalance - calcTotalReceived(e)))}g</b>
                         </div>
                       )}
                       <Button
                         size="small"
                         variant="outlined"
-                        style={{ marginTop: "5px", fontSize: "0.7rem", padding: "2px 5px" }}
+                        style={{ marginTop: "8px", fontSize: "0.7rem", padding: "2px 5px", margin: "8px auto 0", display: "block" }}
                         onClick={() => openReceiveDialogHandler(e)}
                       >
                         Receive
@@ -825,19 +878,26 @@ function PurchaseEntry() {
             InputProps={{ readOnly: true }}
           />
 
-          <TextField
-            label="Touch"
-            fullWidth
-            margin="dense"
-            value={form.touch}
-            onChange={(e) => {
-              const value = e.target.value;
-
-              if (/^\d*\.?\d*$/.test(value)) {
-                handleChange("touch", e.target.value)
-              }
-            }
-            }
+          <Autocomplete
+            freeSolo
+            forcePopupIcon
+            options={masterTouchList.map((t) => String(t.touch))}
+            value={String(form.touch || "")}
+            onChange={(event, newValue) => {
+              const val = newValue || "";
+              if (/^\d*\.?\d*$/.test(val)) handleChange("touch", val);
+            }}
+            onInputChange={(event, newInputValue) => {
+              if (/^\d*\.?\d*$/.test(newInputValue)) handleChange("touch", newInputValue);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Touch"
+                fullWidth
+                margin="dense"
+              />
+            )}
           />
 
           {/* ✅ Wastage Type */}

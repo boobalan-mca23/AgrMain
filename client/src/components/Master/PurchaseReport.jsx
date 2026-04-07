@@ -85,6 +85,9 @@ export default function BCPurchaseReport() {
   const format3 = (v) =>
     v ? Number(v).toFixed(3) : "0.000";
 
+  const calcTotalReceived = (entry) =>
+    entry.receivedGold?.reduce((sum, r) => sum + Number(r.weight || 0), 0) || 0;
+
   // ===============================
   // TOTAL CALCULATIONS
   // ===============================
@@ -95,6 +98,9 @@ export default function BCPurchaseReport() {
     let totalWastagePure = 0;
     let totalFinalPurity = 0;
     let totalAdvanceGold = 0;
+    let totalGoldBalance = 0;
+    let totalReceived = 0;
+    let totalPending = 0;
 
     rows.forEach(r => {
 
@@ -103,15 +109,22 @@ export default function BCPurchaseReport() {
       totalFinalPurity += Number(r.finalPurity || 0);
       totalAdvanceGold += Number(r.advanceGold || 0);
 
+      const received = calcTotalReceived(r);
+      const pending = Math.max(0, Number(r.goldBalance || 0) - received);
+      totalGoldBalance += Number(r.goldBalance || 0);
+      totalReceived += received;
+      totalPending += pending;
+
     });
 
     return {
-
       totalNet,
       totalWastagePure,
       totalFinalPurity,
-      totalAdvanceGold
-
+      totalAdvanceGold,
+      totalGoldBalance,
+      totalReceived,
+      totalPending,
     };
 
   }, [rows]);
@@ -325,6 +338,7 @@ export default function BCPurchaseReport() {
               <th>Wastage Pure (g)</th>
               <th>Final Purity (g)</th>
               <th>Advance Gold (g)</th>
+              <th>Gold Balance (g)</th>
 
             </tr>
 
@@ -378,6 +392,17 @@ export default function BCPurchaseReport() {
 
                 <td>{format3(r.advanceGold)}</td>
 
+                <td style={{ minWidth: "130px", textAlign: "center" }}>
+                  {format3(r.goldBalance)}
+                  {calcTotalReceived(r) > 0 && (
+                    <div style={{ fontSize: "0.85em", color: "#1976d2", marginTop: "4px" }}>
+                      Received: {format3(calcTotalReceived(r))}g
+                      <br />
+                      <b>Pending: {format3(Math.max(0, Number(r.goldBalance || 0) - calcTotalReceived(r)))}g</b>
+                    </div>
+                  )}
+                </td>
+
               </tr>
 
             ))}
@@ -413,6 +438,15 @@ export default function BCPurchaseReport() {
 
                 <td>
                   {format3(totals.totalAdvanceGold)}
+                </td>
+
+                <td style={{ textAlign: "center" }}>
+                  {format3(totals.totalGoldBalance)}
+                  <div style={{ fontSize: "0.85em", color: "#1976d2", marginTop: "4px" }}>
+                    Received: {format3(totals.totalReceived)}g
+                    <br />
+                    <b>Pending: {format3(totals.totalPending)}g</b>
+                  </div>
                 </td>
 
               </tr>

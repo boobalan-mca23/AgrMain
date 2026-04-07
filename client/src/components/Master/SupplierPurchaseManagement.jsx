@@ -167,7 +167,7 @@ function SupplierPurchaseManagement() {
 
               <th>Supplier Name</th>
 
-              <th>Opening Balance (g)</th>
+              <th>Total BC Balance (g)</th>
 
               <th>Action</th>
 
@@ -201,7 +201,7 @@ function SupplierPurchaseManagement() {
 
                 <td>
                   {Number(
-                    supplier.openingBalance || 0
+                    supplier.totalBCBalance || 0
                   ).toFixed(3)}
                 </td>
 

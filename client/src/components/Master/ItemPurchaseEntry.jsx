@@ -11,6 +11,7 @@ import {
   ButtonGroup,
   MenuItem,
   Typography,
+  Autocomplete,
 } from "@mui/material";
 
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -44,7 +45,7 @@ const initialForm = {
   wastagePure: "",
   finalPurity: "",
   goldBalance: "",
-  count: 1,
+  count: "",
   advanceTouch: "",
 };
 
@@ -52,6 +53,28 @@ const initialForm = {
 const round3 = (num) =>
   Number.isFinite(num) ? Number(num.toFixed(3)) : 0;
 
+const safeFmt = (val) => {
+  const num = Number(val);
+  return Number.isFinite(num) ? num.toFixed(3) : "0.000";
+};
+
+const getEntryStatus = (e) => {
+  if (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") {
+    return "Sold";
+  }
+  // Check for partial sale: if grossWeight has significantly decreased from initial but not sold
+  if (e.initialGrossWeight && e.grossWeight < (e.initialGrossWeight - 0.01)) {
+    return "Partially Sold";
+  }
+  // All other states (In Stock, In Repair, Returned) are grouped as In Stock
+  return "In Stock";
+};
+
+
+const calcTotalReceived = (entry) => {
+  if (!entry || !entry.receivedGold || !Array.isArray(entry.receivedGold)) return 0;
+  return round3(entry.receivedGold.reduce((sum, r) => sum + (Number(r.weight) || 0), 0));
+};
 
 function ItemPurchaseEntry() {
 
@@ -86,6 +109,7 @@ function ItemPurchaseEntry() {
   const [statusFilter, setStatusFilter] = useState("In Stock");
 
   const [rawGoldStock, setRawGoldStock] = useState([]);
+  const [masterTouchList, setMasterTouchList] = useState([]);
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
   const [selectedEntryForReceive, setSelectedEntryForReceive] = useState(null);
   const [receiveForm, setReceiveForm] = useState({
@@ -107,7 +131,17 @@ function ItemPurchaseEntry() {
     fetchSupplierName();
     fetchEntries();
     fetchRawGoldStock();
+    fetchMasterTouchList();
   }, [supplierId]);
+
+  const fetchMasterTouchList = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
+      setMasterTouchList(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setMasterTouchList([]);
+    }
+  };
 
   useEffect(() => {
     generateFilterOptions();
@@ -126,11 +160,13 @@ function ItemPurchaseEntry() {
   const fetchRawGoldStock = async () => {
     try {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/rawgold`);
-      setRawGoldStock(res.data);
+      setRawGoldStock(res.data.allRawGold || []);
     } catch {
+      setRawGoldStock([]);
       toast.error("Failed to load raw gold stock");
     }
   };
+
 
   const openReceiveDialogHandler = (entry) => {
     setSelectedEntryForReceive(entry);
@@ -157,11 +193,6 @@ function ItemPurchaseEntry() {
       touch: record.touch,
       date: dayjs(record.date).format("YYYY-MM-DD")
     });
-  };
-
-  const calcTotalReceived = (entry) => {
-    if (!entry.receivedGold) return 0;
-    return round3(entry.receivedGold.reduce((sum, r) => sum + r.weight, 0));
   };
 
   const handleReceiveSubmit = async () => {
@@ -197,6 +228,7 @@ function ItemPurchaseEntry() {
       }
 
       fetchEntries();
+      fetchRawGoldStock();
       setIsEditReceive(false);
       setEditReceiveId(null);
       setReceiveForm({
@@ -231,13 +263,15 @@ function ItemPurchaseEntry() {
   const fetchEntries = async () => {
 
     try {
-
       const res = await axios.get(
         `${BACKEND_SERVER_URL}/api/item-purchase?supplierId=${supplierId}`
       );
 
       setEntries(res.data);
-
+      if (selectedEntryForReceive) {
+        const refreshed = res.data.find(e => e.id === selectedEntryForReceive.id);
+        if (refreshed) setSelectedEntryForReceive(refreshed);
+      }
     } catch {
 
       toast.error("Failed to load entries");
@@ -270,15 +304,11 @@ function ItemPurchaseEntry() {
         String(e.touch) === String(touchFilter)
       );
 
-    if (statusFilter !== "All") {
-      filtered = filtered.filter(e => {
-        const s = (e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "In Repair"
-          : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "Repaired"
-          : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "Returned"
-          : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "Sold"
-          : "In Stock";
-        return s === statusFilter;
-      });
+    if (statusFilter === "All") {
+      // "All" now means all active items (In Stock + Partially Sold), excluding fully Sold items
+      filtered = filtered.filter(e => getEntryStatus(e) !== "Sold");
+    } else {
+      filtered = filtered.filter(e => getEntryStatus(e) === statusFilter);
     }
 
     setFilteredEntries(filtered);
@@ -354,7 +384,8 @@ function ItemPurchaseEntry() {
 
   const getRemainingStockDisplay = () => {
     if (!form.advanceTouch) return 0;
-    const selectedStock = rawGoldStock.find(r => String(r.touch) === String(form.advanceTouch));
+    const stocks = Array.isArray(rawGoldStock) ? rawGoldStock : [];
+    const selectedStock = stocks.find(r => String(r.touch) === String(form.advanceTouch));
     let availableBalance = selectedStock ? selectedStock.remainingWt : 0;
 
     if (isEdit && selectedId) {
@@ -450,6 +481,7 @@ function ItemPurchaseEntry() {
 
       finalPurity: Number(form.finalPurity),
       goldBalance: Number(form.goldBalance || 0),
+      count: form.count ? Number(form.count) : 1,
       advanceTouch: form.advanceTouch ? Number(form.advanceTouch) : null,
     };
 
@@ -477,11 +509,23 @@ function ItemPurchaseEntry() {
         );
 
         toast.success("Added successfully");
+      }
 
+      const touchNum = Number(form.touch);
+      if (touchNum > 0) {
+        const alreadyExists = masterTouchList.some(
+          (t) => Number(t.touch) === touchNum
+        );
+        if (!alreadyExists) {
+          try {
+            await axios.post(`${BACKEND_SERVER_URL}/api/master-touch/create`, { touch: touchNum });
+          } catch { /* silent — touch save is non-critical */ }
+        }
       }
 
       fetchEntries();
-
+      fetchRawGoldStock();
+      fetchMasterTouchList();
       closeDialog();
 
     } catch {
@@ -535,6 +579,30 @@ function ItemPurchaseEntry() {
       <h2>
         Item Purchase Entry - {supplierName}
       </h2>
+
+      <div style={{
+        display: "flex",
+        gap: 20,
+        marginBottom: 20,
+        flexWrap: "wrap"
+      }}>
+        <Paper style={{
+          padding: "15px 25px",
+          backgroundColor: "#388e3c",
+          color: "white",
+          borderRadius: "8px",
+          boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          minWidth: "200px"
+        }}>
+          <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>Total Item Balance</span>
+          <span style={{ fontSize: "1.8rem", fontWeight: "bold" }}>
+             {safeFmt(entries.filter(e => e.moveTo !== "returned").reduce((sum, e) => sum + round3(Number(e.goldBalance) - calcTotalReceived(e)), 0))}g
+          </span>
+        </Paper>
+      </div>
 
 
       <div style={{
@@ -591,7 +659,7 @@ function ItemPurchaseEntry() {
             variant="outlined"
             style={{ minWidth: 160 }}
           >
-            {["All", "In Repair", "Repaired", "Returned", "Sold", "In Stock"].map((s) => (
+            {["All", "Sold", "Partially Sold", "In Stock"].map((s) => (
               <MenuItem key={s} value={s}>
                 {s}
               </MenuItem>
@@ -672,10 +740,9 @@ function ItemPurchaseEntry() {
           <thead>
 
             <tr>
-              <th>#</th>
-              <th>ID</th>
+              <th>S.No</th>
               <th>Item Name</th>
-              <th>Count</th>
+              <th style={{ width: "60px" }}>Count</th>
               <th>Gross Wt. (g)</th>
               <th>Stone Wt. (g)</th>
               <th>Net Wt. (g)</th>
@@ -683,11 +750,10 @@ function ItemPurchaseEntry() {
               <th>Wastage Value</th>
               <th>Wastage Pure (g)</th>
               <th>Final Purity (g)</th>
-              <th>Advance Gold (g)</th>
-              <th>Gold Received (g)</th>
-              <th>Gold Pending (g)</th>
+              <th>Adv. Gold (g)</th>
+              <th>Adv. Touch</th>
+              <th>Gold Balance (g)</th>
               <th>Status</th>
-              <th>Receipt</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -696,11 +762,6 @@ function ItemPurchaseEntry() {
             {filteredEntries.length > 0 ? (
               filteredEntries.map((e, i) => {
                 const isInitial = valueView === "initial";
-                const safeFmt = (val) => {
-                  const num = Number(val);
-                  return Number.isFinite(num) ? num.toFixed(3) : "0.000";
-                };
-
                 const displayGross = safeFmt(isInitial ? (e.initialGrossWeight ?? e.grossWeight) : e.grossWeight);
                 const displayStone = safeFmt(isInitial ? (e.initialStoneWeight ?? e.stoneWeight) : e.stoneWeight);
                 const displayNet = safeFmt(isInitial ? (e.initialNetWeight ?? e.netWeight) : e.netWeight);
@@ -712,9 +773,8 @@ function ItemPurchaseEntry() {
                 return (
                   <tr key={e.id}>
                     <td>{i + 1}</td>
-                    <td>{e.id}</td>
-                    <td>{e.itemName}</td>
-                    <td>{e.count || 1}</td>
+                    <td style={{ fontWeight: "500" }}>{e.itemName}</td>
+                    <td style={{ textAlign: "center" }}>{e.count || 1}</td>
                     <td>{displayGross}</td>
                     <td>{displayStone}</td>
                     <td>{displayNet}</td>
@@ -723,56 +783,53 @@ function ItemPurchaseEntry() {
                     <td>{displayWastagePure}</td>
                     <td>{displayFinal}</td>
                     <td>{displayAdvance}</td>
-                    <td>{safeFmt(calcTotalReceived(e))}</td>
-                    <td>{safeFmt(round3(Number(e.goldBalance) - calcTotalReceived(e)))}</td>
-                    <td>
+                    <td>{e.advanceTouch ? safeFmt(e.advanceTouch) : "-"}</td>
+                    <td style={{ minWidth: "120px", textAlign: "center" }}>
+                      {displayGoldBalance}
+                      {calcTotalReceived(e) > 0 && (
+                        <div style={{ fontSize: "0.85em", color: "#1976d2", marginTop: "4px" }}>
+                          Received: {safeFmt(calcTotalReceived(e))}g
+                          <br />
+                          <b>Pending: {safeFmt(round3(Number(e.goldBalance) - calcTotalReceived(e)))}g</b>
+                        </div>
+                      )}
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        style={{ marginTop: "8px", fontSize: "0.7rem", padding: "2px 5px", margin: "8px auto 0", display: "block" }}
+                        onClick={() => openReceiveDialogHandler(e)}
+                      >
+                        Receive
+                      </Button>
+                    </td>
+                    <td style={{ textAlign: "center" }}>
                       <span
                         style={{
                           padding: "4px 8px",
-                          borderRadius: "4px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          backgroundColor:
-                            (e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "#ff9800"
-                              : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "#fbc02d"
-                                : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "#2196f3"
-                                  : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "#4caf50"
-                                    : "#9e9e9e",
-                          color: "white",
-                        }}
-                      >
-                        {(e.repairStocks?.length > 0 || e.isInRepair === true || e.isInRepair === 1 || e.isInRepair === "true") ? "In Repair"
-                          : (e.moveTo === "REPAIR_RETURN" || e.moveTo === "REPAIRED" || e.moveTo === "repaired") ? "Repaired"
-                            : (e.moveTo === "CUSTOMER_RETURN" || e.source === "CUSTOMER_RETURN" || e.moveTo === "returned") ? "Returned"
-                              : (e.isSold || e.isBilled || e.moveTo === "billed" || e.isSold === 1 || e.isSold === "true") ? "Sold"
-                                : "In Stock"}
-                      </span>
-                    </td>
-                    <td>
-                      {e.goldBalance - calcTotalReceived(e) > 0.001 ? (
-                        <Button
-                          variant="contained"
-                          size="small"
-                          color="secondary"
-                          onClick={() => openReceiveDialogHandler(e)}
-                        >
-                          Record
-                        </Button>
-                      ) : (
-                        <span style={{ fontSize: "12px", color: "gray" }}>Completed</span>
-                      )}
-                    </td>
-                    <td>
-                      <EditIcon
-                        style={{ cursor: "pointer", marginRight: 8 }}
-                        onClick={() => openEditDialog(e)}
-                      />
-                      <DeleteIcon
-                        style={{ cursor: "pointer" }}
-                        onClick={() => handleDelete(e.id)}
-                      />
-                    </td>
-                  </tr>
+                           borderRadius: "4px",
+                           fontSize: "12px",
+                           fontWeight: "600",
+                           backgroundColor:
+                             getEntryStatus(e) === "Sold" ? "#4caf50"
+                               : getEntryStatus(e) === "Partially Sold" ? "#ff9800"
+                                 : "#2196f3",
+                           color: "white",
+                         }}
+                       >
+                         {getEntryStatus(e)}
+                       </span>
+                     </td>
+                     <td>
+                       <EditIcon
+                         style={{ cursor: "pointer", marginRight: 8 }}
+                         onClick={() => openEditDialog(e)}
+                       />
+                       <DeleteIcon
+                         style={{ cursor: "pointer" }}
+                         onClick={() => handleDelete(e.id)}
+                       />
+                     </td>
+                   </tr>
               );
             })
           ) : (
@@ -800,40 +857,54 @@ function ItemPurchaseEntry() {
 
         <DialogContent>
 
-          <TextField
-            select
-            label="Advance Touch (Raw Gold Stock)"
-            fullWidth
-            margin="dense"
-            value={form.advanceTouch}
-            onChange={(e) => handleChange("advanceTouch", e.target.value)}
-          >
-            <MenuItem value="">None (Subtract from Balance)</MenuItem>
-            {rawGoldStock.map((s) => (
-              <MenuItem key={s.id} value={s.touch}>
-                Touch: {s.touch} (Avail: {s.remainingWt}g)
-              </MenuItem>
-            ))}
-          </TextField>
+          <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", marginTop: "8px" }}>
+            <TextField
+              label="Advance Gold (g)"
+              fullWidth
+              margin="dense"
+              style={{ marginTop: 0, marginBottom: 0 }}
+              value={form.advanceGold}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d*\.?\d*$/.test(value)) {
+                  handleChange("advanceGold", e.target.value);
+                }
+              }}
+            />
 
-          {form.advanceTouch && (
-            <Typography variant="caption" color={getRemainingStockDisplay() < 0 ? "error" : "primary"}>
-              Remaining Stock after this entry: {getRemainingStockDisplay()}g
-            </Typography>
-          )}
+            <TextField
+              select
+              label="Advance Touch"
+              fullWidth
+              margin="dense"
+              style={{ marginTop: 0, marginBottom: 0 }}
+              value={form.advanceTouch}
+              onChange={(e) => handleChange("advanceTouch", e.target.value)}
+              SelectProps={{ native: true }}
+              InputLabelProps={{ shrink: true }}
+            >
+              <option value="">Select Touch</option>
+              {(rawGoldStock || []).map((s) => (
+                <option key={s.id} value={s.touch}>
+                  {s.touch}
+                </option>
+              ))}
+            </TextField>
+          </div>
 
-          <TextField
-            label="Advance Gold (g)"
-            fullWidth
-            margin="dense"
-            value={form.advanceGold}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^\d*\.?\d*$/.test(value)) {
-                handleChange("advanceGold", e.target.value);
-              }
-            }}
-          />
+          <div style={{
+            height: "20px",
+            color: form.advanceTouch ? (getRemainingStockDisplay() < 0 ? "#d32f2f" : "#1976d2") : "inherit",
+            fontWeight: form.advanceTouch ? "bold" : "normal",
+            fontSize: "0.85rem",
+            marginLeft: "4px",
+            marginBottom: "12px",
+            marginTop: "4px"
+          }}>
+            {form.advanceTouch
+              ? `Remaining Raw Gold : ${getRemainingStockDisplay()}g`
+              : "Select a touch point to view raw gold balance"}
+          </div>
 
 
           <TextField
@@ -904,21 +975,27 @@ function ItemPurchaseEntry() {
           />
 
 
-          <TextField
-            label="Touch"
-            fullWidth
-            required
-            margin="dense"
-            value={form.touch}
-            onChange={(e) =>
-              {
-              const value = e.target.value;
-
-              if (/^\d*\.?\d*$/.test(value)) {
-              handleChange("touch", e.target.value)
-              }
-            }
-            }
+          <Autocomplete
+            freeSolo
+            forcePopupIcon
+            options={masterTouchList.map((t) => String(t.touch))}
+            value={String(form.touch || "")}
+            onChange={(event, newValue) => {
+              const val = newValue || "";
+              if (/^\d*\.?\d*$/.test(val)) handleChange("touch", val);
+            }}
+            onInputChange={(event, newInputValue) => {
+              if (/^\d*\.?\d*$/.test(newInputValue)) handleChange("touch", newInputValue);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Touch"
+                fullWidth
+                required
+                margin="dense"
+              />
+            )}
           />
 
 
@@ -1014,82 +1091,100 @@ function ItemPurchaseEntry() {
 
 
       {/* GOLD RECEIVE DIALOG */}
-      <Dialog open={openReceiveDialog} onClose={closeReceiveDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          Receive Gold - {selectedEntryForReceive?.itemName} (ID: {selectedEntryForReceive?.id})
-          <Typography variant="subtitle2" color="primary">
-            Gold Balance to Receive: {selectedEntryForReceive ? round3(selectedEntryForReceive.goldBalance - calcTotalReceived(selectedEntryForReceive)) : 0}g
-          </Typography>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Paper elevation={0} style={{ padding: 15, backgroundColor: "#f9f9f9", marginBottom: 20 }}>
-            <Typography variant="h6" gutterBottom>{isEditReceive ? "Edit Receipt" : "Record New Receipt"}</Typography>
-            <div style={{ display: "flex", gap: 15, alignItems: "flex-start" }}>
-              <TextField
-                label="Weight (g)"
-                size="small"
-                value={receiveForm.weight}
-                onChange={(e) => setReceiveForm({ ...receiveForm, weight: e.target.value })}
-                style={{ width: 150 }}
-              />
-              <TextField
-                label="Touch"
-                size="small"
-                value={receiveForm.touch}
-                onChange={(e) => setReceiveForm({ ...receiveForm, touch: e.target.value })}
-                style={{ width: 120 }}
-              />
+      <Dialog open={openReceiveDialog} onClose={closeReceiveDialog} fullWidth maxWidth="xs">
+        <DialogTitle>Receive Gold for Item</DialogTitle>
+        <DialogContent>
+          <div style={{ margin: "10px 0", fontSize: "0.95rem", lineHeight: "1.6" }}>
+            <b>Item:</b> {selectedEntryForReceive?.itemName} (ID: {selectedEntryForReceive?.id}) <br />
+            <b>Total Gold Balance:</b> {selectedEntryForReceive?.goldBalance}g <br />
+            <b>Already Received:</b> {calcTotalReceived(selectedEntryForReceive || {})}g <br />
+            <b style={{ color: "blue" }}>Pending Balance :</b> {round3(
+              (selectedEntryForReceive?.goldBalance || 0) -
+              ((selectedEntryForReceive?.receivedGold || []).filter(r => r.id !== editReceiveId).reduce((sum, r) => sum + r.weight, 0)) -
+              (Number(receiveForm.weight) || 0)
+            )}g
+          </div>
+
+          <div style={{ marginTop: 20, borderTop: "1px solid #eee", paddingTop: 15 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="Date"
+                  label="Receipt Date"
                   value={dayjs(receiveForm.date)}
-                  onChange={(val) => setReceiveForm({ ...receiveForm, date: val ? val.format("YYYY-MM-DD") : "" })}
-                  slotProps={{ textField: { size: 'small', style: { width: 170 } } }}
+                  onChange={(newValue) => setReceiveForm({ ...receiveForm, date: newValue?.format('YYYY-MM-DD') })}
                   format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      margin: "dense",
+                      size: "small",
+                      variant: "outlined"
+                    }
+                  }}
                 />
               </LocalizationProvider>
-              <Button
-                variant="contained"
-                onClick={handleReceiveSubmit}
-                style={{ height: 40 }}
-              >
-                {isEditReceive ? "Update" : "Save"}
-              </Button>
-              {isEditReceive && (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setIsEditReceive(false);
-                    setEditReceiveId(null);
-                    setReceiveForm({ weight: "", touch: selectedEntryForReceive.advanceTouch || "", date: dayjs().format("YYYY-MM-DD") });
-                  }}
-                  style={{ height: 40 }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-          </Paper>
 
-          <Typography variant="h6" gutterBottom>Receipt History</Typography>
-          <TextField
-            placeholder="Search history..."
-            size="small"
-            fullWidth
-            value={receiveSearch}
-            onChange={(e) => setReceiveSearch(e.target.value)}
-            style={{ marginBottom: 10 }}
-          />
-          <Paper variant="outlined">
-            <table className="item-list" style={{ width: "100%", fontSize: "13px" }}>
+              <TextField
+                label={isEditReceive ? "Edit Weight (g)" : "Weight to Receive (g)"}
+                fullWidth
+                margin="dense"
+                size="small"
+                variant="outlined"
+                value={receiveForm.weight}
+                onChange={(e) => setReceiveForm({ ...receiveForm, weight: e.target.value })}
+                error={Number(receiveForm.weight) > round3((selectedEntryForReceive?.goldBalance || 0) - ((selectedEntryForReceive?.receivedGold || []).filter(r => r.id !== editReceiveId).reduce((sum, r) => sum + r.weight, 0))) + 0.001}
+                helperText={
+                  Number(receiveForm.weight) > round3((selectedEntryForReceive?.goldBalance || 0) - ((selectedEntryForReceive?.receivedGold || []).filter(r => r.id !== editReceiveId).reduce((sum, r) => sum + r.weight, 0))) + 0.001
+                    ? "Exceeds pending balance"
+                    : ""
+                }
+              />
+
+              <TextField
+                select
+                label="Receive to Raw Gold Touch"
+                fullWidth
+                margin="dense"
+                size="small"
+                variant="outlined"
+                value={receiveForm.touch}
+                onChange={(e) => setReceiveForm({ ...receiveForm, touch: e.target.value })}
+                SelectProps={{ native: true }}
+                InputLabelProps={{ shrink: true }}
+              >
+                <option value="">Select Touch</option>
+                {(rawGoldStock || []).map((s) => (
+                  <option key={s.id} value={s.touch}>
+                    {s.touch} (Stock Bal: {round3(s.remainingWt)}g)
+                  </option>
+                ))}
+              </TextField>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 10 }}>
+            <Typography variant="subtitle2" style={{ fontWeight: "700" }}>Receipt History</Typography>
+            <TextField
+              placeholder="Search..."
+              size="small"
+              sx={{ width: "120px", '& .MuiInputBase-input': { fontSize: '0.75rem', padding: '4px 8px' } }}
+              value={receiveSearch}
+              onChange={(e) => {
+                setReceiveSearch(e.target.value);
+                setReceivePage(0);
+              }}
+            />
+          </div>
+
+          <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+            <table style={{ width: "100%", fontSize: "0.85rem", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ backgroundColor: "#eee" }}>
-                  <th style={{ padding: "8px" }}>S.No</th>
-                  <th style={{ padding: "8px" }}>Date</th>
-                  <th style={{ padding: "8px" }}>Weight (g)</th>
-                  <th style={{ padding: "8px" }}>Touch</th>
-                  <th style={{ padding: "8px" }}>Purity (g)</th>
-                  <th style={{ padding: "8px" }}>Action</th>
+                <tr style={{ background: "#f5f5f5" }}>
+                  <th style={{ padding: "8px", textAlign: "left" }}>S.No</th>
+                  <th style={{ padding: "8px", textAlign: "left" }}>Date</th>
+                  <th style={{ padding: "8px", textAlign: "left" }}>Weight</th>
+                  <th style={{ padding: "8px", textAlign: "left" }}>Touch</th>
+                  <th style={{ padding: "8px" }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -1098,28 +1193,25 @@ function ItemPurchaseEntry() {
                     .filter(r => dayjs(r.date).format("DD/MM/YYYY").includes(receiveSearch) || String(r.weight).includes(receiveSearch))
                     .slice(receivePage * receiveRowsPerPage, receivePage * receiveRowsPerPage + receiveRowsPerPage)
                     .map((r, i) => (
-                      <tr key={r.id}>
+                      <tr key={r.id} style={{ borderBottom: "1px solid #eee", background: editReceiveId === r.id ? "#fff9c4" : "transparent" }}>
                         <td style={{ padding: "8px" }}>{receivePage * receiveRowsPerPage + i + 1}</td>
                         <td style={{ padding: "8px" }}>{dayjs(r.date).format("DD/MM/YYYY")}</td>
-                        <td style={{ padding: "8px" }}>{r.weight.toFixed(3)}</td>
-                        <td style={{ padding: "8px" }}>{r.touch.toFixed(2)}</td>
-                        <td style={{ padding: "8px" }}>{round3((r.weight * r.touch) / 100).toFixed(3)}</td>
-                        <td style={{ padding: "8px" }}>
+                        <td style={{ padding: "8px" }}>{r.weight}g</td>
+                        <td style={{ padding: "8px" }}>{r.touch}</td>
+                        <td style={{ padding: "8px", textAlign: "center" }}>
                           <EditIcon
-                            fontSize="small"
-                            style={{ cursor: "pointer", marginRight: 10, color: "#1976d2" }}
+                            style={{ cursor: "pointer", fontSize: "1.1rem", color: "#1976d2", marginRight: "8px" }}
                             onClick={() => handleEditReceiveClick(r)}
                           />
                           <DeleteIcon
-                            fontSize="small"
-                            style={{ cursor: "pointer", color: "#d32f2f" }}
+                            style={{ cursor: "pointer", fontSize: "1.1rem", color: "#d32f2f" }}
                             onClick={() => handleDeleteReceive(r.id)}
                           />
                         </td>
                       </tr>
                     ))
                 ) : (
-                  <tr><td colSpan="6" align="center" style={{ padding: 10 }}>No receipts found</td></tr>
+                  <tr><td colSpan="5" align="center" style={{ padding: 10 }}>No receipts found</td></tr>
                 )}
               </tbody>
             </table>
@@ -1131,10 +1223,35 @@ function ItemPurchaseEntry() {
               page={receivePage}
               onPageChange={(e, p) => setReceivePage(p)}
             />
-          </Paper>
+          </div>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={closeReceiveDialog} color="primary">Close</Button>
+        <DialogActions style={{ padding: "16px 24px" }}>
+          {isEditReceive && (
+            <Button onClick={() => {
+              setIsEditReceive(false);
+              setEditReceiveId(null);
+              setReceiveForm({
+                weight: "",
+                touch: selectedEntryForReceive.advanceTouch || "",
+                date: dayjs().format("YYYY-MM-DD")
+              });
+            }} color="secondary">Cancel Edit</Button>
+          )}
+          <Button onClick={closeReceiveDialog} color="inherit">Close</Button>
+          <Button
+            onClick={handleReceiveSubmit}
+            variant="contained"
+            color="primary"
+            sx={{ boxShadow: "none" }}
+            disabled={
+              !receiveForm.weight ||
+              Number(receiveForm.weight) <= 0 ||
+              !receiveForm.touch ||
+              !receiveForm.date
+            }
+          >
+            {isEditReceive ? "Update Receipt" : "Record Receipt"}
+          </Button>
         </DialogActions>
       </Dialog>
 

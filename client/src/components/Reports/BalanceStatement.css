@@ -1,0 +1,193 @@
+.balance-statement-page {
+    padding: 32px;
+    background-color: #f1f5f9;
+    min-height: 100vh;
+}
+
+/* Dashboard Section */
+.statement-dashboard {
+    margin-bottom: 32px;
+}
+
+.dashboard-entity-name {
+    color: #1e293b;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
+
+.dashboard-module-type {
+    color: #64748b;
+    font-weight: 600 !important;
+    letter-spacing: 0.05em;
+}
+
+.back-btn-dashboard {
+    background-color: white !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    color: #475569 !important;
+}
+
+.summary-card {
+    min-width: 200px;
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.summary-card .MuiCardContent-root {
+    padding: 16px !important;
+}
+
+.balance-card {
+    background-color: #dbeafe !important;
+    border: 1px solid #bfdbfe !important;
+}
+
+.balance-card .summary-label { color: #1e3a8a !important; }
+.balance-card .summary-value { color: #1e40af !important; }
+
+.hallmark-card {
+    background-color: #fef9c3 !important;
+    border: 1px solid #fef08a !important;
+}
+
+.hallmark-card .summary-label { color: #854d0e !important; }
+.hallmark-card .summary-value { color: #9a3412 !important; }
+
+/* Special colors for Supplier cards */
+.supplier-card {
+    background-color: #fae8ff !important;
+    border: 1px solid #f5d0fe !important;
+}
+
+.supplier-card .summary-label { color: #701a75 !important; }
+.supplier-card .summary-value { color: #86198f !important; }
+
+.summary-label {
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px !important;
+    display: block;
+}
+
+.summary-value {
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+}
+
+/* Control Bar */
+.statement-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.date-field {
+    width: 160px;
+}
+
+.print-btn-dashboard {
+    background-color: #1e293b !important;
+    text-transform: none !important;
+    font-weight: 600 !important;
+}
+
+/* Table Styling */
+.statement-table-paper {
+    border-radius: 16px !important;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #e2e8f0;
+}
+
+.statement-table-paper .MuiTableHead-root th {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 12px 16px !important;
+}
+
+.col-group-start { border-left: 1px solid #e2e8f0; background-color: #f1f5f9 !important; }
+.col-pos { color: #16a34a !important; font-weight: 800 !important; }
+.col-neg { color: #dc2626 !important; font-weight: 800 !important; }
+.col-total { font-weight: 700 !important; color: #1e293b !important; background-color: #f8fafc !important; }
+
+.row-opening {
+    background-color: #fffbeb !important;
+}
+
+.row-opening td {
+    font-weight: 700 !important;
+    color: #854d0e !important;
+}
+
+.row-adjustment {
+    background-color: #fafafa !important;
+}
+
+.adj-indicator {
+    color: #64748b;
+    font-weight: 700;
+}
+
+.tag-module {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.tag-module.bill { background: #dbeafe; color: #1e40af; }
+.tag-module.receipt-voucher { background: #dcfce7; color: #166534; }
+.tag-module.transaction { background: #f1f5f9; color: #475569; }
+.tag-module.opening-balance { background: #fef9c3; color: #854d0e; }
+.tag-module.excess-balance { background: #fee2e2; color: #b91c1c; }
+
+.cell-sno { color: #94a3b8; font-family: monospace; }
+.cell-date { font-weight: 600; color: #475569; }
+.cell-before { color: #94a3b8; font-size: 0.8rem; }
+.cell-debit { color: #16a34a; font-weight: 600; }
+.cell-credit { color: #dc2626; font-weight: 600; }
+.cell-after { font-weight: 700; color: #1e293b; }
+
+/* Dialog */
+.dialog-title-themed {
+    background: #1e293b;
+    color: white;
+    font-weight: 700 !important;
+}
+
+.impact-box {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 12px;
+    margin-top: 16px;
+}
+
+.impact-header {
+    color: #475569;
+    font-size: 0.75rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px !important;
+}
+
+.impact-val { font-weight: 800; font-size: 1.1rem; }
+.impact-val.pos { color: #16a34a; }
+.impact-val.neg { color: #dc2626; }
+
+@media print {
+    .noprint, .statement-controls, .back-btn-dashboard {
+        display: none !important;
+    }
+}

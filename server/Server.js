@@ -28,6 +28,7 @@ const purchaseReportRoutes = require("./Routes/purchaseReport.routes");
 const repairRoutes = require("./Routes/repairStock.routes");
 const customerReturnRoutes = require("./Routes/returnStock.routes.js");
 const itemPurchaseRoutes = require("./Routes/itemPurchaseRoutes.js");
+const reportRoutes = require("./Routes/report.routes");
 // const customerRepairRoutes = require("./Routes/customerReturn-Repair.routes.js");
 const path = require("path");
 const fs = require("fs");
@@ -81,6 +82,7 @@ app.use("/api/purchase-report", purchaseReportRoutes);
 app.use("/api/item-purchase", itemPurchaseRoutes);
 app.use("/api/repair", repairRoutes);
 app.use("/api/returns", customerReturnRoutes);
+app.use("/api/reports", reportRoutes);
 // app.use("/api/repair", customerRepairRoutes);
 app.use("/uploads", (req, res, next) => {
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");

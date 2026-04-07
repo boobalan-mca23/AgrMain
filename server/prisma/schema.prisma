@@ -158,22 +158,22 @@ model GivenDetail {
 }
 
 model Goldsmith {
-  id         Int               @id @default(autoincrement())
-  name       String
-  phone      String?
-  address    String?
-  balance    Float?
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @default(now())
-  summaries  Balances[]
-  jobcards   Jobcard[]
-  received   Receivedsection[]
-  repairs    Repair[]
-  totals     Total[]
-  givenGold  givenGold[]
-  deliveries itemDelivery[]
-
-  repairItems RepairStock[] @relation("GoldsmithRepairRelation")
+  id          Int               @id @default(autoincrement())
+  name        String
+  phone       String?
+  address     String?
+  balance        Float?
+  initialBalance Float?            @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @default(now()) @updatedAt
+  summaries   Balances[]
+  jobcards    Jobcard[]
+  received    Receivedsection[]
+  repairs     Repair[]
+  totals      Total[]
+  givenGold   givenGold[]
+  deliveries  itemDelivery[]
+  repairItems RepairStock[]     @relation("GoldsmithRepairRelation")
 
   @@map("goldsmith")
 }
@@ -185,11 +185,11 @@ model Jobcard {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @default(now())
   goldsmith    Goldsmith         @relation(fields: [goldsmithId], references: [id])
-  productStock ProductStock[]
   received     Receivedsection[]
   total        Total[]
   givenGold    givenGold[]
   deliveries   itemDelivery[]
+  productStock ProductStock[]
 
   @@index([goldsmithId], map: "Jobcard_goldsmithId_fkey")
 }
@@ -229,10 +229,10 @@ model itemDelivery {
   jobcardId    Int?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @default(now())
-  productStock ProductStock[]
   deduction    deduction[]
   goldsmith    Goldsmith?     @relation(fields: [goldsmithId], references: [id])
   jobcard      Jobcard?       @relation(fields: [jobcardId], references: [id])
+  productStock ProductStock[]
 
   @@index([goldsmithId], map: "itemDelivery_goldsmithId_fkey")
   @@index([jobcardId], map: "itemDelivery_jobcardId_fkey")
@@ -305,28 +305,27 @@ model RawgoldStock {
 }
 
 model RawGoldLogs {
-  id               Int               @id @default(autoincrement())
-  rawGoldStockId   Int
-  weight           Float?
-  touch            Float?
-  purity           Float?
-  entry            Entry[]
-  expenseTracker   ExpenseTracker[]
-  rawGoldStock     RawgoldStock      @relation(fields: [rawGoldStockId], references: [id])
-  receivedSections Receivedsection[]
-  transactions     Transaction[]
-  billReceive      billReceived[]
-  givenGold        givenGold[]
-  receiptVoucher   receiptVoucher[]
-  purchaseEntries       PurchaseEntry[]
-  purchaseReceived      PurchaseReceivedGold[]
-  itemPurchaseEntries   ItemPurchaseEntry[]
-  itemPurchaseReceived  ItemPurchaseReceivedGold[]
+  id                   Int                        @id @default(autoincrement())
+  rawGoldStockId       Int
+  weight               Float?
+  touch                Float?
+  purity               Float?
+  date                 DateTime                   @default(now())
+  entry                Entry[]
+  expenseTracker       ExpenseTracker[]
+  itemPurchaseReceived ItemPurchaseReceivedGold[]
+  purchaseReceived     PurchaseReceivedGold[]
+  rawGoldStock         RawgoldStock               @relation(fields: [rawGoldStockId], references: [id])
+  receivedSections     Receivedsection[]
+  transactions         Transaction[]
+  billReceive          billReceived[]
+  givenGold            givenGold[]
+  itemPurchaseEntries  ItemPurchaseEntry[]
+  purchaseEntries      PurchaseEntry[]
+  receiptVoucher       receiptVoucher[]
 
-  date                  DateTime          @default(now())
   @@index([rawGoldStockId], map: "RawGoldLogs_rawGoldStockId_fkey")
 }
-
 
 model ExpenseTracker {
   id          Int          @id @default(autoincrement())
@@ -394,53 +393,47 @@ model ProductStock {
   isBillProduct Boolean       @default(false)
   isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now())
+  source        StockSource   @default(NORMAL)
   itemDelivery  itemDelivery? @relation(fields: [deliveryId], references: [id])
   jobcard       Jobcard?      @relation(fields: [jobcardId], references: [id])
   repairStock   RepairStock[] @relation("ProductRepairRelation")
   returnLogs    returnLogs[]
-  source        StockSource   @default(NORMAL)
 
   @@index([deliveryId], map: "ProductStock_deliveryId_fkey")
   @@index([jobcardId], map: "ProductStock_jobcardId_fkey")
   @@map("productstock")
 }
 
-enum StockSource {
-  NORMAL
-  CUSTOMER_RETURN
-  REPAIR_RETURN
-}
-
 model Bill {
-  id                Int            @id @default(autoincrement())
-  billno            Int?
-  date              DateTime?
-  time              DateTime?
-  customer_id       Int
-  customername      String?
-  billAmount        Float
-  hallMark          Float?
-  prevHallMark      Float?
-  PrevBalance       Float?
+  id                 Int            @id @default(autoincrement())
+  billno             Int?
+  date               DateTime?
+  time               DateTime?
+  customer_id        Int
+  customername       String?
+  billAmount         Float
+  hallMark           Float?
+  prevHallMark       Float?
+  PrevBalance        Float?
   billPureEffect     Float?
   billHallmarkEffect Float?
-  hallmarkQty       Float?
-  billDetailsprofit Float?
-  Stoneprofit       Float?
-  Totalprofit       Float?
-  cashBalance       Float?
-  createdAt         DateTime       @default(now())
-  customers         Customer       @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  orders            OrderItems[]
-  billReceive       billReceived[]
-  returnLogs        returnLogs[]
-  repairStock       RepairStock[]
+  hallmarkQty        Float?
+  billDetailsprofit  Float?
+  Stoneprofit        Float?
+  Totalprofit        Float?
+  cashBalance        Float?
+  createdAt          DateTime       @default(now())
+  customers          Customer       @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  orders             OrderItems[]
+  billReceive        billReceived[]
+  repairStock        RepairStock[]
+  returnLogs         returnLogs[]
 
   @@index([customer_id], map: "Bill_customer_id_fkey")
 }
 
 model OrderItems {
-  id                 Int      @id @default(autoincrement())
+  id                 Int           @id @default(autoincrement())
   billId             Int
   productName        String
   count              Int?
@@ -450,22 +443,20 @@ model OrderItems {
   afterWeight        Float?
   percentage         Float?
   finalWeight        Float?
-  createdAt          DateTime @default(now())
-  bill               Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
-
-  stockId      Int?
-  stockType    String?      @default("PRODUCT")
-  touch        Float?
-  actualPurity Float?
-  netWeight    Float?
-  wastageType  String?
-  wastageValue Float?
-  wastagePure  Float?
-  finalPurity  Float?
-
-  repairStatus String       @default("NONE")
-  returnLogs   returnLogs[]
-  repairStocks RepairStock[] @relation("OrderItemRepairRelation")
+  createdAt          DateTime      @default(now())
+  stockId            Int?
+  stockType          String?       @default("PRODUCT")
+  touch              Float?
+  actualPurity       Float?
+  netWeight          Float?
+  wastageType        String?
+  wastageValue       Float?
+  wastagePure        Float?
+  finalPurity        Float?
+  repairStatus       String        @default("NONE")
+  bill               Bill          @relation(fields: [billId], references: [id], onDelete: Cascade)
+  repairStocks       RepairStock[] @relation("OrderItemRepairRelation")
+  returnLogs         returnLogs[]
 
   @@index([billId], map: "OrderItems_billId_fkey")
 }
@@ -514,70 +505,63 @@ model receiptVoucher {
 }
 
 model customerBillBalance {
-  id             Int      @id @default(autoincrement())
-  balance        Float?
-  hallMarkBal    Float?
-  initialBalance Float?
-  customer_id    Int      @unique
-  createdAt      DateTime @default(now())
-  customers      Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  id              Int      @id @default(autoincrement())
+  balance         Float?
+  hallMarkBal     Float?
+  initialBalance  Float?
+  initialHallmark Float?   // Added to fix Opening Balance row bug
+  customer_id     Int      @unique
+  createdAt       DateTime @default(now())
+  customers       Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
 }
 
 model Supplier {
-  id              Int      @id @default(autoincrement())
-  name            String
-  contactNumber   String?
-  address         String?
-  gstOrBusinessId String?
-  openingBalance  Float?   @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  // relations
+  id                  Int                 @id @default(autoincrement())
+  name                String
+  contactNumber       String?
+  address             String?
+  gstOrBusinessId     String?
+  openingBalance      Float?              @default(0)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  openingBCBalance    Float?              @default(0)
+  openingItemBalance  Float?              @default(0)
+  itemPurchaseEntries ItemPurchaseEntry[]
   purchaseEntries     PurchaseEntry[]
   purchaseStocks      PurchaseStock[]
-  itemPurchaseEntries ItemPurchaseEntry[]
 
   @@map("suppliers")
 }
 
 model PurchaseEntry {
-  id Int @id @default(autoincrement())
-
+  id           Int                    @id @default(autoincrement())
   supplierId   Int
-  supplierName String?
-
-  advanceGold  Float @default(0)
+  goldBalance  Float                  @default(0)
+  jewelName    String
+  grossWeight  Float
+  stoneWeight  Float
+  netWeight    Float
+  touch        Float
+  wastageType  String
+  wastage      Float
+  wastagePure  Float
+  actualPure   Float
+  finalPurity  Float
+  moveTo       String
+  createdAt    DateTime               @default(now())
   advanceTouch Float?
-  advanceLogId Int?
   logId        Int?
-  goldBalance  Float @default(0)
+  updatedAt    DateTime?              @updatedAt
+  advanceGold  Float                  @default(0)
+  advanceLogId Int?
+  supplierName String?
+  receivedGold PurchaseReceivedGold[]
+  rawGoldLogs  RawGoldLogs?           @relation(fields: [logId], references: [id])
+  supplier     Supplier               @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  stock        PurchaseStock[]
 
-  jewelName String
-
-  grossWeight Float
-  stoneWeight Float
-  netWeight   Float
-
-  touch Float
-
-  wastageType String
-  wastage     Float
-  wastagePure Float
-
-  actualPure  Float
-  finalPurity Float
-
-  moveTo String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime? @updatedAt
-
-  supplier       Supplier               @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  rawGoldLogs    RawGoldLogs?           @relation(fields: [logId], references: [id])
-  stock          PurchaseStock[]
-  receivedGold   PurchaseReceivedGold[]
-
+  @@index([logId], map: "purchase_entries_logId_fkey")
+  @@index([supplierId], map: "purchase_entries_supplierId_fkey")
   @@map("purchase_entries")
 }
 
@@ -586,42 +570,31 @@ model PurchaseReceivedGold {
   purchaseEntryId Int
   weight          Float
   touch           Float
-  date            DateTime      @default(now())
   logId           Int?
   createdAt       DateTime      @default(now())
-
-  purchaseEntry   PurchaseEntry @relation(fields: [purchaseEntryId], references: [id], onDelete: Cascade)
+  date            DateTime      @default(now())
   rawGoldLogs     RawGoldLogs?  @relation(fields: [logId], references: [id], onDelete: Cascade)
+  purchaseEntry   PurchaseEntry @relation(fields: [purchaseEntryId], references: [id], onDelete: Cascade)
+
+  @@index([logId], map: "PurchaseReceivedGold_logId_fkey")
+  @@index([purchaseEntryId], map: "PurchaseReceivedGold_purchaseEntryId_fkey")
 }
 
-
 model ItemPurchaseEntry {
-  id Int @id @default(autoincrement())
-
-  supplierId   Int
-  supplierName String?
-
-  advanceGold  Float @default(0)
-  advanceTouch Float?
-  advanceLogId Int?
-
-  itemName String
-  count    Int?     @default(1)
-
-  grossWeight Float
-  stoneWeight Float
-  netWeight   Float
-
-  touch Float
-
-  wastageType String
-  wastage     Float
-  wastagePure Float
-
-  actualPure  Float
-  finalPurity Float
-
-  // Initial values at the time of purchase
+  id                 Int                        @id @default(autoincrement())
+  supplierId         Int
+  supplierName       String?
+  advanceGold        Float                      @default(0)
+  itemName           String
+  grossWeight        Float
+  stoneWeight        Float
+  netWeight          Float
+  touch              Float
+  wastageType        String
+  wastage            Float
+  wastagePure        Float
+  actualPure         Float
+  finalPurity        Float
   initialGrossWeight Float?
   initialStoneWeight Float?
   initialNetWeight   Float?
@@ -630,29 +603,27 @@ model ItemPurchaseEntry {
   initialFinalPurity Float?
   initialAdvanceGold Float?
   initialGoldBalance Float?
+  initialCount       Int?
+  goldBalance        Float                      @default(0)
+  moveTo             String                     @default("item")
+  isSold             Boolean                    @default(false)
+  soldAt             DateTime?
+  isBilled           Boolean                    @default(false)
+  isInRepair         Boolean                    @default(false)
+  source             String?                    @default("PURCHASE")
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  count              Int?                       @default(1)
+  advanceLogId       Int?
+  advanceTouch       Float?
+  receivedGold       ItemPurchaseReceivedGold[]
+  rawGoldLogs        RawGoldLogs?               @relation(fields: [advanceLogId], references: [id])
+  supplier           Supplier                   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  repairStocks       RepairStock[]
+  returnLogs         returnLogs[]
 
-  goldBalance Float @default(0)
-
-  moveTo String @default("item")
-
-  isSold Boolean @default(false)
-
-  soldAt DateTime?
-
-  isBilled    Boolean  @default(false)
-  isInRepair  Boolean  @default(false)
-  source      String?  @default("PURCHASE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  repairStocks  RepairStock[]
-  returnLogs    returnLogs[]
-  receivedGold  ItemPurchaseReceivedGold[]
-
-  rawGoldLogs   RawGoldLogs?  @relation(fields: [advanceLogId], references: [id])
-
-  supplier      Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-
+  @@index([advanceLogId], map: "item_purchase_entries_advanceLogId_fkey")
+  @@index([supplierId], map: "item_purchase_entries_supplierId_fkey")
   @@map("item_purchase_entries")
 }
 
@@ -664,73 +635,60 @@ model ItemPurchaseReceivedGold {
   date                DateTime          @default(now())
   logId               Int?
   createdAt           DateTime          @default(now())
-
   itemPurchaseEntry   ItemPurchaseEntry @relation(fields: [itemPurchaseEntryId], references: [id], onDelete: Cascade)
   rawGoldLog          RawGoldLogs?      @relation(fields: [logId], references: [id], onDelete: Cascade)
+
+  @@index([itemPurchaseEntryId], map: "ItemPurchaseReceivedGold_itemPurchaseEntryId_fkey")
+  @@index([logId], map: "ItemPurchaseReceivedGold_logId_fkey")
 }
 
 model PurchaseStock {
-  id Int @id @default(autoincrement())
-
-  entryId    Int?
-  supplierId Int
-
-  jewelName String
-
-  grossWeight Float
-  stoneWeight Float
-  netWeight   Float
-
-  touch       Float
-  wastageType String
-  wastage     Float
-  wastagePure Float
-
-  actualPure  Float
-  finalPurity Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id            Int            @id @default(autoincrement())
+  entryId       Int?
+  supplierId    Int
+  jewelName     String
+  grossWeight   Float
+  stoneWeight   Float
+  netWeight     Float
+  touch         Float
+  wastageType   String
+  wastage       Float
+  wastagePure   Float
+  actualPure    Float
+  finalPurity   Float
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   purchaseEntry PurchaseEntry? @relation(fields: [entryId], references: [id], onDelete: Cascade)
   supplier      Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
+  @@index([entryId], map: "purchase_stock_entryId_fkey")
+  @@index([supplierId], map: "purchase_stock_supplierId_fkey")
   @@map("purchase_stock")
 }
 
 model RepairStock {
-  id Int @id @default(autoincrement())
-
+  id             Int                @id @default(autoincrement())
   productId      Int?
   itemPurchaseId Int?
-
-  goldsmithId Int?
-  source      String?
-  reason      String? @db.Text
-
-  sentDate     DateTime  @default(now())
-  receivedDate DateTime?
-
-  status String @default("InRepair")
-
-  wastageType String?
-
-  itemName    String?
-  grossWeight Float?
-  netWeight   Float?
-  purity      Float?
-
-  product ProductStock? @relation("ProductRepairRelation", fields: [productId], references: [id], onDelete: Cascade)
-
-  itemPurchase ItemPurchaseEntry? @relation(fields: [itemPurchaseId], references: [id])
-
-  goldsmith Goldsmith? @relation("GoldsmithRepairRelation", fields: [goldsmithId], references: [id])
-
-  billId Int?
-  bill   Bill? @relation(fields: [billId], references: [id])
-
-  orderItemId Int?
-  orderItem   OrderItems? @relation("OrderItemRepairRelation", fields: [orderItemId], references: [id])
+  goldsmithId    Int?
+  source         String?
+  reason         String?            @db.Text
+  sentDate       DateTime           @default(now())
+  receivedDate   DateTime?
+  status         String             @default("InRepair")
+  wastageType    String?
+  itemName       String?
+  grossWeight    Float?
+  netWeight      Float?
+  purity         Float?
+  count          Int?
+  billId         Int?
+  orderItemId    Int?
+  bill           Bill?              @relation(fields: [billId], references: [id])
+  goldsmith      Goldsmith?         @relation("GoldsmithRepairRelation", fields: [goldsmithId], references: [id])
+  itemPurchase   ItemPurchaseEntry? @relation(fields: [itemPurchaseId], references: [id])
+  orderItem      OrderItems?        @relation("OrderItemRepairRelation", fields: [orderItemId], references: [id])
+  product        ProductStock?      @relation("ProductRepairRelation", fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@index([itemPurchaseId])
@@ -744,27 +702,56 @@ model RepairLogs {
   id        Int      @id @default(autoincrement())
   repairId  Int
   action    String
-  note      String? @db.Text
+  note      String?  @db.Text
   createdAt DateTime @default(now())
 }
 
 model returnLogs {
-  id Int @id @default(autoincrement())
-
+  id             Int                @id @default(autoincrement())
   billId         Int?
   orderItemId    Int?
   productStockId Int?
   itemPurchaseId Int?
+  productName    String
+  weight             Float
+  awt                Float?
+  pureGoldReduction  Float?
+  hallmarkReduction  Float?
+  count              Int
+  stoneWeight        Float?
+  enteredStoneWeight Float?
+  touch              Float?
+  percentage         Float?
+  reason         String?            @db.Text
+  source         String
+  createdAt      DateTime           @default(now())
+  bill           Bill?              @relation(fields: [billId], references: [id])
+  itemPurchase   ItemPurchaseEntry? @relation(fields: [itemPurchaseId], references: [id])
+  orderItem      OrderItems?        @relation(fields: [orderItemId], references: [id])
+  product        ProductStock?      @relation(fields: [productStockId], references: [id])
 
-  bill         Bill?              @relation(fields: [billId], references: [id])
-  orderItem    OrderItems?        @relation(fields: [orderItemId], references: [id])
-  product      ProductStock?      @relation(fields: [productStockId], references: [id])
-  itemPurchase ItemPurchaseEntry? @relation(fields: [itemPurchaseId], references: [id])
+  @@index([billId], map: "returnLogs_billId_fkey")
+  @@index([itemPurchaseId], map: "returnLogs_itemPurchaseId_fkey")
+  @@index([orderItemId], map: "returnLogs_orderItemId_fkey")
+  @@index([productStockId], map: "returnLogs_productStockId_fkey")
+}
 
-  productName String
-  weight      Float
-  count       Int
-  reason      String? @db.Text
-  source      String
+enum StockSource {
+  NORMAL
+  CUSTOMER_RETURN
+  REPAIR_RETURN
+}
+
+model BalanceAdjustment {
+  id          Int      @id @default(autoincrement())
+  entityType  String   // "CUSTOMER", "GOLDSMITH", "SUPPLIER"
+  entityId    Int
+  cashAmount  Float?
+  hmAmount    Float?
+  goldAmount  Float?
+  bcAmount    Float?
+  itemAmount  Float?
+  description String?
+  date        DateTime @default(now())
   createdAt   DateTime @default(now())
 }

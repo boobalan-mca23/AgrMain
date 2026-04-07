@@ -2194,7 +2194,7 @@ const Billing = () => {
                         {prodata.touch}
                       </TableCell>
                       <TableCell className="td" style={{ textAlign: "center" }}>
-                        {prodata.source && prodata.source !== "NORMAL" ? (
+                        {prodata.source === "REPAIR_RETURN" || prodata.source === "CUSTOMER_RETURN" ? (
                           <span
                             style={{
                               padding: "2px 6px",
@@ -2212,7 +2212,7 @@ const Billing = () => {
                           </span>
                         ) : (
                           <span style={{ fontSize: 11, color: "#9e9e9e" }}>
-                            {isItemPurchase ? "PURCHASE" : "-"}
+                            -
                           </span>
                         )}
                       </TableCell>

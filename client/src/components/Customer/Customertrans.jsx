@@ -591,12 +591,12 @@ const Customertrans = () => {
               <TableCell align="center">S.No</TableCell>
               <TableCell align="center">Date</TableCell>
               <TableCell align="center">Type</TableCell>
+               <TableCell align="center">Amount</TableCell>
               <TableCell align="center">Gold Rate</TableCell>
               <TableCell align="center">Gold</TableCell>
+              <TableCell align="center">Touch</TableCell>
               <TableCell align="center">Purity (grams)</TableCell>
               <TableCell align="center">Pure Gold (grams)</TableCell>
-               <TableCell align="center">Amount</TableCell>
-              <TableCell align="center">Touch</TableCell>
               <TableCell align="center">Action</TableCell>
             </TableRow>
           </TableHead>
@@ -607,17 +607,17 @@ const Customertrans = () => {
                   <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
                   <TableCell align="center">{new Date(transaction.date).toLocaleDateString("en-GB")}</TableCell>
                   <TableCell align="center">{transaction.type}</TableCell>
+                  <TableCell align="center">{transaction.amount}</TableCell>
                   <TableCell align="center">{transaction.goldRate && transaction.goldRate !== 0 ? transaction.goldRate : "-"}</TableCell>
                   <TableCell align="center">{(transaction.type === "Cash" || transaction.type === "Cash RTGS") ? "-" : `${transaction.gold}gr`}</TableCell>
+                  <TableCell align="center">
+                    {transaction.touch ? `${transaction.touch}%` : "-"}
+                  </TableCell>
                   <TableCell align="center">{transaction.purity.toFixed(3)}</TableCell>
                   <TableCell align="center">
                     {(transaction.type === "Cash" || transaction.type === "Cash RTGS") && transaction.touch && transaction.purity
                       ? ((parseFloat(transaction.purity) / parseFloat(transaction.touch)) * 100).toFixed(3)
                       : "-"}
-                  </TableCell>
-                  <TableCell align="center">{transaction.amount}</TableCell>
-                   <TableCell align="center">
-                    {transaction.touch ? `${transaction.touch}%` : "-"}
                   </TableCell>
                   <TableCell align="center">
                     <IconButton onClick={() => handleEdit(transaction)}>

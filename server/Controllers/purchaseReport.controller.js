@@ -27,7 +27,7 @@ module.exports = {
 
       const entries = await prisma.purchaseEntry.findMany({
         where,
-        include: { supplier: true, stock: true },
+        include: { supplier: true, stock: true, receivedGold: true },
         orderBy: { createdAt: "desc" },
       });
 

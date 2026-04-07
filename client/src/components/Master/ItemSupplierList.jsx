@@ -169,7 +169,7 @@ function ItemSupplierList() {
 
               <th>Supplier Name</th>
 
-              <th>Opening Balance (g)</th>
+              <th>Total Item Balance (g)</th>
 
               <th>Action</th>
 
@@ -203,7 +203,7 @@ function ItemSupplierList() {
 
                 <td>
                   {Number(
-                    supplier.openingBalance || 0
+                    supplier.totalItemBalance || 0
                   ).toFixed(3)}
                 </td>
 

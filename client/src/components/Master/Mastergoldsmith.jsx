@@ -16,7 +16,8 @@ import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { TablePagination } from "@mui/material";
+import { TablePagination, IconButton } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 function Mastergoldsmith() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +41,7 @@ function Mastergoldsmith() {
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const navigate = useNavigate();
   const validName = /^[a-zA-Z0-9\s]+$/;
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
@@ -460,10 +462,11 @@ function Mastergoldsmith() {
                       style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
                       onClick={() => handleEditClick(item)}
                     />
-                    <DeleteIcon
-                      style={{ cursor: "pointer", color: "#d32f2f" }}
-                      onClick={() => handleDelete(item.id)}
-                    />
+                    <Tooltip title="Delete Goldsmith">
+                      <IconButton onClick={() => handleDelete(item.id)}>
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    </Tooltip>
                   </td>
                 </tr>
               ))
