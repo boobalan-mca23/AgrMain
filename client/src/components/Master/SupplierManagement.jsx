@@ -220,14 +220,20 @@ function SupplierManagement() {
         toast.success("Supplier updated");
 
       } else {
+        // Map to opening balance fields for creation
+        const createPayload = {
+          ...payload,
+          openingBCBalance: payload.totalBCBalance,
+          openingItemBalance: payload.totalItemBalance,
+          openingBalance: payload.totalBalance - (Number(payload.totalBCBalance) || 0) - (Number(payload.totalItemBalance) || 0)
+        };
 
         await axios.post(
           `${BACKEND_SERVER_URL}/api/supplier/create`,
-          payload
+          createPayload
         );
 
         toast.success("Supplier added");
-
       }
 
       closeDialog();

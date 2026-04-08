@@ -16,6 +16,7 @@ import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PrintIcon from '@mui/icons-material/Print';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import CloseIcon from '@mui/icons-material/Close';
 import ReactDOMServer from "react-dom/server";
 import StatementPrint from "./StatementPrint";
 import ReturnDetailsModal from "../CustomerReturn&Repair/ReturnDetailsModal";
@@ -138,6 +139,8 @@ const BalanceStatement = () => {
       goldWeight: "Gold Weight",
       touch: "Touch (%)",
       purity: "Purity/Fine G",
+      pureGold: "Pure Gold",
+      gold: "Gold Weight",
       hallmark: "Hallmark Impact",
       billno: "Bill No",
       jobcardId: "Job Card ID",
@@ -164,7 +167,7 @@ const BalanceStatement = () => {
       if (typeof value === 'number') {
         if (key === 'amount' || key === 'goldRate') displayVal = `₹${value.toLocaleString()}`;
         else if (key === 'touch') displayVal = `${value}%`;
-        else if (['goldWeight', 'purity', 'hallmark', 'itemWeight', 'netWeight', 'wastagePure', 'finalPurity', 'totalGiven', 'totalItem', 'stone', 'receivedWeight', 'receivedPurity', 'actualPure', 'bcAmount', 'itemAmount', 'cashAmount'].includes(key)) displayVal = `${value.toFixed(3)} g`;
+        else if (['goldWeight', 'gold', 'purity', 'pureGold', 'hallmark', 'itemWeight', 'netWeight', 'wastagePure', 'finalPurity', 'totalGiven', 'totalItem', 'stone', 'receivedWeight', 'receivedPurity', 'actualPure', 'bcAmount', 'itemAmount', 'cashAmount'].includes(key)) displayVal = `${value.toFixed(3)} g`;
       }
       
       return (
@@ -178,8 +181,17 @@ const BalanceStatement = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
+      <Box 
+        display="flex" 
+        flexDirection="column" 
+        alignItems="center" 
+        justifyContent="center" 
+        height="80vh"
+      >
         <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2, color: "#0a4c9a", fontWeight: 'bold' }}>
+          Loading statement details...
+        </Typography>
       </Box>
     );
   }
@@ -437,8 +449,17 @@ const BalanceStatement = () => {
           }
         }}
       >
-        <DialogTitle className="dialog-title-themed">
+        <DialogTitle className="dialog-title-themed" sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {selectedDetail?.module} Detail View
+          <IconButton
+            aria-label="close"
+            onClick={() => setDetailDialogOpen(false)}
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent dividers>
           {selectedDetail && (
@@ -449,7 +470,7 @@ const BalanceStatement = () => {
               </div>
               <div className="detail-item">
                 <span className="detail-label">Recorded On:</span>
-                <span className="detail-val">{new Date(selectedDetail.date).toLocaleString()}</span>
+                <span className="detail-val">{new Date(selectedDetail.date).toLocaleDateString("en-GB")}</span>
               </div>
               
               {selectedDetail.metadata ? (
@@ -519,9 +540,6 @@ const BalanceStatement = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDetailDialogOpen(false)} color="inherit">Close</Button>
-          {selectedDetail?.module !== "Audit Correction" && (
-            <Button variant="contained" color="primary" onClick={() => handleViewDetails(selectedDetail)}>View Source</Button>
-          )}
         </DialogActions>
       </Dialog>
 
@@ -534,6 +552,7 @@ const BalanceStatement = () => {
         open={repairModalOpen} 
         onClose={() => setRepairModalOpen(false)} 
         selectedRepair={selectedLogRow} 
+        reportType={type}
       />
     </div>
   );

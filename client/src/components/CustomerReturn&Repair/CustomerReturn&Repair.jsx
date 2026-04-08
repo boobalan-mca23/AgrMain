@@ -11,6 +11,7 @@ import {
   Typography,
   TextField,
   TablePagination,
+  TableContainer,
   MenuItem,
   Dialog,
   DialogTitle,
@@ -47,7 +48,7 @@ const modalStyle = {
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 800,
+  width: 1000,
   bgcolor: "background.paper",
   boxShadow: 24,
   p: 3,
@@ -788,65 +789,70 @@ const CustomerReturn = () => {
               {/* ================= RETURN MODE ================= */}
               {actionType === "RETURN" && (
                 <>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell className="BillTable-th-td">Product</TableCell>
-                        <TableCell className="BillTable-th-td">Weight</TableCell>
-                        <TableCell className="BillTable-th-td">Count</TableCell>
-                        <TableCell className="BillTable-th-td">Status</TableCell>
-                        <TableCell className="BillTable-th-td">Action</TableCell>
-                      </TableRow>
-                    </TableHead>
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                    send Items as Return
+                  </Typography>
+                  <TableContainer sx={{ maxHeight: 700, mt: 2 }}>
+                    <Table stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Product</TableCell>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Weight</TableCell>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Count</TableCell>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Status</TableCell>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Action</TableCell>
+                        </TableRow>
+                      </TableHead>
 
-                    <TableBody>
-                      {selectedBill.orders
-                        ?.filter(item => !item.repairStatus?.includes("REPAIRED_TO_STOCK") && !item.repairStatus?.includes("IN_REPAIR_SPLIT"))
-                        .map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell>{item.productName}</TableCell>
-                            <TableCell>{item.weight}</TableCell>
-                            <TableCell>{item.count}</TableCell>
-                            <TableCell>
-                              <span
-                                style={{
-                                  padding: "4px 8px",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  fontWeight: "600",
-                                  backgroundColor:
-                                    item.repairStatus?.startsWith("IN_REPAIR") ? "#ff9800"
-                                      : item.repairStatus?.startsWith("REPAIRED") ? "#2196f3"
-                                        : item.repairStatus?.startsWith("RETURNED") ? "#4caf50"
-                                          : item.repairStatus?.startsWith("PARTIAL_REPAIR") ? "#ffb74d"
-                                            : item.repairStatus?.startsWith("PARTIAL_RETURN") ? "#81c784"
-                                              : (item.repairStatus === "NONE" || !item.repairStatus || item.repairStatus === "Sold") ? "#9e9e9e"
-                                                : "#9e9e9e",
-                                  color: "white",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {getStatusLabel(item.repairStatus)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {toNumber(item.weight) > 0 && !item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") ? (
-                                <Button
-                                  color="error"
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={() => openReturnPopup(item)}
-                                  disabled={loading}
+                      <TableBody>
+                        {selectedBill.orders
+                          ?.filter(item => !item.repairStatus?.includes("REPAIRED_TO_STOCK") && !item.repairStatus?.includes("IN_REPAIR_SPLIT"))
+                          .map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>{item.productName}</TableCell>
+                              <TableCell>{item.weight}</TableCell>
+                              <TableCell>{item.count}</TableCell>
+                              <TableCell>
+                                <span
+                                  style={{
+                                    padding: "4px 8px",
+                                    borderRadius: "4px",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                    backgroundColor:
+                                      item.repairStatus?.startsWith("IN_REPAIR") ? "#ff9800"
+                                        : item.repairStatus?.startsWith("REPAIRED") ? "#2196f3"
+                                          : item.repairStatus?.startsWith("RETURNED") ? "#4caf50"
+                                            : item.repairStatus?.startsWith("PARTIAL_REPAIR") ? "#ffb74d"
+                                              : item.repairStatus?.startsWith("PARTIAL_RETURN") ? "#81c784"
+                                                : (item.repairStatus === "NONE" || !item.repairStatus || item.repairStatus === "Sold") ? "#9e9e9e"
+                                                  : "#9e9e9e",
+                                    color: "white",
+                                    whiteSpace: "nowrap",
+                                  }}
                                 >
-                                  Return Item
-                                </Button>
-                              ) : "—"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                                  {getStatusLabel(item.repairStatus)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {toNumber(item.weight) > 0 && !item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") ? (
+                                  <Button
+                                    color="error"
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => openReturnPopup(item)}
+                                    disabled={loading}
+                                  >
+                                    Return Item
+                                  </Button>
+                                ) : "—"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
 
-                    </TableBody>
-                  </Table>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
 
                   {/* {!hasRepairItems && selectedBill?.orders?.some(
                   item => item.repairStatus !== "RETURNED"
@@ -874,62 +880,64 @@ const CustomerReturn = () => {
                     Send Items to Repair
                   </Typography>
 
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell className="BillTable-th-td">Product</TableCell>
-                        <TableCell className="BillTable-th-td">Weight</TableCell>
-                        <TableCell className="BillTable-th-td">Count</TableCell>
-                        <TableCell className="BillTable-th-td">Status</TableCell>
-                        <TableCell className="BillTable-th-td">Action</TableCell>
-                      </TableRow>
-                    </TableHead>
+                  <TableContainer sx={{ maxHeight: 700, mt: 2 }}>
+                    <Table stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Product</TableCell>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Weight</TableCell>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Count</TableCell>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Status</TableCell>
+                          <TableCell className="BillTable-th-td" sx={{ backgroundColor: "#0074d9 !important" }}>Action</TableCell>
+                        </TableRow>
+                      </TableHead>
 
-                    <TableBody>
-                      {selectedBill.orders
-                        ?.filter(item => !item.repairStatus?.includes("REPAIRED_TO_STOCK") && !item.repairStatus?.includes("IN_REPAIR_SPLIT"))
-                        .map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell>{item.productName}</TableCell>
-                            <TableCell>{item.weight}</TableCell>
-                            <TableCell>{item.count}</TableCell>
-                            <TableCell>
-                              <span
-                                style={{
-                                  padding: "4px 8px",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  fontWeight: "600",
-                                  backgroundColor:
-                                    item.repairStatus?.startsWith("IN_REPAIR") ? "#ff9800"
-                                      : item.repairStatus?.startsWith("REPAIRED") ? "#2196f3"
-                                        : item.repairStatus?.startsWith("RETURNED") ? "#4caf50"
-                                          : item.repairStatus?.startsWith("PARTIAL_REPAIR") ? "#ffb74d"
-                                            : item.repairStatus?.startsWith("PARTIAL_RETURN") ? "#81c784"
-                                              : (item.repairStatus === "NONE" || !item.repairStatus || item.repairStatus === "Sold") ? "#9e9e9e"
-                                                : "#9e9e9e",
-                                  color: "white",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {getStatusLabel(item.repairStatus)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {toNumber(item.weight) > 0 && !item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") ? (
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  onClick={() => openRepairPopup(item)}
+                      <TableBody>
+                        {selectedBill.orders
+                          ?.filter(item => !item.repairStatus?.includes("REPAIRED_TO_STOCK") && !item.repairStatus?.includes("IN_REPAIR_SPLIT"))
+                          .map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>{item.productName}</TableCell>
+                              <TableCell>{item.weight}</TableCell>
+                              <TableCell>{item.count}</TableCell>
+                              <TableCell>
+                                <span
+                                  style={{
+                                    padding: "4px 8px",
+                                    borderRadius: "4px",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                    backgroundColor:
+                                      item.repairStatus?.startsWith("IN_REPAIR") ? "#ff9800"
+                                        : item.repairStatus?.startsWith("REPAIRED") ? "#2196f3"
+                                          : item.repairStatus?.startsWith("RETURNED") ? "#4caf50"
+                                            : item.repairStatus?.startsWith("PARTIAL_REPAIR") ? "#ffb74d"
+                                              : item.repairStatus?.startsWith("PARTIAL_RETURN") ? "#81c784"
+                                                : (item.repairStatus === "NONE" || !item.repairStatus || item.repairStatus === "Sold") ? "#9e9e9e"
+                                                  : "#9e9e9e",
+                                    color: "white",
+                                    whiteSpace: "nowrap",
+                                  }}
                                 >
-                                  Send to Repair
-                                </Button>
-                              ) : "—"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
+                                  {getStatusLabel(item.repairStatus)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {toNumber(item.weight) > 0 && !item.repairStatus?.includes("RETURNED") && !item.repairStatus?.includes("IN_REPAIR") ? (
+                                  <Button
+                                    variant="contained"
+                                    size="small"
+                                    onClick={() => openRepairPopup(item)}
+                                  >
+                                    Send to Repair
+                                  </Button>
+                                ) : "—"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                   {/* <Button
                   fullWidth
                   sx={{ mt: 2 }}

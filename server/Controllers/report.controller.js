@@ -95,7 +95,7 @@ exports.getCustomerStatement = async (req, res) => {
       ledger.push({
         date: b.date || b.createdAt,
         module: "Bill",
-        description: `Bill #${b.billno || b.id}${hmDesc}`,
+        description: `Bill #${b.id}${hmDesc}`,
         debitAmount: b.billAmount || 0,
         creditAmount: 0,
         debitHallmark: originalHallmarkAmt,
@@ -164,12 +164,18 @@ exports.getCustomerStatement = async (req, res) => {
         sortPriority: 2,
         metadata: {
             type: rv.type,
-            amount: rv.amount,
-            goldRate: rv.goldRate,
-            goldWeight: rv.gold,
+            ...(rv.type === "Cash" || rv.type === "Cash RTGS" ? {
+                amount: rv.amount,
+                goldRate: rv.goldRate
+            } : {
+                goldWeight: rv.gold
+            }),
             touch: rv.touch,
             purity: rv.purity,
-            hallmark: rv.receiveHallMark
+            hallmark: rv.receiveHallMark,
+            ...(rv.type === "Cash" || rv.type === "Cash RTGS" ? {
+                pureGold: rv.touch > 0 ? ((rv.purity / rv.touch) * 100) : 0
+            } : {})
         }
       });
     });
@@ -205,11 +211,17 @@ exports.getCustomerStatement = async (req, res) => {
         sortPriority: 2,
         metadata: {
             type: t.type,
-            amount: t.amount,
-            goldRate: t.goldRate,
-            goldWeight: t.gold,
+            ...(t.type === "Cash" || t.type === "Cash RTGS" ? {
+                amount: t.amount,
+                goldRate: t.goldRate
+            } : {
+                goldWeight: t.gold
+            }),
             touch: t.touch,
-            purity: t.purity
+            purity: t.purity,
+            ...(t.type === "Cash" || t.type === "Cash RTGS" ? {
+                pureGold: t.touch > 0 ? ((t.purity / t.touch) * 100) : 0
+            } : {})
         }
       });
     });
@@ -222,7 +234,10 @@ exports.getCustomerStatement = async (req, res) => {
         const pureRed = ret.pureGoldReduction ?? 0;
         const hmRed = ret.hallmarkReduction ?? 0;
         
-        let desc = `Returned ${ret.productName} (Qty: ${ret.count}, Gross Wt: ${ret.weight}g, AWT: ${awtVal}g)`;
+        let reasonStr = ret.reason ? ` - ${ret.reason}` : "";
+        let stoneStr = ret.stoneWeight > 0 ? `, St.Wt: ${ret.stoneWeight}g` : "";
+        let touchStr = ret.percentage !== undefined && ret.percentage !== null ? `, T: ${ret.percentage}%` : "";
+        let desc = `Returned ${ret.productName} (Qty: ${ret.count}, Gross Wt: ${ret.weight}g${stoneStr}, AWT: ${awtVal}g${touchStr})${reasonStr} - Bill #${ret.billId || ret.bill?.id || "N/A"}`;
         if (pureRed > 0) desc += `, Balance Ded: ${pureRed.toFixed(3)}g`;
         if (hmRed > 0) desc += `, HM Ded: ${hmRed}`;
 
@@ -247,6 +262,8 @@ exports.getCustomerStatement = async (req, res) => {
                 percentage: ret.percentage,
                 pureGoldReduction: pureRed,
                 reason: ret.reason,
+                billNo: ret.billId || ret.bill?.id,
+                billId: ret.billId,
                 createdAt: ret.createdAt,
                 hallmarkReduction: hmRed
             }
@@ -265,7 +282,11 @@ exports.getCustomerStatement = async (req, res) => {
         const reductionCount = Number(rep.count) || 1;
         const hmRed = hallmarkRate * reductionCount;
 
-        let desc = `Sent for Repair: ${rep.itemName} (Gross Wt: ${rep.grossWeight}g, FWT: ${fwtRed.toFixed(3)}g)`;
+        let reasonStr = rep.reason ? ` - Reason: ${rep.reason}` : "";
+        let stoneWt = rep.stoneWeight || rep.orderItem?.stoneWeight || 0;
+        let stoneStr = stoneWt > 0 ? `, St.Wt: ${stoneWt}g` : "";
+        let billingTouch = rep.percentage || rep.orderItem?.percentage || 100;
+        let desc = `Sent for Repair: ${rep.itemName} (Gross Wt: ${rep.grossWeight}g${stoneStr}, FWT: ${fwtRed.toFixed(3)}g, Qty: ${reductionCount}, T: ${billingTouch}%)${reasonStr} - Bill #${rep.billId || rep.bill?.id || "N/A"}`;
         if (rep.reason) desc += ` - Reason: ${rep.reason}`;
         if (hmRed > 0) desc += ` (HM Red: ${hmRed})`;
 
@@ -283,12 +304,16 @@ exports.getCustomerStatement = async (req, res) => {
             metadata: {
                 productName: rep.itemName,
                 weight: rep.grossWeight,
-                count: rep.orderItem?.count || 1,
-                stoneWeight: rep.orderItem?.stoneWeight || 0,
-                enteredStoneWeight: rep.orderItem?.enteredStoneWeight || 0,
+                count: rep.count || rep.orderItem?.count || 1,
+                stoneWeight: rep.stoneWeight || rep.orderItem?.stoneWeight || 0,
+                enteredStoneWeight: rep.enteredStoneWeight || rep.orderItem?.enteredStoneWeight || 0,
                 awt: rep.netWeight || rep.grossWeight,
-                percentage: rep.orderItem?.percentage || 100,
+                percentage: rep.percentage || rep.orderItem?.percentage || 100,
                 pureGoldReduction: fwtRed,
+                fwt: fwtRed,
+                purity: rep.purity,
+                billNo: rep.billId || rep.bill?.id,
+                billId: rep.billId,
                 reason: rep.reason,
                 createdAt: rep.createdAt || rep.sentDate,
                 hallmarkReduction: hmRed
@@ -447,7 +472,7 @@ exports.getGoldsmithStatement = async (req, res) => {
       }),
       prisma.repairStock.findMany({
         where: { goldsmithId: parseInt(id) }, // We'll filter by date manually for sent/received
-        include: { product: true, itemPurchase: true }
+        include: { product: true, itemPurchase: true, orderItem: true, bill: true }
       })
     ]);
 
@@ -556,11 +581,14 @@ exports.getGoldsmithStatement = async (req, res) => {
       // 1. Sent to Repair (Debit)
       const isSentInRange = (!fromDate || rs.sentDate >= new Date(fromDate)) && (!toDate || rs.sentDate <= new Date(toDate));
       if (isSentInRange) {
+        const stoneWtStr = rs.stoneWeight > 0 ? `, St.Wt: ${rs.stoneWeight}g` : "";
+        const sourceLabel = (rs.source === "GOLDSMITH" || rs.source === "ITEM_PURCHASE") ? "Stock" : "Customer";
+        const desc = `Repair(Sent): ${rs.itemName || "Item"} [Source: ${sourceLabel}] (Wt: ${rs.grossWeight}g${stoneWtStr}, Qty: ${rs.count || 1}, T: ${rs.orderItem?.percentage || rs.product?.touch || 100}%) ${rs.reason ? `- ${rs.reason}` : ""} - Bill #${rs.billId || rs.bill?.id || "N/A"}`;
         ledger.push({
           date: rs.sentDate,
           createdAt: rs.createdAt,
           module: "Repair (Sent)",
-          description: `Repair: ${rs.itemName || "Item"} (Source: ${rs.source})`,
+          description: desc,
           debitGold: rs.purity || 0,
           creditGold: 0,
           refId: rs.id,
@@ -568,9 +596,22 @@ exports.getGoldsmithStatement = async (req, res) => {
           metadata: {
             itemName: rs.itemName,
             grossWeight: rs.grossWeight,
+            netWeight: rs.netWeight,
+            stoneWeight: rs.stoneWeight || (rs.product?.stoneWeight) || ((rs.grossWeight || 0) - (rs.netWeight || 0)),
+            enteredStoneWeight: rs.orderItem?.enteredStoneWeight || rs.product?.stoneWeight || 0,
+            count: rs.count || 1,
+            percentage: rs.orderItem?.percentage || rs.product?.touch || 100,
             purity: rs.purity,
+            fwt: rs.fwt || rs.purity,
+            billNo: rs.billId || rs.bill?.id,
+            billId: rs.billId,
             reason: rs.reason,
-            source: rs.source
+            source: sourceLabel,
+            wastageType: rs.product?.wastageType || rs.itemPurchase?.wastageType || "None",
+            wastageValue: rs.product?.wastageValue || rs.itemPurchase?.wastage || 0,
+            wastagePure: rs.product?.wastagePure || rs.itemPurchase?.wastagePure || 0,
+            netWeight: rs.netWeight || rs.product?.netWeight || rs.itemPurchase?.netWeight || 0,
+            finalPurity: rs.purity || rs.product?.finalPurity || rs.itemPurchase?.finalPurity || 0
           }
         });
       }
@@ -579,11 +620,14 @@ exports.getGoldsmithStatement = async (req, res) => {
       if (rs.status === "Returned" && rs.receivedDate) {
         const isReceivedInRange = (!fromDate || rs.receivedDate >= new Date(fromDate)) && (!toDate || rs.receivedDate <= new Date(toDate));
         if (isReceivedInRange) {
+          const stoneWtStr = rs.stoneWeight > 0 ? `, St.Wt: ${rs.stoneWeight}g` : "";
+          const sourceLabel = (rs.source === "GOLDSMITH" || rs.source === "ITEM_PURCHASE") ? "Stock" : "Customer";
+          const desc = `Repair(Ret): ${rs.itemName || "Item"} [Source: ${sourceLabel}] (Rec.Wt: ${rs.receivedWeight}g${stoneWtStr}, Qty: ${rs.count || 1}, T: ${rs.orderItem?.percentage || rs.product?.touch || 100}%) ${rs.reason ? `- ${rs.reason}` : ""} - Bill #${rs.billId || rs.bill?.id || "N/A"}`;
           ledger.push({
             date: rs.receivedDate,
             createdAt: rs.updatedAt, // Use updatedAt as high-resolution time for return
             module: "Repair (Returned)",
-            description: `Returned: ${rs.itemName || "Item"}`,
+            description: desc,
             debitGold: 0,
             creditGold: rs.receivedPurity || 0,
             refId: rs.id,
@@ -592,7 +636,21 @@ exports.getGoldsmithStatement = async (req, res) => {
               itemName: rs.itemName,
               receivedWeight: rs.receivedWeight,
               receivedPurity: rs.receivedPurity,
-              status: rs.status
+              stoneWeight: rs.stoneWeight || ((rs.grossWeight || 0) - (rs.netWeight || 0)),
+              enteredStoneWeight: rs.orderItem?.enteredStoneWeight || rs.product?.stoneWeight || 0,
+              count: rs.count || 1,
+              percentage: rs.orderItem?.percentage || rs.product?.touch || 100,
+              purity: rs.receivedPurity || rs.purity,
+              fwt: rs.fwt || rs.receivedPurity || rs.purity,
+              billNo: rs.billId || rs.bill?.id,
+              billId: rs.billId,
+              status: rs.status,
+              source: sourceLabel,
+              wastageType: rs.product?.wastageType || rs.itemPurchase?.wastageType || "None",
+              wastageValue: rs.product?.wastageValue || rs.itemPurchase?.wastage || 0,
+              wastagePure: rs.product?.wastagePure || rs.itemPurchase?.wastagePure || 0,
+              netWeight: rs.netWeight || rs.product?.netWeight || rs.itemPurchase?.netWeight || 0,
+              finalPurity: rs.receivedPurity || rs.product?.finalPurity || rs.itemPurchase?.finalPurity || 0
             }
           });
         }
@@ -732,26 +790,56 @@ exports.getSupplierStatement = async (req, res) => {
     });
 
     bcPurchases.forEach(pe => {
+      // 1. Advance part (if exists)
+      if (pe.advanceGold > 0) {
+        ledger.push({
+          date: pe.createdAt,
+          createdAt: pe.createdAt,
+          module: "BC Advance",
+          description: `Gold Advance Given for ${pe.jewelName}`,
+          debitBC: pe.advanceGold || 0,
+          creditBC: 0,
+          refId: pe.id,
+          sortPriority: 1
+        });
+      }
+
+      // 2. Receipt part
       ledger.push({
         date: pe.createdAt,
         createdAt: pe.createdAt,
         module: "BC Purchase",
-        description: `Purchase: ${pe.jewelName} (Gross: ${pe.grossWeight}, Prty: ${pe.actualPure})`,
-        debitBC: pe.actualPure || 0,
-        creditBC: 0,
+        description: `Purchase: ${pe.jewelName} (Gross: ${pe.grossWeight}, Purity Value: ${pe.finalPurity})`,
+        debitBC: 0,
+        creditBC: pe.finalPurity || 0,
         refId: pe.id,
         sortPriority: 2
       });
     });
 
     itemPurchases.forEach(ipe => {
+      // 1. Advance part (if exists)
+      if (ipe.advanceGold > 0) {
+        ledger.push({
+          date: ipe.createdAt,
+          createdAt: ipe.createdAt,
+          module: "Item Advance",
+          description: `Gold Advance Given for ${ipe.itemName}`,
+          debitItem: ipe.advanceGold || 0,
+          creditItem: 0,
+          refId: ipe.id,
+          sortPriority: 1
+        });
+      }
+
+      // 2. Receipt part
       ledger.push({
         date: ipe.createdAt,
         createdAt: ipe.createdAt,
         module: "Item Purchase",
-        description: `Purchase: ${ipe.itemName} (Qty: ${ipe.count}, Prty: ${ipe.actualPure})`,
-        debitItem: ipe.actualPure || 0,
-        creditItem: 0,
+        description: `Purchase: ${ipe.itemName} (Qty: ${ipe.count}, Purity Value: ${ipe.finalPurity})`,
+        debitItem: 0,
+        creditItem: ipe.finalPurity || 0,
         refId: ipe.id,
         sortPriority: 2
       });
@@ -762,9 +850,9 @@ exports.getSupplierStatement = async (req, res) => {
         date: prg.date,
         createdAt: prg.createdAt,
         module: "BC Paid",
-        description: `Gold Given to Supplier (${prg.description || "No detail"})`,
-        debitBC: 0,
-        creditBC: prg.weight || 0,
+        description: `Final Gold Payment to Supplier`,
+        debitBC: prg.weight || 0,
+        creditBC: 0,
         refId: prg.id,
         sortPriority: 2
       });
@@ -775,9 +863,9 @@ exports.getSupplierStatement = async (req, res) => {
         date: iprg.date,
         createdAt: iprg.createdAt,
         module: "Item Paid",
-        description: `Gold Given to Supplier (${iprg.description || "No detail"})`,
-        debitItem: 0,
-        creditItem: iprg.weight || 0,
+        description: `Final Gold Payment to Supplier`,
+        debitItem: iprg.weight || 0,
+        creditItem: 0,
         refId: iprg.id,
         sortPriority: 2
       });

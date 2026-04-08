@@ -6,6 +6,7 @@ import {
   Button,
   CircularProgress,
   Box,
+  Typography,
 } from "@mui/material";
 import "./Newjobcard.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -510,6 +511,7 @@ const NewJobCard = ({
           <Box
             sx={{
               display: "flex",
+              flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
               position: "absolute",
@@ -522,6 +524,9 @@ const NewJobCard = ({
             }}
           >
             <CircularProgress />
+            <Typography variant="h6" sx={{ mt: 2, color: "#0a4c9a", fontWeight: 'bold' }}>
+              Saving Job Card Details...
+            </Typography>
           </Box>
         )}
 

@@ -29,13 +29,35 @@ const modalStyle = {
 const ReturnDetailsModal = ({ open, onClose, selectedReturn }) => {
   if (!selectedReturn) return null;
 
-  const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("en-IN") : "-");
   const fmtNum = (v, d = 3) => (v != null && !isNaN(v) ? Number(v).toFixed(d) : "0.000");
 
-  const rowStyle = {
-    "& td": { borderBottom: "1px solid #f0f0f0", py: 1 },
-    "&:last-child td": { borderBottom: 0 },
-  };
+  const {
+    productName, itemName,
+    count,
+    weight, grossWeight, itemWeight,
+    enteredStoneWeight,
+    stoneWeight, stone,
+    awt, netWeight,
+    percentage, touch,
+    pureGoldReduction, purity, fwt,
+    hallmarkReduction, hallmark, billNo, billId,
+    reason
+  } = selectedReturn;
+
+  const displayItemName = productName || itemName || "Item";
+  const displayCount = count || 1;
+  const displayWeight = weight || grossWeight || itemWeight || 0;
+  
+  // For Returns, usually FWT is the primary impact
+  const displayFWT = fwt || pureGoldReduction || purity || 0;
+  
+  const displayEnteredStone = enteredStoneWeight || 0;
+  const displayActualStone = stoneWeight || 0;
+  
+  const displayAwt = awt || netWeight || (displayWeight - displayActualStone);
+  
+  const displayTouch = percentage || touch || (selectedReturn.percentage === 0 || selectedReturn.touch === 0 ? 0 : 100);
+  const displayHallmark = hallmarkReduction || hallmark || 0;
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -58,64 +80,66 @@ const ReturnDetailsModal = ({ open, onClose, selectedReturn }) => {
           </IconButton>
         </Box>
 
-        <Box sx={{ px: 1 }}>
-          <div className="detail-item">
-            <span className="detail-label">Item Name:</span>
-            <span className="detail-val">{selectedReturn.productName}</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Item Weight (g):</span>
-            <span className="detail-val">{fmtNum(selectedReturn.weight)} g</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Count:</span>
-            <span className="detail-val">{selectedReturn.count}</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Stone Weight (g):</span>
-            <span className="detail-val">{fmtNum(selectedReturn.stoneWeight)} g</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Entered St.WT (g):</span>
-            <span className="detail-val">{fmtNum(selectedReturn.enteredStoneWeight)} g</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Actual St.WT (g):</span>
-            <span className="detail-val">{fmtNum(selectedReturn.stoneWeight)} g</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">AWT (g):</span>
-            <span className="detail-val">{fmtNum(selectedReturn.awt, 3)} g</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Touch % (Billing):</span>
-            <span className="detail-val">{fmtNum(selectedReturn.percentage, 3)}%</span>
-          </div>
-          <div className="detail-item" style={{ borderBottom: "none" }}>
-            <span className="detail-label">Reason:</span>
-            <span className="detail-val" style={{ maxWidth: "60%", textAlign: "right" }}>
-              {selectedReturn.reason || "None"}
-            </span>
-          </div>
-        </Box>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Box sx={{ bgcolor: "#f8fafc", p: 2, borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: "700", color: "#64748b", textTransform: "uppercase", fontSize: "0.7rem", letterSpacing: "0.05em", mb: 1.5 }}>
-            Ledger & Audit Information
-          </Typography>
-          <Box display="flex" justifyContent="space-between" mb={1}>
-            <Typography variant="body2" sx={{ fontWeight: "600", color: "#475569" }}>Ledger Impact (FWT)</Typography>
-            <Typography variant="body2" sx={{ fontWeight: "800", color: "#dc2626" }}>
-              {fmtNum(selectedReturn.pureGoldReduction, 3)} g
-            </Typography>
+        <Box sx={{ maxHeight: '75vh', overflowY: 'auto', px: 1 }}>
+          <Box sx={{ px: 1 }}>
+            {billNo && (
+              <div className="detail-item">
+                <span className="detail-label">Bill No:</span>
+                <span className="detail-val" style={{ fontWeight: "bold", color: "#0f172a" }}>{billNo}</span>
+              </div>
+            )}
+            <div className="detail-item">
+              <span className="detail-label">Item Name:</span>
+              <span className="detail-val">{displayItemName}</span>
+            </div>
+             <div className="detail-item">
+              <span className="detail-label">Count:</span>
+              <span className="detail-val">{displayCount}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Item Weight (g):</span>
+              <span className="detail-val">{fmtNum(displayWeight)} g</span>
+            </div>
+            {/* <div className="detail-item">
+              <span className="detail-label">Entered St.WT (g):</span>
+              <span className="detail-val">{fmtNum(displayEnteredStone)} g</span>
+            </div> */}
+            <div className="detail-item">
+              <span className="detail-label">Stone Weight (g):</span>
+              <span className="detail-val">{fmtNum(displayActualStone)} g</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">AWT (Actual G.WT):</span>
+              <span className="detail-val">{fmtNum(displayAwt, 3)} g</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Touch % (Billing):</span>
+              <span className="detail-val">{fmtNum(displayTouch, 3)}%</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">FWT (Billing g):</span>
+              <span className="detail-val">{fmtNum(displayFWT, 3)} g</span>
+            </div>
+            <div className="detail-item" style={{ borderBottom: "none" }}>
+              <span className="detail-label">Reason:</span>
+              <span className="detail-val" style={{ maxWidth: "60%", textAlign: "right" }}>
+                {reason || "None"}
+              </span>
+            </div>
           </Box>
-          <Box display="flex" justifyContent="space-between">
-            <Typography variant="body2" sx={{ fontWeight: "600", color: "#475569" }}>Hallmark Impact</Typography>
-            <Typography variant="body2" sx={{ fontWeight: "800", color: "#dc2626" }}>
-              {fmtNum(selectedReturn.hallmarkReduction, 2)} g
+          
+          <Divider sx={{ my: 2 }} />
+          
+          <Box sx={{ bgcolor: "#f8fafc", p: 2, borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: "700", color: "#64748b", textTransform: "uppercase", fontSize: "0.7rem", letterSpacing: "0.05em", mb: 1.5 }}>
+              Ledger & Audit Information
             </Typography>
+            <Box display="flex" justifyContent="space-between" mb={1}>
+              <Typography variant="body2" sx={{ fontWeight: "600", color: "#475569" }}>Ledger Impact (FWT)</Typography>
+              <Typography variant="body2" sx={{ fontWeight: "800", color: "#0ea5e9" }}>
+                {fmtNum(displayFWT, 3)} g
+              </Typography>
+            </Box>
           </Box>
         </Box>
 

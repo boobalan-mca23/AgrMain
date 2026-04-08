@@ -19,6 +19,7 @@ import {
   Tooltip, Modal,
   TableContainer,
   InputAdornment,
+  TablePagination,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import SearchIcon from "@mui/icons-material/Search";
@@ -135,6 +136,13 @@ const Billing = () => {
   }, [bills, billSearchTerm]);
 
   const [stockSource, setStockSource] = useState("ALL");
+  const [stockPage, setStockPage] = useState(0);
+  const [stockRowsPerPage, setStockRowsPerPage] = useState(20);
+  
+  // Reset stock page when filters change
+  useEffect(() => {
+    setStockPage(0);
+  }, [searchTerm, selectedFilter, stockSource]);
 
 
   // === Validation helpers ===
@@ -2144,7 +2152,7 @@ const Billing = () => {
             </TableHead>
             <TableBody>
               {unifiedStock.length > 0 ? (
-                unifiedStock.map((prodata, index) => {
+                unifiedStock.slice(stockPage * stockRowsPerPage, stockPage * stockRowsPerPage + stockRowsPerPage).map((prodata, index) => {
                   const uniqueId = prodata.uniqueId;
                   const isItemPurchase = prodata.stockType === "ITEM_PURCHASE";
                   
@@ -2174,7 +2182,7 @@ const Billing = () => {
                         }
                       }}
                     >
-                      <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
+                      <TableCell className="td" style={{ textAlign: "center" }}>{index + 1 + (stockPage * stockRowsPerPage)}</TableCell>
                       <TableCell className="td" style={{ textAlign: "center" }}>
                         <span>{prodata.itemName}</span>
                       </TableCell>
@@ -2229,6 +2237,18 @@ const Billing = () => {
             </TableBody>
           </Table>
         </Box>
+        <TablePagination
+          rowsPerPageOptions={[10, 20, 50]}
+          component="div"
+          count={unifiedStock.length}
+          rowsPerPage={stockRowsPerPage}
+          page={stockPage}
+          onPageChange={(e, newPage) => setStockPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setStockRowsPerPage(parseInt(e.target.value, 10));
+            setStockPage(0);
+          }}
+        />
         <ToastContainer />
       </Box>}
 
