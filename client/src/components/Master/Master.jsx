@@ -25,6 +25,7 @@ import SupplierPurchaseManagement from "./SupplierPurchaseManagement";
 
 import ItemPurchaseReport from "./ItemPurchaseReport";
 import PurchaseReport from "./PurchaseReport";
+import BalanceStatement from "../Reports/BalanceStatement";
 
 import { FiLogOut } from "react-icons/fi";
 
@@ -39,10 +40,9 @@ const Master = () => {
   const location = useLocation();
 
   const isPurchaseActive =
-    location.pathname.startsWith("/master/supplier") ||
-    location.pathname.startsWith("/master/purchase-entry") ||
     location.pathname.startsWith("/master/item-purchase") ||
     location.pathname.startsWith("/master/purchase-report") ||
+    location.pathname.startsWith("/master/statement") ||
     location.pathname.startsWith("/master/item-purchase-report");
 
   const handleLogout = () => {
@@ -232,7 +232,8 @@ const Master = () => {
           <Route path="item-purchase-report" element={<ItemPurchaseReport />} />
 
           <Route path="purchase-report" element={<PurchaseReport />} />
-
+          
+          <Route path="statement/:id" element={<BalanceStatement typeOverride="supplier" />} />
         </Routes>
 
       </div>

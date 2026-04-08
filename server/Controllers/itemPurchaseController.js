@@ -541,7 +541,8 @@ exports.getItemPurchaseReport = async (req, res) => {
           },
           repairStocks: {
             where: { status: "InRepair" }
-          }
+          },
+          receivedGold: true
         },
 
         orderBy: {

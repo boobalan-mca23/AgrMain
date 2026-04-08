@@ -23,8 +23,9 @@ import ReturnDetailsModal from "../CustomerReturn&Repair/ReturnDetailsModal";
 import RepairDetailsModal from "../CustomerReturn&Repair/RepairDetailsModal";
 import "./BalanceStatement.css";
 
-const BalanceStatement = () => {
-  const { type, id } = useParams();
+const BalanceStatement = ({ typeOverride }) => {
+  const { type: paramType, id } = useParams();
+  const type = typeOverride || paramType;
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [entityName, setEntityName] = useState("");
@@ -219,20 +220,6 @@ const BalanceStatement = () => {
           
           <Grid item xs={12} md={8}>
             <Box display="flex" gap={2} justifyContent="flex-end" flexWrap="wrap">
-              <Card className={`summary-card ${type === "goldsmith" ? "hallmark-card" : "balance-card"}`}>
-                <CardContent>
-                  <Box>
-                    <Typography className="summary-label">
-                      {type === "goldsmith" ? "Total Gold Balance" : "Total Cash Balance"}
-                    </Typography>
-                    <Typography className="summary-value">
-                      {type === "goldsmith" ? formatVal(currentBalances.gold) : formatVal(currentBalances.cash)} 
-                      {type === "goldsmith" ? "g" : ""}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-
               {type === "customer" && (
                 <Card className="summary-card hallmark-card">
                   <CardContent>
@@ -270,6 +257,23 @@ const BalanceStatement = () => {
                   </Card>
                 </>
               )}
+
+              <Card className={`summary-card ${type === "goldsmith" ? "hallmark-card" : type === "supplier" ? "supplier-card" : "balance-card"}`}>
+                <CardContent>
+                  <Box>
+                    <Typography className="summary-label">
+                      {type === "goldsmith" ? "Total Gold Balance" : 
+                       type === "supplier" ? "Total Balance" : "Total Cash Balance"}
+                    </Typography>
+                    <Typography className="summary-value">
+                      {type === "goldsmith" ? formatVal(currentBalances.gold) : 
+                       type === "supplier" ? formatVal((currentBalances.bc || 0) + (currentBalances.item || 0)) : 
+                       formatVal(currentBalances.cash)} 
+                      {(type === "goldsmith" || type === "supplier") ? "g" : ""}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
             </Box>
           </Grid>
         </Grid>

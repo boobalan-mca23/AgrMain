@@ -805,11 +805,12 @@ exports.getSupplierStatement = async (req, res) => {
       }
 
       // 2. Receipt part
+      const wastageStr = pe.wastageType ? `, Wastage: ${pe.wastage}${pe.wastageType === "%" ? "%" : " " + pe.wastageType}` : "";
       ledger.push({
         date: pe.createdAt,
         createdAt: pe.createdAt,
         module: "BC Purchase",
-        description: `Purchase: ${pe.jewelName} (Gross: ${pe.grossWeight}, Purity Value: ${pe.finalPurity})`,
+        description: `Purchase: ${pe.jewelName} (Gross: ${pe.grossWeight}${wastageStr}, Purity Value: ${pe.finalPurity})`,
         debitBC: 0,
         creditBC: pe.finalPurity || 0,
         refId: pe.id,
@@ -833,11 +834,12 @@ exports.getSupplierStatement = async (req, res) => {
       }
 
       // 2. Receipt part
+      const wastageStr = ipe.wastageType ? `, Wastage: ${ipe.wastage}${ipe.wastageType === "%" ? "%" : " " + ipe.wastageType}` : "";
       ledger.push({
         date: ipe.createdAt,
         createdAt: ipe.createdAt,
         module: "Item Purchase",
-        description: `Purchase: ${ipe.itemName} (Qty: ${ipe.count}, Purity Value: ${ipe.finalPurity})`,
+        description: `Purchase: ${ipe.itemName} (Qty: ${ipe.count}${wastageStr}, Purity Value: ${ipe.finalPurity})`,
         debitItem: 0,
         creditItem: ipe.finalPurity || 0,
         refId: ipe.id,
@@ -850,9 +852,9 @@ exports.getSupplierStatement = async (req, res) => {
         date: prg.date,
         createdAt: prg.createdAt,
         module: "BC Paid",
-        description: `Final Gold Payment to Supplier`,
-        debitBC: prg.weight || 0,
-        creditBC: 0,
+        description: `Gold Received from Supplier`,
+        debitBC: 0,
+        creditBC: prg.weight || 0,
         refId: prg.id,
         sortPriority: 2
       });
@@ -863,9 +865,9 @@ exports.getSupplierStatement = async (req, res) => {
         date: iprg.date,
         createdAt: iprg.createdAt,
         module: "Item Paid",
-        description: `Final Gold Payment to Supplier`,
-        debitItem: iprg.weight || 0,
-        creditItem: 0,
+        description: `Gold Received from Supplier`,
+        debitItem: 0,
+        creditItem: iprg.weight || 0,
         refId: iprg.id,
         sortPriority: 2
       });
