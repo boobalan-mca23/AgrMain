@@ -187,6 +187,7 @@ const createBill = async (req, res) => {
                     // advanceGold and goldBalance are NOT updated here:
                     // goldBalance only changes when the supplier receives gold back (receiveGold)
                     isSold: false,
+                    isBilled: true,
                   },
                 });
               } else {
@@ -572,7 +573,8 @@ const updateBill = async (req, res) => {
                     actualPure: p.actual,
                     wastagePure: p.final - p.actual,
                     finalPurity: p.final,
-                    isSold: false
+                    isSold: false,
+                    isBilled: true
                   }
                 });
               } else {
@@ -787,7 +789,7 @@ const customerReport = async (req, res) => {
     // If customer_id is provided
     if (!isNaN(parseInt(customerId))) {
       billWhere.customer_id = parseInt(customerId);
-      billReceiveWhere.cutomer_id = parseInt(customerId);
+      billReceiveWhere.customer_id = parseInt(customerId);
       receiptWhere.customer_id = parseInt(customerId);
       transactionWhere.customerId = parseInt(customerId)
     }
@@ -861,6 +863,13 @@ const customerReport = async (req, res) => {
           info: ret
         }))
       ];
+      
+      // Sort combined data chronologically
+      combinedData.sort((a, b) => {
+        const dateA = new Date(a.info.createdAt || a.info.sentDate || a.info.date);
+        const dateB = new Date(b.info.createdAt || b.info.sentDate || b.info.date);
+        return dateA - dateB;
+      });
 
       // get overAll balance
       const overallBal = await prisma.customerBillBalance.findUnique({

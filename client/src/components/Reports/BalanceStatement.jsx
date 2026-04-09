@@ -262,8 +262,7 @@ const BalanceStatement = ({ typeOverride }) => {
                 <CardContent>
                   <Box>
                     <Typography className="summary-label">
-                      {type === "goldsmith" ? "Total Gold Balance" : 
-                       type === "supplier" ? "Total Balance" : "Total Cash Balance"}
+                     Total Gold Balance
                     </Typography>
                     <Typography className="summary-value">
                       {type === "goldsmith" ? formatVal(currentBalances.gold) : 
