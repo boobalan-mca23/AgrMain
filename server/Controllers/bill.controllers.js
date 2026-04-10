@@ -187,6 +187,7 @@ const createBill = async (req, res) => {
                     // advanceGold and goldBalance are NOT updated here:
                     // goldBalance only changes when the supplier receives gold back (receiveGold)
                     isSold: false,
+                    isBilled: true,
                   },
                 });
               } else {
@@ -205,45 +206,49 @@ const createBill = async (req, res) => {
           }
 
           // parse safely (for PRODUCT stock)
-          const stock = await tx.productStock.findMany({
-            where: {
-              id: item.stockId
-            },
+          const stockId = parseInt(item.stockId);
+          if (isNaN(stockId)) continue;
+
+          const stock = await tx.productStock.findUnique({
+            where: { id: stockId },
           });
 
-          if (!stock || stock.length === 0) continue;
+          if (!stock) {
+            console.error(`Stock item with ID ${stockId} not found during billing.`);
+            continue;
+          }
 
           const decProductWt = isNaN(parseFloat(item.weight)) ? 0 : parseFloat(item.weight);
           const decStoneWeight = isNaN(parseFloat(item.stoneWeight)) ? 0 : parseFloat(item.stoneWeight);
           const decCount = item.count ? (isNaN(parseInt(item.count)) ? 0 : parseInt(item.count)) : 0;
-          const remainWt = stock[0].itemWeight - decProductWt
-          const prevNetWeight = parseFloat(stock[0].netWeight) || 0;
+          const remainWt = stock.itemWeight - decProductWt;
+          const prevNetWeight = parseFloat(stock.netWeight) || 0;
           const billNetWeight = parseFloat(item.netWeight) || 0;
           const netWeight = prevNetWeight - billNetWeight;
 
-          const actualPurity = (netWeight * stock[0].touch) / 100;
+          const actualPurity = (netWeight * stock.touch) / 100;
 
           let wastagePure = 0;
           let finalPurity = 0;
 
-          if (stock[0].wastageType === "Touch") {
-            finalPurity = (netWeight * stock[0].wastageValue) / 100;
+          if (stock.wastageType === "Touch") {
+            finalPurity = (netWeight * stock.wastageValue) / 100;
             wastagePure = finalPurity - actualPurity;
 
-          } else if (stock[0].wastageType === "%") {
-            const wastageWeight = (netWeight * stock[0].wastageValue) / 100;
+          } else if (stock.wastageType === "%") {
+            const wastageWeight = (netWeight * stock.wastageValue) / 100;
             const finalWastewt = netWeight + wastageWeight;
-            finalPurity = (finalWastewt * stock[0].touch) / 100;
+            finalPurity = (finalWastewt * stock.touch) / 100;
             wastagePure = finalPurity - actualPurity;
 
-          } else if (stock[0].wastageType === "+") {
-            const wastageWeight = netWeight + stock[0].wastageValue;
-            finalPurity = (wastageWeight * stock[0].touch) / 100;
+          } else if (stock.wastageType === "+") {
+            const wastageWeight = netWeight + stock.wastageValue;
+            finalPurity = (wastageWeight * stock.touch) / 100;
             wastagePure = finalPurity - actualPurity;
           }
 
           await tx.productStock.update({
-            where: { id: parseInt(item.stockId) },
+            where: { id: stockId },
             data: {
               itemWeight: remainWt,
               stoneWeight: decStoneWeight ? { decrement: decStoneWeight } : undefined,
@@ -252,11 +257,12 @@ const createBill = async (req, res) => {
               netWeight,
               wastagePure,
               finalPurity,
-              wastageType: stock[0].wastageType,
+              wastageType: stock.wastageType,
               isBillProduct: remainWt > 0.05,
               isActive: remainWt > 0.05,
             },
           });
+          console.log(`Updated stock ID ${stockId}: Reduced weight by ${decProductWt}, remainWt: ${remainWt}`);
         }
       }
 
@@ -410,6 +416,80 @@ const updateBill = async (req, res) => {
       currentHallmark - oldHallEffect + newHallEffect;
 
     await prisma.$transaction(async (tx) => {
+      // --- REPLENISH OLD STOCK FIRST ---
+      const oldOrderItems = await tx.orderItems.findMany({ where: { billId: billIdNum } });
+      for (const oldItem of oldOrderItems) {
+        if (oldItem.stockId) {
+          if (oldItem.stockType === "ITEM_PURCHASE") {
+            const entry = await tx.itemPurchaseEntry.findUnique({ where: { id: oldItem.stockId } });
+            if (entry) {
+              const newCount = (entry.count || 0) + (oldItem.count || 0);
+              const newGross = entry.grossWeight + (oldItem.weight || 0);
+              const newStone = entry.stoneWeight + (oldItem.enteredStoneWeight || oldItem.stoneWeight || 0);
+              const newNet = newGross - newStone;
+              
+              const getPurity = (netWt, touch, wType, wVal) => {
+                const actual = (netWt * touch) / 100;
+                let final = 0;
+                if (wType === "Touch") final = (netWt * wVal) / 100;
+                else if (wType === "%") final = (netWt + (netWt * wVal / 100)) * touch / 100;
+                else if (wType === "+") final = (netWt + wVal) * touch / 100;
+                else final = actual;
+                return { actual, final };
+              };
+              const p = getPurity(newNet, entry.touch, entry.wastageType, entry.wastage);
+              
+              await tx.itemPurchaseEntry.update({
+                where: { id: entry.id },
+                data: {
+                  count: newCount,
+                  grossWeight: newGross,
+                  stoneWeight: newStone,
+                  netWeight: newNet,
+                  actualPure: p.actual,
+                  wastagePure: p.final - p.actual,
+                  finalPurity: p.final,
+                  isSold: false
+                }
+              });
+            }
+          } else {
+            // PRODUCT STOCK
+            const stock = await tx.productStock.findUnique({ where: { id: oldItem.stockId } });
+            if (stock) {
+              const newWt = stock.itemWeight + (oldItem.weight || 0);
+              const newStone = stock.stoneWeight + (oldItem.enteredStoneWeight || oldItem.stoneWeight || 0);
+              const newCount = stock.count + (oldItem.count || 0);
+              const newNet = newWt - newStone;
+              
+              const p = (net, touch, wType, wVal) => {
+                const actual = (net * touch) / 100;
+                let final = 0;
+                if (wType === "Touch") final = (net * wVal) / 100;
+                else if (wType === "%") final = (net + (net * wVal / 100)) * touch / 100;
+                else if (wType === "+") final = (net + wVal) * touch / 100;
+                else final = actual;
+                return { final };
+              };
+              const resP = p(newNet, stock.touch, stock.wastageType, stock.wastageValue);
+              
+              await tx.productStock.update({
+                where: { id: stock.id },
+                data: {
+                  itemWeight: newWt,
+                  stoneWeight: newStone,
+                  count: newCount,
+                  netWeight: newNet,
+                  finalPurity: resP.final,
+                  isActive: true,
+                  isBillProduct: true
+                }
+              });
+            }
+          }
+        }
+      }
+
       await tx.bill.update({
         where: { id: billIdNum },
         data: {
@@ -458,6 +538,87 @@ const updateBill = async (req, res) => {
               billId: billIdNum
             }
           });
+        }
+      }
+
+      // 3. REDUCE STOCK FOR NEW/MODIFIED ITEMS
+      for (const item of modifiedOrders) {
+        if (item.stockId) {
+          if (item.stockType === "ITEM_PURCHASE") {
+            const entry = await tx.itemPurchaseEntry.findUnique({ where: { id: item.stockId } });
+            if (entry) {
+              const remainCount = (entry.count || 1) - (item.count || 0);
+              const remainGross = entry.grossWeight - (item.weight || 0);
+              const remainStone = entry.stoneWeight - (item.enteredStoneWeight || item.stoneWeight || 0);
+              const remainNet = remainGross - remainStone;
+
+              if (remainGross > 0.05) {
+                const getPurity = (net, touch, wType, wVal) => {
+                  const actual = (net * touch) / 100;
+                  let final = 0;
+                  if (wType === "Touch") final = (net * wVal) / 100;
+                  else if (wType === "%") final = (net + (net * wVal / 100)) * touch / 100;
+                  else if (wType === "+") final = (net + wVal) * touch / 100;
+                  else final = actual;
+                  return { actual, final };
+                };
+                const p = getPurity(remainNet, entry.touch, entry.wastageType, entry.wastage);
+                await tx.itemPurchaseEntry.update({
+                  where: { id: entry.id },
+                  data: {
+                    count: remainCount > 0 ? remainCount : (entry.count || 1),
+                    grossWeight: remainGross,
+                    stoneWeight: remainStone,
+                    netWeight: remainNet,
+                    actualPure: p.actual,
+                    wastagePure: p.final - p.actual,
+                    finalPurity: p.final,
+                    isSold: false,
+                    isBilled: true
+                  }
+                });
+              } else {
+                await tx.itemPurchaseEntry.update({
+                  where: { id: entry.id },
+                  data: { isSold: true, soldAt: new Date(), moveTo: "billed" }
+                });
+              }
+            }
+          } else {
+            // PRODUCT STOCK
+            const stock = await tx.productStock.findUnique({ where: { id: item.stockId } });
+            if (stock) {
+              const remainWt = stock.itemWeight - (item.weight || 0);
+              const remainStone = stock.stoneWeight - (item.enteredStoneWeight || item.stoneWeight || 0);
+              const remainCount = stock.count - (item.count || 0);
+              const netWeight = remainWt - remainStone;
+
+              const p = (net, touch, wType, wVal) => {
+                const actual = (net * touch) / 100;
+                let final = 0;
+                if (wType === "Touch") final = (net * wVal) / 100;
+                else if (wType === "%") final = (net + (net * wVal / 100)) * touch / 100;
+                else if (wType === "+") final = (net + wVal) * touch / 100;
+                else final = actual;
+                return { final, wastage: final - actual };
+              };
+              const resP = p(netWeight, stock.touch, stock.wastageType, stock.wastageValue);
+
+              await tx.productStock.update({
+                where: { id: stock.id },
+                data: {
+                  itemWeight: remainWt,
+                  stoneWeight: remainStone,
+                  count: remainCount,
+                  netWeight,
+                  wastagePure: resP.wastage,
+                  finalPurity: resP.final,
+                  isActive: remainWt > 0.05,
+                  isBillProduct: remainWt > 0.05
+                }
+              });
+            }
+          }
         }
       }
 
@@ -628,7 +789,7 @@ const customerReport = async (req, res) => {
     // If customer_id is provided
     if (!isNaN(parseInt(customerId))) {
       billWhere.customer_id = parseInt(customerId);
-      billReceiveWhere.cutomer_id = parseInt(customerId);
+      billReceiveWhere.customer_id = parseInt(customerId);
       receiptWhere.customer_id = parseInt(customerId);
       transactionWhere.customerId = parseInt(customerId)
     }
@@ -702,6 +863,13 @@ const customerReport = async (req, res) => {
           info: ret
         }))
       ];
+      
+      // Sort combined data chronologically
+      combinedData.sort((a, b) => {
+        const dateA = new Date(a.info.createdAt || a.info.sentDate || a.info.date);
+        const dateB = new Date(b.info.createdAt || b.info.sentDate || b.info.date);
+        return dateA - dateB;
+      });
 
       // get overAll balance
       const overallBal = await prisma.customerBillBalance.findUnique({
@@ -724,21 +892,93 @@ const deleteBill = async (req, res) => {
 
   try {
     // Check if the bill exists
+    const billIdNum = parseInt(billId);
     const billExist = await prisma.bill.findUnique({
-      where: { id: parseInt(billId) },
+      where: { id: billIdNum },
+      include: { orders: true }
     });
     if (!billExist) {
       return res.status(404).json({ msg: "Bill not found" });
     }
 
-    // Delete associated orders first due to foreign key constraints
-    // await prisma.order.deleteMany({
-    //   where: { bill_id: parseInt(billId) },
-    // });
+    await prisma.$transaction(async (tx) => {
+      // --- REPLENISH STOCK ---
+      for (const oldItem of billExist.orders) {
+        if (oldItem.stockId) {
+          if (oldItem.stockType === "ITEM_PURCHASE") {
+            const entry = await tx.itemPurchaseEntry.findUnique({ where: { id: oldItem.stockId } });
+            if (entry) {
+              const newCount = (entry.count || 0) + (oldItem.count || 0);
+              const newGross = entry.grossWeight + (oldItem.weight || 0);
+              const newStone = entry.stoneWeight + (oldItem.enteredStoneWeight || oldItem.stoneWeight || 0);
+              const newNet = newGross - newStone;
+              
+              const getPurity = (netWt, touch, wType, wVal) => {
+                const actual = (netWt * touch) / 100;
+                let final = 0;
+                if (wType === "Touch") final = (netWt * wVal) / 100;
+                else if (wType === "%") final = (netWt + (netWt * wVal / 100)) * touch / 100;
+                else if (wType === "+") final = (netWt + wVal) * touch / 100;
+                else final = actual;
+                return { actual, final };
+              };
+              const p = getPurity(newNet, entry.touch, entry.wastageType, entry.wastage);
+              
+              await tx.itemPurchaseEntry.update({
+                where: { id: entry.id },
+                data: {
+                  count: newCount,
+                  grossWeight: newGross,
+                  stoneWeight: newStone,
+                  netWeight: newNet,
+                  actualPure: p.actual,
+                  wastagePure: p.final - p.actual,
+                  finalPurity: p.final,
+                  isSold: false
+                }
+              });
+            }
+          } else {
+            // PRODUCT STOCK
+            const stock = await tx.productStock.findUnique({ where: { id: oldItem.stockId } });
+            if (stock) {
+              const newWt = stock.itemWeight + (oldItem.weight || 0);
+              const newStone = stock.stoneWeight + (oldItem.enteredStoneWeight || oldItem.stoneWeight || 0);
+              const newCount = stock.count + (oldItem.count || 0);
+              const newNet = newWt - newStone;
+              
+              const p = (net, touch, wType, wVal) => {
+                const actual = (net * touch) / 100;
+                let final = 0;
+                if (wType === "Touch") final = (net * wVal) / 100;
+                else if (wType === "%") final = (net + (net * wVal / 100)) * touch / 100;
+                else if (wType === "+") final = (net + wVal) * touch / 100;
+                else final = actual;
+                return { final };
+              };
+              const resP = p(newNet, stock.touch, stock.wastageType, stock.wastageValue);
+              
+              await tx.productStock.update({
+                where: { id: stock.id },
+                data: {
+                  itemWeight: newWt,
+                  stoneWeight: newStone,
+                  count: newCount,
+                  netWeight: newNet,
+                  finalPurity: resP.final,
+                  isActive: true,
+                  isBillProduct: true
+                }
+              });
+            }
+          }
+        }
+      }
 
-    // Delete the bill
-    await prisma.bill.delete({
-      where: { id: parseInt(billId) },
+      // Delete the bill (Prisma onDelete: Cascade will handle OrderItems)
+      await tx.bill.delete({
+        where: { id: billIdNum },
+      });
     });
 
     res.status(200).json({ message: "Bill deleted successfully" });

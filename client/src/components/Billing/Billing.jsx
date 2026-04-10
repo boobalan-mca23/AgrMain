@@ -19,6 +19,7 @@ import {
   Tooltip, Modal,
   TableContainer,
   InputAdornment,
+  TablePagination,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import SearchIcon from "@mui/icons-material/Search";
@@ -135,6 +136,13 @@ const Billing = () => {
   }, [bills, billSearchTerm]);
 
   const [stockSource, setStockSource] = useState("ALL");
+  const [stockPage, setStockPage] = useState(0);
+  const [stockRowsPerPage, setStockRowsPerPage] = useState(20);
+  
+  // Reset stock page when filters change
+  useEffect(() => {
+    setStockPage(0);
+  }, [searchTerm, selectedFilter, stockSource]);
 
 
   // === Validation helpers ===
@@ -194,7 +202,7 @@ const Billing = () => {
     const newErrors = {};
 
     if (billDetailRows.length === 0) {
-      alert("Please add at least one Bill Detail or Received Detail before saving.");
+      toast.error("Please add at least one Bill Detail or Received Detail before saving.");
       return false;
     }
 
@@ -213,6 +221,61 @@ const Billing = () => {
       }
     });
 
+    // Orphaned stone check
+    const uniqueIds = Object.keys(weightAllocations);
+    for (const uId of uniqueIds) {
+      let productStock = null;
+      if (uId.startsWith("ITEM_PURCHASE_")) {
+        const pId = parseInt(uId.replace("ITEM_PURCHASE_", ""));
+        productStock = itemPurchaseProducts?.find((p) => (p.id || p._id) === pId);
+      } else if (uId.startsWith("PRODUCT_")) {
+        const pId = parseInt(uId.replace("PRODUCT_", ""));
+        productStock = availableProducts?.allStock?.find((p) => (p.id || p._id) === pId);
+      }
+
+      if (productStock) {
+        const originalGross = uId.startsWith("ITEM_PURCHASE_") ? toNumber(productStock.grossWeight) : toNumber(productStock.itemWeight);
+        const originalStone = toNumber(productStock.stoneWeight);
+        const originalCount = toNumber(productStock.count);
+        
+        const totalBilledWt = Object.values(weightAllocations[uId] || {}).reduce((a, b) => a + toNumber(b), 0);
+        
+        const totalBilledStoneWt = billDetailRows
+          .filter(row => row.uniqueId === uId)
+          .reduce((sum, row) => {
+            const actualStone = toNumber(row.aStWt);
+            const expectedStone = toNumber(row.eStWt);
+            // If actual stone is empty/0, assume the expected stone is what goes with the product
+            return sum + (actualStone > 0 ? actualStone : expectedStone);
+          }, 0);
+
+        const totalBilledCount = billDetailRows
+          .filter(row => row.uniqueId === uId)
+          .reduce((sum, row) => sum + toNumber(row.count), 0);
+
+        const remainingItemWt = originalGross - totalBilledWt;
+        const remainingStoneWt = originalStone - totalBilledStoneWt;
+        const remainingCount = originalCount - totalBilledCount;
+
+        // 1. Orphaned Stone Check
+        if (remainingItemWt <= 0.05 && remainingStoneWt > 0.05) {
+          toast.error(`You must bill the remaining ${remainingStoneWt.toFixed(3)}g of stones for ${productStock.itemName}`);
+          isValid = false;
+        }
+
+        // 2. Orphaned Count Check
+        if (originalCount > 0 && remainingItemWt <= 0.05 && remainingCount > 0) {
+          toast.error(`You must bill the remaining count of ${remainingCount} for ${productStock.itemName}`);
+          isValid = false;
+        }
+
+        // 3. Orphaned Weight Check
+        if (originalCount > 0 && remainingCount <= 0 && remainingItemWt > 0.05) {
+          toast.error(`You must bill the remaining ${remainingItemWt.toFixed(3)}g for ${productStock.itemName}`);
+          isValid = false;
+        }
+      }
+    }
 
     setFieldErrors(newErrors);
     return isValid;
@@ -668,13 +731,12 @@ const Billing = () => {
     try {
 
       if (!selectedCustomer) {
-        alert("Please select a customer before saving.");
         toast.error("Please select a customer before saving.");
         return;
       }
       const isFormValid = validateAllFields();
       if (!isFormValid) {
-        alert("Please fill in all required fields");
+        toast.error("Please fill in all required fields properly");
         return;
       }
 
@@ -2144,7 +2206,7 @@ const Billing = () => {
             </TableHead>
             <TableBody>
               {unifiedStock.length > 0 ? (
-                unifiedStock.map((prodata, index) => {
+                unifiedStock.slice(stockPage * stockRowsPerPage, stockPage * stockRowsPerPage + stockRowsPerPage).map((prodata, index) => {
                   const uniqueId = prodata.uniqueId;
                   const isItemPurchase = prodata.stockType === "ITEM_PURCHASE";
                   
@@ -2174,7 +2236,7 @@ const Billing = () => {
                         }
                       }}
                     >
-                      <TableCell className="td" style={{ textAlign: "center" }}>{index + 1}</TableCell>
+                      <TableCell className="td" style={{ textAlign: "center" }}>{index + 1 + (stockPage * stockRowsPerPage)}</TableCell>
                       <TableCell className="td" style={{ textAlign: "center" }}>
                         <span>{prodata.itemName}</span>
                       </TableCell>
@@ -2229,6 +2291,18 @@ const Billing = () => {
             </TableBody>
           </Table>
         </Box>
+        <TablePagination
+          rowsPerPageOptions={[10, 20, 50]}
+          component="div"
+          count={unifiedStock.length}
+          rowsPerPage={stockRowsPerPage}
+          page={stockPage}
+          onPageChange={(e, newPage) => setStockPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setStockRowsPerPage(parseInt(e.target.value, 10));
+            setStockPage(0);
+          }}
+        />
         <ToastContainer />
       </Box>}
 

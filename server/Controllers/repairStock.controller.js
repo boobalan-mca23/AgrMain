@@ -578,7 +578,9 @@ const returnFromRepair = async (req, res) => {
         where: { id: repair.id },
         data: {
           status: "Returned",
-          receivedDate: new Date()
+          receivedDate: new Date(),
+          receivedWeight: itemWt,
+          receivedPurity: computedFinalPurity
         }
       });
 
@@ -753,6 +755,12 @@ const sendCustomerItemToRepair = async (req, res) => {
         wastagePureDelta = 0;
       }
 
+      // Calculate Fine Weight (FWT) specifically for customer transactions
+      const orderItemPercentage = Number(orderItem.percentage || 0);
+      const repairFwtCalculated = (repairNetWeight * orderItemPercentage) / 100;
+      // Prioritize finalWeight from request if manually edited, otherwise use calculated FWT
+      const repairFwt = repairFwtCalculated;
+
       let productStock;
       let repair;
       let targetOrderItemId = Number(orderItemId);
@@ -850,6 +858,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             grossWeight: productStock.grossWeight,
             netWeight: productStock.netWeight,
             purity: productStock.finalPurity,
+            fwt: repairFwt, 
             count: Number(repairProduct.count) || 1,
           }
         });
@@ -884,6 +893,7 @@ const sendCustomerItemToRepair = async (req, res) => {
             grossWeight: productStock.itemWeight,
             netWeight: productStock.netWeight,
             purity: productStock.finalPurity,
+            fwt: repairFwt, 
             count: Number(repairProduct.count) || 1,
           }
         });
@@ -947,23 +957,13 @@ const sendCustomerItemToRepair = async (req, res) => {
         });
 
         if (customerBalance) {
-          // Hallmark is only reduced if the product is FULLY sent for repair.
-          // For ITEM_PURCHASE, it's always a full repair.
-          // For Product Stock, it's full if original weight matches sent weight (isFull check).
-          const isFull = orderItem.stockType === "ITEM_PURCHASE" || (Number(originalWeight) <= Number(sentWeight));
-
           const hallmarkRate = Number(orderItem.bill.hallMark) || 0;
           const hallmarkReduction = hallmarkRate * reductionCount;
           
-          // Use finalPurity as fallback if finalWeight is not set (typical for Item Purchase items with default UI values)
-          const itemFwt = Number(orderItem.finalWeight) || Number(orderItem.finalPurity) || 0;
-          const repairFwt = Number(repairProduct.finalWeight) || Number(repairProduct.finalPurity) || 0;
-          const fwtReduction = isFull ? itemFwt : repairFwt;
-
           await tx.customerBillBalance.update({
             where: { customer_id: customerId },
             data: {
-              balance: customerBalance.balance - fwtReduction,
+              balance: customerBalance.balance - repairFwt,
               hallMarkBal: customerBalance.hallMarkBal - hallmarkReduction
             }
           });

@@ -16,14 +16,16 @@ import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PrintIcon from '@mui/icons-material/Print';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import CloseIcon from '@mui/icons-material/Close';
 import ReactDOMServer from "react-dom/server";
 import StatementPrint from "./StatementPrint";
 import ReturnDetailsModal from "../CustomerReturn&Repair/ReturnDetailsModal";
 import RepairDetailsModal from "../CustomerReturn&Repair/RepairDetailsModal";
 import "./BalanceStatement.css";
 
-const BalanceStatement = () => {
-  const { type, id } = useParams();
+const BalanceStatement = ({ typeOverride }) => {
+  const { type: paramType, id } = useParams();
+  const type = typeOverride || paramType;
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [entityName, setEntityName] = useState("");
@@ -70,9 +72,11 @@ const BalanceStatement = () => {
     } else if (row.module === "Return" && row.metadata) {
       setSelectedLogRow(row.metadata);
       setReturnModalOpen(true);
-    } else if (row.module === "Repair" && row.metadata) {
+    } else if (row.module.startsWith("Repair") && row.metadata) {
       setSelectedLogRow(row.metadata);
       setRepairModalOpen(true);
+    } else if ((row.module === "Gold Given" || row.module === "Gold Received" || row.module === "Item Delivery") && row.jobcardId) {
+      navigate(`/goldsmithcard/${id}/${entityName}`); 
     } else {
       setSelectedDetail(row);
       setDetailDialogOpen(true);
@@ -126,10 +130,69 @@ const BalanceStatement = () => {
 
   const formatVal = (val) => (val != null ? val.toFixed(3) : "0.000");
 
+  const renderDetailFields = (metadata) => {
+    if (!metadata) return null;
+    
+    const labelMap = {
+      type: "Type",
+      amount: "Amount",
+      goldRate: "Gold Rate",
+      goldWeight: "Gold Weight",
+      touch: "Touch (%)",
+      purity: "Purity/Fine G",
+      pureGold: "Pure Gold",
+      gold: "Gold Weight",
+      hallmark: "Hallmark Impact",
+      billno: "Bill No",
+      jobcardId: "Job Card ID",
+      itemName: "Item Name",
+      itemWeight: "Gross Weight",
+      wastagePure: "Wastage (Pure)",
+      finalPurity: "Final Purity (Cr/Dr)",
+      count: "Count",
+      stoneWeight: "Stone Weight",
+      totalGiven: "Total Given",
+      totalItem: "Total Item",
+      stone: "Stone Impact",
+      receivedWeight: "Return Weight",
+      receivedPurity: "Return Purity",
+      reason: "Repair Reason",
+      source: "Source Type"
+    };
+
+    return Object.entries(metadata).map(([key, value]) => {
+      if (value === null || value === undefined) return null;
+      let displayVal = value;
+      let label = labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+      
+      if (typeof value === 'number') {
+        if (key === 'amount' || key === 'goldRate') displayVal = `₹${value.toLocaleString()}`;
+        else if (key === 'touch') displayVal = `${value}%`;
+        else if (['goldWeight', 'gold', 'purity', 'pureGold', 'hallmark', 'itemWeight', 'netWeight', 'wastagePure', 'finalPurity', 'totalGiven', 'totalItem', 'stone', 'receivedWeight', 'receivedPurity', 'actualPure', 'bcAmount', 'itemAmount', 'cashAmount'].includes(key)) displayVal = `${value.toFixed(3)} g`;
+      }
+      
+      return (
+        <div className="detail-item" key={key}>
+          <span className="detail-label">{label}:</span>
+          <span className="detail-val">{String(displayVal)}</span>
+        </div>
+      );
+    });
+  };
+
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
+      <Box 
+        display="flex" 
+        flexDirection="column" 
+        alignItems="center" 
+        justifyContent="center" 
+        height="80vh"
+      >
         <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2, color: "#0a4c9a", fontWeight: 'bold' }}>
+          Loading statement details...
+        </Typography>
       </Box>
     );
   }
@@ -157,20 +220,6 @@ const BalanceStatement = () => {
           
           <Grid item xs={12} md={8}>
             <Box display="flex" gap={2} justifyContent="flex-end" flexWrap="wrap">
-              <Card className={`summary-card ${type === "goldsmith" ? "hallmark-card" : "balance-card"}`}>
-                <CardContent>
-                  <Box>
-                    <Typography className="summary-label">
-                      {type === "goldsmith" ? "Total Gold Balance" : "Total Cash Balance"}
-                    </Typography>
-                    <Typography className="summary-value">
-                      {type === "goldsmith" ? formatVal(currentBalances.gold) : formatVal(currentBalances.cash)} 
-                      {type === "goldsmith" ? "g" : ""}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-
               {type === "customer" && (
                 <Card className="summary-card hallmark-card">
                   <CardContent>
@@ -208,6 +257,22 @@ const BalanceStatement = () => {
                   </Card>
                 </>
               )}
+
+              <Card className={`summary-card ${type === "goldsmith" ? "hallmark-card" : type === "supplier" ? "supplier-card" : "balance-card"}`}>
+                <CardContent>
+                  <Box>
+                    <Typography className="summary-label">
+                     Total Gold Balance
+                    </Typography>
+                    <Typography className="summary-value">
+                      {type === "goldsmith" ? formatVal(currentBalances.gold) : 
+                       type === "supplier" ? formatVal((currentBalances.bc || 0) + (currentBalances.item || 0)) : 
+                       formatVal(currentBalances.cash)} 
+                      {(type === "goldsmith" || type === "supplier") ? "g" : ""}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
             </Box>
           </Grid>
         </Grid>
@@ -215,7 +280,7 @@ const BalanceStatement = () => {
 
       {/* Control Bar */}
       <Box className="statement-controls">
-        <Box display="flex" gap={2} alignItems="center">
+        {/* <Box display="flex" gap={2} alignItems="center">
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="From"
@@ -237,7 +302,7 @@ const BalanceStatement = () => {
           >
             Clear
           </Button>
-        </Box>
+        </Box> */}
         <Button 
           variant="contained" 
           startIcon={<PrintIcon />} 
@@ -254,42 +319,42 @@ const BalanceStatement = () => {
           <TableHead>
             <TableRow>
               <TableCell width="60px" align="center">S.No</TableCell>
-              <TableCell width="120px">Date</TableCell>
-              <TableCell width="140px">Transaction Type</TableCell>
-              <TableCell>Description</TableCell>
+              <TableCell width="120px" align="center">Date</TableCell>
+              <TableCell width="140px" align="center">Type</TableCell>
+              <TableCell align="center">Description</TableCell>
               
               {type === "customer" && (
                 <>
-                  <TableCell align="right" className="col-group-start">Before Bal</TableCell>
-                  <TableCell align="right" className="col-pos">+</TableCell>
-                  <TableCell align="right" className="col-neg">-</TableCell>
-                  <TableCell align="right" className="col-total">Balance</TableCell>
-                  <TableCell align="right" className="col-group-start">Before HM</TableCell>
-                  <TableCell align="right" className="col-pos">+</TableCell>
-                  <TableCell align="right" className="col-neg">-</TableCell>
-                  <TableCell align="right" className="col-total">HM Balance</TableCell>
+                  <TableCell align="center" className="col-group-start">Before Bal</TableCell>
+                  <TableCell align="center" className="col-pos">+</TableCell>
+                  <TableCell align="center" className="col-neg">-</TableCell>
+                  <TableCell align="center" className="col-total">Balance</TableCell>
+                  <TableCell align="center" className="col-group-start">Before HM</TableCell>
+                  <TableCell align="center" className="col-pos">+</TableCell>
+                  <TableCell align="center" className="col-neg">-</TableCell>
+                  <TableCell align="center" className="col-total">HM Balance</TableCell>
                 </>
               )}
               
               {type === "goldsmith" && (
                 <>
-                  <TableCell align="right" className="col-group-start">Before Gold</TableCell>
-                  <TableCell align="right" className="col-pos">+</TableCell>
-                  <TableCell align="right" className="col-neg">-</TableCell>
-                  <TableCell align="right" className="col-total">After Gold</TableCell>
+                  <TableCell align="center" className="col-group-start">Before Gold</TableCell>
+                  <TableCell align="center" className="col-pos">+</TableCell>
+                  <TableCell align="center" className="col-neg">-</TableCell>
+                  <TableCell align="center" className="col-total">After Gold</TableCell>
                 </>
               )}
               
               {type === "supplier" && (
                 <>
-                  <TableCell align="right" className="col-group-start">Before BC</TableCell>
-                  <TableCell align="right" className="col-pos">+</TableCell>
-                  <TableCell align="right" className="col-neg">-</TableCell>
-                  <TableCell align="right" className="col-total">BC Bal</TableCell>
-                  <TableCell align="right" className="col-group-start">Before Item</TableCell>
-                  <TableCell align="right" className="col-pos">+</TableCell>
-                  <TableCell align="right" className="col-neg">-</TableCell>
-                  <TableCell align="right" className="col-total">Item Bal</TableCell>
+                  <TableCell align="center" className="col-group-start">Before BC</TableCell>
+                  <TableCell align="center" className="col-pos">+</TableCell>
+                  <TableCell align="center" className="col-neg">-</TableCell>
+                  <TableCell align="center" className="col-total">BC Bal</TableCell>
+                  <TableCell align="center" className="col-group-start">Before Item</TableCell>
+                  <TableCell align="center" className="col-pos">+</TableCell>
+                  <TableCell align="center" className="col-neg">-</TableCell>
+                  <TableCell align="center" className="col-total">Item Bal</TableCell>
                 </>
               )}
               
@@ -302,7 +367,7 @@ const BalanceStatement = () => {
                 <TableCell align="center" className="cell-sno">{index + 1 + (page * rowsPerPage)}</TableCell>
                 <TableCell className="cell-date">{new Date(row.date).toLocaleDateString("en-GB")}</TableCell>
                 <TableCell>
-                  <span className={`tag-module ${row.module.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <span className={`tag-module ${row.module.toLowerCase().replace(/[()]/g, '').replace(/\s+/g, '-')}`}>
                     {row.module}
                   </span>
                 </TableCell>
@@ -349,7 +414,7 @@ const BalanceStatement = () => {
                 )}
                 
                 <TableCell align="center">
-                  {!row.module.includes("Balance") && (
+                  {!row.module.includes("Balance") && row.module !== "Audit Correction" && (
                     <Tooltip title="View Source">
                       <IconButton size="small" onClick={() => handleViewDetails(row)} className="action-btn-view">
                         <VisibilityIcon fontSize="inherit" />
@@ -373,9 +438,31 @@ const BalanceStatement = () => {
       </TableContainer>
 
       {/* Details Dialog */}
-      <Dialog open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} maxWidth="xs" fullWidth className="detail-dialog">
-        <DialogTitle className="dialog-title-themed">
+      <Dialog 
+        open={detailDialogOpen} 
+        onClose={() => setDetailDialogOpen(false)} 
+        maxWidth="xs"
+        fullWidth 
+        className="detail-dialog"
+        PaperProps={{
+          sx: {
+            width: 400,
+            borderRadius: "12px",
+            overflow: "hidden"
+          }
+        }}
+      >
+        <DialogTitle className="dialog-title-themed" sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {selectedDetail?.module} Detail View
+          <IconButton
+            aria-label="close"
+            onClick={() => setDetailDialogOpen(false)}
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent dividers>
           {selectedDetail && (
@@ -386,12 +473,20 @@ const BalanceStatement = () => {
               </div>
               <div className="detail-item">
                 <span className="detail-label">Recorded On:</span>
-                <span className="detail-val">{new Date(selectedDetail.date).toLocaleString()}</span>
+                <span className="detail-val">{new Date(selectedDetail.date).toLocaleDateString("en-GB")}</span>
               </div>
-              <div className="detail-item full-desc">
-                <span className="detail-label">Description:</span>
-                <p className="detail-desc-text">{selectedDetail.description}</p>
-              </div>
+              
+              {selectedDetail.metadata ? (
+                <div className="metadata-section">
+                  {renderDetailFields(selectedDetail.metadata)}
+                </div>
+              ) : (
+                <div className="detail-item full-desc">
+                  <span className="detail-label">Description:</span>
+                  <p className="detail-desc-text">{selectedDetail.description}</p>
+                </div>
+              )}
+              
               <Box className="impact-box">
                 <Typography variant="subtitle2" className="impact-header">Ledger Impact</Typography>
                 {type === "customer" && (
@@ -410,13 +505,44 @@ const BalanceStatement = () => {
                     </Box>
                   </Box>
                 )}
+                {type === "goldsmith" && (
+                  <Box display="flex" justifyContent="center" mt={1}>
+                    <Box textAlign="center">
+                      <Typography variant="caption">Gold Balance Impact</Typography>
+                      <Typography className={`impact-val ${((selectedDetail.debitGold || 0) - (selectedDetail.creditGold || 0)) >= 0 ? "pos" : "neg"}`}>
+                        {formatVal((selectedDetail.debitGold || 0) - (selectedDetail.creditGold || 0))}g
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                {type === "supplier" && (
+                  <Box display="flex" justifyContent="space-between" mt={1} gap={2}>
+                    <Box textAlign="center">
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>BC Bal</Typography>
+                      <Typography className={`impact-val ${((selectedDetail.debitBC || 0) - (selectedDetail.creditBC || 0)) >= 0 ? "pos" : "neg"}`} sx={{ fontSize: '0.9rem' }}>
+                        {formatVal((selectedDetail.debitBC || 0) - (selectedDetail.creditBC || 0))}g
+                      </Typography>
+                    </Box>
+                    <Box textAlign="center">
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>Item Bal</Typography>
+                      <Typography className={`impact-val ${((selectedDetail.debitItem || 0) - (selectedDetail.creditItem || 0)) >= 0 ? "pos" : "neg"}`} sx={{ fontSize: '0.9rem' }}>
+                        {formatVal((selectedDetail.debitItem || 0) - (selectedDetail.creditItem || 0))}g
+                      </Typography>
+                    </Box>
+                    <Box textAlign="center">
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>Cash</Typography>
+                      <Typography className={`impact-val ${((selectedDetail.debitCash || 0) - (selectedDetail.creditCash || 0)) >= 0 ? "pos" : "neg"}`} sx={{ fontSize: '0.9rem' }}>
+                        ₹{Number((selectedDetail.debitCash || 0) - (selectedDetail.creditCash || 0)).toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
               </Box>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDetailDialogOpen(false)} color="inherit">Close</Button>
-          <Button variant="contained" color="primary" onClick={() => handleViewDetails(selectedDetail)}>View Source</Button>
         </DialogActions>
       </Dialog>
 
@@ -429,6 +555,7 @@ const BalanceStatement = () => {
         open={repairModalOpen} 
         onClose={() => setRepairModalOpen(false)} 
         selectedRepair={selectedLogRow} 
+        reportType={type}
       />
     </div>
   );

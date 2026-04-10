@@ -24,6 +24,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 import { useNavigate } from "react-router-dom";
+import RepairDetailsModal from "../CustomerReturn&Repair/RepairDetailsModal";
+import ReturnDetailsModal from "../CustomerReturn&Repair/ReturnDetailsModal";
 
 
 const CustReport = () => {
@@ -37,6 +39,8 @@ const CustReport = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [showInitialPositive, setShowInitialPositive] = useState(false);
   const [showInitialNegative, setShowInitialNegative] = useState(false);
+  const [repairModal, setRepairModal] = useState({ open: false, data: null });
+  const [returnModal, setReturnModal] = useState({ open: false, data: null });
 
   const navigate = useNavigate();
 
@@ -258,7 +262,11 @@ const CustReport = () => {
                 {paginatedData.map((bill, index) => (
                   <tr key={index + 1}>
                     <td>{page * rowsPerPage + index + 1}</td>
-                    <td>{bill.type === "bill" ? bill.info.id : "-"}</td>
+                    <td>
+                      {bill.type === "bill" 
+                        ? bill.info.id 
+                        : (bill.info.billNo || bill.info.billId || (bill.info.bill && bill.info.bill.id) || "-")}
+                    </td>
                     <td>
                       {new Date(bill.info.createdAt || bill.info.sentDate).toLocaleDateString(
                         "en-GB"
@@ -303,55 +311,44 @@ const CustReport = () => {
                         ) : (
                           <p>No orders to this table</p>
                         )
-                      ) : bill.type === "repair" ? (
+                      ) : bill.type === "repair" || bill.type === "return" ? (
                         <table className="receiveTable">
-                          <thead className="repairTableTr">
+                          <thead className={bill.type === "repair" ? "repairTableTr" : "returnTableTr"}>
                             <tr>
                               <th>Entry Type</th>
                               <th>Date</th>
                               <th>Item Name</th>
+                              <th>Count</th>
                               <th>Gross Weight</th>
                               <th>Net Weight</th>
                               <th>Purity</th>
-                              <th>Reason</th>
                               <th>Status</th>
                             </tr>
                           </thead>
-                          <tbody className="repairTableBody">
+                          <tbody className={bill.type === "repair" ? "repairTableBody" : "returnTableBody"}>
                             <tr>
-                              <td>Repair</td>
-                              <td>{new Date(bill.info.sentDate).toLocaleDateString("en-GB")}</td>
-                              <td>{bill.info.itemName}</td>
-                              <td>{(Number(bill.info.grossWeight) || 0).toFixed(3)}</td>
-                              <td>{(Number(bill.info.netWeight) || 0).toFixed(3)}</td>
-                              <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
-                              <td>{bill.info.reason || "-"}</td>
-                              <td>{bill.info.status || "-"}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      ) : bill.type === "return" ? (
-                        <table className="receiveTable">
-                          <thead className="returnTableTr">
-                            <tr>
-                              <th>Entry Type</th>
-                              <th>Date</th>
-                              <th>Product Name</th>
-                              <th>Weight</th>
-                              <th>Count</th>
-                              <th>Reason</th>
-                              <th>Source</th>
-                            </tr>
-                          </thead>
-                          <tbody className="returnTableBody">
-                            <tr>
-                              <td>Return</td>
-                              <td>{new Date(bill.info.createdAt).toLocaleDateString("en-GB")}</td>
-                              <td>{bill.info.productName}</td>
-                              <td>{(Number(bill.info.weight) || 0).toFixed(3)}</td>
+                              <td>{bill.type === "repair" ? "Repair" : "Return"}</td>
+                              <td>
+                                {new Date(bill.info.sentDate || bill.info.createdAt).toLocaleDateString("en-GB")}
+                              </td>
+                              <td>{bill.info.itemName || bill.info.productName}</td>
                               <td>{bill.info.count}</td>
-                              <td>{bill.info.reason || "-"}</td>
-                              <td>{bill.info.source || "-"}</td>
+                              <td>
+                                {bill.type === "repair" 
+                                  ? (Number(bill.info.grossWeight) || 0).toFixed(3) 
+                                  : (Number(bill.info.weight) || 0).toFixed(3)}
+                              </td>
+                              <td>
+                                {bill.type === "repair" 
+                                  ? (Number(bill.info.netWeight) || 0).toFixed(3) 
+                                  : "-"}
+                              </td>
+                              <td>
+                                {bill.type === "repair" 
+                                  ? (Number(bill.info.purity) || 0).toFixed(3) 
+                                  : (Number(bill.info.fwt || bill.info.pureGoldReduction) || 0).toFixed(3)}
+                              </td>
+                              <td>{bill.type === "repair" ? (bill.info.status || "-") : "-"}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -390,14 +387,18 @@ const CustReport = () => {
                     </td>
                     <td>
                       {bill.type === "bill" ? (
-                        <IconButton color="primary" onClick={() => {
-                          console.log(
-                            `Navigating to bill-view/${bill.info.id}`
-                          ), navigate(`/bill-view/${bill.info.id}`)
-                        }}>
+                        <IconButton
+                          color="primary"
+                          onClick={() => {
+                            console.log(`Navigating to bill-view/${bill.info.id}`),
+                              navigate(`/bill-view/${bill.info.id}`);
+                          }}
+                        >
                           <VisibilityIcon />
-                        </IconButton>) : (<p>-</p>)}
-
+                        </IconButton>
+                      ) : (
+                        <p>-</p>
+                      )}
                     </td>
 
                     {bill.type === "bill" ? (
@@ -410,12 +411,18 @@ const CustReport = () => {
                         <td>{(Number(bill.info.weight) || 0).toFixed(3)}</td>
                         <td>-</td>
                       </>
-                    ) : (
-                      <>
-                        <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
-                        <td>-</td>
-                      </>
-                    )}
+                     ) : (
+                       <>
+                         <td>
+                           {Number(bill.info.purity) > 0 
+                             ? (Number(bill.info.purity)).toFixed(3) 
+                             : (Number(bill.info.amount) > 0 
+                               ? (Number(bill.info.amount)).toFixed(2) 
+                               : "0.000")}
+                         </td>
+                         <td>-</td>
+                       </>
+                     )}
                   </tr>
                 ))}
 

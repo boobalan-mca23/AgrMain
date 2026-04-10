@@ -309,7 +309,7 @@ const ReturnStockList = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={8} align="center">No returned products</TableCell>
+              <TableCell colSpan={10} align="center">No returned products</TableCell>
             </TableRow>
           )}
         </TableBody>

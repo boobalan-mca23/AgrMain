@@ -12,6 +12,8 @@ import {
   IconButton,
   MenuItem,
   Select,
+  CircularProgress,
+  Typography,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import EditIcon from "@mui/icons-material/Edit";
@@ -308,8 +310,36 @@ export default function BillView() {
   };
 
 
-  if (loading) return <p>Loading bill details...</p>;
-  if (!bill) return <p>Bill not found.</p>;
+  if (loading) {
+    return (
+      <Box 
+        display="flex" 
+        flexDirection="column" 
+        alignItems="center" 
+        justifyContent="center" 
+        height="80vh"
+      >
+        <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2, color: "#0a4c9a", fontWeight: 'bold' }}>
+          Loading bill details...
+        </Typography>
+      </Box>
+    );
+  }
+  if (!bill) {
+    return (
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        height="100vh"
+      >
+        <Typography variant="h6" color="error">
+          Bill not found.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box className="billing-wrapper">

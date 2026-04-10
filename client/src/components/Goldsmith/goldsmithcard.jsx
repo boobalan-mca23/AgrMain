@@ -228,8 +228,22 @@ const GoldsmithDetails = () => {
         </Box>
 
         {loadingJobcards ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "30vh",
+            }}
+          >
             <CircularProgress />
+            <Typography
+              variant="h6"
+              sx={{ mt: 2, color: "#0a4c9a", fontWeight: "bold" }}
+            >
+              Loading Job Card Records...
+            </Typography>
           </Box>
         ) : jobcards.length === 0 ? (
           <Paper elevation={0} sx={{ p: 4, textAlign: "center" }}>
@@ -425,7 +439,6 @@ const GoldsmithDetails = () => {
 };
 
 export default GoldsmithDetails;
-
 
 
 

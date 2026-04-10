@@ -541,7 +541,8 @@ exports.getItemPurchaseReport = async (req, res) => {
           },
           repairStocks: {
             where: { status: "InRepair" }
-          }
+          },
+          receivedGold: true
         },
 
         orderBy: {
@@ -669,17 +670,12 @@ exports.markItemSold = async (req, res) => {
 
     const updated =
       await prisma.itemPurchaseEntry.update({
-
         where: { id },
-
         data: {
-
           isSold: true,
-
+          isBilled: false,
           soldAt: new Date(),
-
         }
-
       });
 
     res.json({

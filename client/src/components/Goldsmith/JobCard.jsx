@@ -396,21 +396,25 @@ function JobCardDetails() {
               New Job Card
             </Button>
           </Box>
-          {
-            loading ? (<Box
+          {loading ? (
+            <Box
               sx={{
                 display: "flex",
-                justifyContent: "center",
+                flexDirection: "column",
                 alignItems: "center",
-                height: "10vh",
-                fontSize: "1.5rem",
-                fontWeight: "bold",
+                justifyContent: "center",
+                height: "30vh",
               }}
             >
-              {" "}
-              Loading JobCards...
               <CircularProgress />
-            </Box>) : (
+              <Typography
+                variant="h6"
+                sx={{ mt: 2, color: "#0a4c9a", fontWeight: "bold" }}
+              >
+                Loading Job Cards...
+              </Typography>
+            </Box>
+          ) : (
               <>
                 {paginatedData.length === 0 ? (
                   <Paper elevation={0} sx={{ p: 4, textAlign: "center" }}>

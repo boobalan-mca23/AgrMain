@@ -220,14 +220,20 @@ function SupplierManagement() {
         toast.success("Supplier updated");
 
       } else {
+        // Map to opening balance fields for creation
+        const createPayload = {
+          ...payload,
+          openingBCBalance: payload.totalBCBalance,
+          openingItemBalance: payload.totalItemBalance,
+          openingBalance: payload.totalBalance - (Number(payload.totalBCBalance) || 0) - (Number(payload.totalItemBalance) || 0)
+        };
 
         await axios.post(
           `${BACKEND_SERVER_URL}/api/supplier/create`,
-          payload
+          createPayload
         );
 
         toast.success("Supplier added");
-
       }
 
       closeDialog();
@@ -397,15 +403,22 @@ function SupplierManagement() {
                   {Number(supplier.totalBalance || 0).toFixed(3)}
                 </td>
 
-                <td style={{ textAlign: "center" }}>
-                  <IconButton
-                    aria-label="more"
-                    aria-controls="supplier-menu"
-                    aria-haspopup="true"
-                    onClick={(e) => handleMenuOpen(e, supplier)}
-                  >
-                    <MoreVertIcon />
-                  </IconButton>
+                <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                  <Tooltip title="Edit">
+                    <IconButton size="small" onClick={() => openEditDialog(supplier)}>
+                      <EditIcon fontSize="small" style={{ color: "#388e3c" }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton size="small" onClick={() => handleDelete(supplier.id)}>
+                      <DeleteIcon fontSize="small" style={{ color: "#d32f2f" }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Statement View">
+                    <IconButton size="small" onClick={() => navigate(`/master/statement/${supplier.id}`)}>
+                      <HistoryIcon fontSize="small" style={{ color: "#1976d2" }} />
+                    </IconButton>
+                  </Tooltip>
                 </td>
 
               </tr>

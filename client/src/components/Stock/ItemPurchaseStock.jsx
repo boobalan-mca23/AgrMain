@@ -68,12 +68,13 @@ const ItemPurchaseStock = () => {
   };
 
   const markSold = async (id) => {
-    if (!window.confirm("Mark item as sold?")) return;
+    if (window.confirm('Do you want to make this item be "Sold"')) {
     try {
       await axios.put(`${BACKEND_SERVER_URL}/api/item-purchase/sold/${id}`);
       fetchStock();
     } catch {
       toast.error("Failed to mark as sold");
+    }
     }
   };
 
@@ -239,8 +240,8 @@ const ItemPurchaseStock = () => {
                 <td>{safeFixed(item.wastagePure)}</td>
                 <td>{safeFixed(item.finalPurity)}</td>
                 <td>
-                  <Box sx={{ display: "flex", gap: "5px" }}>
-                    <Button
+                  <Box sx={{ display: "flex", gap: "5px",alignItems:"center",justifyContent:"center" }}>
+                    {/* <Button
                       variant="contained"
                       color="primary"
                       size="small"
@@ -255,17 +256,17 @@ const ItemPurchaseStock = () => {
                       onClick={() => handleOpenReturn(item)}
                     >
                       Return
-                    </Button>
+                    </Button> */}
                     {item.isBilled && !item.isSold && (
-                      <Button
-                        variant="contained"
+                       <Button
+                        variant="outlined"
                         color="error"
                         size="small"
                         onClick={() => markSold(item.id)}
                       >
                         Sold
                       </Button>
-                    )}
+                    ) || "-"}
                   </Box>
                 </td>
               </tr>

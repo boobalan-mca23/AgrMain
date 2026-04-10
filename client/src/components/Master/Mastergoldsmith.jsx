@@ -458,13 +458,12 @@ function Mastergoldsmith() {
                   <td>{item.address || "-"}</td>
                   <td style={{ color: item.balance < 0 ? "red" : item.balance > 0 ? "green" : "" }}><b>{Number(item.balance).toFixed(3)}</b></td>
                   <td>
-                    <EditIcon
-                      style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
-                      onClick={() => handleEditClick(item)}
-                    />
+                    <IconButton size="small" onClick={() => handleEditClick(item)} sx={{ color: "#388e3c", mr: 1 }}>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
                     <Tooltip title="Delete Goldsmith">
-                      <IconButton onClick={() => handleDelete(item.id)}>
-                        <DeleteIcon color="error" />
+                      <IconButton size="small" onClick={() => handleDelete(item.id)}>
+                        <DeleteIcon color="error" fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </td>

@@ -115,10 +115,9 @@ const returnCustomerItem = async (req, res) => {
       const isFull = Number(originalWeight) <= Number(returnedWeight);
       const hallmarkReduction = Number(currentHallmark) * reductionCount;
       
-      // Use finalPurity as fallback if finalWeight is zero (typical for Item Purchase entries)
-      const fwtReduction = isFull 
-        ? (Number(item.finalWeight) || Number(item.finalPurity) || 0) 
-        : (Number(finalWeight) || Number(finalPurity) || 0);
+      // Use the updated finalWeight/finalPurity from the request, as it reflects the user's manual QC correction.
+      // We only fallback to the original record if the request params are missing or zero.
+      const fwtReduction = (Number(finalWeight) || Number(finalPurity) || 0) || (Number(item.finalWeight) || Number(item.finalPurity) || 0);
 
       if (customerBalance) {
         await tx.customerBillBalance.update({
@@ -315,6 +314,7 @@ const returnCustomerItem = async (req, res) => {
           awt: Number(netWeight),
           pureGoldReduction: Number(fwtReduction),
           hallmarkReduction: Number(hallmarkReduction),
+          fwt: Number(fwtReduction),
           count: Number(count) || 1,
           stoneWeight: Number(stoneWeight || item.stoneWeight || 0),
           enteredStoneWeight: Number(stoneWeight || 0),
