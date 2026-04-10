@@ -280,7 +280,7 @@ const BalanceStatement = ({ typeOverride }) => {
 
       {/* Control Bar */}
       <Box className="statement-controls">
-        <Box display="flex" gap={2} alignItems="center">
+        {/* <Box display="flex" gap={2} alignItems="center">
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="From"
@@ -302,7 +302,7 @@ const BalanceStatement = ({ typeOverride }) => {
           >
             Clear
           </Button>
-        </Box>
+        </Box> */}
         <Button 
           variant="contained" 
           startIcon={<PrintIcon />} 
