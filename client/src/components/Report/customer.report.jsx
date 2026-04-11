@@ -319,10 +319,12 @@ const CustReport = () => {
                               <th>Date</th>
                               <th>Item Name</th>
                               <th>Count</th>
-                              <th>Gross Weight</th>
-                              <th>Net Weight</th>
-                              <th>Purity</th>
-                              <th>Status</th>
+                              <th>Gross Wt</th>
+                              <th>Stone Wt</th>
+                              <th>Net Wt</th>
+                              <th>Touch%</th>
+                              <th>FWT</th>
+                              {bill.type === "repair" && <th>Status</th>}
                             </tr>
                           </thead>
                           <tbody className={bill.type === "repair" ? "repairTableBody" : "returnTableBody"}>
@@ -339,16 +341,26 @@ const CustReport = () => {
                                   : (Number(bill.info.weight) || 0).toFixed(3)}
                               </td>
                               <td>
-                                {bill.type === "repair" 
-                                  ? (Number(bill.info.netWeight) || 0).toFixed(3) 
-                                  : "-"}
+                                {bill.type === "repair"
+                                  ? (Number(bill.info.orderItem?.stoneWeight || bill.info.orderItem?.enteredStoneWeight) || 0).toFixed(3)
+                                  : (Number(bill.info.stoneWeight || bill.info.enteredStoneWeight) || 0).toFixed(3)}
                               </td>
                               <td>
                                 {bill.type === "repair" 
-                                  ? (Number(bill.info.purity) || 0).toFixed(3) 
+                                  ? (Number(bill.info.netWeight) || 0).toFixed(3) 
+                                  : (Number(bill.info.awt || 0) || Number(bill.info.weight - (bill.info.stoneWeight || 0))).toFixed(3)}
+                              </td>
+                              <td>
+                                {bill.type === "repair"
+                                  ? (Number(bill.info.orderItem?.percentage) || 0).toFixed(3)
+                                  : (Number(bill.info.percentage) || 0).toFixed(3)}
+                              </td>
+                              <td>
+                                {bill.type === "repair" 
+                                  ? (Number(bill.info.fwt || bill.info.purity) || 0).toFixed(3) 
                                   : (Number(bill.info.fwt || bill.info.pureGoldReduction) || 0).toFixed(3)}
                               </td>
-                              <td>{bill.type === "repair" ? (bill.info.status || "-") : "-"}</td>
+                              {bill.type === "repair" && <td>{bill.info.status || "-"}</td>}
                             </tr>
                           </tbody>
                         </table>
@@ -414,11 +426,12 @@ const CustReport = () => {
                      ) : (
                        <>
                          <td>
-                           {Number(bill.info.purity) > 0 
-                             ? (Number(bill.info.purity)).toFixed(3) 
+                           {/* {Number(bill.info.purity) > 0 
+                             ? (Number(bill.info.amount)).toFixed(3) 
                              : (Number(bill.info.amount) > 0 
                                ? (Number(bill.info.amount)).toFixed(2) 
-                               : "0.000")}
+                               : "0.000")} */}
+                               {(Number(bill.info.fwt) || 0).toFixed(3)}
                          </td>
                          <td>-</td>
                        </>
