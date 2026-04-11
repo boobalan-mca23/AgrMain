@@ -88,9 +88,11 @@ const CustomerReportPrint=(props)=>{
                                <th style={style.customerReportBorder}>Date</th>
                                <th style={style.customerReportBorder}>Item Name</th>
                                <th style={style.customerReportBorder}>Count</th>
-                               <th style={style.customerReportBorder}>Gross Weight</th>
-                               <th style={style.customerReportBorder}>Net Weight</th>
-                               <th style={style.customerReportBorder}>Purity</th>
+                               <th style={style.customerReportBorder}>Gross Wt</th>
+                               <th style={style.customerReportBorder}>Stone Wt</th>
+                               <th style={style.customerReportBorder}>Net Wt</th>
+                               <th style={style.customerReportBorder}>Touch%</th>
+                               <th style={style.customerReportBorder}>Pure Wt</th>
                                <th style={style.customerReportBorder}>Status</th>
                              </tr>
                            </thead>
@@ -108,13 +110,23 @@ const CustomerReportPrint=(props)=>{
                                    : (Number(bill.info.weight) || 0).toFixed(3)}
                                </td>
                                <td style={style.customerReportBorder}>
-                                 {bill.type === "repair" 
-                                   ? (Number(bill.info.netWeight) || 0).toFixed(3) 
-                                   : "-"}
+                                 {bill.type === "repair"
+                                   ? (Number(bill.info.orderItem?.stoneWeight || bill.info.orderItem?.enteredStoneWeight) || 0).toFixed(3)
+                                   : (Number(bill.info.stoneWeight || bill.info.enteredStoneWeight) || 0).toFixed(3)}
                                </td>
                                <td style={style.customerReportBorder}>
                                  {bill.type === "repair" 
-                                   ? (Number(bill.info.purity) || 0).toFixed(3) 
+                                   ? (Number(bill.info.netWeight) || 0).toFixed(3) 
+                                   : (Number(bill.info.awt || 0) || Number(bill.info.weight - (bill.info.stoneWeight || 0))).toFixed(3)}
+                               </td>
+                               <td style={style.customerReportBorder}>
+                                 {bill.type === "repair"
+                                   ? (Number(bill.info.orderItem?.touch || bill.info.orderItem?.percentage) || 0).toFixed(3)
+                                   : (Number(bill.info.touch || bill.info.percentage) || 0).toFixed(3)}
+                               </td>
+                               <td style={style.customerReportBorder}>
+                                 {bill.type === "repair" 
+                                   ? (Number(bill.info.fwt || bill.info.purity) || 0).toFixed(3) 
                                    : (Number(bill.info.fwt || bill.info.pureGoldReduction) || 0).toFixed(3)}
                                </td>
                                <td style={style.customerReportBorder}>{bill.type === "repair" ? (bill.info.status || "-") : "-"}</td>
