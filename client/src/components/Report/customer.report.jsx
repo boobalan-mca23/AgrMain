@@ -280,7 +280,7 @@ const CustReport = () => {
                             <thead className="orderTableTr">
                               <tr>
                                 <th>Entry Type</th>
-                                <th>Date</th>
+                                {/* <th>Date</th> */}
                                 <th>ProductName</th>
                                 <th>ItemWt</th>
                                 <th>StoneWt</th>
@@ -293,11 +293,11 @@ const CustReport = () => {
                               {bill.info.orders.map((item, index) => (
                                 <tr key={index + 1}>
                                   {index === 0 && <td rowSpan={bill.info.orders.length}>Bill</td>}
-                                  <td>
+                                  {/* <td>
                                     {new Date(
                                       item.createdAt
                                     ).toLocaleDateString("en-GB")}
-                                  </td>
+                                  </td> */}
                                   <td>{item.productName}</td>
                                   <td>{(Number(item.weight) || 0).toFixed(3)}</td>
                                   <td>{(Number(item.stoneWeight) || 0).toFixed(3)}</td>
@@ -316,7 +316,7 @@ const CustReport = () => {
                           <thead className={bill.type === "repair" ? "repairTableTr" : "returnTableTr"}>
                             <tr>
                               <th>Entry Type</th>
-                              <th>Date</th>
+                              {/* <th>Date</th> */}
                               <th>Item Name</th>
                               <th>Count</th>
                               <th>Gross Wt</th>
@@ -330,9 +330,9 @@ const CustReport = () => {
                           <tbody className={bill.type === "repair" ? "repairTableBody" : "returnTableBody"}>
                             <tr>
                               <td>{bill.type === "repair" ? "Repair" : "Return"}</td>
-                              <td>
+                              {/* <td>
                                 {new Date(bill.info.sentDate || bill.info.createdAt).toLocaleDateString("en-GB")}
-                              </td>
+                              </td> */}
                               <td>{bill.info.itemName || bill.info.productName}</td>
                               <td>{bill.info.count}</td>
                               <td>
@@ -369,13 +369,15 @@ const CustReport = () => {
                           <thead className="receiveTableTr">
                             <tr>
                               <th>Entry Type</th>
-                              <th>Date</th>
+                              {/* <th>Date</th> */}
                               <th>Type</th>
                               {(bill.info.type || "").toLowerCase().includes("cash") ? (
                                 <>
                                   <th>Amount</th>
                                   <th>Gold Rate</th>
                                   <th>Pure Gold</th>
+                                  <th>Touch</th>
+                                  <th>Purity</th>
                                 </>
                               ) : (
                                 <>
@@ -384,7 +386,7 @@ const CustReport = () => {
                                   <th>Purity</th>
                                 </>
                               )}
-                              <th>Hall Mark</th>
+                              {bill.type !== "transaction" && <th>Hall Mark</th>}
                             </tr>
                           </thead>
                           <tbody className="receiveTableBody">
@@ -398,16 +400,18 @@ const CustReport = () => {
                                   ? "Transaction"
                                   : bill.type || ""}
                               </td>
-                              <td>
+                              {/* <td>
                                 {new Date(
                                   bill.info.createdAt
                                 ).toLocaleDateString("en-GB")}
-                              </td>
+                              </td> */}
                               <td>{bill.info.type || "-"}</td>
                               {(bill.info.type || "").toLowerCase().includes("cash") ? (
                                 <>
                                   <td>{(Number(bill.info.amount) || 0).toFixed(2)}</td>
                                   <td>{(Number(bill.info.goldRate) || 0).toFixed(3)}</td>
+                                  <td>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
+                                  <td>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
                                   <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
                                 </>
                               ) : (
@@ -417,7 +421,7 @@ const CustReport = () => {
                                   <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
                                 </>
                               )}
-                              <td>{(Number(bill.info.receiveHallMark) || 0).toFixed(3)}</td>
+                              {bill.type !== "transaction" && <td>{(Number(bill.info.receiveHallMark) || 0).toFixed(3)}</td>}
                             </tr>
                           </tbody>
                         </table>

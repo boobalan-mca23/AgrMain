@@ -18,16 +18,16 @@ const ReceiptPrintReport = (props) => {
           <p>
             <strong>Customer Name</strong>: {customerName}
           </p>
-          
+
         </div>
         <div>
-            <p style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <p style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <strong>
               {selectedCustomer?.customerBillBalance?.balance > 0
                 ? "Pure Balance: "
                 : selectedCustomer?.customerBillBalance?.balance < 0
-                ? "Excess Pure Balance: "
-                : " Balance "}
+                  ? "Excess Pure Balance: "
+                  : " Balance "}
               {Number(
                 selectedCustomer?.customerBillBalance?.balance || 0
               ).toFixed(3)}
