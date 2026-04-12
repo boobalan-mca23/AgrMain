@@ -36,7 +36,7 @@ const CustReport = () => {
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState({});
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [showInitialPositive, setShowInitialPositive] = useState(false);
   const [showInitialNegative, setShowInitialNegative] = useState(false);
   const [repairModal, setRepairModal] = useState({ open: false, data: null });
@@ -292,7 +292,7 @@ const CustReport = () => {
                             <tbody className="orderTableTbody">
                               {bill.info.orders.map((item, index) => (
                                 <tr key={index + 1}>
-                                  <td>{bill.type || ""}</td>
+                                  {index === 0 && <td rowSpan={bill.info.orders.length}>Bill</td>}
                                   <td>
                                     {new Date(
                                       item.createdAt
@@ -319,10 +319,12 @@ const CustReport = () => {
                               <th>Date</th>
                               <th>Item Name</th>
                               <th>Count</th>
-                              <th>Gross Weight</th>
-                              <th>Net Weight</th>
-                              <th>Purity</th>
-                              <th>Status</th>
+                              <th>Gross Wt</th>
+                              <th>Stone Wt</th>
+                              <th>Net Wt</th>
+                              <th>Touch%</th>
+                              <th>FWT</th>
+                              {bill.type === "repair" && <th>Status</th>}
                             </tr>
                           </thead>
                           <tbody className={bill.type === "repair" ? "repairTableBody" : "returnTableBody"}>
@@ -339,16 +341,26 @@ const CustReport = () => {
                                   : (Number(bill.info.weight) || 0).toFixed(3)}
                               </td>
                               <td>
-                                {bill.type === "repair" 
-                                  ? (Number(bill.info.netWeight) || 0).toFixed(3) 
-                                  : "-"}
+                                {bill.type === "repair"
+                                  ? (Number(bill.info.orderItem?.stoneWeight || bill.info.orderItem?.enteredStoneWeight) || 0).toFixed(3)
+                                  : (Number(bill.info.stoneWeight || bill.info.enteredStoneWeight) || 0).toFixed(3)}
                               </td>
                               <td>
                                 {bill.type === "repair" 
-                                  ? (Number(bill.info.purity) || 0).toFixed(3) 
+                                  ? (Number(bill.info.netWeight) || 0).toFixed(3) 
+                                  : (Number(bill.info.awt || 0) || Number(bill.info.weight - (bill.info.stoneWeight || 0))).toFixed(3)}
+                              </td>
+                              <td>
+                                {bill.type === "repair"
+                                  ? (Number(bill.info.orderItem?.percentage) || 0).toFixed(3)
+                                  : (Number(bill.info.percentage) || 0).toFixed(3)}
+                              </td>
+                              <td>
+                                {bill.type === "repair" 
+                                  ? (Number(bill.info.fwt || bill.info.purity) || 0).toFixed(3) 
                                   : (Number(bill.info.fwt || bill.info.pureGoldReduction) || 0).toFixed(3)}
                               </td>
-                              <td>{bill.type === "repair" ? (bill.info.status || "-") : "-"}</td>
+                              {bill.type === "repair" && <td>{bill.info.status || "-"}</td>}
                             </tr>
                           </tbody>
                         </table>
@@ -358,27 +370,53 @@ const CustReport = () => {
                             <tr>
                               <th>Entry Type</th>
                               <th>Date</th>
-                              <th>Gold Rate</th>
-                              <th>Gold</th>
-                              <th>Touch</th>
-                              <th>Purity</th>
-                              <th>Amount</th>
+                              <th>Type</th>
+                              {(bill.info.type || "").toLowerCase().includes("cash") ? (
+                                <>
+                                  <th>Amount</th>
+                                  <th>Gold Rate</th>
+                                  <th>Pure Gold</th>
+                                </>
+                              ) : (
+                                <>
+                                  <th>Gold</th>
+                                  <th>Touch</th>
+                                  <th>Purity</th>
+                                </>
+                              )}
                               <th>Hall Mark</th>
                             </tr>
                           </thead>
                           <tbody className="receiveTableBody">
                             <tr key={index + 1}>
-                              <td>{bill.type || ""}</td>
+                              <td>
+                                {bill.type === "ReceiptVoucher"
+                                  ? "Receipt Voucher"
+                                  : bill.type === "billReceive"
+                                  ? "Bill Receive"
+                                  : bill.type === "transaction"
+                                  ? "Transaction"
+                                  : bill.type || ""}
+                              </td>
                               <td>
                                 {new Date(
                                   bill.info.createdAt
                                 ).toLocaleDateString("en-GB")}
                               </td>
-                              <td>{(Number(bill.info.goldRate) || 0).toFixed(3)}</td>
-                              <td>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
-                              <td>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
-                              <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
-                              <td>{(Number(bill.info.amount) || 0).toFixed(3)}</td>
+                              <td>{bill.info.type || "-"}</td>
+                              {(bill.info.type || "").toLowerCase().includes("cash") ? (
+                                <>
+                                  <td>{(Number(bill.info.amount) || 0).toFixed(2)}</td>
+                                  <td>{(Number(bill.info.goldRate) || 0).toFixed(3)}</td>
+                                  <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                                </>
+                              ) : (
+                                <>
+                                  <td>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
+                                  <td>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
+                                  <td>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                                </>
+                              )}
                               <td>{(Number(bill.info.receiveHallMark) || 0).toFixed(3)}</td>
                             </tr>
                           </tbody>
@@ -414,11 +452,9 @@ const CustReport = () => {
                      ) : (
                        <>
                          <td>
-                           {Number(bill.info.purity) > 0 
-                             ? (Number(bill.info.purity)).toFixed(3) 
-                             : (Number(bill.info.amount) > 0 
-                               ? (Number(bill.info.amount)).toFixed(2) 
-                               : "0.000")}
+                               {(bill.info.type || "").toLowerCase().includes("cash")
+                                 ? (Number(bill.info.gold) || 0).toFixed(3)
+                                 : (Number(bill.info.purity) || 0).toFixed(3)}
                          </td>
                          <td>-</td>
                        </>
@@ -464,7 +500,7 @@ const CustReport = () => {
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[10, 20, 30]}
         />
       </div>
       <div className="overAllBalance">

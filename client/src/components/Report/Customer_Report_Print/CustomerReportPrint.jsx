@@ -61,7 +61,7 @@ const CustomerReportPrint=(props)=>{
                             <tbody >
                               {bill.info.orders.map((item, index) => (
                                 <tr key={index + 1}>
-                                  <td style={style.customerReportBorder}>{bill.type||""}</td>
+                                  {index === 0 && <td style={style.customerReportBorder} rowSpan={bill.info.orders.length}>Bill</td>}
                                   <td style={style.customerReportBorder}>
                                     {new Date(
                                       item.createdAt
@@ -88,9 +88,11 @@ const CustomerReportPrint=(props)=>{
                                <th style={style.customerReportBorder}>Date</th>
                                <th style={style.customerReportBorder}>Item Name</th>
                                <th style={style.customerReportBorder}>Count</th>
-                               <th style={style.customerReportBorder}>Gross Weight</th>
-                               <th style={style.customerReportBorder}>Net Weight</th>
-                               <th style={style.customerReportBorder}>Purity</th>
+                               <th style={style.customerReportBorder}>Gross Wt</th>
+                               <th style={style.customerReportBorder}>Stone Wt</th>
+                               <th style={style.customerReportBorder}>Net Wt</th>
+                               <th style={style.customerReportBorder}>Touch%</th>
+                               <th style={style.customerReportBorder}>Pure Wt</th>
                                <th style={style.customerReportBorder}>Status</th>
                              </tr>
                            </thead>
@@ -108,13 +110,23 @@ const CustomerReportPrint=(props)=>{
                                    : (Number(bill.info.weight) || 0).toFixed(3)}
                                </td>
                                <td style={style.customerReportBorder}>
-                                 {bill.type === "repair" 
-                                   ? (Number(bill.info.netWeight) || 0).toFixed(3) 
-                                   : "-"}
+                                 {bill.type === "repair"
+                                   ? (Number(bill.info.orderItem?.stoneWeight || bill.info.orderItem?.enteredStoneWeight) || 0).toFixed(3)
+                                   : (Number(bill.info.stoneWeight || bill.info.enteredStoneWeight) || 0).toFixed(3)}
                                </td>
                                <td style={style.customerReportBorder}>
                                  {bill.type === "repair" 
-                                   ? (Number(bill.info.purity) || 0).toFixed(3) 
+                                   ? (Number(bill.info.netWeight) || 0).toFixed(3) 
+                                   : (Number(bill.info.awt || 0) || Number(bill.info.weight - (bill.info.stoneWeight || 0))).toFixed(3)}
+                               </td>
+                               <td style={style.customerReportBorder}>
+                                 {bill.type === "repair"
+                                   ? (Number(bill.info.orderItem?.touch || bill.info.orderItem?.percentage) || 0).toFixed(3)
+                                   : (Number(bill.info.touch || bill.info.percentage) || 0).toFixed(3)}
+                               </td>
+                               <td style={style.customerReportBorder}>
+                                 {bill.type === "repair" 
+                                   ? (Number(bill.info.fwt || bill.info.purity) || 0).toFixed(3) 
                                    : (Number(bill.info.fwt || bill.info.pureGoldReduction) || 0).toFixed(3)}
                                </td>
                                <td style={style.customerReportBorder}>{bill.type === "repair" ? (bill.info.status || "-") : "-"}</td>
@@ -127,27 +139,51 @@ const CustomerReportPrint=(props)=>{
                              <tr>
                                <th style={style.customerReportBorder}>Entry Type</th>
                                <th style={style.customerReportBorder}>Date</th>
-                               <th style={style.customerReportBorder}>Gold Rate</th>
-                               <th style={style.customerReportBorder}>Gold</th>
-                               <th style={style.customerReportBorder}>Touch</th>
-                               <th style={style.customerReportBorder}>Purity</th>
-                               <th style={style.customerReportBorder}>Amount</th>
+                               <th style={style.customerReportBorder}>Type</th>
+                               {(bill.info.type || "").toLowerCase().includes("cash") ? (
+                                 <>
+                                   <th style={style.customerReportBorder}>Amount</th>
+                                   <th style={style.customerReportBorder}>Gold Rate</th>
+                                   <th style={style.customerReportBorder}>Pure Gold</th>
+                                 </>
+                               ) : (
+                                 <>
+                                   <th style={style.customerReportBorder}>Gold</th>
+                                   <th style={style.customerReportBorder}>Touch</th>
+                                   <th style={style.customerReportBorder}>Purity</th>
+                                 </>
+                               )}
                                <th style={style.customerReportBorder}>Hall Mark</th>
                              </tr>
                            </thead>
                            <tbody style={style.orderTableTbody}>
                              <tr>
                                <td style={style.customerReportBorder}>
-                                 {bill.type === "ReceiptVoucher" ? "Receipt Voucher" : (bill.type || "")}
+                                 {bill.type === "ReceiptVoucher"
+                                   ? "Receipt Voucher"
+                                   : bill.type === "billReceive"
+                                   ? "Bill Receive"
+                                   : bill.type === "transaction"
+                                   ? "Transaction"
+                                   : bill.type || ""}
                                </td>
                                <td style={style.customerReportBorder}>
                                  {new Date(bill.info.createdAt).toLocaleDateString("en-GB")}
                                </td>
-                               <td style={style.customerReportBorder}>{bill.info.goldRate || "-"}</td>
-                               <td style={style.customerReportBorder}>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
-                               <td style={style.customerReportBorder}>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
-                               <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
-                               <td style={style.customerReportBorder}>{(Number(bill.info.amount) || 0).toFixed(2)}</td>
+                               <td style={style.customerReportBorder}>{bill.info.type || "-"}</td>
+                               {(bill.info.type || "").toLowerCase().includes("cash") ? (
+                                 <>
+                                   <td style={style.customerReportBorder}>{(Number(bill.info.amount) || 0).toFixed(2)}</td>
+                                   <td style={style.customerReportBorder}>{(Number(bill.info.goldRate) || 0).toFixed(3)}</td>
+                                   <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                                 </>
+                               ) : (
+                                 <>
+                                   <td style={style.customerReportBorder}>{(Number(bill.info.gold) || 0).toFixed(3)}</td>
+                                   <td style={style.customerReportBorder}>{(Number(bill.info.touch) || 0).toFixed(3)}</td>
+                                   <td style={style.customerReportBorder}>{(Number(bill.info.purity) || 0).toFixed(3)}</td>
+                                 </>
+                               )}
                                <td style={style.customerReportBorder}>{bill.info.receiveHallMark || "0"}</td>
                              </tr>
                            </tbody>
@@ -168,11 +204,9 @@ const CustomerReportPrint=(props)=>{
                       ) : (
                        <>
                          <td style={style.customerReportBorder}>
-                        {Number(bill.info.purity) > 0 
-                          ? (Number(bill.info.purity)).toFixed(3) 
-                          : (Number(bill.info.amount) > 0 
-                            ? (Number(bill.info.amount)).toFixed(2) 
-                            : "0.000")}
+                        {(bill.info.type || "").toLowerCase().includes("cash")
+                          ? (Number(bill.info.gold) || 0).toFixed(3)
+                          : (Number(bill.info.purity) || 0).toFixed(3)}
                       </td>
                       <td style={style.customerReportBorder}>-</td>
                     </>
