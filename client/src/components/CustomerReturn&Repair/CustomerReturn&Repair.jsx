@@ -160,7 +160,7 @@ const CustomerReturn = () => {
     setReason("");
     setRepairQC({
       itemWeight: item.weight || 0,
-      touch: item.touch || item.percentage || 0,
+      touch: item.percentage || item.touch || 0,
       count: item.count || 0,
       stoneWeight: item.stoneWeight || 0,
       wastageValue: item.wastageValue || 0,
@@ -178,7 +178,7 @@ const CustomerReturn = () => {
     console.log("item", item);
     setReturnQC({
       itemWeight: item.weight || 0,
-      touch: item.touch || item.percentage || 0,
+      touch: item.percentage || item.touch || 0,
       count: item.count || 0,
       stoneWeight: item.stoneWeight || 0,
       wastageValue: item.wastageValue || 0,
@@ -333,7 +333,7 @@ const CustomerReturn = () => {
           wastagePure: currentWastagePure,
           finalPurity: currentFinalPurity,
           actualPurity: currentActualPurity,
-          finalWeight: (currentNetWeight * Number(selectedProduct?.percentage || 0)) / 100, // Sync with FWT calculation
+          finalWeight: (currentNetWeight * Number(returnQC.touch || 0)) / 100, // Sync with FWT calculation
         }
       )).data.updatedOrderItem;
 
@@ -434,7 +434,7 @@ const CustomerReturn = () => {
           netWeight: currentRepairNetWeight,
           finalPurity: currentRepairFinalPurity,
           actualPurity: currentRepairActualPurity,
-          finalWeight: (currentRepairNetWeight * Number(selectedProduct?.percentage || 0)) / 100, // Sync with FWT calculation
+          finalWeight: (currentRepairNetWeight * Number(repairQC.touch || 0)) / 100, // Sync with FWT calculation
         },
         reason
       })).data.updatedOrderItem;
@@ -1107,8 +1107,21 @@ const CustomerReturn = () => {
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   <b>{safeFixed(selectedProduct?.percentage)}</b>
                 </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={repairQC.touch}
+                    onChange={(e) =>
+                      setRepairQC({ ...repairQC, touch: e.target.value })
+                    }
+                    disabled={false}
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.touch)}
+                </td>
               </tr>
               <tr>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>FWT (g)</td>
@@ -1117,7 +1130,7 @@ const CustomerReturn = () => {
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#2e7d32', textAlign: 'center' }}>
-                  {safeFixed((currentRepairNetWeight * Number(selectedProduct?.percentage || 0)) / 100)}
+                  {safeFixed((currentRepairNetWeight * Number(repairQC.touch || 0)) / 100)}
                 </td>
               </tr>
               {/* DEBUG ROWS */}
@@ -1352,8 +1365,21 @@ const CustomerReturn = () => {
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   <b>{safeFixed(selectedProduct?.percentage)}</b>
                 </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={returnQC.touch}
+                    onChange={(e) =>
+                      setReturnQC({ ...returnQC, touch: e.target.value })
+                    }
+                    disabled={false}
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(returnQC.touch)}
+                </td>
               </tr>
               <tr>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>FWT (g)</td>
@@ -1362,7 +1388,7 @@ const CustomerReturn = () => {
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#2e7d32', textAlign: 'center' }}>
-                  {safeFixed((currentNetWeight * Number(selectedProduct?.percentage || 0)) / 100)}
+                  {safeFixed((currentNetWeight * Number(returnQC.touch || 0)) / 100)}
                 </td>
               </tr>
               {/* DEBUG ROWS */}

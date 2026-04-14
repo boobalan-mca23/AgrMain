@@ -841,6 +841,19 @@ const customerReport = async (req, res) => {
         include: { bill: true, orderItem: true }
       });
 
+      const allAdjustments = await prisma.balanceAdjustment.findMany({
+        where: {
+          entityType: "CUSTOMER",
+          entityId: parseInt(customerId),
+          ...(fromDate && toDate ? {
+            createdAt: {
+              gte: new Date(fromDate),
+              lte: new Date(toDate + "T23:59:59.999")
+            }
+          } : {})
+        }
+      });
+
       combinedData = [
         ...allBill.map((bill) => ({
           type: "bill",
@@ -861,6 +874,10 @@ const customerReport = async (req, res) => {
         ...allReturns.map((ret) => ({
           type: "return",
           info: ret
+        })),
+        ...allAdjustments.map((adj) => ({
+          type: "adjustment",
+          info: adj
         }))
       ];
       
@@ -874,7 +891,7 @@ const customerReport = async (req, res) => {
       // get overAll balance
       const overallBal = await prisma.customerBillBalance.findUnique({
         where: { customer_id: parseInt(customerId) },
-        select: { balance: true, initialBalance: true },
+        select: { balance: true, initialBalance: true, hallMarkBal: true, initialHallmark: true },
       });
 
       res.status(200).json({ data: combinedData, overallBal: overallBal });
