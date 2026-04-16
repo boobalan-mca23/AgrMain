@@ -2359,7 +2359,7 @@ const Billing = () => {
                     <TableRow key={bill.id}>
                       <TableCell style={{ textAlign: "center" }}>  {bill.id} </TableCell>
                       <TableCell style={{ textAlign: "center" }}> {bill.customers?.name || "N/A"} </TableCell>
-                      <TableCell style={{ textAlign: "center" }}>  {bill.billAmount} </TableCell>
+                      <TableCell style={{ textAlign: "center" }}>  {(bill.billAmount).toFixed(3)} </TableCell>
                       <TableCell style={{ textAlign: "center" }}>  {new Date(bill.createdAt).toLocaleDateString("en-GB")} </TableCell>
                       <TableCell>
                         <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>

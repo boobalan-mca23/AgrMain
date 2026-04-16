@@ -2,6 +2,20 @@ import '../customerReport.css'
 const CustomerReportPrint=(props)=>{
    const { fromDate,toDate,customerName,billInfo,
     billReceive, billAmount,overAllBalance, page, rowsPerPage}=props
+
+    const hallmarkReductions = billInfo.reduce((map, item) => {
+      if (item.type === "return" || item.type === "repair") {
+        const bId = item.info.billId || (item.info.bill && item.info.bill.id);
+        if (bId) {
+          const reduction = (item.type === "return") 
+            ? (Number(item.info.hallmarkReduction) || 0) 
+            : (Number(item.info.count || 0) * (Number(item.info.bill?.hallMark) || 0));
+          map[bId] = (map[bId] || 0) + reduction;
+        }
+      }
+      return map;
+    }, {});
+
     return(
       <>
         <div>
@@ -79,10 +93,10 @@ const CustomerReportPrint=(props)=>{
                                   <td style={style.customerReportBorder}>{(Number(item.finalWeight) || 0).toFixed(3)}</td>
                                 </tr>
                               ))}
-                              {(Number(bill.info.hallmarkQty) > 0 || Number(bill.info.hallMark) > 0) && (
+                              {(Number(bill.info.hallmarkQty) > 0 || Number(bill.info.hallMark) > 0 || hallmarkReductions[bill.info.id] > 0) && (
                                 <tr>
-                                  <td colSpan={7} style={{ ...style.customerReportBorder, textAlign: 'right', fontWeight: 'bold' }}>Hallmark (Qty: {bill.info.hallmarkQty}):</td>
-                                  <td style={style.customerReportBorder}>{((Number(bill.info.hallmarkQty) || 0) * (Number(bill.info.hallMark) || 0)).toFixed(3)}</td>
+                                  <td colSpan={7} style={{ ...style.customerReportBorder, textAlign: 'right', fontWeight: 'bold' }}>Hallmark (Original Qty: {((Number(bill.info.hallmarkQty) || 0) + (hallmarkReductions[bill.info.id] / (Number(bill.info.hallMark) || 1)) || 0).toFixed(0)}):</td>
+                                  <td style={style.customerReportBorder}>{((Number(bill.info.hallmarkQty) * Number(bill.info.hallMark)) + (hallmarkReductions[bill.info.id] || 0)).toFixed(3)}</td>
                                 </tr>
                               )}
                             </tbody>
@@ -217,7 +231,7 @@ const CustomerReportPrint=(props)=>{
                           <td style={style.customerReportBorder}>-</td>
                           <td style={style.customerReportBorder}>{(Number(bill.info.billAmount) || 0).toFixed(3)}</td>
                           <td style={style.customerReportBorder}>-</td>
-                          <td style={style.customerReportBorder}>{((Number(bill.info.hallmarkQty) * Number(bill.info.hallMark)) || 0).toFixed(3)}</td>
+                          <td style={style.customerReportBorder}>{(((Number(bill.info.hallmarkQty) * Number(bill.info.hallMark)) + (hallmarkReductions[bill.info.id] || 0)) || 0).toFixed(3)}</td>
                         </>
                        ) : (bill.type === "return" || bill.type === "repair") ? (
                          <>
@@ -281,7 +295,7 @@ const CustomerReportPrint=(props)=>{
                      <strong> {(billInfo.reduce((acc, b) => acc + (b.type === "ReceiptVoucher" || b.type === "billReceive" ? (Number(b.info.receiveHallMark) || 0) : b.type === "return" ? (Number(b.info.hallmarkReduction) || 0) : b.type === "repair" ? (Number(b.info.count || 0) * (Number(b.info.bill?.hallMark) || 0)) : (b.type === "adjustment" && Number(b.info.hmAmount) < 0 ? Math.abs(b.info.hmAmount) : 0)), 0)).toFixed(3)} gr</strong>
                    </td>
                    <td style={style.customerReportBorder}>
-                     <strong> {(billInfo.reduce((acc, b) => acc + (b.type === "bill" ? (Number(b.info.hallmarkQty) * Number(b.info.hallMark)) : (b.type === "adjustment" && Number(b.info.hmAmount) > 0 ? Number(b.info.hmAmount) : 0)), 0)).toFixed(3)} gr</strong>
+                     <strong> {(billInfo.reduce((acc, b) => acc + (b.type === "bill" ? (Number(b.info.hallmarkQty) * Number(b.info.hallMark) + (hallmarkReductions[b.info.id] || 0)) : (b.type === "adjustment" && Number(b.info.hmAmount) > 0 ? Number(b.info.hmAmount) : 0)), 0)).toFixed(3)} gr</strong>
                    </td>
                  </tr>
                

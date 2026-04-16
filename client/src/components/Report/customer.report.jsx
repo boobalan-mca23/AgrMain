@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -43,6 +43,22 @@ const CustReport = () => {
   const [returnModal, setReturnModal] = useState({ open: false, data: null });
 
   const navigate = useNavigate();
+  
+  const hallmarkReductions = useMemo(() => {
+    const map = {};
+    billInfo.forEach(item => {
+      if (item.type === "return" || item.type === "repair") {
+        const bId = item.info.billId || (item.info.bill && item.info.bill.id);
+        if (bId) {
+          const reduction = (item.type === "return") 
+            ? (Number(item.info.hallmarkReduction) || 0) 
+            : (Number(item.info.count || 0) * (Number(item.info.bill?.hallMark) || 0));
+          map[bId] = (map[bId] || 0) + reduction;
+        }
+      }
+    });
+    return map;
+  }, [billInfo]);
 
   const paginatedData = billInfo.slice(
     page * rowsPerPage,
@@ -97,7 +113,9 @@ const CustReport = () => {
     (acc, bill) => {
       if (bill.type === "bill") {
         acc.billAmount += Number(bill.info.billAmount) || 0;
-        acc.hmBill += Number(bill.info.hallmarkQty) * Number(bill.info.hallMark) || 0;
+        const currentHM = Number(bill.info.hallmarkQty) * Number(bill.info.hallMark) || 0;
+        const reduction = hallmarkReductions[bill.info.id] || 0;
+        acc.hmBill += currentHM + reduction;
       } else if (bill.type === "return" || bill.type === "repair") {
         acc.billReceive += Number(bill.info.fwt || bill.info.purity || bill.info.weight) || 0;
         acc.hmReceive += (bill.type === "return" ? (Number(bill.info.hallmarkReduction) || 0) : bill.type === "repair" ? (Number(bill.info.count || 0) * (Number(bill.info.bill?.hallMark) || 0)) : 0);
@@ -112,7 +130,7 @@ const CustReport = () => {
         } else {
           acc.billReceive += Number(bill.info.fwt || bill.info.purity || bill.info.gold) || 0;
         }
-      } else if (bill.type === "adjustment") {
+      } else if (bill.type === "adjustment" || bill.type === "openingBalance") {
         const amt = Number(bill.info.goldAmount || bill.info.cashAmount) || 0;
         const hmAmt = Number(bill.info.hmAmount) || 0;
         if (amt > 0) {
@@ -344,9 +362,9 @@ const CustReport = () => {
                         ) : (
                           <p>No orders to this table</p>
                         )
-                      ) : bill.type === "adjustment" ? (
-                        <div style={{ color: 'red', fontWeight: 'bold', textAlign: 'center' }}>
-                          {bill.info.description || "Manual adjustment from Master"}
+                      ) : bill.type === "adjustment" || bill.type === "openingBalance" ? (
+                        <div style={{ color: bill.type === 'openingBalance' ? 'blue' : 'red', fontWeight: 'bold', textAlign: 'center' }}>
+                          {bill.info.description || (bill.type === 'openingBalance' ? 'Opening Balance' : "Manual adjustment from Master")}
                         </div>
                       ) : bill.type === "repair" || bill.type === "return" ? (
                         <table className="receiveTable">
@@ -491,8 +509,7 @@ const CustReport = () => {
                         <td>-</td>
                         <td>{(Number(bill.info.billAmount) || 0).toFixed(3)}</td>
                         <td>-</td>
-                        <td>{((Number(bill.info.hallmarkQty) * Number(bill.info.hallMark)) || 0).toFixed(3)}</td>
-                         {/* <td>{(Number(bill.info.)*(Number(bill.info.hallMark)) || 0).toFixed(3)}</td> */}
+                        <td>{((Number(bill.info.hallmarkQty) * Number(bill.info.hallMark) + (hallmarkReductions[bill.info.id] || 0)) || 0).toFixed(3)}</td>
                       </>
                      ) : (bill.type === "return" || bill.type === "repair") ? (
                       <>
@@ -501,30 +518,30 @@ const CustReport = () => {
                         <td>{(bill.type === "return" ? (Number(bill.info.hallmarkReduction) || 0) : (Number(bill.info.count || 0) * (Number(bill.info.bill?.hallMark) || 0))).toFixed(3)}</td>
                         <td>-</td>
                       </>
-                    ) : bill.type === "adjustment" ? (
-                      <>
-                        <td>
-                          {Number(bill.info.goldAmount || bill.info.cashAmount) < 0
-                            ? Math.abs(bill.info.goldAmount || bill.info.cashAmount).toFixed(3)
-                            : "-"}
-                        </td>
-                        <td>
-                          {Number(bill.info.goldAmount || bill.info.cashAmount) > 0
-                            ? (Number(bill.info.goldAmount || bill.info.cashAmount) || 0).toFixed(3)
-                            : "-"}
-                        </td>
-                        <td>
-                          {Number(bill.info.hmAmount) < 0
-                            ? Math.abs(bill.info.hmAmount).toFixed(3)
-                            : "-"}
-                        </td>
-                        <td>
-                          {Number(bill.info.hmAmount) > 0
-                            ? (Number(bill.info.hmAmount) || 0).toFixed(3)
-                            : "-"}
-                        </td>
-                      </>
-                     ) : (
+                      ) : bill.type === "adjustment" || bill.type === "openingBalance" ? (
+                        <>
+                          <td>
+                            {Number(bill.info.goldAmount || bill.info.cashAmount) < 0
+                              ? Math.abs(bill.info.goldAmount || bill.info.cashAmount).toFixed(3)
+                              : "-"}
+                          </td>
+                          <td>
+                            {Number(bill.info.goldAmount || bill.info.cashAmount) > 0
+                              ? (Number(bill.info.goldAmount || bill.info.cashAmount) || 0).toFixed(3)
+                              : "-"}
+                          </td>
+                          <td>
+                            {Number(bill.info.hmAmount) < 0
+                              ? Math.abs(bill.info.hmAmount).toFixed(3)
+                              : "-"}
+                          </td>
+                          <td>
+                            {Number(bill.info.hmAmount) > 0
+                              ? (Number(bill.info.hmAmount) || 0).toFixed(3)
+                              : "-"}
+                          </td>
+                        </>
+                       ) : (
                        <>
                          <td>
                                {(bill.info.type || "").toLowerCase().includes("cash")
