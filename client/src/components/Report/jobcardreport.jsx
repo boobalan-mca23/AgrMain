@@ -13,6 +13,9 @@ import {
   Button,
   TextField,
   TablePagination,
+  Tabs,
+  Tab,
+  Box,
 } from "@mui/material";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import axios from "axios";
@@ -28,8 +31,19 @@ const JobCardReport = () => {
   const [selectedGoldSmith, setSelectedGoldSmith] = useState({});
   const [page, setPage] = useState(0); // 0-indexed for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [viewType, setViewType] = useState("ALL");
+  const repairsRef = useRef(null);
+
+  const scrollToRepairs = () => {
+    repairsRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const paginatedData = jobCard.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const paginatedRepairs = repairs.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -47,6 +61,7 @@ const JobCardReport = () => {
         repairs={repairs}
         page={page}
         rowsPerPage={rowsPerPage}
+        viewType={viewType}
       />
     );
 
@@ -82,6 +97,8 @@ const JobCardReport = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
+
+
 
   const handleDateClear = () => {
     setFromDate(null);
@@ -186,6 +203,8 @@ const JobCardReport = () => {
             />
 
 
+
+
             <Button
               id="clear"
               className="clr noprint reportBtn"
@@ -207,45 +226,87 @@ const JobCardReport = () => {
               </Button>
             </div>
 
+            {viewType !== "JOBCARD" && paginatedRepairs && paginatedRepairs.length > 0 && (
+              <div className="noprint">
+                <Button
+                  variant="outlined"
+                  onClick={scrollToRepairs}
+                  className="reportBtn"
+                  sx={{ borderColor: "#2c3e50", color: "#2c3e50" }}
+                >
+                  View Repairs
+                </Button>
+              </div>
+            )}
 
-            {jobCard.length > 0 && jobCard.at(-1)?.total?.length > 0 ? (
-              <div className="jobInfo">
-                {jobCard.at(-1).total[0].jobCardBalance >= 0 ? (
-                  <span style={{ color: "green", fontSize: "20px" }}>
-                    Gold Smith Should Given{" "}
-                    {jobCard.at(-1).total[0].jobCardBalance.toFixed(3)}g
-                  </span>
-                ) : jobCard.at(-1).total[0].jobCardBalance < 0 ? (
-                  <span style={{ color: "red", fontSize: "20px" }}>
-                    Owner Should Given{" "}
-                    {jobCard.at(-1).total[0].jobCardBalance.toFixed(3)}g
-                  </span>
-                ) : (
-                  <span style={{ color: "black", fontSize: "20px" }}>
-                    balance 0
-                  </span>
-                )}
-              </div>
-            ) : (
-              <div className="jobInfo">
-                <span>No Balance</span>
-              </div>
+
+
+            {viewType !== "REPAIR" && (
+              jobCard.length > 0 && jobCard.at(-1)?.total?.length > 0 ? (
+                <div className="jobInfo">
+                  {jobCard.at(-1).total[0].jobCardBalance >= 0 ? (
+                    <div className="balanceBadge balanceCredit">
+                      <span className="balanceLabel">Gold Smith Balance:</span>
+                      <span className="balanceAmount">
+                        {jobCard.at(-1).total[0].jobCardBalance.toFixed(3)}g
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="balanceBadge balanceDebit">
+                      <span className="balanceLabel">Owner Due:</span>
+                      <span className="balanceAmount">
+                        {Math.abs(jobCard.at(-1).total[0].jobCardBalance).toFixed(3)}g
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="jobInfo">
+                  <div className="balanceBadge balanceZero">
+                    <span className="balanceLabel">Balance:</span>
+                    <span className="balanceAmount">0.000g</span>
+                  </div>
+                </div>
+              )
             )}
           </div>
         </div>
 
         <div className="jobReportTable">
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs 
+              value={viewType} 
+              onChange={(e, val) => setViewType(val)} 
+              textColor="primary"
+              indicatorColor="primary"
+            >
+              <Tab label="All Records" value="ALL" />
+              <Tab label="Job Cards" value="JOBCARD" />
+              <Tab label="Repaired Products" value="REPAIR" />
+            </Tabs>
+          </Box>
           {jobCard.length >= 1 || repairs.length >= 1 ? (
             <div className="reportContainer">
-              <JobCardRepTable paginatedData={paginatedData} repairs={repairs} page={page} rowsPerPage={rowsPerPage} />
+              <JobCardRepTable 
+                paginatedData={paginatedData} 
+                paginatedRepairs={paginatedRepairs} 
+                page={page} 
+                rowsPerPage={rowsPerPage} 
+                repairsRef={repairsRef}
+                viewType={viewType}
+              />
               <TablePagination
                 component="div"
-                count={jobCard.length}
+                count={
+                  viewType === "ALL" 
+                    ? Math.max(jobCard.length, repairs.length) 
+                    : (viewType === "REPAIR" ? repairs.length : jobCard.length)
+                }
                 page={page}
                 onPageChange={handleChangePage}
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[5, 10, 25]}
+                rowsPerPageOptions={[5, 15, 30, 50, 100]}
               />
             </div>
           ) : (

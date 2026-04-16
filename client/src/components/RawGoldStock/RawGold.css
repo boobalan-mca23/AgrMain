@@ -92,21 +92,40 @@
   color: #444;
 }
 
-.rawGoldContent p {
-  margin: 5px 0 0;
-  font-size: 1rem;
-  color: #555;
+.rawGoldWeights {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.rawGoldWeights p {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.rawGoldWeights .label {
+  font-size: 0.85rem;
+  color: #777;
+  font-weight: 600;
+  min-width: 60px;
 }
 
 .rawGoldWeight {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  color: #d4af37; /* gold shade */
+  color: #d4af37; /* gold shade for pure */
+}
+
+.physWeight {
+  color: #0077b6; /* vibrant blue for physical */
 }
 
 .gr {
   color: goldenrod;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: bold;
 }
 

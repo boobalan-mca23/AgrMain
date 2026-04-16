@@ -97,7 +97,7 @@ function Cashgold() {
     e.preventDefault();
 
     let calculatedPurity = 0;
-    if (formData.type === "Cash") {
+    if (formData.type === "Cash" || formData.type === "Cash RTGS") {
       calculatedPurity = formData.purity;
     } else if (formData.type === "Gold") {
       calculatedPurity = formData.purity;

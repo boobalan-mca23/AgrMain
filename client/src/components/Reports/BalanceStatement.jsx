@@ -212,7 +212,7 @@ const BalanceStatement = ({ typeOverride }) => {
                   {entityName}
                 </Typography>
                 <Typography variant="subtitle2" className="dashboard-module-type">
-                  {type.toUpperCase()} LEDGER REPORT
+                  {type.toUpperCase()} STATEMENT REPORT
                 </Typography>
               </Box>
             </Box>

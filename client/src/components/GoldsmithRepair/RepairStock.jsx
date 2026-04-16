@@ -345,7 +345,7 @@ const ProductStock = () => {
                       // }
                       setRepairQC({ ...repairQC, count: e.target.value });
                     }}
-                    disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
+                    // disabled={selectedProduct?.stockType === "ITEM_PURCHASE"}
                     sx={{ width: '100px' }}
                   />
                 </td>

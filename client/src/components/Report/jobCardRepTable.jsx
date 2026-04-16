@@ -20,6 +20,7 @@ const JobCardRepTable = forwardRef((props, ref) => {
   return (
 
     <>
+      {props.viewType !== "REPAIR" && (
       <table ref={ref} className="reportTable">
         <thead id="reportHead">
           <tr className="reportThead">
@@ -165,9 +166,10 @@ const JobCardRepTable = forwardRef((props, ref) => {
           </tr>
         </tfoot>
       </table>
+      )}
 
-      {props.repairs && props.repairs.length > 0 && (
-        <div style={{ marginTop: "40px" }}>
+      {props.viewType !== "JOBCARD" && props.paginatedRepairs && props.paginatedRepairs.length > 0 && (
+        <div style={{ marginTop: "40px" }} ref={props.repairsRef}>
           <h3 style={{ textAlign: "center", marginBottom: "10px" }}>Repaired Products</h3>
           <table className="reportTable">
             <thead id="reportHead">
@@ -175,23 +177,39 @@ const JobCardRepTable = forwardRef((props, ref) => {
                 <th>S.No</th>
                 <th>Sent Date</th>
                 <th>Item Name</th>
+                <th>Count</th>
                 <th>Gross Wt</th>
+                <th>Stone Wt</th>
                 <th>Net Wt</th>
-                <th>Purity</th>
+                <th>Touch</th>
+                <th>wastage Type</th>
+                <th>wastage</th>
+                <th>actual Purity</th>
+                <th>Final Purity</th>
                 <th>Reason</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody className="reportTbody">
-              {props.repairs.map((repair, index) => (
+              {props.paginatedRepairs.map((repair, index) => (
                 <tr key={repair.id}>
-                  <td>{index + 1}</td>
+                  <td>{props.page * props.rowsPerPage + index + 1}</td>
                   <td>{new Date(repair.sentDate).toLocaleDateString("en-GB")}</td>
-                  <td>{repair.itemName || "-"}</td>
+                  <td>{repair.itemName || repair.product?.itemName || repair.itemPurchase?.itemName || "-"}</td>
+                  <td>{repair.count || repair.orderItem?.count || repair.product?.count || repair.itemPurchase?.count || "-"}</td>
                   <td>{(Number(repair.grossWeight) || 0).toFixed(3)}</td>
+                  <td>{(Number(repair.grossWeight || 0) - Number(repair.netWeight || 0)).toFixed(3)}</td>
                   <td>{(Number(repair.netWeight) || 0).toFixed(3)}</td>
+                  <td>{repair.orderItem?.touch || repair.product?.touch || repair.itemPurchase?.touch || "-"}</td>
+                  <td>{repair.orderItem?.wastageType || repair.product?.wastageType || repair.itemPurchase?.wastageType || "-"}</td>
+                  <td>{repair.orderItem?.wastageValue || repair.product?.wastageValue || repair.itemPurchase?.wastage || "-"}</td>
+                  <td>
+                    {repair.orderItem?.actualPurity || 
+                      ((Number(repair.netWeight) || 0) * 
+                       (Number(repair.orderItem?.touch || repair.product?.touch || repair.itemPurchase?.touch) || 0) / 100).toFixed(3) || "-"}
+                  </td>
                   <td>{(Number(repair.purity) || 0).toFixed(3)}</td>
-                  <td>{repair.reason || "-"}</td>
+                  <td style={{ maxWidth: '250px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{repair.reason || "-"}</td>
                   <td>{repair.status || "-"}</td>
                 </tr>
               ))}

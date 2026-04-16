@@ -22,7 +22,9 @@ const JobCardPrintLayout = (props) => {
   return (
     <>
       <div style={style.jobReportPrint}>
-        <h3 style={style.jobHead}>Job Card Report</h3>
+        {props.viewType !== "REPAIR" && (
+          <>
+            <h3 style={style.jobHead}>Job Card Report</h3>
 
         <div style={style.jobReportPrintHead}>
           <div style={style.jobReportDetails}>
@@ -176,8 +178,10 @@ const JobCardPrintLayout = (props) => {
             </tr>
           </tfoot>
         </table>
+        </>
+        )}
 
-        {props.repairs && props.repairs.length > 0 && (
+        {props.viewType !== "JOBCARD" && props.repairs && props.repairs.length > 0 && (
           <div style={{ marginTop: "20px" }}>
             <h3 style={{ ...style.jobHead, color: "black", fontSize: "14px", textDecoration: "underline" }}>Repaired Products</h3>
             <table style={style.jobReportTable}>
@@ -186,9 +190,15 @@ const JobCardPrintLayout = (props) => {
                   <th style={style.jobReportBorder}>S.No</th>
                   <th style={style.jobReportBorder}>Sent Date</th>
                   <th style={style.jobReportBorder}>Item Name</th>
+                  <th style={style.jobReportBorder}>Count</th>
                   <th style={style.jobReportBorder}>Gross Wt</th>
+                  <th style={style.jobReportBorder}>Stone Wt</th>
                   <th style={style.jobReportBorder}>Net Wt</th>
-                  <th style={style.jobReportBorder}>Purity</th>
+                  <th style={style.jobReportBorder}>Touch</th>
+                  <th style={style.jobReportBorder}>Wast.T</th>
+                  <th style={style.jobReportBorder}>Wast.V</th>
+                  <th style={style.jobReportBorder}>Act.Pur</th>
+                  <th style={style.jobReportBorder}>Fin.Pur</th>
                   <th style={style.jobReportBorder}>Reason</th>
                   <th style={style.jobReportBorder}>Status</th>
                 </tr>
@@ -198,9 +208,19 @@ const JobCardPrintLayout = (props) => {
                   <tr key={repair.id}>
                     <td style={style.jobReportBorder}>{index + 1}</td>
                     <td style={style.jobReportBorder}>{new Date(repair.sentDate).toLocaleDateString("en-GB")}</td>
-                    <td style={style.jobReportBorder}>{repair.itemName || "-"}</td>
+                    <td style={style.jobReportBorder}>{repair.itemName || repair.product?.itemName || repair.itemPurchase?.itemName || "-"}</td>
+                    <td style={style.jobReportBorder}>{repair.count || repair.orderItem?.count || repair.product?.count || repair.itemPurchase?.count || "-"}</td>
                     <td style={style.jobReportBorder}>{(Number(repair.grossWeight) || 0).toFixed(3)}</td>
+                    <td style={style.jobReportBorder}>{(Number(repair.grossWeight || 0) - Number(repair.netWeight || 0)).toFixed(3)}</td>
                     <td style={style.jobReportBorder}>{(Number(repair.netWeight) || 0).toFixed(3)}</td>
+                    <td style={style.jobReportBorder}>{repair.orderItem?.touch || repair.product?.touch || repair.itemPurchase?.touch || "-"}</td>
+                    <td style={style.jobReportBorder}>{repair.orderItem?.wastageType || repair.product?.wastageType || repair.itemPurchase?.wastageType || "-"}</td>
+                    <td style={style.jobReportBorder}>{repair.orderItem?.wastageValue || repair.product?.wastageValue || repair.itemPurchase?.wastage || "-"}</td>
+                    <td style={style.jobReportBorder}>
+                      {repair.orderItem?.actualPurity || 
+                        ((Number(repair.netWeight) || 0) * 
+                         (Number(repair.orderItem?.touch || repair.product?.touch || repair.itemPurchase?.touch) || 0) / 100).toFixed(3)}
+                    </td>
                     <td style={style.jobReportBorder}>{(Number(repair.purity) || 0).toFixed(3)}</td>
                     <td style={style.jobReportBorder}>{repair.reason || "-"}</td>
                     <td style={style.jobReportBorder}>{repair.status || "-"}</td>

@@ -109,9 +109,15 @@ const ReturnStockList = () => {
         <td>${item.bill?.id || "-"}</td>
         <td>${item.productName || "-"}</td>
         <td>${item.bill?.customers?.name || "-"}</td>
+        <td>${item.count || "-"}</td>
         <td>${fmtNum(item.weight)}</td>
-        <td>${fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</td>
-        <td>${fmtNum(item.product?.finalPurity ?? item.itemPurchase?.finalPurity ?? 0)}</td>
+        <td>${fmtNum(item.stoneWeight || item.product?.stoneWeight || item.itemPurchase?.stoneWeight)}</td>
+        <td>${fmtNum(item.awt)}</td>
+        <td>${fmtNum(item.touch || item.product?.touch || item.itemPurchase?.touch)}</td>
+        <td>${item.product?.wastageType || item.itemPurchase?.wastageType || "-"}</td>
+        <td>${fmtNum(item.product?.wastageValue || item.itemPurchase?.wastageValue)}</td>
+        <td>${fmtNum(item.product?.wastagePure || item.itemPurchase?.wastagePure)}</td>
+        <td>${fmtNum(item.fwt)}</td>
         <td class="reason-column">${item.reason || "-"}</td>
       </tr>`
       )
@@ -123,12 +129,13 @@ const ReturnStockList = () => {
         <head>
           <title>Customer Returned Products</title>
           <style>
-            body { font-family: Arial, sans-serif; font-size: 13px; margin: 20px; }
+            @page { size: landscape; margin: 10mm; }
+            body { font-family: Arial, sans-serif; font-size: 13px; margin: 0; }
             h2 { text-align: center; margin-bottom: 4px; }
-            .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 12px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 11px; vertical-align: top; }
-            .reason-column { width: 200px; min-width: 150px; white-space: normal; word-break: break-word; }
+            .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th, td { border: 1px solid #aaa; padding: 6px 4px; text-align: left; font-size: 11px; vertical-align: top; word-wrap: break-word; }
+            .reason-column { width: 150px; }
             th { background: #2c3e50; color: #fff; font-weight: bold; }
             tr:nth-child(even) td { background: #f9f9f9; }
             @media print {
@@ -142,14 +149,20 @@ const ReturnStockList = () => {
           <table>
             <thead>
               <tr>
-                <th style="width: 40px;">S.No</th>
-                <th style="width: 80px;">Date</th>
-                <th style="width: 60px;">Bill No</th>
-                <th>Product</th>
-                <th>Customer</th>
-                <th style="width: 60px;">Wt</th>
-                <th style="width: 60px;">Stone Wt</th>
-                <th style="width: 60px;">Purity</th>
+                <th style="width: 35px;">S.No</th>
+                <th style="width: 70px;">Date</th>
+                <th style="width: 50px;">Bill No</th>
+                <th style="width: 130px;">Product</th>
+                <th style="width: 130px;">Customer</th>
+                <th style="width: 40px;">Count</th>
+                <th style="width: 50px;">Gr.Wt</th>
+                <th style="width: 50px;">St.Wt</th>
+                <th style="width: 50px;">Net.Wt</th>
+                <th style="width: 45px;">Touch</th>
+                <th style="width: 50px;">Wast.T</th>
+                <th style="width: 45px;">Wast.V</th>
+                <th style="width: 45px;">Wast.P</th>
+                <th style="width: 50px;">Fin.Pur</th>
                 <th class="reason-column">Reason</th>
               </tr>
             </thead>
@@ -270,9 +283,15 @@ const ReturnStockList = () => {
             <TableCell className="BillTable-th-td">Bill No</TableCell>
             <TableCell className="BillTable-th-td">Product Name</TableCell>
             <TableCell className="BillTable-th-td">Customer</TableCell>
-            <TableCell className="BillTable-th-td">Wt</TableCell>
+            <TableCell className="BillTable-th-td">Count</TableCell>
+            <TableCell className="BillTable-th-td">Gr.Wt</TableCell>
             <TableCell className="BillTable-th-td">Stone Wt</TableCell>
-            <TableCell className="BillTable-th-td">Purity</TableCell>
+            <TableCell className="BillTable-th-td">Net Wt</TableCell>
+            <TableCell className="BillTable-th-td">Touch</TableCell>
+            <TableCell className="BillTable-th-td">Wastage T</TableCell>
+            <TableCell className="BillTable-th-td">Wastage V</TableCell>
+            <TableCell className="BillTable-th-td">Wastage P</TableCell>
+            <TableCell className="BillTable-th-td">Fin.Pur</TableCell>
             <TableCell className="BillTable-th-td BillTable-reason">Reason</TableCell>
             <TableCell className="BillTable-th-td">Action</TableCell>
           </TableRow>
@@ -287,9 +306,15 @@ const ReturnStockList = () => {
                 <TableCell className="BillTable-tb-td">{item.bill?.id || "-"}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.productName}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.bill?.customers?.name || "-"}</TableCell>
+                <TableCell className="BillTable-tb-td">{item.count || "-"}</TableCell>
                 <TableCell className="BillTable-tb-td">{fmtNum(item.weight)}</TableCell>
-                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</TableCell>
-                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.finalPurity ?? item.itemPurchase?.finalPurity ?? 0)}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.stoneWeight || item.product?.stoneWeight || item.itemPurchase?.stoneWeight)}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.awt)}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.touch || item.product?.touch || item.itemPurchase?.touch)}</TableCell>
+                <TableCell className="BillTable-tb-td">{item.product?.wastageType || item.itemPurchase?.wastageType || "-"}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.wastageValue || item.itemPurchase?.wastageValue)}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.wastagePure || item.itemPurchase?.wastagePure)}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.fwt)}</TableCell>
                 <TableCell className="BillTable-tb-td BillTable-reason">{item.reason || "-"}</TableCell>
                 <TableCell className="BillTable-tb-td">
                   <Tooltip title="View Full Details">
@@ -309,7 +334,7 @@ const ReturnStockList = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={10} align="center">No returned products</TableCell>
+              <TableCell colSpan={16} align="center">No returned products</TableCell>
             </TableRow>
           )}
         </TableBody>

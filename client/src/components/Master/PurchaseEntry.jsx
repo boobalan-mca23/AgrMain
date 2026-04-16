@@ -88,9 +88,10 @@ function PurchaseEntry() {
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
   const [selectedEntryForReceive, setSelectedEntryForReceive] = useState(null);
   const [receiveForm, setReceiveForm] = useState({
+    amount: "",
     weight: "",
     touch: "",
-    date: new Date().toLocaleDateString('en-CA') // YYYY-MM-DD
+    date: dayjs().format('YYYY-MM-DD')
   });
   const [isEditReceive, setIsEditReceive] = useState(false);
   const [editReceiveId, setEditReceiveId] = useState(null);
@@ -266,6 +267,7 @@ function PurchaseEntry() {
   const openReceiveDialogHandler = (entry) => {
     setSelectedEntryForReceive(entry);
     setReceiveForm({
+      amount: "",
       weight: "",
       touch: entry.advanceTouch || "",
       date: dayjs().format('YYYY-MM-DD')
@@ -283,8 +285,12 @@ function PurchaseEntry() {
   };
 
   const handleSaveReceive = async () => {
-    if (!receiveForm.weight || !receiveForm.touch) {
-      toast.error("Please fill weight and touch");
+    if (!receiveForm.amount && !receiveForm.weight) {
+      toast.error("Please fill weight or amount");
+      return;
+    }
+    if (!receiveForm.touch) {
+      toast.error("Please select touch");
       return;
     }
 
@@ -299,14 +305,15 @@ function PurchaseEntry() {
     try {
       await axios.post(`${BACKEND_SERVER_URL}/api/purchase-entry/receive-gold`, {
         purchaseEntryId: selectedEntryForReceive.id,
-        weight: receiveForm.weight,
-        touch: receiveForm.touch,
+        amount: Number(receiveForm.amount),
+        weight: Number(receiveForm.weight),
+        touch: Number(receiveForm.touch),
         date: receiveForm.date
       });
       toast.success("Gold received and added to stock");
       fetchEntries();
       fetchRawGoldStock();
-      setReceiveForm(prev => ({ ...prev, weight: "" })); // Reset weight after save
+      setReceiveForm(prev => ({ ...prev, amount: "", weight: "" })); // Reset weight after save
     } catch (err) {
       toast.error(err.response?.data?.msg || "Failed to receive gold");
     }
@@ -322,7 +329,7 @@ function PurchaseEntry() {
       if (isEditReceive && editReceiveId === receiveId) {
         setIsEditReceive(false);
         setEditReceiveId(null);
-        setReceiveForm({ weight: "", touch: "" });
+        setReceiveForm({ amount: "", weight: "", touch: "" });
       }
     } catch {
       toast.error("Failed to delete");
@@ -333,6 +340,7 @@ function PurchaseEntry() {
     setIsEditReceive(true);
     setEditReceiveId(record.id);
     setReceiveForm({
+      amount: record.amount || "",
       weight: record.weight,
       touch: record.touch,
       date: dayjs(record.date).format('YYYY-MM-DD')
@@ -340,8 +348,8 @@ function PurchaseEntry() {
   };
 
   const handleUpdateReceive = async () => {
-    if (!receiveForm.weight || !receiveForm.touch || !receiveForm.date) {
-      toast.error("Please fill all fields");
+    if (!receiveForm.touch || !receiveForm.date) {
+      toast.error("Please fill touch and date");
       return;
     }
 
@@ -357,8 +365,9 @@ function PurchaseEntry() {
 
     try {
       await axios.put(`${BACKEND_SERVER_URL}/api/purchase-entry/receive-gold/${editReceiveId}`, {
-        weight: receiveForm.weight,
-        touch: receiveForm.touch,
+        amount: Number(receiveForm.amount),
+        weight: Number(receiveForm.weight),
+        touch: Number(receiveForm.touch),
         date: receiveForm.date
       });
       toast.success("Receipt updated");
@@ -367,9 +376,10 @@ function PurchaseEntry() {
       setIsEditReceive(false);
       setEditReceiveId(null);
       setReceiveForm({
+        amount: "",
         weight: "",
         touch: selectedEntryForReceive.advanceTouch || "",
-        date: new Date().toLocaleDateString('en-CA')
+        date: dayjs().format('YYYY-MM-DD')
       });
     } catch (err) {
       toast.error(err.response?.data?.msg || "Failed to update");
@@ -1018,12 +1028,30 @@ function PurchaseEntry() {
           </LocalizationProvider>
 
           <TextField
-            label={isEditReceive ? "Edit Weight (g)" : "Weight to Receive (g)"}
+            label="Gold Weight (g)"
+            fullWidth
+            margin="dense"
+            variant="outlined"
+            value={receiveForm.amount}
+            onChange={(e) => {
+              const amt = e.target.value;
+              const tc = receiveForm.touch;
+              const wt = (Number(amt) * Number(tc)) / 100;
+              setReceiveForm({
+                ...receiveForm,
+                amount: amt,
+                weight: round3(wt) || ""
+              });
+            }}
+          />
+
+          <TextField
+            label="Pure Gold (g)"
             fullWidth
             margin="dense"
             variant="outlined"
             value={receiveForm.weight}
-            onChange={(e) => setReceiveForm({ ...receiveForm, weight: e.target.value })}
+            InputProps={{ readOnly: true }}
             error={Number(receiveForm.weight) > round3((selectedEntryForReceive?.goldBalance || 0) - ((selectedEntryForReceive?.receivedGold || []).filter(r => r.id !== editReceiveId).reduce((sum, r) => sum + r.weight, 0))) + 0.001}
             helperText={
               Number(receiveForm.weight) > round3((selectedEntryForReceive?.goldBalance || 0) - ((selectedEntryForReceive?.receivedGold || []).filter(r => r.id !== editReceiveId).reduce((sum, r) => sum + r.weight, 0))) + 0.001
@@ -1039,7 +1067,16 @@ function PurchaseEntry() {
             margin="dense"
             variant="outlined"
             value={receiveForm.touch}
-            onChange={(e) => setReceiveForm({ ...receiveForm, touch: e.target.value })}
+            onChange={(e) => {
+              const tc = e.target.value;
+              const amt = receiveForm.amount;
+              const wt = (Number(amt) * Number(tc)) / 100;
+              setReceiveForm({
+                ...receiveForm,
+                touch: tc,
+                weight: round3(wt) || ""
+              });
+            }}
             SelectProps={{ native: true }}
             InputLabelProps={{ shrink: true }}
           >
@@ -1072,7 +1109,8 @@ function PurchaseEntry() {
                     <tr style={{ background: "#f5f5f5" }}>
                       <th style={{ padding: "8px", textAlign: "left" }}>S.No</th>
                       <th style={{ padding: "8px", textAlign: "left" }}>Date</th>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Weight</th>
+                      <th style={{ padding: "8px", textAlign: "left" }}>Amount</th>
+                      <th style={{ padding: "8px", textAlign: "left" }}>Pure Wt</th>
                       <th style={{ padding: "8px", textAlign: "left" }}>Touch</th>
                       <th style={{ padding: "8px" }}></th>
                     </tr>
@@ -1089,6 +1127,7 @@ function PurchaseEntry() {
                         <tr key={r.id} style={{ borderBottom: "1px solid #eee", background: editReceiveId === r.id ? "#fff9c4" : "transparent" }}>
                           <td style={{ padding: "8px" }}>{receivePage * receiveRowsPerPage + index + 1}</td>
                           <td style={{ padding: "8px" }}>{dayjs(r.date).format("DD/MM/YYYY")}</td>
+                          <td style={{ padding: "8px" }}>{r.amount || 0}g</td>
                           <td style={{ padding: "8px" }}>{r.weight}g</td>
                           <td style={{ padding: "8px" }}>{r.touch}</td>
                           <td style={{ padding: "8px", textAlign: "center" }}>
@@ -1145,9 +1184,10 @@ function PurchaseEntry() {
               setIsEditReceive(false);
               setEditReceiveId(null);
               setReceiveForm({
+                amount: "",
                 weight: "",
                 touch: selectedEntryForReceive.advanceTouch || "",
-                date: new Date().toLocaleDateString('en-CA')
+                date: dayjs().format('YYYY-MM-DD')
               });
             }} color="secondary">Cancel Edit</Button>
           )}
@@ -1158,8 +1198,7 @@ function PurchaseEntry() {
             color="primary"
             sx={{ boxShadow: "none" }}
             disabled={
-              !receiveForm.weight ||
-              Number(receiveForm.weight) <= 0 ||
+              (!receiveForm.weight && !receiveForm.amount) ||
               !receiveForm.touch ||
               !receiveForm.date
             }

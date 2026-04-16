@@ -113,6 +113,7 @@ function ItemPurchaseEntry() {
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
   const [selectedEntryForReceive, setSelectedEntryForReceive] = useState(null);
   const [receiveForm, setReceiveForm] = useState({
+    amount: "",
     weight: "",
     touch: "",
     date: dayjs().format("YYYY-MM-DD")
@@ -171,6 +172,7 @@ function ItemPurchaseEntry() {
   const openReceiveDialogHandler = (entry) => {
     setSelectedEntryForReceive(entry);
     setReceiveForm({
+      amount: "",
       weight: "",
       touch: entry.advanceTouch || "",
       date: dayjs().format("YYYY-MM-DD")
@@ -189,6 +191,7 @@ function ItemPurchaseEntry() {
     setIsEditReceive(true);
     setEditReceiveId(record.id);
     setReceiveForm({
+      amount: record.amount || "",
       weight: record.weight,
       touch: record.touch,
       date: dayjs(record.date).format("YYYY-MM-DD")
@@ -214,6 +217,7 @@ function ItemPurchaseEntry() {
     try {
       const payload = {
         itemPurchaseEntryId: selectedEntryForReceive.id,
+        amount: Number(receiveForm.amount),
         weight: Number(receiveForm.weight),
         touch: Number(receiveForm.touch),
         date: receiveForm.date
@@ -232,6 +236,7 @@ function ItemPurchaseEntry() {
       setIsEditReceive(false);
       setEditReceiveId(null);
       setReceiveForm({
+        amount: "",
         weight: "",
         touch: selectedEntryForReceive.advanceTouch || "",
         date: dayjs().format("YYYY-MM-DD")
@@ -1125,13 +1130,32 @@ function ItemPurchaseEntry() {
               </LocalizationProvider>
 
               <TextField
-                label={isEditReceive ? "Edit Weight (g)" : "Weight to Receive (g)"}
+                label="Gold Weight (g)"
+                fullWidth
+                margin="dense"
+                size="small"
+                variant="outlined"
+                value={receiveForm.amount}
+                onChange={(e) => {
+                  const amt = e.target.value;
+                  const tc = receiveForm.touch;
+                  const weight = (Number(amt) * Number(tc)) / 100;
+                  setReceiveForm({
+                    ...receiveForm,
+                    amount: amt,
+                    weight: round3(weight) || ""
+                  });
+                }}
+              />
+
+              <TextField
+                label="Pure Gold (g)"
                 fullWidth
                 margin="dense"
                 size="small"
                 variant="outlined"
                 value={receiveForm.weight}
-                onChange={(e) => setReceiveForm({ ...receiveForm, weight: e.target.value })}
+                InputProps={{ readOnly: true }}
                 error={Number(receiveForm.weight) > round3((selectedEntryForReceive?.goldBalance || 0) - ((selectedEntryForReceive?.receivedGold || []).filter(r => r.id !== editReceiveId).reduce((sum, r) => sum + r.weight, 0))) + 0.001}
                 helperText={
                   Number(receiveForm.weight) > round3((selectedEntryForReceive?.goldBalance || 0) - ((selectedEntryForReceive?.receivedGold || []).filter(r => r.id !== editReceiveId).reduce((sum, r) => sum + r.weight, 0))) + 0.001
@@ -1148,7 +1172,16 @@ function ItemPurchaseEntry() {
                 size="small"
                 variant="outlined"
                 value={receiveForm.touch}
-                onChange={(e) => setReceiveForm({ ...receiveForm, touch: e.target.value })}
+                onChange={(e) => {
+                  const tc = e.target.value;
+                  const amt = receiveForm.amount;
+                  const weight = (Number(amt) * Number(tc)) / 100;
+                  setReceiveForm({
+                    ...receiveForm,
+                    touch: tc,
+                    weight: round3(weight) || ""
+                  });
+                }}
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
               >
@@ -1182,7 +1215,8 @@ function ItemPurchaseEntry() {
                 <tr style={{ background: "#f5f5f5" }}>
                   <th style={{ padding: "8px", textAlign: "left" }}>S.No</th>
                   <th style={{ padding: "8px", textAlign: "left" }}>Date</th>
-                  <th style={{ padding: "8px", textAlign: "left" }}>Weight</th>
+                  <th style={{ padding: "8px", textAlign: "left" }}>Amount</th>
+                  <th style={{ padding: "8px", textAlign: "left" }}>Pure Wt</th>
                   <th style={{ padding: "8px", textAlign: "left" }}>Touch</th>
                   <th style={{ padding: "8px" }}></th>
                 </tr>
@@ -1196,6 +1230,7 @@ function ItemPurchaseEntry() {
                       <tr key={r.id} style={{ borderBottom: "1px solid #eee", background: editReceiveId === r.id ? "#fff9c4" : "transparent" }}>
                         <td style={{ padding: "8px" }}>{receivePage * receiveRowsPerPage + i + 1}</td>
                         <td style={{ padding: "8px" }}>{dayjs(r.date).format("DD/MM/YYYY")}</td>
+                        <td style={{ padding: "8px" }}>{r.amount || 0}g</td>
                         <td style={{ padding: "8px" }}>{r.weight}g</td>
                         <td style={{ padding: "8px" }}>{r.touch}</td>
                         <td style={{ padding: "8px", textAlign: "center" }}>
@@ -1231,6 +1266,7 @@ function ItemPurchaseEntry() {
               setIsEditReceive(false);
               setEditReceiveId(null);
               setReceiveForm({
+                amount: "",
                 weight: "",
                 touch: selectedEntryForReceive.advanceTouch || "",
                 date: dayjs().format("YYYY-MM-DD")
