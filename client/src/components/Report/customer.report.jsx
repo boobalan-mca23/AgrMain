@@ -527,11 +527,12 @@ const CustReport = () => {
                      ) : (
                        <>
                          <td>
-                               {(bill.info.type || "").toLowerCase().includes("cash")
-                                 ? ((Number(bill.info.touch) > 0 && Number(bill.info.purity) > 0)
-                                      ? ((Number(bill.info.purity) / Number(bill.info.touch)) * 100).toFixed(3)
-                                      : "0.000")
-                                 : (Number(bill.info.fwt || bill.info.purity) || 0).toFixed(3)}
+                           {/* {Number(bill.info.purity) > 0 
+                             ? (Number(bill.info.amount)).toFixed(3) 
+                             : (Number(bill.info.amount) > 0 
+                               ? (Number(bill.info.amount)).toFixed(2) 
+                               : "0.000")} */}
+                               {(Number(bill.info.fwt) || 0).toFixed(3)}
                          </td>
                          <td>-</td>
                          <td>{(Number(bill.info.receiveHallMark) || 0).toFixed(3)}</td>
