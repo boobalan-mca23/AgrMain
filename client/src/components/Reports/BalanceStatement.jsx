@@ -180,6 +180,285 @@ const BalanceStatement = ({ typeOverride }) => {
     });
   };
 
+  const StatementInlineDetails = ({ row }) => {
+    if (!row.metadata) return null;
+    const { module, metadata } = row;
+
+    if (module === "Bill" && metadata.orders) {
+      return (
+        <div className="inline-detail-container">
+          <table className="inline-detail-table bill-details">
+            <thead>
+              <tr>
+                <th>Entry Type</th>
+                <th>Count</th>
+                <th>Item Name</th>
+                <th>ItemWt</th>
+                <th>StoneWt</th>
+                <th>AWT</th>
+                <th>%</th>
+                <th>FWT</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metadata.orders.map((order, i) => (
+                <tr key={i}>
+                  {i === 0 && <td rowSpan={metadata.orders.length}>Bill</td>}
+                  <td>{order.count}</td>
+                  <td>{order.productName}</td>
+                  <td>{formatVal(order.weight)}</td>
+                  <td>{formatVal(order.stoneWeight)}</td>
+                  <td>{formatVal(order.afterWeight || order.netWeight)}</td>
+                  <td>{formatVal(order.percentage)}</td>
+                  <td>{formatVal(order.finalWeight)}</td>
+                </tr>
+              ))}
+              {(metadata.hallmarkQty > 0 || metadata.hallMark > 0) && (
+                <tr className="hallmark-row">
+                    <td colSpan={7}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>(hallmarkQty X hallmark = total hallMark)</span>
+                            <span>{metadata.hallmarkQty} X {metadata.hallMark} =</span>
+                        </div>
+                    </td>
+                    <td>{formatVal(Number(metadata.hallmarkQty) * Number(metadata.hallMark))}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    if (module === "Return" || module.startsWith("Repair")) {
+      const isRepair = module.startsWith("Repair");
+      return (
+        <div className="inline-detail-container">
+          <table className={`inline-detail-table ${isRepair ? 'repair-details' : 'return-details'}`}>
+            <thead>
+              <tr>
+                <th>Entry Type</th>
+                <th>Item Name</th>
+                <th>Count</th>
+                <th>ItemWt</th>
+                <th>Stone Wt</th>
+                <th>Net Wt</th>
+                <th>Touch%</th>
+                <th>FWT</th>
+                <th>Hall Mark</th>
+                {isRepair && <th>Status</th>}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{isRepair ? "Repair" : "Return"}</td>
+                <td>{metadata.productName || metadata.itemName}</td>
+                <td>{metadata.count}</td>
+                <td>{formatVal(metadata.weight || metadata.grossWeight)}</td>
+                <td>{formatVal(metadata.stoneWeight)}</td>
+                <td>{formatVal(metadata.awt || metadata.netWeight)}</td>
+                <td>{formatVal(metadata.percentage)}</td>
+                <td>{formatVal(metadata.pureGoldReduction || metadata.fwt)}</td>
+                <td>{formatVal(metadata.hallmarkReduction)}</td>
+                {isRepair && <td>{metadata.status || "-"}</td>}
+              </tr>
+            </tbody>
+          </table>
+          {metadata.reason && <div className="detail-reason">Reason: {metadata.reason}</div>}
+        </div>
+      );
+    }
+
+    if (module === "Bill Receipt" || module === "Receipt Voucher" || module === "Transaction") {
+      const type = (metadata.type || "").toLowerCase();
+      const isCash = type.includes("cash");
+      return (
+        <div className="inline-detail-container">
+          <table className="inline-detail-table voucher-details">
+            <thead>
+              <tr>
+                <th>Entry Type</th>
+                <th>Type</th>
+                {isCash ? (
+                  <>
+                    <th>Amount</th>
+                    <th>Gold Rate</th>
+                    <th>Touch</th>
+                    <th>Purity</th>
+                    <th>Pure Gold</th>
+                  </>
+                ) : (
+                  <>
+                    <th>Gold</th>
+                    <th>Touch</th>
+                    <th>Purity</th>
+                  </>
+                )}
+                {module !== "Transaction" && <th>Hall Mark</th>}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{module}</td>
+                <td>{metadata.type || "-"}</td>
+                {isCash ? (
+                  <>
+                    <td>{(Number(metadata.amount) || 0).toFixed(2)}</td>
+                    <td>{(Number(metadata.goldRate) || 0).toFixed(3)}</td>
+                    <td>{(Number(metadata.touch) || 0).toFixed(3)}</td>
+                    <td>{(Number(metadata.purity) || 0).toFixed(3)}</td>
+                    <td>{(Number(metadata.pureGold) || 0).toFixed(3)}</td>
+                  </>
+                ) : (
+                  <>
+                    <td>{(Number(metadata.goldWeight || metadata.gold) || 0).toFixed(3)}</td>
+                    <td>{(Number(metadata.touch) || 0).toFixed(3)}</td>
+                    <td>{(Number(metadata.purity) || 0).toFixed(3)}</td>
+                  </>
+                )}
+                {module !== "Transaction" && <td>{formatVal(metadata.hallmark)}</td>}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    if (module === "Gold Given" || module === "Gold Received") {
+      return (
+        <div className="inline-detail-container">
+          <table className="inline-detail-table goldsmith-gold-details">
+            <thead>
+              <tr>
+                <th>Entry Type</th>
+                <th>JobCard#</th>
+                <th>Weight</th>
+                <th>Touch</th>
+                <th>Purity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{module === "Gold Given" ? "Issue" : "Receipt"}</td>
+                <td>#{metadata.jobcardId || "-"}</td>
+                <td>{formatVal(metadata.weight)}</td>
+                <td>{formatVal(metadata.touch)}</td>
+                <td>{formatVal(metadata.purity)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    if (module === "Item Delivery") {
+      return (
+        <div className="inline-detail-container">
+          <table className="inline-detail-table goldsmith-delivery-details">
+            <thead>
+              <tr>
+                <th>Entry Type</th>
+                <th>JobCard#</th>
+                <th>Item Name</th>
+                <th>Wt</th>
+                <th>Count</th>
+                <th>Touch</th>
+                <th>Stone Wt</th>
+                <th>Net Wt</th>
+                <th>Wastage Type</th>
+                <th>W.Value</th>
+                <th>W.Pure</th>
+                <th>Final Purity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Finished</td>
+                <td>#{metadata.jobcardId || "-"}</td>
+                <td>{metadata.itemName}</td>
+                <td>{formatVal(metadata.itemWeight)}</td>
+                <td>{metadata.count}</td>
+                <td>{formatVal(metadata.touch)}</td>
+                <td>{formatVal(metadata.stoneWeight)}</td>
+                <td>{formatVal(metadata.netWeight)}</td>
+                <td>{metadata.wastageType || "-"}</td>
+                <td>{formatVal(metadata.wastageValue)}</td>
+                <td>{formatVal(metadata.wastagePure)}</td>
+                <td>{formatVal(metadata.finalPurity)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    if (module === "BC Purchase" || module === "Item Purchase") {
+      return (
+        <div className="inline-detail-container">
+          <table className="inline-detail-table purchase-details">
+            <thead>
+              <tr>
+                <th>Entry Type</th>
+                <th>Item Name</th>
+                <th>Wt</th>
+                <th>Count</th>
+                <th>Touch</th>
+                <th>Stone Wt</th>
+                <th>Net Wt</th>
+                <th>Wastage Type</th>
+                <th>W.Value</th>
+                <th>W.Pure</th>
+                <th>Final Purity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{module === "BC Purchase" ? "Bulk Purchase" : "Item Purchase"}</td>
+                <td>{metadata.jewelName || metadata.itemName}</td>
+                <td>{formatVal(metadata.grossWeight)}</td>
+                <td>{metadata.count || "1"}</td>
+                <td>{formatVal(metadata.touch)}</td>
+                <td>{formatVal(metadata.stoneWeight)}</td>
+                <td>{formatVal(metadata.netWeight)}</td>
+                <td>{metadata.wastageType || "-"}</td>
+                <td>{formatVal(metadata.wastage)}</td>
+                <td>{formatVal(metadata.wastagePure)}</td>
+                <td>{formatVal(metadata.finalPurity)}</td>
+              </tr>
+              {metadata.items && metadata.items.length > 0 && (
+                <>
+                  <tr className="sub-item-header">
+                    <td colSpan={11} style={{ fontWeight: 'bold', padding: '8px 12px', background: '#f8f9fa' }}>↳ Item Breakdown</td>
+                  </tr>
+                  {metadata.items.map((item, i) => (
+                    <tr key={i} className="sub-item-row">
+                      <td colSpan={2}></td>
+                      <td>{formatVal(item.grossWeight)}</td>
+                      <td>{item.count || "1"}</td>
+                      <td>{formatVal(item.touch)}</td>
+                      <td>{formatVal(item.stoneWeight)}</td>
+                      <td>{formatVal(item.netWeight)}</td>
+                      <td colSpan={4}>{item.itemName}</td>
+                    </tr>
+                  ))}
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    return (
+        <div className="compact-metadata">
+            {Object.entries(metadata).slice(0, 3).map(([key, val]) => {
+                if (typeof val === 'object') return null;
+                return <span key={key} className="detail-tag">{key}: {String(val)}</span>
+            })}
+        </div>
+    );
+  };
+
   if (loading) {
     return (
       <Box 
@@ -372,8 +651,11 @@ const BalanceStatement = ({ typeOverride }) => {
                   </span>
                 </TableCell>
                 <TableCell className="cell-desc">
-                  {row.isManualAdjustment ? <span className="adj-indicator">↳ Audit: </span> : ""}
-                  {row.description}
+                  <div className="desc-main-text">
+                    {row.isManualAdjustment ? <span className="adj-indicator">↳ Audit: </span> : ""}
+                    {row.description}
+                  </div>
+                  <StatementInlineDetails row={row} />
                 </TableCell>
                 
                 {type === "customer" && (

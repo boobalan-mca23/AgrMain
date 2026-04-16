@@ -24,7 +24,11 @@ exports.getCustomerStatement = async (req, res) => {
 
     // Fetch all related transactions
     const [bills, billReceived, receiptVouchers, transactions, returns, adjustments] = await Promise.all([
-      prisma.bill.findMany({ where: { customer_id: parseInt(id), ...createdAtFilter }, orderBy: { date: 'asc' } }),
+      prisma.bill.findMany({ 
+        where: { customer_id: parseInt(id), ...createdAtFilter }, 
+        orderBy: { date: 'asc' },
+        include: { orders: true }
+      }),
       prisma.billReceived.findMany({ where: { customer_id: parseInt(id), ...createdAtFilter } }),
       prisma.receiptVoucher.findMany({ where: { customer_id: parseInt(id), ...createdAtFilter } }),
       prisma.transaction.findMany({ where: { customerId: parseInt(id), ...filterObj } }),
@@ -101,7 +105,12 @@ exports.getCustomerStatement = async (req, res) => {
         debitHallmark: originalHallmarkAmt,
         creditHallmark: 0,
         refId: b.id,
-        sortPriority: 2
+        sortPriority: 2,
+        metadata: {
+            orders: b.orders,
+            hallmarkQty: b.hallmarkQty,
+            hallMark: b.hallMark
+        }
       });
     });
 
@@ -254,18 +263,16 @@ exports.getCustomerStatement = async (req, res) => {
             sortPriority: 2,
             metadata: {
                 productName: ret.productName,
-                weight: ret.weight,
                 count: ret.count,
+                weight: ret.weight, 
                 stoneWeight: ret.stoneWeight,
-                enteredStoneWeight: ret.enteredStoneWeight,
                 awt: awtVal,
                 percentage: ret.percentage,
                 pureGoldReduction: pureRed,
+                hallmarkReduction: hmRed,
                 reason: ret.reason,
-                billNo: ret.billId || ret.bill?.id,
-                billId: ret.billId,
-                createdAt: ret.createdAt,
-                hallmarkReduction: hmRed
+                billId: ret.billId || ret.bill?.id,
+                createdAt: ret.createdAt
             }
         });
     });
@@ -302,21 +309,18 @@ exports.getCustomerStatement = async (req, res) => {
             refId: rep.id,
             sortPriority: 2,
             metadata: {
-                productName: rep.itemName,
-                weight: rep.grossWeight,
-                count: rep.count || rep.orderItem?.count || 1,
-                stoneWeight: rep.stoneWeight || rep.orderItem?.stoneWeight || 0,
-                enteredStoneWeight: rep.enteredStoneWeight || rep.orderItem?.enteredStoneWeight || 0,
-                awt: rep.netWeight || rep.grossWeight,
-                percentage: rep.percentage || rep.orderItem?.percentage || 100,
-                pureGoldReduction: fwtRed,
+                itemName: rep.itemName,
+                count: reductionCount,
+                grossWeight: rep.grossWeight, 
+                stoneWeight: stoneWt,
+                netWeight: rep.netWeight,
+                percentage: billingTouch,
                 fwt: fwtRed,
-                purity: rep.purity,
-                billNo: rep.billId || rep.bill?.id,
-                billId: rep.billId,
+                hallmarkReduction: hmRed,
                 reason: rep.reason,
-                createdAt: rep.createdAt || rep.sentDate,
-                hallmarkReduction: hmRed
+                status: rep.status,
+                billId: rep.billId || rep.bill?.id,
+                createdAt: rep.createdAt
             }
         });
     });
@@ -507,7 +511,8 @@ exports.getGoldsmithStatement = async (req, res) => {
             weight: gg.weight,
             touch: gg.touch,
             purity: gg.purity,
-            jobcardId: gg.jobcardId
+            jobcardId: gg.jobcardId,
+            createdAt: gg.createdAt
         }
       });
     });
@@ -528,12 +533,14 @@ exports.getGoldsmithStatement = async (req, res) => {
             weight: rs.weight,
             touch: rs.touch,
             purity: rs.purity,
-            jobcardId: rs.jobcardId
+            jobcardId: rs.jobcardId,
+            createdAt: rs.createdAt
         }
       });
     });
 
     deliveries.forEach(d => {
+      const stoneWt = (d.itemWeight || 0) - (d.netWeight || 0);
       ledger.push({
         date: d.createdAt,
         createdAt: d.createdAt,
@@ -546,13 +553,17 @@ exports.getGoldsmithStatement = async (req, res) => {
         sortPriority: 2,
         metadata: {
             itemName: d.itemName,
-            itemWeight: d.itemWeight,
+            itemWeight: d.itemWeight, // Wt
+            stoneWeight: stoneWt,
             count: d.count,
             touch: d.touch,
             netWeight: d.netWeight,
-            wastagePure: d.wastagePure,
+            wastageType: d.wastageType,
+            wastageValue: d.wastageValue,
+            wastagePure: d.wastagePure, // W.Pure
             finalPurity: d.finalPurity,
-            jobcardId: d.jobcardId
+            jobcardId: d.jobcardId,
+            createdAt: d.createdAt
         }
       });
     });
@@ -764,8 +775,13 @@ exports.getSupplierStatement = async (req, res) => {
     const filterObj = Object.keys(createdAtFilter).length > 0 ? { createdAt: createdAtFilter } : {};
 
     const [bcPurchases, itemPurchases, bcReceived, itemReceived, adjustments] = await Promise.all([
-      prisma.purchaseEntry.findMany({ where: { supplierId: parseInt(id), ...filterObj } }),
-      prisma.itemPurchaseEntry.findMany({ where: { supplierId: parseInt(id), ...filterObj } }),
+      prisma.purchaseEntry.findMany({ 
+        where: { supplierId: parseInt(id), ...filterObj },
+        include: { stock: true }
+      }),
+      prisma.itemPurchaseEntry.findMany({ 
+        where: { supplierId: parseInt(id), ...filterObj } 
+      }),
       prisma.purchaseReceivedGold.findMany({ where: { purchaseEntry: { supplierId: parseInt(id) }, ...filterObj } }),
       prisma.itemPurchaseReceivedGold.findMany({ where: { itemPurchaseEntry: { supplierId: parseInt(id) }, ...filterObj } }),
       prisma.balanceAdjustment.findMany({ where: { entityType: "SUPPLIER", entityId: parseInt(id), ...filterObj } }),
@@ -814,7 +830,20 @@ exports.getSupplierStatement = async (req, res) => {
         debitBC: 0,
         creditBC: pe.finalPurity || 0,
         refId: pe.id,
-        sortPriority: 2
+        sortPriority: 2,
+        metadata: {
+            jewelName: pe.jewelName,
+            grossWeight: pe.grossWeight,
+            stoneWeight: pe.stoneWeight,
+            netWeight: pe.netWeight,
+            touch: pe.touch,
+            wastage: pe.wastage,
+            wastageType: pe.wastageType,
+            wastagePure: pe.wastagePure,
+            finalPurity: pe.finalPurity,
+            items: pe.stock,
+            createdAt: pe.createdAt
+        }
       });
     });
 
@@ -843,7 +872,20 @@ exports.getSupplierStatement = async (req, res) => {
         debitItem: 0,
         creditItem: ipe.finalPurity || 0,
         refId: ipe.id,
-        sortPriority: 2
+        sortPriority: 2,
+        metadata: {
+            itemName: ipe.itemName,
+            count: ipe.count,
+            grossWeight: ipe.grossWeight,
+            stoneWeight: ipe.stoneWeight,
+            netWeight: ipe.netWeight,
+            touch: ipe.touch,
+            wastage: ipe.wastage,
+            wastageType: ipe.wastageType,
+            wastagePure: ipe.wastagePure,
+            finalPurity: ipe.finalPurity,
+            createdAt: ipe.createdAt
+        }
       });
     });
 

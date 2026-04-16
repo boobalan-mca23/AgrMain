@@ -881,17 +881,35 @@ const customerReport = async (req, res) => {
         }))
       ];
       
+      // get overAll balance and customer creation date
+      const [overallBal, customer] = await Promise.all([
+        prisma.customerBillBalance.findUnique({
+          where: { customer_id: parseInt(customerId) },
+          select: { balance: true, initialBalance: true, hallMarkBal: true, initialHallmark: true },
+        }),
+        prisma.customer.findUnique({
+          where: { id: parseInt(customerId) },
+          select: { createdAt: true }
+        })
+      ]);
+
+      if (overallBal && (overallBal.initialBalance !== 0 || overallBal.initialHallmark !== 0)) {
+        combinedData.push({
+          type: "openingBalance",
+          info: {
+            createdAt: customer.createdAt,
+            goldAmount: overallBal.initialBalance,
+            hmAmount: overallBal.initialHallmark,
+            description: "Opening Balance"
+          }
+        });
+      }
+      
       // Sort combined data chronologically
       combinedData.sort((a, b) => {
         const dateA = new Date(a.info.createdAt || a.info.sentDate || a.info.date);
         const dateB = new Date(b.info.createdAt || b.info.sentDate || b.info.date);
         return dateA - dateB;
-      });
-
-      // get overAll balance
-      const overallBal = await prisma.customerBillBalance.findUnique({
-        where: { customer_id: parseInt(customerId) },
-        select: { balance: true, initialBalance: true, hallMarkBal: true, initialHallmark: true },
       });
 
       res.status(200).json({ data: combinedData, overallBal: overallBal });
