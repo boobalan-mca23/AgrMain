@@ -15,21 +15,23 @@ const recalculateBillProfit = async (billId, tx) => {
     let purchaseWastage = 0;
     let purchaseTouch = 0;
 
-    if (item.stockType === "ITEM_PURCHASE") {
-      const stock = await tx.itemPurchaseEntry.findUnique({
-        where: { id: item.stockId }
-      });
-      if (stock) {
-        purchaseWastage = Number(stock.wastage) || 0;
-        purchaseTouch = Number(stock.touch) || 0;
-      }
-    } else {
-      const stock = await tx.productStock.findUnique({
-        where: { id: item.stockId }
-      });
-      if (stock) {
-        purchaseWastage = Number(stock.wastageValue) || 0;
-        purchaseTouch = Number(stock.touch) || 0;
+    if (item.stockId) {
+      if (item.stockType === "ITEM_PURCHASE") {
+        const stock = await tx.itemPurchaseEntry.findUnique({
+          where: { id: item.stockId }
+        });
+        if (stock) {
+          purchaseWastage = Number(stock.wastage) || 0;
+          purchaseTouch = Number(stock.touch) || 0;
+        }
+      } else {
+        const stock = await tx.productStock.findUnique({
+          where: { id: item.stockId }
+        });
+        if (stock) {
+          purchaseWastage = Number(stock.wastageValue) || 0;
+          purchaseTouch = Number(stock.touch) || 0;
+        }
       }
     }
 

@@ -812,7 +812,7 @@ exports.getPuritySummary = async (req, res) => {
 
 exports.receiveGold = async (req, res) => {
   try {
-    const { purchaseEntryId, weight, touch, date } = req.body;
+    const { purchaseEntryId, amount, weight, touch, date } = req.body;
 
     if (!purchaseEntryId || !weight || !touch) {
       return res.status(400).json({ msg: "Missing required fields" });
@@ -830,6 +830,7 @@ exports.receiveGold = async (req, res) => {
     const alreadyReceived = entry.receivedGold.reduce((sum, r) => sum + r.weight, 0);
     const pendingBalance = round3(entry.goldBalance - alreadyReceived);
     const weightToReceive = Number(weight);
+    const amountToReceive = Number(amount || 0);
 
     if (weightToReceive > pendingBalance + 0.001) { // added small epsilon for Float precision
       return res.status(400).json({
@@ -837,11 +838,12 @@ exports.receiveGold = async (req, res) => {
       });
     }
 
-    const logId = await receiveGoldToStock(weightToReceive, touch, date);
+    const logId = await receiveGoldToStock(amountToReceive, weightToReceive, touch, date);
 
     const received = await prisma.purchaseReceivedGold.create({
       data: {
         purchaseEntryId: id,
+        amount: amountToReceive,
         weight: weightToReceive,
         touch: Number(touch),
         date: new Date(date),
@@ -860,7 +862,7 @@ exports.receiveGold = async (req, res) => {
 exports.updateReceivedGold = async (req, res) => {
   try {
     const { id } = req.params;
-    const { weight, touch, date } = req.body;
+    const { amount, weight, touch, date } = req.body;
 
     const receiptId = Number(id);
     const received = await prisma.purchaseReceivedGold.findUnique({
@@ -871,6 +873,7 @@ exports.updateReceivedGold = async (req, res) => {
     if (!received) return res.status(404).json({ msg: "Record not found" });
 
     const weightToReceive = Number(weight);
+    const amountToReceive = Number(amount || 0);
     const actualTouch = Number(touch);
     const actualDate = new Date(date);
 
@@ -901,9 +904,10 @@ exports.updateReceivedGold = async (req, res) => {
           where: { id: received.logId },
           data: {
             rawGoldStockId: stock.id,
-            weight: weightToReceive,
+            weight: weightToReceive, // pure
+            amount: amountToReceive, // physical
             touch: actualTouch,
-            purity: (weightToReceive * actualTouch) / 100,
+            purity: weightToReceive,
             date: actualDate,
           }
         });
@@ -913,6 +917,7 @@ exports.updateReceivedGold = async (req, res) => {
       await tx.purchaseReceivedGold.update({
         where: { id: receiptId },
         data: {
+          amount: amountToReceive,
           weight: weightToReceive,
           touch: actualTouch,
           date: actualDate,

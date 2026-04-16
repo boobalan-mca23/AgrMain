@@ -295,6 +295,7 @@ const handleSaveAddWeight = async () => {
 
     setOpenAddPopup(false);
     await fetchProductStock();
+    await fetchPuritySummary();
   } catch (err) {
     alert(err.response?.data?.err || "Failed to add weight");
   }

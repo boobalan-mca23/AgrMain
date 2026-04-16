@@ -594,6 +594,8 @@ const jobCardFilter = async (req, res) => {
       include: {
         bill: true,
         orderItem: true,
+        product: true,
+        itemPurchase: true,
       }
     });
 

@@ -191,7 +191,9 @@ const sendToRepair = async (req, res) => {
             itemName: repairProductFinal.itemName,
             grossWeight: repairProductFinal.itemWeight,
             netWeight: repairProductFinal.netWeight,
-            purity: repairProductFinal.finalPurity
+            purity: repairProductFinal.finalPurity,
+           
+
           }
         });
 

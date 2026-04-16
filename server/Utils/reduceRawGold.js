@@ -4,23 +4,41 @@ const prisma = new PrismaClient();
 
 
 
-const setTotalRawGold = async () => {
-  //  Group logs by rawGoldStockId and sum weights
-  const grouped = await prisma.rawGoldLogs.groupBy({
+const setTotalRawGold = async (tx = prisma) => {
+  // 1. Get all raw gold stocks
+  const allStocks = await tx.rawgoldStock.findMany({ select: { id: true } });
+
+  // 2. Group logs by rawGoldStockId and sum weights (pure) and amounts (physical)
+  const grouped = await tx.rawGoldLogs.groupBy({
     by: ["rawGoldStockId"],
     _sum: {
       weight: true,
-      
+      amount: true,
     },
   });
 
-  //  Loop through each group and update the corresponding stock
-  for (const g of grouped) {
-    await prisma.rawgoldStock.update({
-      where: { id: g.rawGoldStockId },
+  // Create maps for quick lookup
+  const pureMap = grouped.reduce((map, g) => {
+    map[g.rawGoldStockId] = g._sum.weight || 0;
+    return map;
+  }, {});
+
+  const amtMap = grouped.reduce((map, g) => {
+    map[g.rawGoldStockId] = g._sum.amount || 0;
+    return map;
+  }, {});
+
+  // 3. Update every stock
+  for (const s of allStocks) {
+    const totalPure = pureMap[s.id] || 0;
+    const totalAmt = amtMap[s.id] || 0;
+    await tx.rawgoldStock.update({
+      where: { id: s.id },
       data: {
-        weight: g._sum.weight || 0,
-        remainingWt:g._sum.weight||0   // assumes your stock table has totalWeight column
+        weight: totalPure,
+        remainingWt: totalPure,
+        amount: totalAmt,
+        remainingAmt: totalAmt,
       },
     });
   }
@@ -45,9 +63,10 @@ const reduceRawGold  = async (givenGold,jobCardId,goldSmithId) => {
             id: gold.logId,
           },
           data: {
-            weight: -data.weight,
+            weight: -data.purity,
+            amount: -data.weight,
             touch: data.touch,
-            purity: data.purity,
+            purity: -data.purity,
           },
         });
         await prisma.givenGold.update({
@@ -69,9 +88,10 @@ const reduceRawGold  = async (givenGold,jobCardId,goldSmithId) => {
         const rawGoldLog = await prisma.rawGoldLogs.create({
           data: {
             rawGoldStockId: stock.id,
-            weight: -data.weight,
+            weight: -data.purity,
+            amount: -data.weight,
             touch: data.touch,
-            purity: data.purity,
+            purity: -data.purity,
           },
         });
         data = {
@@ -107,9 +127,10 @@ const expenseGoldReduce=async( expenseDate,gold,touch,purity,description)=>{
         const rawGoldLog = await prisma.rawGoldLogs.create({
           data: {
             rawGoldStockId: stock.id,
-            weight: -data.gold||0,
-            touch: data.touch||0,
-            purity: data.purity||0,
+            weight: -(data.purity || 0),
+            amount: -(data.gold || 0),
+            touch: data.touch || 0,
+            purity: -(data.purity || 0),
           },
         });
         data = {

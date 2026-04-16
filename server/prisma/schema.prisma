@@ -297,7 +297,9 @@ model RawgoldStock {
   touchId     Int
   touch       Float?
   weight      Float?
+  amount      Float?        @default(0)
   remainingWt Float?
+  remainingAmt Float?       @default(0)
   rawGoldLogs RawGoldLogs[]
   masterTouch MasterTouch   @relation(fields: [touchId], references: [id])
 
@@ -308,6 +310,7 @@ model RawGoldLogs {
   id                   Int                        @id @default(autoincrement())
   rawGoldStockId       Int
   weight               Float?
+  amount               Float?                     @default(0)
   touch                Float?
   purity               Float?
   date                 DateTime                   @default(now())
@@ -568,6 +571,7 @@ model PurchaseEntry {
 model PurchaseReceivedGold {
   id              Int           @id @default(autoincrement())
   purchaseEntryId Int
+  amount          Float         @default(0)
   weight          Float
   touch           Float
   logId           Int?
@@ -630,6 +634,7 @@ model ItemPurchaseEntry {
 model ItemPurchaseReceivedGold {
   id                  Int               @id @default(autoincrement())
   itemPurchaseEntryId Int
+  amount              Float             @default(0)
   weight              Float
   touch               Float
   date                DateTime          @default(now())
