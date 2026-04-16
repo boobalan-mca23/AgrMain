@@ -43,11 +43,17 @@ app.use(morgan("dev"));
 app.use(cors({
   origin: [
     "https://agrmain.onrender.com",
+    "https://agrmain.onrender.com/",
     "http://localhost:3000",
-    "https://agrclientapp.onrender.com"],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    "https://agrclientapp.onrender.com",
+    "https://agrclientapp.onrender.com/",
+    "https://agrclient.onrender.com",
+    "https://agrclient.onrender.com/"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
+  maxAge: 86400 // Cache preflight response for 24 hours
 }));
 
 app.use(bodyParser.json());
