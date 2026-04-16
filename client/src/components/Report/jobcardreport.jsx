@@ -226,7 +226,7 @@ const JobCardReport = () => {
               </Button>
             </div>
 
-            {viewType !== "JOBCARD" && paginatedRepairs && paginatedRepairs.length > 0 && (
+            {/* {viewType !== "JOBCARD" && paginatedRepairs && paginatedRepairs.length > 0 && (
               <div className="noprint">
                 <Button
                   variant="outlined"
@@ -237,7 +237,7 @@ const JobCardReport = () => {
                   View Repairs
                 </Button>
               </div>
-            )}
+            )} */}
 
 
 

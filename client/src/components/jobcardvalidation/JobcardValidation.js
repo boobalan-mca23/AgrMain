@@ -79,9 +79,9 @@ const receiveRowValidation = (received, setReceivedErrors) => {
 
 const checkAvailabilityStock = (rawGoldStock, usedTouches = []) => {
   if (usedTouches && usedTouches.length > 0) {
-    return rawGoldStock.find((item) => item.remainingWt < 0 && usedTouches.includes(parseFloat(item.touch))) || { stock: "ok" };
+    return rawGoldStock.find((item) => (item.remainingWt < 0 || item.remainingAmt < 0) && usedTouches.includes(parseFloat(item.touch))) || { stock: "ok" };
   }
-  return rawGoldStock.find((item) => item.remainingWt < 0) || { stock: "ok" };
+  return rawGoldStock.find((item) => (item.remainingWt < 0 || item.remainingAmt < 0)) || { stock: "ok" };
 };
 
 export {

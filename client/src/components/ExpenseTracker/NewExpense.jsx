@@ -30,9 +30,10 @@ const NewExpense = ({
   const handleChangeExpense = (e) => {
     const { name, value } = e.target;
 
-    // Save previous touch & weight
+    // Save previous values
     const prevTouch = parseFloat(newExpense.touch) || 0;
     const prevWeight = parseFloat(newExpense.gold) || 0;
+    const prevPurity = parseFloat(newExpense.purity) || 0;
 
     // Update newExpense state
     const copy = { ...newExpense, [name]: value };
@@ -40,24 +41,30 @@ const NewExpense = ({
     // Update purity
     if (name === "gold" || name === "touch") {
       let gold = parseFloat(copy.gold) || 0;
-      let touch = parseFloat(copy.touch) || 0;
-      copy.purity = ((gold * touch) / 100).toFixed(3);
+      let touchNum = parseFloat(copy.touch) || 0;
+      copy.purity = ((gold * touchNum) / 100).toFixed(3);
     }
 
     // Update rawGold stock
     let updatedRawGold = rawGold.map((item) => {
       let updatedItem = { ...item };
 
-      // Restore previous weight
+      // Restore previous weight (Physical) and purity (Pure)
       if (updatedItem.touch === prevTouch) {
-        updatedItem.remainingWt =
-          parseFloat(updatedItem.remainingWt) + prevWeight;
+        if (prevWeight > 0) {
+          updatedItem.remainingAmt = (parseFloat(updatedItem.remainingAmt || 0) + prevWeight);
+          updatedItem.remainingWt = (parseFloat(updatedItem.remainingWt || 0) + prevPurity);
+        }
       }
 
-      // Deduct new weight
+      // Deduct new values
       if (updatedItem.touch === parseFloat(copy.touch)) {
-        updatedItem.remainingWt =
-          parseFloat(updatedItem.remainingWt) - (parseFloat(copy.gold) || 0);
+        let newWeight = parseFloat(copy.gold) || 0;
+        let newPurity = parseFloat(copy.purity) || 0;
+        if (newWeight > 0) {
+          updatedItem.remainingAmt = (parseFloat(updatedItem.remainingAmt || 0) - newWeight);
+          updatedItem.remainingWt = (parseFloat(updatedItem.remainingWt || 0) - newPurity);
+        }
       }
 
       return updatedItem;
@@ -65,7 +72,6 @@ const NewExpense = ({
 
     // Set states
     setNewExpense(copy);
-    console.log("updateRawGold", updatedRawGold);
     setRawGold(updatedRawGold);
   };
 
@@ -201,8 +207,8 @@ const NewExpense = ({
                   <tr className="jobCardTouchTableRow">
                     <th>S.No</th>
                     <th>Touch</th>
-                    <th>Weight</th>
-                    <th>RemainWeight</th>
+                    <th>Physical</th>
+                    <th>Pure</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -210,14 +216,21 @@ const NewExpense = ({
                     <tr key={index + 1} className="jobCardTouchTableBody">
                       <td>{index + 1}</td>
                       <td>{rawStock.touch}</td>
-                      <td>{Number(rawStock.weight).toFixed(3)}</td>
                       <td
                         style={{
                           backgroundColor:
-                            rawStock.remainingWt < 0 ? "red" : "",
+                            (rawStock.remainingAmt || 0) < 0 ? "#ffcdd2" : "",
                         }}
                       >
-                        {Number(rawStock.remainingWt).toFixed(3)}
+                        {(rawStock.remainingAmt || 0).toFixed(3)}
+                      </td>
+                      <td
+                        style={{
+                          backgroundColor:
+                            (rawStock.remainingWt || 0) < 0 ? "#ffcdd2" : "",
+                        }}
+                      >
+                        {(rawStock.remainingWt || 0).toFixed(3)}
                       </td>
                     </tr>
                   ))}

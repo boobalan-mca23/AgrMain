@@ -128,38 +128,42 @@ function AgrNewJobCard({
 
     // STEP 1: get old values BEFORE overwrite
     const oldTouch = copy[i].touch;
-    const oldWeight = copy[i].weight;
+    const oldWeight = parseFloat(copy[i].weight) || 0;
+    const oldPurity = parseFloat(copy[i].purity) || 0;
 
     // STEP 2: restore old stock first
     let updateTouchStock = rawGoldStock.map((r) => ({ ...r }));
     updateTouchStock.forEach((touchItem) => {
       if (parseFloat(oldTouch) === touchItem.touch) {
-        if (oldWeight >= 0)
-          touchItem.remainingWt =
-            parseFloat(touchItem.remainingWt) + parseFloat(oldWeight || 0);
+        if (oldWeight > 0) {
+          touchItem.remainingAmt = (parseFloat(touchItem.remainingAmt || 0) + oldWeight);
+          touchItem.remainingWt = (parseFloat(touchItem.remainingWt || 0) + oldPurity);
+        }
       }
     });
 
     // STEP 3: clone row object and overwrite new value
     copy[i] = { ...copy[i], [field]: val, isEdit: true };
 
-    // STEP 4: deduct new value from stock
-    const newTouch = copy[i].touch;
-    const newWeight = copy[i].weight;
-
-    updateTouchStock.forEach((touchItem) => {
-      if (parseFloat(newTouch) === touchItem.touch) {
-        if (newWeight >= 0)
-          touchItem.remainingWt =
-            parseFloat(touchItem.remainingWt) - parseFloat(newWeight || 0);
-      }
-    });
-
-    // STEP 5: recalc purity
+    // STEP 4: recalc purity for the new values
     copy[i].purity = calculatePurity(
       parseFloat(copy[i].weight),
       parseFloat(copy[i].touch)
     );
+
+    // STEP 5: deduct new value from stock
+    const newTouch = copy[i].touch;
+    const newWeight = parseFloat(copy[i].weight) || 0;
+    const newPurity = parseFloat(copy[i].purity) || 0;
+
+    updateTouchStock.forEach((touchItem) => {
+      if (parseFloat(newTouch) === touchItem.touch) {
+        if (newWeight > 0) {
+          touchItem.remainingAmt = (parseFloat(touchItem.remainingAmt || 0) - newWeight);
+          touchItem.remainingWt = (parseFloat(touchItem.remainingWt || 0) - newPurity);
+        }
+      }
+    });
 
     // STEP 6: set state
     setGivenGold(copy);
@@ -660,8 +664,8 @@ function AgrNewJobCard({
                   <tr className="jobCardTouchTableRow">
                     <th>S.No</th>
                     <th>Touch</th>
-                    <th>Weight</th>
-                    <th>RemainWeight</th>
+                    <th>Physical</th>
+                    <th>Pure</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -669,14 +673,21 @@ function AgrNewJobCard({
                     <tr key={index + 1} className="jobCardTouchTableBody">
                       <td>{index + 1}</td>
                       <td>{rawStock.touch}</td>
-                      <td>{rawStock.weight.toFixed(3)}</td>
                       <td
                         style={{
                           backgroundColor:
-                            rawStock.remainingWt < 0 ? "red" : "",
+                            (rawStock.remainingAmt || 0) < 0 ? "#ffcdd2" : "",
                         }}
                       >
-                        {rawStock.remainingWt.toFixed(3)}
+                        {(rawStock.remainingAmt || 0).toFixed(3)}
+                      </td>
+                      <td
+                        style={{
+                          backgroundColor:
+                            (rawStock.remainingWt || 0) < 0 ? "#ffcdd2" : "",
+                        }}
+                      >
+                        {(rawStock.remainingWt || 0).toFixed(3)}
                       </td>
                     </tr>
                   ))}
