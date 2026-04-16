@@ -50,6 +50,7 @@ const CustomerRepairStockList = () => {
                 params: { source: "CUSTOMER" },
             });
             setRepairs(res.data.repairs || []);
+            console.log("mydata", res.data.repairs)
         } catch {
             toast.error("Failed to load customer repair stock");
         }
@@ -129,8 +130,14 @@ const CustomerRepairStockList = () => {
         <td>${item.itemName || item.product?.itemName || "-"}</td>
         <td>${item.bill?.customers?.name || "-"}</td>
         <td>${item.goldsmith?.name || "-"}</td>
+        <td>${item.count || "-"}</td>
         <td>${fmtNum(item.grossWeight)}</td>
         <td>${fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</td>
+        <td>${fmtNum(item.netWeight)}</td>
+        <td>${fmtNum(item.product?.touch)}</td>
+        <td>${item.product?.wastageType || "-"}</td>
+        <td>${fmtNum(item.product?.wastageValue)}</td>
+        <td>${fmtNum(item.product?.wastagePure)}</td>
         <td>${fmtNum(item.purity)}</td>
         <td class="reason-column">${item.reason || "-"}</td>
         <td>${item.status || "-"}</td>
@@ -144,12 +151,13 @@ const CustomerRepairStockList = () => {
         <head>
           <title>Customer Repair Stock</title>
           <style>
-            body { font-family: Arial, sans-serif; font-size: 13px; margin: 20px; }
+            @page { size: landscape; margin: 10mm; }
+            body { font-family: Arial, sans-serif; font-size: 13px; margin: 0; }
             h2 { text-align: center; margin-bottom: 4px; }
-            .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 12px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #aaa; padding: 6px 9px; text-align: left; font-size: 11px; vertical-align: top; }
-            .reason-column { width: 200px; min-width: 150px; white-space: normal; word-break: break-word; }
+            .date-range { text-align: center; font-weight: bold; margin-bottom: 12px; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th, td { border: 1px solid #aaa; padding: 6px 4px; text-align: left; font-size: 11px; vertical-align: top; word-wrap: break-word; }
+            .reason-column { width: 150px; }
             th { background: #2c3e50; color: #fff; font-weight: bold; }
             tr:nth-child(even) td { background: #f9f9f9; }
             @media print {
@@ -163,17 +171,23 @@ const CustomerRepairStockList = () => {
           <table>
             <thead>
               <tr>
-                <th style="width: 40px;">S.No</th>
-                <th style="width: 80px;">Sent Date</th>
-                <th style="width: 60px;">Bill No</th>
-                <th>Product</th>
-                <th>Customer</th>
+                <th style="width: 35px;">S.No</th>
+                <th style="width: 70px;">Sent Date</th>
+                <th style="width: 50px;">Bill No</th>
+                <th style="width: 120px;">Product</th>
+                <th style="width: 120px;">Customer</th>
                 <th style="width: 80px;">Goldsmith</th>
-                <th style="width: 60px;">Wt</th>
-                <th style="width: 60px;">Stone Wt</th>
-                <th style="width: 60px;">Purity</th>
+                <th style="width: 40px;">Count</th>
+                <th style="width: 50px;">Gr.Wt</th>
+                <th style="width: 50px;">St.Wt</th>
+                <th style="width: 50px;">Net.Wt</th>
+                <th style="width: 45px;">Touch</th>
+                <th style="width: 50px;">Wast.T</th>
+                <th style="width: 45px;">Wast.V</th>
+                <th style="width: 45px;">Wast.P</th>
+                <th style="width: 50px;">Fin.Pur</th>
                 <th class="reason-column">Reason</th>
-                <th style="width: 80px;">Status</th>
+                <th style="width: 70px;">Status</th>
               </tr>
             </thead>
             <tbody>${tableRows}</tbody>
@@ -309,9 +323,15 @@ const CustomerRepairStockList = () => {
                         <TableCell className="BillTable-th-td">Product Name</TableCell>
                         <TableCell className="BillTable-th-td">Customer</TableCell>
                         <TableCell className="BillTable-th-td">Goldsmith</TableCell>
+                        <TableCell className="BillTable-th-td">Count</TableCell>
                         <TableCell className="BillTable-th-td">Wt</TableCell>
                         <TableCell className="BillTable-th-td">Stone Wt</TableCell>
-                        <TableCell className="BillTable-th-td">Purity</TableCell>
+                        <TableCell className="BillTable-th-td">Net Wt</TableCell>
+                        <TableCell className="BillTable-th-td">Touch</TableCell>
+                        <TableCell className="BillTable-th-td">wastage Type</TableCell>
+                        <TableCell className="BillTable-th-td">wastage</TableCell>
+                        <TableCell className="BillTable-th-td">wastage Pure</TableCell>
+                        <TableCell className="BillTable-th-td">Final Purity</TableCell>
                         <TableCell className="BillTable-th-td BillTable-reason">Reason</TableCell>
                         <TableCell className="BillTable-th-td">Status</TableCell>
                         <TableCell className="BillTable-th-td">Action</TableCell>
@@ -328,8 +348,14 @@ const CustomerRepairStockList = () => {
                                 <TableCell className="BillTable-tb-td">{item.itemName || item.product?.itemName || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{item.bill?.customers?.name || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{item.goldsmith?.name || "-"}</TableCell>
+                                <TableCell className="BillTable-tb-td">{item.count || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.grossWeight)}</TableCell>
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.netWeight)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.product.touch)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{item.product.wastageType}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.product.wastageValue)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.product.wastagePure)}</TableCell>
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.purity)}</TableCell>
                                 <TableCell className="BillTable-tb-td BillTable-reason">{item.reason || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{statusChip(item.status)}</TableCell>
