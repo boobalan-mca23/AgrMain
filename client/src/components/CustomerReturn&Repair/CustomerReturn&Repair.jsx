@@ -82,7 +82,8 @@ const CustomerReturn = () => {
   const [openReturnDialog, setOpenReturnDialog] = useState(false);
   const [returnReason, setReturnReason] = useState("");
   const [returnQC, setReturnQC] = useState({
-    touch: 0,
+    touch: 0,       // actual product touch/purity % — never overwritten by user edit
+    percentage: 0,  // billing percentage (profit %) — what the user edits
     itemWeight: 0,
     count: 1,
     stoneWeight: 0,
@@ -94,7 +95,8 @@ const CustomerReturn = () => {
     finalWeight: 0,
   });
   const [repairQC, setRepairQC] = useState({
-    touch: 0,
+    touch: 0,       // actual product touch/purity % — never overwritten by user edit
+    percentage: 0,  // billing percentage (profit %) — what the user edits
     itemWeight: 0,
     count: 1,
     stoneWeight: 0,
@@ -160,7 +162,8 @@ const CustomerReturn = () => {
     setReason("");
     setRepairQC({
       itemWeight: item.weight || 0,
-      touch: item.touch || item.percentage || 0,
+      touch: item.touch || 0,                           // actual product purity — preserved as-is
+      percentage: item.percentage || item.touch || 0,   // billing % — editable by user
       count: item.count || 0,
       stoneWeight: item.stoneWeight || 0,
       wastageValue: item.wastageValue || 0,
@@ -178,7 +181,8 @@ const CustomerReturn = () => {
     console.log("item", item);
     setReturnQC({
       itemWeight: item.weight || 0,
-      touch: item.touch || item.percentage || 0,
+      touch: item.touch || 0,                           // actual product purity — preserved as-is
+      percentage: item.percentage || item.touch || 0,   // billing % — editable by user
       count: item.count || 0,
       stoneWeight: item.stoneWeight || 0,
       wastageValue: item.wastageValue || 0,
@@ -329,11 +333,13 @@ const CustomerReturn = () => {
           orderItemId: selectedProduct.id,
           reason: returnReason,
           ...returnQC,
+          // touch (actual purity) comes from returnQC.touch — not overwritten
+          // percentage (billing %) comes from returnQC.percentage
           netWeight: currentNetWeight,
           wastagePure: currentWastagePure,
           finalPurity: currentFinalPurity,
           actualPurity: currentActualPurity,
-          finalWeight: (currentNetWeight * Number(selectedProduct?.percentage || 0)) / 100, // Sync with FWT calculation
+          finalWeight: (currentNetWeight * Number(returnQC.percentage || 0)) / 100, // FWT uses billing %
         }
       )).data.updatedOrderItem;
 
@@ -427,14 +433,15 @@ const CustomerReturn = () => {
           weight: repairQC.itemWeight,
           count: repairQC.count,
           stoneWeight: repairQC.stoneWeight,
-          touch: repairQC.touch,
+          touch: repairQC.touch,             // actual product purity — must not be replaced by billing %
+          percentage: repairQC.percentage,   // billing % — for FWT calc on server
           wastageValue: repairQC.wastageValue,
           wastageType: repairQC.wastageType,
           wastagePure: currentRepairWastagePure,
           netWeight: currentRepairNetWeight,
           finalPurity: currentRepairFinalPurity,
           actualPurity: currentRepairActualPurity,
-          finalWeight: (currentRepairNetWeight * Number(selectedProduct?.percentage || 0)) / 100, // Sync with FWT calculation
+          finalWeight: (currentRepairNetWeight * Number(repairQC.percentage || 0)) / 100, // FWT uses billing %
         },
         reason
       })).data.updatedOrderItem;
@@ -1103,12 +1110,25 @@ const CustomerReturn = () => {
                 </td>
               </tr>
               <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch %</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch %<br />(profit percentage<br />entered while billing)</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   <b>{safeFixed(selectedProduct?.percentage)}</b>
                 </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={repairQC.percentage}
+                    onChange={(e) =>
+                      setRepairQC({ ...repairQC, percentage: e.target.value })
+                    }
+                    disabled={false}
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(repairQC.percentage)}
+                </td>
               </tr>
               <tr>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>FWT (g)</td>
@@ -1117,7 +1137,7 @@ const CustomerReturn = () => {
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#2e7d32', textAlign: 'center' }}>
-                  {safeFixed((currentRepairNetWeight * Number(selectedProduct?.percentage || 0)) / 100)}
+                  {safeFixed((currentRepairNetWeight * Number(repairQC.percentage || 0)) / 100)}
                 </td>
               </tr>
               {/* DEBUG ROWS */}
@@ -1348,12 +1368,25 @@ const CustomerReturn = () => {
                 </td>
               </tr>
               <tr>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch %<br />(profit percentage <br /> entered while billing)</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>Touch %<br />(profit percentage<br />entered while billing)</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
                   <b>{safeFixed(selectedProduct?.percentage)}</b>
                 </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={returnQC.percentage}
+                    onChange={(e) =>
+                      setReturnQC({ ...returnQC, percentage: e.target.value })
+                    }
+                    disabled={false}
+                    sx={{ width: '100px' }}
+                  />
+                </td>
+                <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', textAlign: 'center' }}>
+                  {safeFixed(returnQC.percentage)}
+                </td>
               </tr>
               <tr>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap', textAlign: 'left' }}>FWT (g)</td>
@@ -1362,7 +1395,7 @@ const CustomerReturn = () => {
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', textAlign: 'center', color: '#aaa' }}>-</td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#2e7d32', textAlign: 'center' }}>
-                  {safeFixed((currentNetWeight * Number(selectedProduct?.percentage || 0)) / 100)}
+                  {safeFixed((currentNetWeight * Number(returnQC.percentage || 0)) / 100)}
                 </td>
               </tr>
               {/* DEBUG ROWS */}
