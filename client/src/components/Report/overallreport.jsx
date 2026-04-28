@@ -205,7 +205,7 @@ const OverallReportNew = () => {
           Summary of all balances, stock, and profits
         </Typography>
 
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
+       {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
@@ -241,7 +241,7 @@ const OverallReportNew = () => {
               Clear
             </Button>
           </Stack>
-        </LocalizationProvider>
+        </LocalizationProvider>*/}
       </Box>
 
       {loading ? (
