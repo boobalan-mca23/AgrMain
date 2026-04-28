@@ -25,8 +25,8 @@ const OverallReportNew = () => {
   const [activeCustomers, setActiveCustomers] = useState([]); // Base list for period
   const [filteredCustomers, setFilteredCustomers] = useState([]); // Search-filtered list
   const [searchTerm, setSearchTerm] = useState("");
-  const [startDate, setStartDate] = useState(dayjs().subtract(15, "day"));
-  const [endDate, setEndDate] = useState(dayjs());
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
   const [loading, setLoading] = useState(false);
   const printRef = useRef();
 
