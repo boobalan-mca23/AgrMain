@@ -13,7 +13,7 @@ import {
   Paper,
   IconButton,
 } from "@mui/material";
-import { Search, CalendarToday, FilterList, Clear as ClearIcon, Print } from "@mui/icons-material";
+import { Search, Clear as ClearIcon } from "@mui/icons-material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -38,9 +38,19 @@ const OverallReportNew = () => {
     setLoading(true);
     setReportData([]);
     try {
-      const start = startDate ? startDate.format("YYYY-MM-DD") : "";
-      const end = endDate ? endDate.format("YYYY-MM-DD") : "";
-      const queryParams = start && end ? `?startDate=${start}&endDate=${end}` : "";
+      let start = startDate ? startDate.format("YYYY-MM-DD") : "";
+      let end = endDate ? endDate.format("YYYY-MM-DD") : "";
+
+      // If 'From' is selected but 'To' is not, default 'To' to today
+      if (start && !end) {
+        end = dayjs().format("YYYY-MM-DD");
+      }
+      // If 'To' is selected but 'From' is not, default 'From' to a very early date
+      if (!start && end) {
+        start = "2000-01-01";
+      }
+
+      const queryParams = (start && end) ? `?startDate=${start}&endDate=${end}` : "";
       
       const [customersRes, billsRes, stockRes, entriesRes, purchaseStockRes] = await Promise.all([
         fetch(`${BACKEND_SERVER_URL}/api/customers`),
@@ -83,11 +93,6 @@ const OverallReportNew = () => {
         // Count only customers who billed during this period
         const activeCustomerIds = new Set(billData.map(b => b.customer_id));
         activeCustomersCount = activeCustomerIds.size;
-
-        // Filter consumers table for only active ones
-        const list = customersData.filter(c => activeCustomerIds.has(c.id));
-        setActiveCustomers(list);
-        setFilteredCustomers(list);
       } else {
         // No filter: show absolute current running balances for all time
         pureBalanceTotal = customersData.reduce(
@@ -99,9 +104,11 @@ const OverallReportNew = () => {
           0
         );
         activeCustomersCount = customersData.length;
-        setActiveCustomers(customersData);
-        setFilteredCustomers(customersData);
       }
+
+      // Option A: The table always shows ALL customers and their all-time overall running balance
+      setActiveCustomers(customersData);
+      setFilteredCustomers(customersData);
 
       setCustomers(customersData);
 
@@ -205,7 +212,7 @@ const OverallReportNew = () => {
           Summary of all balances, stock, and profits
         </Typography>
 
-       {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
@@ -241,7 +248,7 @@ const OverallReportNew = () => {
               Clear
             </Button>
           </Stack>
-        </LocalizationProvider>*/}
+        </LocalizationProvider>
       </Box>
 
       {loading ? (

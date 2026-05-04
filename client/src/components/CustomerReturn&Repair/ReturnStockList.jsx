@@ -113,7 +113,7 @@ const ReturnStockList = () => {
         <td>${fmtNum(item.weight)}</td>
         <td>${fmtNum(item.stoneWeight || item.product?.stoneWeight || item.itemPurchase?.stoneWeight)}</td>
         <td>${fmtNum(item.awt)}</td>
-        <td>${fmtNum(item.touch || item.product?.touch || item.itemPurchase?.touch)}</td>
+        <td>${fmtNum(item.percentage || item.touch || item.product?.touch || item.itemPurchase?.touch)}</td>
         <td>${item.product?.wastageType || item.itemPurchase?.wastageType || "-"}</td>
         <td>${fmtNum(item.product?.wastageValue || item.itemPurchase?.wastageValue)}</td>
         <td>${fmtNum(item.product?.wastagePure || item.itemPurchase?.wastagePure)}</td>
@@ -310,7 +310,7 @@ const ReturnStockList = () => {
                 <TableCell className="BillTable-tb-td">{fmtNum(item.weight)}</TableCell>
                 <TableCell className="BillTable-tb-td">{fmtNum(item.stoneWeight || item.product?.stoneWeight || item.itemPurchase?.stoneWeight)}</TableCell>
                 <TableCell className="BillTable-tb-td">{fmtNum(item.awt)}</TableCell>
-                <TableCell className="BillTable-tb-td">{fmtNum(item.touch || item.product?.touch || item.itemPurchase?.touch)}</TableCell>
+                <TableCell className="BillTable-tb-td">{fmtNum(item.percentage || item.touch || item.product?.touch || item.itemPurchase?.touch)}</TableCell>
                 <TableCell className="BillTable-tb-td">{item.product?.wastageType || item.itemPurchase?.wastageType || "-"}</TableCell>
                 <TableCell className="BillTable-tb-td">{fmtNum(item.product?.wastageValue || item.itemPurchase?.wastageValue)}</TableCell>
                 <TableCell className="BillTable-tb-td">{fmtNum(item.product?.wastagePure || item.itemPurchase?.wastagePure)}</TableCell>
