@@ -83,6 +83,7 @@ const returnCustomerItem = async (req, res) => {
     netWeight,
     finalPurity,
     finalWeight,
+    percentage,
   } = req.body;
 
   try {
@@ -319,7 +320,7 @@ const returnCustomerItem = async (req, res) => {
           stoneWeight: Number(stoneWeight || item.stoneWeight || 0),
           enteredStoneWeight: Number(stoneWeight || 0),
           touch: Number(touch || item.touch || 0),
-          percentage: Number(item.percentage || 0),
+          percentage: Number(percentage || item.percentage || 0),
           reason: reason || "Customer return",
           source: "CUSTOMER"
         }
