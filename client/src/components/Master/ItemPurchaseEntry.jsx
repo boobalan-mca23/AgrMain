@@ -199,6 +199,7 @@ function ItemPurchaseEntry() {
   };
 
   const handleReceiveSubmit = async () => {
+    if (saving) return;
     if (!receiveForm.weight || !receiveForm.touch) {
       toast.error("Please fill weight and touch");
       return;
@@ -215,6 +216,7 @@ function ItemPurchaseEntry() {
     }
 
     try {
+      setSaving(true);
       const payload = {
         itemPurchaseEntryId: selectedEntryForReceive.id,
         amount: Number(receiveForm.amount),
@@ -243,6 +245,8 @@ function ItemPurchaseEntry() {
       });
     } catch (err) {
       toast.error(err.response?.data?.msg || "Failed");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -464,7 +468,7 @@ function ItemPurchaseEntry() {
 
 
   const handleSubmit = async () => {
-
+    if (saving) return;
     const payload = {
 
       supplierId: Number(supplierId),
@@ -496,7 +500,7 @@ function ItemPurchaseEntry() {
     }
 
     try {
-
+      setSaving(true);
       if (isEdit) {
 
         await axios.put(

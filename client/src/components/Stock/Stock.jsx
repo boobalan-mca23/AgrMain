@@ -33,6 +33,7 @@ const Stock = () => {
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [addNetWeight, setAddNetWeight] = useState("");
   const [groupedBCPurity, setGroupedBCPurity] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const paginatedData = stockData.slice(
     page * rowsPerPage,
@@ -286,6 +287,9 @@ const handleSaveAddWeight = async () => {
     return;
   }
 
+  if (isSaving) return;
+  setIsSaving(true);
+
   try {
     await axios.post(`${BACKEND_SERVER_URL}/api/productStock/add-weight`, {
     productStockId: selectedProduct.id,
@@ -298,6 +302,8 @@ const handleSaveAddWeight = async () => {
     await fetchPuritySummary();
   } catch (err) {
     alert(err.response?.data?.err || "Failed to add weight");
+  } finally {
+    setIsSaving(false);
   }
 };
 
@@ -689,8 +695,8 @@ const handleSaveAddWeight = async () => {
 
         <DialogActions>
           <Button onClick={() => setOpenAddPopup(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveAddWeight}>
-            Save
+          <Button variant="contained" onClick={handleSaveAddWeight} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </DialogActions>
       </Dialog>

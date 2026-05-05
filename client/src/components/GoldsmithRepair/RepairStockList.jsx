@@ -55,6 +55,7 @@ const RepairStockList = () => {
     wastageDelta: 0,
     finalPurity: 0
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   const netWeight = Math.max(0, Number(qc.itemWeight || 0) - Number(qc.stoneWeight || 0));
 
@@ -134,6 +135,7 @@ const RepairStockList = () => {
   };
 
   const handleReceive = async (destination = "STOCK") => {
+    if (isSaving) return;
     const weight = Number(qc.itemWeight || 0);
     if (weight <= 0) {
       toast.error("Item weight must be greater than zero");
@@ -141,6 +143,7 @@ const RepairStockList = () => {
     }
 
     try {
+      setIsSaving(true);
       await axios.post(`${BACKEND_SERVER_URL}/api/repair/return`, {
         repairId: selectedRepair.id,
         itemWeight: qc.itemWeight,
@@ -158,6 +161,8 @@ const RepairStockList = () => {
       fetchRepairStock();
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to return repair");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -499,9 +504,10 @@ const RepairStockList = () => {
           <Button
             variant="contained"
             color="success"
+            disabled={isSaving}
             onClick={() => handleReceive("STOCK")}
           >
-            Confirm & Return
+            {isSaving ? "Returning..." : "Confirm & Return"}
           </Button>
         </DialogActions>
 

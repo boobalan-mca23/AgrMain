@@ -98,6 +98,7 @@ function PurchaseEntry() {
   const [receiveSearch, setReceiveSearch] = useState("");
   const [receivePage, setReceivePage] = useState(0);
   const [receiveRowsPerPage, setReceiveRowsPerPage] = useState(5);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchSupplierName();
@@ -285,6 +286,8 @@ function PurchaseEntry() {
   };
 
   const handleSaveReceive = async () => {
+    if (isSaving) return;
+    if (!receiveForm.amount && !receiveForm.weight) {
     if (!receiveForm.amount && !receiveForm.weight) {
       toast.error("Please fill weight or amount");
       return;
@@ -303,6 +306,7 @@ function PurchaseEntry() {
     }
 
     try {
+      setIsSaving(true);
       await axios.post(`${BACKEND_SERVER_URL}/api/purchase-entry/receive-gold`, {
         purchaseEntryId: selectedEntryForReceive.id,
         amount: Number(receiveForm.amount),
@@ -316,6 +320,8 @@ function PurchaseEntry() {
       setReceiveForm(prev => ({ ...prev, amount: "", weight: "" })); // Reset weight after save
     } catch (err) {
       toast.error(err.response?.data?.msg || "Failed to receive gold");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -416,7 +422,7 @@ function PurchaseEntry() {
 
 
   const handleSubmit = async () => {
-
+    if (isSaving) return;
     const payload = {
 
       supplierId: Number(supplierId),
@@ -475,7 +481,7 @@ function PurchaseEntry() {
     }
 
     try {
-
+      setIsSaving(true);
       if (isEdit) {
 
         await axios.put(
@@ -513,11 +519,10 @@ function PurchaseEntry() {
       closeDialog();
 
     } catch {
-
       toast.error("Failed");
-
+    } finally {
+      setIsSaving(false);
     }
-
   };
 
 

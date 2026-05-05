@@ -42,6 +42,7 @@ const Bullion = () => {
   const [allData, setAllData] = useState([]);
   const [editId, setEditId] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Search and Pagination State
   const [searchQuery, setSearchQuery] = useState("");
@@ -157,6 +158,7 @@ const Bullion = () => {
     entries.reduce((sum, entry) => sum + (entry.grams || 0), 0);
 
   const handleAddGiven = async () => {
+    if (isSaving) return;
     if (!editId) {
       toast.error("Save the purchase first before adding installments.");
       return;
@@ -187,6 +189,7 @@ const Bullion = () => {
       ];
 
       try {
+        setIsSaving(true);
         await axios.put(
           `${BACKEND_SERVER_URL}/api/bullion-purchase/given-details/${editId}`,
           { givenDetails: updatedGiven }
@@ -201,6 +204,8 @@ const Bullion = () => {
       } catch (err) {
         console.error("Failed to add given detail", err);
         toast.error("Failed to add Installment");
+      } finally {
+        setIsSaving(false);
       }
     } else {
       toast.error("Please provide valid Amount, Touch, and Rate.");
@@ -222,7 +227,9 @@ const Bullion = () => {
       return;
     }
 
+    if (isSaving) return;
     try {
+      setIsSaving(true);
       const currentRate = parseFloat(rate);
       const amountVal = parseFloat(newGivenAmount);
       const touchVal = parseFloat(newGivenTouch);
@@ -282,6 +289,8 @@ const Bullion = () => {
     } catch (err) {
       console.error("Failed to save bullion purchase", err);
       toast.error("Failed to save purchase");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -508,7 +517,7 @@ const Bullion = () => {
               />
               <IconButton
                 onClick={handleAddGiven}
-                disabled={!rate || !newGivenAmount || !newGivenTouch}
+                disabled={!rate || !newGivenAmount || !newGivenTouch || isSaving}
               >
                 <AddCircleOutlineIcon color="primary" />
               </IconButton>
@@ -527,8 +536,8 @@ const Bullion = () => {
 
         <DialogActions>
           <Button onClick={closeDialog}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>
-            {editId ? "Save" : "Create"}
+          <Button variant="contained" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : (editId ? "Save" : "Create")}
           </Button>
         </DialogActions>
       </Dialog>

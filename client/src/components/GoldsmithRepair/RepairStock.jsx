@@ -44,6 +44,7 @@ const ProductStock = () => {
     netWeight: 0,
     finalPurity: 0,
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   const calculatePurity = (qc) => {
     const netWeight = (Number(qc.itemWeight) || 0) - (Number(qc.stoneWeight) || 0);
@@ -142,39 +143,42 @@ const ProductStock = () => {
       toast.error("Weight must be greater than zero");
       return;
     }
+    if (isSaving) return;
+    setIsSaving(true);
 
-    await axios.post(`${BACKEND_SERVER_URL}/api/repair/send`, {
+    try {
+      await axios.post(`${BACKEND_SERVER_URL}/api/repair/send`, {
+        source: selectedProduct.stockType === "PRODUCT" ? "GOLDSMITH" : "ITEM_PURCHASE",
+        productId: selectedProduct.id,
+        goldsmithId: selectedGoldsmith || null,
+        reason: reason || null,
+        repairProduct: {
+          ...selectedProduct,
+          weight: repairQC.itemWeight,
+          count: repairQC.count,
+          stoneWeight: repairQC.stoneWeight,
+          touch: repairQC.touch,
+          wastageValue: repairQC.wastageValue,
+          wastageType: repairQC.wastageType,
+          wastagePure: currentWastagePure,
+          netWeight: currentNetWeight,
+          finalPurity: currentFinalPurity,
+          actualPurity: currentActualPurity,
+        }
+      });
 
-      source: selectedProduct.stockType === "PRODUCT" ? "GOLDSMITH" : "ITEM_PURCHASE",
+      setOpenSendDialog(false);
+      setSelectedGoldsmith("");
+      setReason("");
+      toast.success("Sent to repair successfully");
 
-      productId: selectedProduct.id,
-
-      goldsmithId: selectedGoldsmith || null,
-
-      reason: reason || null,
-
-      repairProduct: {
-        ...selectedProduct,
-        weight: repairQC.itemWeight,
-        count: repairQC.count,
-        stoneWeight: repairQC.stoneWeight,
-        touch: repairQC.touch,
-        wastageValue: repairQC.wastageValue,
-        wastageType: repairQC.wastageType,
-        wastagePure: currentWastagePure,
-        netWeight: currentNetWeight,
-        finalPurity: currentFinalPurity,
-        actualPurity: currentActualPurity,
-      }
-
-    });
-
-    setOpenSendDialog(false);
-    setSelectedGoldsmith("");
-    setReason("");
-
-    await fetchProductStock();
-    await fetchItemPurchaseStock();
+      await fetchProductStock();
+      await fetchItemPurchaseStock();
+    } catch (err) {
+      toast.error("Failed to send to repair");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -482,10 +486,10 @@ const ProductStock = () => {
 
           <Button
             variant="contained"
-            disabled={!selectedGoldsmith}
+            disabled={!selectedGoldsmith || isSaving}
             onClick={handleSend}
           >
-            Confirm
+            {isSaving ? "Processing..." : "Confirm"}
           </Button>
         </DialogActions>
 

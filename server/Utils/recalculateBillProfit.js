@@ -5,6 +5,7 @@ const recalculateBillProfit = async (billId, tx) => {
 
   let billDetailsProfit = 0;
   let stoneProfit = 0;
+  let totalTouchProfit = 0;
 
   for (const item of items) {
     // We only calculate profit for items that are still "active" on the bill
@@ -12,26 +13,16 @@ const recalculateBillProfit = async (billId, tx) => {
     const weight = Number(item.weight) || 0;
     if (weight <= 0) continue;
 
-    let purchaseWastage = 0;
-    let purchaseTouch = 0;
-
+    let stock = null;
     if (item.stockId) {
       if (item.stockType === "ITEM_PURCHASE") {
-        const stock = await tx.itemPurchaseEntry.findUnique({
+        stock = await tx.itemPurchaseEntry.findUnique({
           where: { id: item.stockId }
         });
-        if (stock) {
-          purchaseWastage = Number(stock.wastage) || 0;
-          purchaseTouch = Number(stock.touch) || 0;
-        }
       } else {
-        const stock = await tx.productStock.findUnique({
+        stock = await tx.productStock.findUnique({
           where: { id: item.stockId }
         });
-        if (stock) {
-          purchaseWastage = Number(stock.wastageValue) || 0;
-          purchaseTouch = Number(stock.touch) || 0;
-        }
       }
     }
 
@@ -40,23 +31,35 @@ const recalculateBillProfit = async (billId, tx) => {
     const eStWt = Number(item.enteredStoneWeight) || 0;
     const aStWt = Number(item.stoneWeight) || 0;
 
-    // Formula: fwt - (awt * purchaseWastage) / 100
-    const rowBillProfit = fwt - (awt * purchaseWastage) / 100;
-    billDetailsProfit += rowBillProfit;
+    if (stock) {
+      const touchValue = Number(stock.touch) || 0;
+      const wastageValue =
+        item.stockType === "ITEM_PURCHASE"
+          ? Number(stock.wastage)
+          : Number(stock.wastageValue);
 
-    // Formula: (eStWt - aStWt) * purchaseTouch / 100
-    const rowStoneProfit = Math.max(0, eStWt - aStWt) * purchaseTouch / 100;
-    stoneProfit += rowStoneProfit;
+      // Bill Details Profit: Old formula (FWT - AWT * Wastage / 100)
+      const rowDetailsProfit = fwt - (awt * wastageValue) / 100;
+      billDetailsProfit += rowDetailsProfit;
+
+      // Total Profit Component: Touch-based Margin (FWT - AWT * Touch / 100)
+      const rowTouchProfit = fwt - (awt * touchValue) / 100;
+      totalTouchProfit += rowTouchProfit;
+
+      // Stone Profit calculation using the same stock's touch
+      const rowStoneProfit = Math.max(0, eStWt - aStWt) * touchValue / 100;
+      stoneProfit += rowStoneProfit;
+    }
   }
 
-  const totalProfit = billDetailsProfit + stoneProfit;
+  const finalTotalProfit = totalTouchProfit //+ stoneProfit;
 
   await tx.bill.update({
     where: { id: billId },
     data: {
       billDetailsprofit: Number(billDetailsProfit.toFixed(3)),
       Stoneprofit: Number(stoneProfit.toFixed(3)),
-      Totalprofit: Number(totalProfit.toFixed(3))
+      Totalprofit: Number(finalTotalProfit.toFixed(3))
     }
   });
 };

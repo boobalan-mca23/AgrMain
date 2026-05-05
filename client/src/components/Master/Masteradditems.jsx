@@ -16,6 +16,7 @@ const Masteradditems = () => {
   const [editValue, setEditValue] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Regex: only letters, numbers, spaces allowed
   const validName = /^[a-zA-Z0-9\s]+$/;
@@ -34,30 +35,33 @@ const Masteradditems = () => {
   };
 
   const handleAddItem = async () => {
-    if (itemName.trim()) {
-
-
-
-      if (!validName.test(itemName.trim())) {
-        toast.warn("Special characters are not allowed.", { autoClose: 2000 });
-        return;
-      }
-
-      try {
-        await axios.post(`${BACKEND_SERVER_URL}/api/master-items/create`, {
-          itemName: itemName.trim(),
-        });
-        setItemName("");
-        fetchItems();
-        toast.success("Item added successfully!");
-      } catch (err) {
-        console.error("Failed to add item", err);
-        toast.error(err.response?.data?.msg || "Something went wrong", {
-          autoClose: 2000,
-        });
-      }
-    } else {
+    if (!itemName.trim()) {
       toast.warn("Please enter item name.");
+      return;
+    }
+
+    if (!validName.test(itemName.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
+
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      await axios.post(`${BACKEND_SERVER_URL}/api/master-items/create`, {
+        itemName: itemName.trim(),
+      });
+      setItemName("");
+      fetchItems();
+      toast.success("Item added successfully!");
+    } catch (err) {
+      console.error("Failed to add item", err);
+      toast.error(err.response?.data?.msg || "Something went wrong", {
+        autoClose: 2000,
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -93,6 +97,9 @@ const Masteradditems = () => {
       toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
+
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       await axios.put(`${BACKEND_SERVER_URL}/api/master-items/${id}`, {
         itemName: editValue.trim(),
@@ -106,6 +113,8 @@ const Masteradditems = () => {
       toast.error(err.response?.data?.msg || "Something went wrong", {
         autoClose: 2000,
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -153,8 +162,9 @@ const Masteradditems = () => {
             }}
             variant="contained"
             onClick={handleAddItem}
+            disabled={isSaving}
           >
-            Add Item
+            {isSaving ? "Adding..." : "Add Item"}
           </Button>
         </div>
 
@@ -206,8 +216,9 @@ const Masteradditems = () => {
                                 cursor: "pointer",
                               }}
                               onClick={() => handleSaveEdit(item.id)}
+                              disabled={isSaving}
                             >
-                              Save
+                              {isSaving ? "..." : "Save"}
                             </button>
                             <button
                               style={{

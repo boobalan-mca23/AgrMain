@@ -224,6 +224,7 @@ function MasterCustomer() {
   };
 
   const handleUpdate = async () => {
+    if (saving) return;
     const phoneTrimmed = editedData.phone.trim();
     if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
       toast.error("Phone number must be 10 digits.");

@@ -1011,6 +1011,7 @@ const Billing = () => {
   const { billDetailsProfit, stoneProfit, totalBillProfit, billProfitPercentage } = useMemo(() => {
     let detailsProfit = 0;
     let stoneProfitCalc = 0;
+    let totalBillProfitCalc = 0;
 
     billDetailRows.forEach((row, index) => {
       let productStock;
@@ -1028,35 +1029,35 @@ const Billing = () => {
       const fwt = toNumber(row.fwt);
       const enteredStoneWt = toNumber(row.eStWt);
       const actualStoneWt = toNumber(row.aStWt);
-      const enteredPercentage = toNumber(row.percent);
 
       if (productStock) {
-        // Use "wastage" for ITEM_PURCHASE, "wastageValue" for regular products
+        const touchValue = toNumber(productStock.touch) || 0;
         const wastageValue =
           row.stockType === "ITEM_PURCHASE"
             ? toNumber(productStock.wastage)
             : toNumber(productStock.wastageValue);
 
-        const purityFromWastage = (awt * wastageValue) / 100;
-        const rowBillProfit = fwt - purityFromWastage;
-        detailsProfit += rowBillProfit;
+        // Bill Details Profit: Old formula (FWT - AWT * Wastage / 100)
+        const rowDetailsProfit = fwt - (awt * wastageValue) / 100;
+        detailsProfit += rowDetailsProfit;
 
-        const touchValue = toNumber(productStock.touch) || 0;
+        // Total Profit Component: Touch-based Margin (FWT - AWT * Touch / 100)
+        const rowTouchProfit = fwt - (awt * touchValue) / 100;
+        totalBillProfitCalc += rowTouchProfit;
+
         const stoneDifference = Math.max(0, enteredStoneWt - actualStoneWt);
         const rowStoneProfit = (stoneDifference * touchValue) / 100;
         stoneProfitCalc += rowStoneProfit;
-      } else {
-        console.log("Product stock not found for productId:", row.productId);
       }
     });
 
-    const totalProfit = detailsProfit + stoneProfitCalc;
-    const profitPercentage = FWT > 0 ? (totalProfit / FWT) * 100 : 0;
+    const finalTotalProfit = totalBillProfitCalc + stoneProfitCalc;
+    const profitPercentage = FWT > 0 ? (finalTotalProfit / FWT) * 100 : 0;
 
     return {
       billDetailsProfit: toFixedStr(detailsProfit, 3),
       stoneProfit: toFixedStr(stoneProfitCalc, 3),
-      totalBillProfit: toFixedStr(totalProfit, 3),
+      totalBillProfit: toFixedStr(finalTotalProfit, 3),
       billProfitPercentage: toFixedStr(profitPercentage, 2),
     };
   }, [billDetailRows, items, availableProducts, itemPurchaseProducts, FWT]);
