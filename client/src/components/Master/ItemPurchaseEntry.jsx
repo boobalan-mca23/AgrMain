@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 import {
   Button,
@@ -124,6 +124,9 @@ function ItemPurchaseEntry() {
   const [receiveSearch, setReceiveSearch] = useState("");
   const [receivePage, setReceivePage] = useState(0);
   const [receiveRowsPerPage] = useState(5);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
 
 
 
@@ -276,9 +279,17 @@ function ItemPurchaseEntry() {
         `${BACKEND_SERVER_URL}/api/item-purchase?supplierId=${supplierId}`
       );
 
-      setEntries(res.data);
+      const data = res.data;
+      setEntries(data);
+
+      if (isFirstLoad.current && data.length > 0) {
+        const lastPage = Math.floor((data.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+      }
+
       if (selectedEntryForReceive) {
-        const refreshed = res.data.find(e => e.id === selectedEntryForReceive.id);
+        const refreshed = data.find(e => e.id === selectedEntryForReceive.id);
         if (refreshed) setSelectedEntryForReceive(refreshed);
       }
     } catch {
@@ -511,11 +522,34 @@ function ItemPurchaseEntry() {
         toast.success("Updated successfully");
 
       } else {
-
-        await axios.post(
+        const res = await axios.post(
           `${BACKEND_SERVER_URL}/api/item-purchase/create`,
           payload
         );
+        
+        const newEntry = res.data;
+        const updatedEntries = [...entries, newEntry];
+        setEntries(updatedEntries);
+        
+        // Sync filtered entries immediately to avoid empty render on page change
+        let filtered = [...updatedEntries];
+        if (itemFilter)
+          filtered = filtered.filter(e =>
+            e.itemName.toLowerCase().includes(itemFilter.toLowerCase())
+          );
+        if (touchFilter)
+          filtered = filtered.filter(e =>
+            String(e.touch) === String(touchFilter)
+          );
+        if (statusFilter === "All") {
+          filtered = filtered.filter(e => getEntryStatus(e) !== "Sold");
+        } else {
+          filtered = filtered.filter(e => getEntryStatus(e) === statusFilter);
+        }
+        setFilteredEntries(filtered);
+
+        const newPage = Math.max(0, Math.floor((filtered.length - 1) / rowsPerPage));
+        setPage(newPage);
 
         toast.success("Added successfully");
       }
@@ -565,9 +599,32 @@ function ItemPurchaseEntry() {
         `${BACKEND_SERVER_URL}/api/item-purchase/${id}`
       );
 
-      toast.success("Deleted successfully");
+      const updatedEntries = entries.filter(e => e.id !== id);
+      setEntries(updatedEntries);
 
-      fetchEntries();
+      // Sync filtered entries and check if page needs to decrement
+      let filtered = [...updatedEntries];
+      if (itemFilter)
+        filtered = filtered.filter(e =>
+          e.itemName.toLowerCase().includes(itemFilter.toLowerCase())
+        );
+      if (touchFilter)
+        filtered = filtered.filter(e =>
+          String(e.touch) === String(touchFilter)
+        );
+      if (statusFilter === "All") {
+        filtered = filtered.filter(e => getEntryStatus(e) !== "Sold");
+      } else {
+        filtered = filtered.filter(e => getEntryStatus(e) === statusFilter);
+      }
+      setFilteredEntries(filtered);
+
+      const maxPage = Math.max(0, Math.floor((filtered.length - 1) / rowsPerPage));
+      if (page > maxPage) {
+        setPage(maxPage);
+      }
+
+      toast.success("Deleted successfully");
 
     } catch {
 
@@ -769,7 +826,9 @@ function ItemPurchaseEntry() {
 
           <tbody>
             {filteredEntries.length > 0 ? (
-              filteredEntries.map((e, i) => {
+              filteredEntries
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((e, i) => {
                 const isInitial = valueView === "initial";
                 const displayGross = safeFmt(isInitial ? (e.initialGrossWeight ?? e.grossWeight) : e.grossWeight);
                 const displayStone = safeFmt(isInitial ? (e.initialStoneWeight ?? e.stoneWeight) : e.stoneWeight);
@@ -781,7 +840,7 @@ function ItemPurchaseEntry() {
 
                 return (
                   <tr key={e.id}>
-                    <td>{i + 1}</td>
+                    <td>{page * rowsPerPage + i + 1}</td>
                     <td style={{ fontWeight: "500" }}>{e.itemName}</td>
                     <td style={{ textAlign: "center" }}>{e.count || 1}</td>
                     <td>{displayGross}</td>
@@ -851,6 +910,19 @@ function ItemPurchaseEntry() {
           </tbody>
 
         </table>
+
+        <TablePagination
+          component="div"
+          count={filteredEntries.length}
+          page={page}
+          onPageChange={(e, p) => setPage(p)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={[5, 10, 25]}
+        />
 
       </Paper>
 

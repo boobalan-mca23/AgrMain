@@ -41,6 +41,10 @@ import { styled, alpha } from "@mui/material/styles";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   "&:nth-of-type(odd)": {
@@ -149,6 +153,10 @@ const CustomerOrders = () => {
 
   const [orders, setOrders] = useState([]);
   const [editingOrder, setEditingOrder] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
@@ -176,8 +184,8 @@ const CustomerOrders = () => {
 
     if (!window.confirm("Are you sure you want to delete this item?")) {
       return;
-    } 
-    
+    }
+
 
     try {
       const res = await axios.delete(
@@ -220,35 +228,65 @@ const CustomerOrders = () => {
 
   const fetchCustomerOrders = async () => {
     try {
+      // Fetch ALL orders to determine global sequential numbering
       const res = await axios.get(
-        `${BACKEND_SERVER_URL}/api/customerOrder/getCustomerInfo/${customerId}`
+        `${BACKEND_SERVER_URL}/api/customerOrder/all-customer-orders`
       );
-      const groupedData = res.data.data;
+      const allOrders = res.data.data;
 
-      const transformedOrders = Object.entries(groupedData).map(
-        ([groupId, items]) => ({
-          groupId,
-          orderId: `#ORD-GRP-${groupId}`,
-          orderDate: items[0]?.created_at || new Date(),
-          items: items.map((item) => ({
+      // 1. Group all orders by groupId
+      const grouped = {};
+      allOrders.forEach((item) => {
+        const groupId = item.order_group_id;
+        if (!grouped[groupId]) {
+          grouped[groupId] = {
+            groupId,
+            customerId: item.customer_id,
+            createdAt: item.created_at,
+            items: [],
+          };
+        }
+        grouped[groupId].items.push(item);
+        // Ensure we have the earliest creation date for the group
+        if (new Date(item.created_at) < new Date(grouped[groupId].createdAt)) {
+          grouped[groupId].createdAt = item.created_at;
+        }
+      });
+
+      // 2. Sort all groups globally by creation date
+      const sortedGroups = Object.values(grouped).sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+
+      // 3. Assign global display index and filter for current customer
+      const transformedOrders = sortedGroups
+        .map((group, idx) => ({
+          ...group,
+          displayIndex: idx + 1,
+          orderId: `#ORD-GRP-${group.groupId}`,
+          orderDate: group.items[0]?.created_at || new Date(),
+          items: group.items.map((item) => ({
             id: item.id,
             itemName: item.item_name,
             description: item.description,
             weight: item.weight,
             dueDate: formatDate(item.due_date),
+            rawDueDate: item.due_date,
             status: item.status || "Pending",
             workerName: item.worker_name || "",
             imagePreviews:
-              item.productImages?.map((img) => `${BACKEND_SERVER_URL}/uploads/${img.filename}`) || [],
+              item.productImages?.map(
+                (img) => `${BACKEND_SERVER_URL}/uploads/${img.filename}`
+              ) || [],
             existingImages:
               item.productImages?.map((img) => ({
-                id: img.id,                  // DB image id — used for delete
-                filename: img.filename,      // helpful for robust matching
+                id: img.id,
+                filename: img.filename,
                 url: `${BACKEND_SERVER_URL}/uploads/${img.filename}`,
               })) || [],
           })),
-        })
-      );
+        }))
+        .filter((group) => group.customerId === parseInt(customerId));
 
       setOrders(transformedOrders);
     } catch (error) {
@@ -259,6 +297,36 @@ const CustomerOrders = () => {
   useEffect(() => {
     if (customerId) fetchCustomerOrders();
   }, [customerId]);
+
+  const filteredOrders = orders.map(order => {
+    const filteredItems = order.items.filter(item => {
+      // Status filter
+      const matchesStatus = statusFilter === "All" || item.status === statusFilter;
+
+      // Search filter
+      const searchTermLower = searchTerm.toLowerCase();
+      const matchesSearch = !searchTerm ||
+        item.itemName.toLowerCase().includes(searchTermLower) ||
+        item.description.toLowerCase().includes(searchTermLower) ||
+        (item.workerName && item.workerName.toLowerCase().includes(searchTermLower)) ||
+        order.displayIndex.toString().includes(searchTermLower) ||
+        `order #${order.displayIndex}`.toLowerCase().includes(searchTermLower);
+
+      // Date filter
+      const itemDate = new Date(item.rawDueDate);
+      // Normalize dates to midnight for comparison
+      const start = fromDate ? new Date(fromDate) : null;
+      if (start) start.setHours(0, 0, 0, 0);
+      const end = toDate ? new Date(toDate) : null;
+      if (end) end.setHours(23, 59, 59, 999);
+
+      const matchesFromDate = !start || itemDate >= start;
+      const matchesToDate = !end || itemDate <= end;
+
+      return matchesStatus && matchesSearch && matchesFromDate && matchesToDate;
+    });
+    return { ...order, items: filteredItems };
+  }).filter(order => order.items.length > 0);
 
   const handleOpenImageModal = (imageUrl) => {
     setSelectedImage(imageUrl);
@@ -283,14 +351,14 @@ const CustomerOrders = () => {
     const previews = files.map((file) => URL.createObjectURL(file));
 
     setItems((prev) =>
-      prev.map((it, idx) => 
+      prev.map((it, idx) =>
         idx !== index
           ? it
           : {
-              ...it,
-              images: [...(it.images || []), ...files],
-              imagePreviews: [...(it.imagePreviews || []), ...previews],
-            }
+            ...it,
+            images: [...(it.images || []), ...files],
+            imagePreviews: [...(it.imagePreviews || []), ...previews],
+          }
       )
     );
 
@@ -385,8 +453,8 @@ const CustomerOrders = () => {
   };
 
   const formatForInput = (ddmmyyyyStr) => {
-    if (!ddmmyyyyStr || !ddmmyyyyStr.includes("-")) return "";
-    const [dd, mm, yyyy] = ddmmyyyyStr.split("-");
+    if (!ddmmyyyyStr || !ddmmyyyyStr.includes("/")) return "";
+    const [dd, mm, yyyy] = ddmmyyyyStr.split("/");
     return `${yyyy}-${mm}-${dd}`;
   };
 
@@ -623,7 +691,7 @@ const CustomerOrders = () => {
     const day = String(d.getDate()).padStart(2, "0");
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const year = d.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day}/${month}/${year}`;
   };
 
   const getStatusIcon = (status) => {
@@ -690,14 +758,91 @@ const CustomerOrders = () => {
         </Button>
       </Box>
 
-      {orders.length === 0 ? (
+      {/* Filter Bar */}
+      <Box
+        sx={{
+          mb: 4,
+          p: 3,
+          backgroundColor: "white",
+          borderRadius: "12px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 3,
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, mr: 1 }}>
+          Filters:
+        </Typography>
+
+        <TextField
+          label="Search Orders"
+          variant="outlined"
+          size="small"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Order #, item, worker..."
+          sx={{ minWidth: 250 }}
+        />
+
+        <TextField
+          select
+          label="Status"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          size="small"
+          sx={{ minWidth: 150 }}
+        >
+          <MenuItem value="All">All Status</MenuItem>
+          <MenuItem value="Pending">Pending</MenuItem>
+          <MenuItem value="Delivered">Delivered</MenuItem>
+        </TextField>
+
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="From Date"
+            value={fromDate ? dayjs(fromDate) : null}
+            format="DD/MM/YYYY"
+            onChange={(newValue) => setFromDate(newValue ? newValue.format("YYYY-MM-DD") : "")}
+            slotProps={{ textField: { size: "small" } }}
+          />
+        </LocalizationProvider>
+
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="To Date"
+            value={toDate ? dayjs(toDate) : null}
+            format="DD/MM/YYYY"
+            onChange={(newValue) => setToDate(newValue ? newValue.format("YYYY-MM-DD") : "")}
+            slotProps={{ textField: { size: "small" } }}
+          />
+        </LocalizationProvider>
+
+        <Button
+          variant="outlined"
+          color="primary"
+          size="medium"
+          onClick={() => {
+            setStatusFilter("All");
+            setFromDate("");
+            setToDate("");
+            setSearchTerm("");
+          }}
+          sx={{ textTransform: "none", borderRadius: "8px", fontWeight: 600 }}
+        >
+          Clear Filters
+        </Button>
+      </Box>
+
+      {filteredOrders.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: "center", borderRadius: "12px" }}>
           <Typography variant="h6" color="textSecondary" gutterBottom>
             No orders found for {customerName}
           </Typography>
         </Paper>
       ) : (
-        orders.map((order, orderIdx) => (
+        filteredOrders.map((order, orderIdx) => (
           <OrderCard key={order.orderId || orderIdx}>
             <Box
               sx={{
@@ -711,17 +856,16 @@ const CustomerOrders = () => {
             >
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Order #{orderIdx + 1}
+                  Order #{order.displayIndex}
                 </Typography>
               </Box>
               <Box sx={{ display: "flex", gap: 1 }}>
                 <Chip
-                  label={`${order.items.length} ${
-                    order.items.length === 1 ? "item" : "items"
-                  }`}
+                  label={`${order.items.length} ${order.items.length === 1 ? "item" : "items"
+                    }`}
                   variant="outlined"
                   color="primary"
-                  style={{position:"relative",top:5}}
+                  style={{ position: "relative", top: 5 }}
                 />
 
                 {/* Edit order button commented out as requested */}
@@ -741,16 +885,16 @@ const CustomerOrders = () => {
                 </Tooltip>
 
                 <Tooltip title="Delete entire order group">
-                    <Button
-                        variant="contained"
-                        startIcon={<Delete />}
-                        color="error" 
-                        onClick={() => handleDeleteOrderGroup(order.groupId)}
-                        sx={{ textTransform: "none", px:2, py:1.2,padding:0, minWidth:130 }}
-                        >        
-                        Delete Order
-                   </Button>
-               {/* <IconButton color="error" onClick={() => handleDeleteOrderGroup(order.groupId)}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Delete />}
+                    color="error"
+                    onClick={() => handleDeleteOrderGroup(order.groupId)}
+                    sx={{ textTransform: "none", px: 2, py: 1.2, padding: 0, minWidth: 130 }}
+                  >
+                    Delete Order
+                  </Button>
+                  {/* <IconButton color="error" onClick={() => handleDeleteOrderGroup(order.groupId)}>
                <p style={{fontSize:15,padding:5}}>Delete Order</p><Delete />
               </IconButton> */}
                 </Tooltip>
@@ -789,8 +933,8 @@ const CustomerOrders = () => {
                           sx={{
                             display: "flex",
                             flexDirection: "column",
-                             alignItems: "center",
-                             justifyContent: "center",
+                            alignItems: "center",
+                            justifyContent: "center",
                             gap: 1,
                           }}
                         >
@@ -801,15 +945,15 @@ const CustomerOrders = () => {
                                 display: "flex",
                                 gap: 1,
                                 flexWrap: "wrap",
-                                  justifyContent: "center",
+                                justifyContent: "center",
                               }}
                             >
                               {item.imagePreviews.map((preview, pIdx) => (
                                 <Box key={`${item.id ?? order.groupId}-${pIdx}`} sx={{ position: "relative" }}>
-                                <ImagePreview onClick={() => handleOpenImageModal(preview)}>
-                                  <img src={preview} alt={`preview-${pIdx}`} />
-                                </ImagePreview>
-                              </Box>
+                                  <ImagePreview onClick={() => handleOpenImageModal(preview)}>
+                                    <img src={preview} alt={`preview-${pIdx}`} />
+                                  </ImagePreview>
+                                </Box>
                               ))}
                             </Box>
                           )}
@@ -868,185 +1012,194 @@ const CustomerOrders = () => {
         ))
       )}
 
-       <Dialog
-          open={open}
-          onClose={handleClose}
-          fullWidth
-          maxWidth={false} // Disable the built-in width limit
-          PaperProps={{
-            sx: {
-             width:
-                items.length === 1
-                  ? "30vw !important"
-                  : items.length === 2
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        fullWidth
+        maxWidth={false} // Disable the built-in width limit
+        PaperProps={{
+          sx: {
+            width:
+              items.length === 1
+                ? "30vw !important"
+                : items.length === 2
                   ? "40vw!important"
                   : "60vw!important",
-              maxWidth: "1600px",
-              borderRadius: 3,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              backgroundColor: "#fafafa",
-              transition: "width 0.3s ease-in-out", // smooth resize
-            },
+            maxWidth: "1600px",
+            borderRadius: 3,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+            backgroundColor: "#fafafa",
+            transition: "width 0.3s ease-in-out", // smooth resize
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            bgcolor: "primary.main",
+            color: "white",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            py: 2,
+            px: 3,
           }}
         >
-          <DialogTitle
+
+          {editingOrder ? "Edit Order" : "Create New Order"}
+
+          <IconButton onClick={handleClose} sx={{ color: "white" }}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent
+          dividers
+          sx={{
+            py: 3,
+            px: 4,
+            maxHeight: "75vh",
+            overflowY: "auto",
+          }}
+        >
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3 }}>
+            Order Items
+          </Typography>
+
+          <Box
             sx={{
-              bgcolor: "primary.main",
-              color: "white",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              py: 2,
-              px: 3,
+              display: "grid",
+              gridTemplateColumns: `repeat(${Math.min(items.length, 3)}, 1fr)`,
+              gap: 2,
             }}
           >
-           
-              {editingOrder ? "Edit Order" : "Create New Order"}
-           
-            <IconButton onClick={handleClose} sx={{ color: "white" }}>
-              <Close />
-            </IconButton>
-          </DialogTitle>
+            {items.map((item, index) => (
+              <Box
+                key={item.id ?? index}
+                sx={{
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 2,
+                  p: 2,
+                  backgroundColor: "white",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  position: "relative",
+                }}
+              >
+                {items.length > 1 && (
+                  <Tooltip title="Remove item">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveItem(index)}
+                      color="error"
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                      }}
+                    >
+                      <Close fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
 
-          <DialogContent
-            dividers
-            sx={{
-              py: 3,
-              px: 4,
-              maxHeight: "75vh",
-              overflowY: "auto",
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3 }}>
-              Order Items
-            </Typography>
-
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns:`repeat(${Math.min(items.length, 3)}, 1fr)`,
-                gap: 2,
-              }}
-            >
-              {items.map((item, index) => (
-                <Box
-                  key={item.id ?? index}
-                  sx={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: 2,
-                    p: 2,
-                    backgroundColor: "white",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                    position: "relative",
+                <TextField
+                  label="Item Name"
+                  value={item.itemName}
+                  onChange={(e) => handleChange(index, "itemName", e.target.value)}
+                  size="small"
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="Description"
+                  value={item.description}
+                  onChange={(e) => handleChange(index, "description", e.target.value)}
+                  size="small"
+                  fullWidth
+                  multiline
+                  rows={2}
+                />
+                <TextField
+                  label="Weight (grams)"
+                  type="text"
+                  value={item.weight}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (isValidWeight(value)) {
+                      handleChange(index, "weight", value);
+                    }
                   }}
-                >
-                  {items.length > 1 && (
-                    <Tooltip title="Remove item">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveItem(index)}
-                        color="error"
-                        sx={{
-                          position: "absolute",
-                          top: 0,
-                          right: 0,
-                        }}
-                      >
-                        <Close fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
+                  onBlur={() => showWeightError(item.weight)}
+                  size="small"
+                  fullWidth
+                  required
+                />
 
-                  <TextField
-                    label="Item Name"
-                    value={item.itemName}
-                    onChange={(e) => handleChange(index, "itemName", e.target.value)}
-                    size="small"
-                    fullWidth
-                    required
-                  />
-                  <TextField
-                    label="Description"
-                    value={item.description}
-                    onChange={(e) => handleChange(index, "description", e.target.value)}
-                    size="small"
-                    fullWidth
-                    multiline
-                    rows={2}
-                  />
-                 <TextField
-                    label="Weight (grams)"
-                    type="text"
-                    value={item.weight}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (isValidWeight(value)) {
-                        handleChange(index, "weight", value);
+
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Due Date"
+                    value={item.dueDate ? dayjs(item.dueDate) : dayjs()}
+                    format="DD/MM/YYYY"
+                    onChange={(newValue) => {
+                      const formatted = newValue ? newValue.format("YYYY-MM-DD") : "";
+                      handleChange(index, "dueDate", formatted);
+                    }}
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true,
+                        required: true
                       }
                     }}
-                    onBlur={() => showWeightError(item.weight)}
-                    size="small"
-                    fullWidth
-                    required
                   />
+                </LocalizationProvider>
+                <TextField
+                  label="Worker Name"
+                  value={item.workerName}
+                  onChange={(e) => handleChange(index, "workerName", e.target.value)}
+                  size="small"
+                  fullWidth
+                  required
+                />
+                <TextField
+                  select
+                  label="Status"
+                  value={item.status}
+                  onChange={(e) => handleChange(index, "status", e.target.value)}
+                  size="small"
+                  fullWidth
+                  required
+                >
+                  <MenuItem value="Pending">Pending</MenuItem>
+                  <MenuItem value="Delivered">Delivered</MenuItem>
+                </TextField>
 
-
-                  <TextField
-                    label="Due Date"
-                    type="date"
-                    value={item.dueDate || new Date().toISOString().split("T")[0]}
-                    onChange={(e) => handleChange(index, "dueDate", e.target.value)}
-                    size="small"
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
+                <Box>
+                  <input
+                    accept="image/*"
+                    multiple
+                    style={{ display: "none" }}
+                    id={`image-upload-${index}`}
+                    type="file"
+                    onChange={(e) => handleImageChange(index, e)}
                   />
-                  <TextField
-                    label="Worker Name"
-                    value={item.workerName}
-                    onChange={(e) => handleChange(index, "workerName", e.target.value)}
-                    size="small"
-                    fullWidth
-                    required
-                  />
-                  <TextField
-                    select
-                    label="Status"
-                    value={item.status}
-                    onChange={(e) => handleChange(index, "status", e.target.value)}
-                    size="small"
-                    fullWidth
-                    required
-                  >
-                    <MenuItem value="Pending">Pending</MenuItem>
-                    <MenuItem value="Delivered">Delivered</MenuItem>
-                  </TextField>
+                  <label htmlFor={`image-upload-${index}`}>
+                    <Button
+                      variant="outlined"
+                      component="span"
+                      startIcon={<ImageIcon />}
+                      fullWidth
+                      sx={{ height: "40px" }}
+                    >
+                      Upload Image
+                    </Button>
+                  </label>
 
-                  <Box>
-                    <input
-                      accept="image/*"
-                      multiple
-                      style={{ display: "none" }}
-                      id={`image-upload-${index}`}
-                      type="file"
-                      onChange={(e) => handleImageChange(index, e)}
-                    />
-                    <label htmlFor={`image-upload-${index}`}>
-                      <Button
-                        variant="outlined"
-                        component="span"
-                        startIcon={<ImageIcon />}
-                        fullWidth
-                        sx={{ height: "40px" }}
-                      >
-                        Upload Image
-                      </Button>
-                    </label>
-
-               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 ,maxWidth: "100%",}}>
-                  {item.imagePreviews.map((preview, pIdx) => (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1, maxWidth: "100%", }}>
+                    {item.imagePreviews.map((preview, pIdx) => (
                       <Box key={pIdx} sx={{ position: "relative" }}>
                         <ImagePreview onClick={() => handleOpenImageModal(preview)}>
                           <img src={preview} alt={`preview-${pIdx}`} />
@@ -1062,58 +1215,58 @@ const CustomerOrders = () => {
                             "&:hover": { bgcolor: "rgba(255, 0, 0, 0.8)" },
                           }}
                           onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemovePreview(index, pIdx);
-                        }}
+                            e.stopPropagation();
+                            handleRemovePreview(index, pIdx);
+                          }}
                         >
                           <Close fontSize="small" />
                         </IconButton>
                       </Box>
                     ))}
 
-                </Box>
                   </Box>
                 </Box>
-              ))}
-            </Box>
-          </DialogContent>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
 
-          <DialogActions sx={{ px: 4, py: 2 }}>
-            {!editingOrder &&
-             <Button
+        <DialogActions sx={{ px: 4, py: 2 }}>
+          {!editingOrder &&
+            <Button
               variant="outlined"
               startIcon={<Add />}
               onClick={handleAddItem}
-              sx={{ display:"flex",flexDirection:"row", alignItems:"center", justifyContent:"center" }}
+              sx={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}
             >
               Add Another Item
             </Button>}
-            <Button onClick={handleClose} sx={{ color: "text.secondary" }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              disabled={
-                !items.every(
-                  (item) =>
-                    item.itemName &&
-                    item.weight &&
-                    item.dueDate &&
-                    item.workerName
-                )
-              }
-              sx={{
-                bgcolor: "primary.main",
-                "&:hover": { bgcolor: "primary.dark" },
-                px: 3,
-                textTransform: "none",
-              }}
-            >
-              {editingOrder ? "Save Changes" : "Save Order"}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          <Button onClick={handleClose} sx={{ color: "text.secondary" }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={
+              !items.every(
+                (item) =>
+                  item.itemName &&
+                  item.weight &&
+                  item.dueDate &&
+                  item.workerName
+              )
+            }
+            sx={{
+              bgcolor: "primary.main",
+              "&:hover": { bgcolor: "primary.dark" },
+              px: 3,
+              textTransform: "none",
+            }}
+          >
+            {editingOrder ? "Save Changes" : "Save Order"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
 
 

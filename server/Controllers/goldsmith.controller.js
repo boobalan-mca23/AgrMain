@@ -45,7 +45,7 @@ exports.getAllGoldsmith = async (req, res) => {
   try {
     const goldsmith = await prisma.goldsmith.findMany({
       orderBy:{
-        id:"desc"
+        id:"asc"
       }
     });
 

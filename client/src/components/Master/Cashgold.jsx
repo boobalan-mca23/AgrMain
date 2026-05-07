@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "./Cashgold.css";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -32,6 +32,7 @@ function Cashgold() {
   const [saveDiasable, setSaveDisable] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
 
   const handleClose = () => {
     setShowFormPopup(false);
@@ -52,7 +53,20 @@ function Cashgold() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const updatedForm = { ...formData, [name]: value };
+    let updatedForm = { ...formData, [name]: value };
+
+    // Reset fields if type changes
+    if (name === "type") {
+      updatedForm = {
+        ...updatedForm,
+        cashAmount: "",
+        goldValue: "",
+        touch: "",
+        purity: "",
+        pureGold: "",
+      };
+      setGoldRate(0);
+    }
 
     if (name === "goldValue" || name === "touch") {
       const goldValue = parseFloat(
@@ -141,7 +155,13 @@ function Cashgold() {
             payload
           );
           toast.success("Value added successfully!");
-          setEntries((prev) => [response.data, ...prev]);
+          const newItem = response.data;
+          const updatedEntries = [...entries, newItem];
+          setEntries(updatedEntries);
+
+          // Jump to the last page to show the new entry
+          const newPage = Math.max(0, Math.floor((updatedEntries.length - 1) / rowsPerPage));
+          setPage(newPage);
         }
 
         handleClose();
@@ -174,7 +194,15 @@ function Cashgold() {
     if (!window.confirm("Are you sure you want to delete this value?")) return;
     try {
       await axios.delete(`${BACKEND_SERVER_URL}/api/entries/${id}`);
-      setEntries((prev) => prev.filter((entry) => entry.id !== id));
+      const updatedEntries = entries.filter((entry) => entry.id !== id);
+      setEntries(updatedEntries);
+
+      // Adjust page if the last item on the page was deleted
+      const maxPage = Math.max(0, Math.floor((updatedEntries.length - 1) / rowsPerPage));
+      if (page > maxPage) {
+        setPage(maxPage);
+      }
+
       toast.success("Entry deleted successfully!");
     } catch (error) {
       console.error("Error deleting entry:", error);
@@ -199,7 +227,14 @@ function Cashgold() {
     try {
       const response = await axios.get(`${BACKEND_SERVER_URL}/api/entries`);
       console.log("response cashgold", response.data);
-      setEntries(response.data);
+      const data = response.data;
+      setEntries(data);
+
+      if (isFirstLoad.current && data.length > 0) {
+        const lastPage = Math.floor((data.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+      }
     } catch (error) {
       console.error("Error fetching entries:", error);
     }

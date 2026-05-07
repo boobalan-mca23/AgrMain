@@ -41,6 +41,7 @@ function Mastergoldsmith() {
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
   const navigate = useNavigate();
   const validName = /^[a-zA-Z0-9\s]+$/;
   const nameRef = useRef(null);
@@ -56,6 +57,12 @@ function Mastergoldsmith() {
     try {
       const { data } = await axios.get(`${BACKEND_SERVER_URL}/api/goldsmith`);
       setGoldsmith(data);
+
+      if (isFirstLoad.current && data.length > 0) {
+        const lastPage = Math.floor((data.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+      }
     } catch (error) {
       console.error("Error fetching goldsmiths:", error);
       toast.error("Failed to load goldsmith data.");
@@ -217,7 +224,13 @@ function Mastergoldsmith() {
         `${BACKEND_SERVER_URL}/api/goldsmith`,
         newGoldsmith
       );
-      setGoldsmith((prev) => [...prev, data]);
+      const updatedGoldsmiths = [...goldsmith, data];
+      setGoldsmith(updatedGoldsmiths);
+
+      // Calculate and set to the last page
+      const newPage = Math.floor((updatedGoldsmiths.length - 1) / rowsPerPage);
+      setPage(newPage);
+
       toast.success("Goldsmith added successfully!");
       closeModal();
     } catch (error) {
@@ -305,7 +318,14 @@ function Mastergoldsmith() {
 
     try {
       await axios.delete(`${BACKEND_SERVER_URL}/api/goldsmith/${id}`);
-      setGoldsmith((prev) => prev.filter((g) => g.id !== id));
+      const updatedGoldsmiths = goldsmith.filter((g) => g.id !== id);
+      setGoldsmith(updatedGoldsmiths);
+
+      const maxPage = Math.max(0, Math.floor((updatedGoldsmiths.length - 1) / rowsPerPage));
+      if (page > maxPage) {
+        setPage(maxPage);
+      }
+
       toast.success("Goldsmith deleted successfully");
     } catch (error) {
       toast.error(

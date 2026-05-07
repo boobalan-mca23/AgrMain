@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 import {
   Button,
@@ -99,6 +99,8 @@ function PurchaseEntry() {
   const [receivePage, setReceivePage] = useState(0);
   const [receiveRowsPerPage, setReceiveRowsPerPage] = useState(5);
   const [isSaving, setIsSaving] = useState(false);
+  const isFirstLoad = useRef(true);
+  const jumpToLast = useRef(false);
 
   useEffect(() => {
     fetchSupplierName();
@@ -122,6 +124,23 @@ function PurchaseEntry() {
     applyFilters();
   }, [entries, jewelFilter, touchFilter]);
 
+  useEffect(() => {
+    if (jumpToLast.current && filteredEntries.length > 0) {
+      const itemsPerPage = Number(rowsPerPage) || 10;
+      const lastPage = Math.max(0, Math.floor((filteredEntries.length - 1) / itemsPerPage));
+      setPage(lastPage);
+      jumpToLast.current = false;
+    }
+  }, [filteredEntries.length, rowsPerPage]);
+
+  useEffect(() => {
+    const itemsPerPage = Number(rowsPerPage) || 10;
+    const maxPage = Math.max(0, Math.floor((filteredEntries.length - 1) / itemsPerPage));
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [filteredEntries.length, rowsPerPage, page]);
+
 
   const fetchSupplierName = async () => {
     try {
@@ -140,9 +159,17 @@ function PurchaseEntry() {
       const res = await axios.get(
         `${BACKEND_SERVER_URL}/api/purchase-entry?supplierId=${supplierId}`
       );
-      setEntries(res.data);
+      const data = res.data;
+      setEntries(data);
+
+      if (isFirstLoad.current && data.length > 0) {
+        const lastPage = Math.floor((data.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+      }
+
       if (selectedEntryForReceive) {
-        const refreshed = res.data.find(e => e.id === selectedEntryForReceive.id);
+        const refreshed = data.find(e => e.id === selectedEntryForReceive.id);
         if (refreshed) setSelectedEntryForReceive(refreshed);
       }
     } catch {
@@ -287,7 +314,6 @@ function PurchaseEntry() {
 
   const handleSaveReceive = async () => {
     if (isSaving) return;
-    if (!receiveForm.amount && !receiveForm.weight) {
     if (!receiveForm.amount && !receiveForm.weight) {
       toast.error("Please fill weight or amount");
       return;
@@ -492,12 +518,12 @@ function PurchaseEntry() {
         toast.success("Updated");
 
       } else {
-
         await axios.post(
           `${BACKEND_SERVER_URL}/api/purchase-entry/create`,
           payload
         );
-
+        
+        jumpToLast.current = true;
         toast.success("Added");
       }
 
@@ -538,7 +564,6 @@ function PurchaseEntry() {
       );
 
       toast.success("Deleted");
-
       fetchEntries();
 
     } catch {
@@ -699,10 +724,14 @@ function PurchaseEntry() {
 
 
           <tbody>
-            {filteredEntries.length > 0 ? (
-              filteredEntries
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((e, index) => (
+            {(() => {
+              const itemsPerPage = Number(rowsPerPage) || 10;
+              const safePage = Math.min(Number(page), Math.max(0, Math.floor((filteredEntries.length - 1) / itemsPerPage)));
+              
+              return filteredEntries.length > 0 ? (
+                filteredEntries
+                  .slice(safePage * itemsPerPage, safePage * itemsPerPage + itemsPerPage)
+                  .map((e, index) => (
                   <tr key={e.id}>
                     <td>{page * rowsPerPage + index + 1}</td>
                     <td>{e.jewelName}</td>
@@ -755,21 +784,22 @@ function PurchaseEntry() {
                     </td>
                   </tr>
                 ))
-            ) : (
-              <tr>
-                <td colSpan="13" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
-                  No BC Purchase Entry Added
-                </td>
-              </tr>
-            )}
+              ) : (
+                <tr>
+                  <td colSpan="13" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
+                    No BC Purchase Entry Added
+                  </td>
+                </tr>
+              );
+            })()}
           </tbody>
 
         </table>
         <TablePagination
           component="div"
           count={filteredEntries.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
+          rowsPerPage={Number(rowsPerPage)}
+          page={Math.min(Number(page), Math.max(0, Math.floor((filteredEntries.length - 1) / (Number(rowsPerPage) || 10))))}
           onPageChange={(e, newPage) => setPage(newPage)}
           onRowsPerPageChange={(e) => {
             setRowsPerPage(parseInt(e.target.value, 10));

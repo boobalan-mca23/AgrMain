@@ -261,6 +261,12 @@ const Bullion = () => {
           amount: parseFloat(totalPurchaseAmount.toFixed(2)),
           givenDetails: finalGivenEntries,
         });
+        
+        // Jump to the last page
+        const newTotal = allData.length + 1;
+        const newPage = Math.floor((newTotal - 1) / rowsPerPage);
+        setPage(newPage);
+
         toast.success("Bullion purchase created successfully");
       } else {
         // Update main fields

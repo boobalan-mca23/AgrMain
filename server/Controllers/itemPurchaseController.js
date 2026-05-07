@@ -270,7 +270,7 @@ exports.getEntries = async (req, res) => {
         },
 
         orderBy: {
-          createdAt: "desc"
+          createdAt: "asc"
         }
 
       });
@@ -547,7 +547,7 @@ exports.getItemPurchaseReport = async (req, res) => {
 
         orderBy: {
 
-          createdAt: "desc"
+          createdAt: "asc"
 
         }
 

@@ -42,6 +42,8 @@ function MasterBullion() {
   const nameRef = useRef(null);
   const phoneRef = useRef(null);
   const addressRef = useRef(null);
+  const isFirstLoad = useRef(true);
+  const jumpToLast = useRef(false);
 
   useEffect(() => {
     const fetchBullions = async () => {
@@ -50,6 +52,11 @@ function MasterBullion() {
         if (response.ok) {
           const data = await response.json();
           setBullions(data);
+          if (isFirstLoad.current && data.length > 0) {
+            const lastPage = Math.max(0, Math.floor((data.length - 1) / rowsPerPage));
+            setPage(lastPage);
+            isFirstLoad.current = false;
+          }
         } else {
           console.error("Failed to fetch bullion data");
         }
@@ -60,6 +67,21 @@ function MasterBullion() {
 
     fetchBullions();
   }, []);
+
+  useEffect(() => {
+    if (jumpToLast.current && bullions.length > 0) {
+      const lastPage = Math.max(0, Math.floor((bullions.length - 1) / rowsPerPage));
+      setPage(lastPage);
+      jumpToLast.current = false;
+    }
+  }, [bullions.length, rowsPerPage]);
+
+  useEffect(() => {
+    const maxPage = Math.max(0, Math.floor((bullions.length - 1) / rowsPerPage));
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [bullions.length, rowsPerPage, page]);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -131,6 +153,7 @@ function MasterBullion() {
       if (response.ok) {
         const newBullion = await response.json();
         setBullions((prev) => [...prev, newBullion]);
+        jumpToLast.current = true;
         toast.success("Bullion added successfully!");
         closeModal();
       } else {
@@ -340,13 +363,19 @@ function MasterBullion() {
               </tr>
             </thead>
             <tbody className="bullion-tablebody">
-              {paginatedBullions.length > 0 ? (
-                paginatedBullions.map((b, i) => (
-                  <tr key={i}>
-                    <td>{page * rowsPerPage + i + 1}</td>
-                    <td>{b.name}</td>
-                    <td>{b.phone}</td>
-                    <td>{b.address || "-"}</td>
+              {(() => {
+                const itemsPerPage = Number(rowsPerPage) || 10;
+                const safePage = Math.min(Number(page), Math.max(0, Math.floor((bullions.length - 1) / itemsPerPage)));
+                
+                return bullions.length > 0 ? (
+                  bullions
+                    .slice(safePage * itemsPerPage, safePage * itemsPerPage + itemsPerPage)
+                    .map((b, i) => (
+                      <tr key={i}>
+                        <td>{safePage * itemsPerPage + i + 1}</td>
+                        <td>{b.name}</td>
+                        <td>{b.phone}</td>
+                        <td>{b.address || "-"}</td>
                     <td>
                       <EditIcon
                         style={{ cursor: "pointer", marginRight: "10px", color: "#388e3c" }}
@@ -357,23 +386,29 @@ function MasterBullion() {
                         onClick={() => handleDeleteClick(b.id)}
                       />
                     </td>
+                      </tr>
+                    ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: "center", padding: "10px" }}>
+                      No Bullion Added
+                    </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: "center" }}>No details found</td>
-                </tr>
-              )}
+                );
+              })()}
             </tbody>
           </table>
         </Paper>
-        <TablePagination
+          <TablePagination
             component="div"
             count={bullions.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPage={Number(rowsPerPage)}
+            page={Math.min(Number(page), Math.max(0, Math.floor((bullions.length - 1) / (Number(rowsPerPage) || 10))))}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
             rowsPerPageOptions={[5, 10, 25]}
           />
 

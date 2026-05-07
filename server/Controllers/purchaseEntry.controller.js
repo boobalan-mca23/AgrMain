@@ -323,7 +323,7 @@ exports.getEntries = async (req, res) => {
 
       orderBy: {
 
-        createdAt: "desc"
+        createdAt: "asc"
 
       },
 
