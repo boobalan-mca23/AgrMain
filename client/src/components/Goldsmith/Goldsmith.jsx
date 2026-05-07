@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Container,
   Paper,
@@ -16,7 +16,8 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  IconButton
+  IconButton,
+  TablePagination
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AssignmentIndOutlinedIcon from "@mui/icons-material/AssignmentIndOutlined";
@@ -71,6 +72,9 @@ const Goldsmith = () => {
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState(false);
   const [lastJobCard, setLastJobCard] = useState({});
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
   const navigate = useNavigate();
 
   const fetchRawGold = async () => {
@@ -90,6 +94,13 @@ const Goldsmith = () => {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/goldsmith`);
         const data = await response.json();
         setGoldsmith(data);
+
+        // If first load, jump to last page
+        if (isFirstLoad.current && data.length > 0) {
+          const lastPage = Math.floor((data.length - 1) / rowsPerPage);
+          setPage(lastPage);
+          isFirstLoad.current = false;
+        }
       } catch (error) {
         console.error("Error fetching goldsmith data:", error);
       }
@@ -315,33 +326,58 @@ const Goldsmith = () => {
           </TableHead>
           <TableBody>
             {filteredGoldsmith.length > 0 ? (
-              filteredGoldsmith.map((goldsmith, index) => (
-                <TableRow key={index} style={{}}>
-                  <TableCell align="center">{index + 1}</TableCell>
-                  <TableCell align="center">{goldsmith.name}</TableCell>
-                  <TableCell align="center">{goldsmith.phone || "-"}</TableCell>
-                  <TableCell align="center" style={{ color: goldsmith.balance < 0 ? "red" : goldsmith.balance > 0 ? "green" : "" }}><b>{Number(goldsmith.balance).toFixed(3)}</b></TableCell>
-                  <TableCell align="center">{goldsmith.address || "-"}</TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="View Jobcard">
-                      <IconButton 
-                        onClick={() => navigate(`/goldsmithcard/${goldsmith.id}/${goldsmith.name}`, { 
-                          state: { phone: goldsmith.phone, address: goldsmith.address } 
-                        })} 
-                        sx={{ color: "#1976d2", mr: 1 }}
-                      >
-                        <AssignmentIndOutlinedIcon />
-                      </IconButton>
-                    </Tooltip>
+              filteredGoldsmith
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((gs, index) => (
+                  <TableRow key={index}>
+                    <TableCell align="center">
+                      {index + 1 + page * rowsPerPage}
+                    </TableCell>
+                    <TableCell align="center">{gs.name}</TableCell>
+                    <TableCell align="center">{gs.phone || "-"}</TableCell>
+                    <TableCell
+                      align="center"
+                      style={{
+                        color:
+                          gs.balance < 0
+                            ? "red"
+                            : gs.balance > 0
+                            ? "green"
+                            : "",
+                      }}
+                    >
+                      <b>{Number(gs.balance).toFixed(3)}</b>
+                    </TableCell>
+                    <TableCell align="center">{gs.address || "-"}</TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="View Jobcard">
+                        <IconButton
+                          onClick={() =>
+                            navigate(`/goldsmithcard/${gs.id}/${gs.name}`, {
+                              state: {
+                                phone: gs.phone,
+                                address: gs.address,
+                              },
+                            })
+                          }
+                          sx={{ color: "#1976d2", mr: 1 }}
+                        >
+                          <AssignmentIndOutlinedIcon />
+                        </IconButton>
+                      </Tooltip>
 
-                    <Tooltip title="View Statement">
-                      <IconButton onClick={() => navigate(`/statement/goldsmith/${goldsmith.id}`)}>
-                        <HistoryIcon color="secondary" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
+                      <Tooltip title="View Statement">
+                        <IconButton
+                          onClick={() =>
+                            navigate(`/statement/goldsmith/${gs.id}`)
+                          }
+                        >
+                          <HistoryIcon color="secondary" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
             ) : (
               <TableRow>
                 <TableCell colSpan={6} align="center">
@@ -351,6 +387,18 @@ const Goldsmith = () => {
             )}
           </TableBody>
         </Table>
+        <TablePagination
+          component="div"
+          count={filteredGoldsmith.length}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+        />
       </Paper>
 
       <div className="customer-details-container">

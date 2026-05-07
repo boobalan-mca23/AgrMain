@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
@@ -48,6 +48,7 @@ const Bullion = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
@@ -119,6 +120,13 @@ const Bullion = () => {
         `${BACKEND_SERVER_URL}/api/bullion-purchase/`
       );
       setAllData(res.data);
+
+      // If first load, jump to last page
+      if (isFirstLoad.current && res.data.length > 0) {
+        const lastPage = Math.floor((res.data.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+      }
     } catch (err) {
       console.error("Error fetching all bullion entries:", err);
     }
@@ -309,6 +317,14 @@ const Bullion = () => {
         `${BACKEND_SERVER_URL}/api/bullion-purchase/delete/${id}`
       );
       toast.success("Purchase deleted successfully");
+      
+      // Adjust page if current page becomes empty after deletion
+      const newTotal = allData.length - 1;
+      const maxPage = Math.max(0, Math.ceil(newTotal / rowsPerPage) - 1);
+      if (page > maxPage) {
+        setPage(maxPage);
+      }
+
       fetchAll();
     } catch (err) {
       console.error("Failed to delete purchase", err);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -35,6 +35,7 @@ const BalanceStatement = ({ typeOverride }) => {
   const [toDate, setToDate] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(15);
+  const isFirstLoad = useRef(true);
   
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState(null);
@@ -55,6 +56,13 @@ const BalanceStatement = ({ typeOverride }) => {
       console.log("data",response.data.ledger)
       setEntityName(response.data.customerName || response.data.goldsmithName || response.data.supplierName || "");
       setCurrentBalances(response.data.currentBalances || { cash: 0, hallmark: 0, gold: 0 });
+
+      // If first load, jump to last page
+      if (isFirstLoad.current && response.data.ledger.length > 0) {
+        const lastPage = Math.floor((response.data.ledger.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+      }
     } catch (error) {
       console.error("Error fetching statement:", error);
     } finally {
@@ -129,6 +137,38 @@ const BalanceStatement = ({ typeOverride }) => {
   };
 
   const formatVal = (val) => (val != null ? val.toFixed(3) : "0.000");
+
+  const calculateTotals = () => {
+    return data.reduce(
+      (acc, row) => {
+        acc.debitAmount += row.debitAmount || 0;
+        acc.creditAmount += row.creditAmount || 0;
+        acc.debitHallmark += row.debitHallmark || 0;
+        acc.creditHallmark += row.creditHallmark || 0;
+        acc.debitGold += row.debitGold || 0;
+        acc.creditGold += row.creditGold || 0;
+        acc.debitBC += row.debitBC || 0;
+        acc.creditBC += row.creditBC || 0;
+        acc.debitItem += row.debitItem || 0;
+        acc.creditItem += row.creditItem || 0;
+        return acc;
+      },
+      {
+        debitAmount: 0,
+        creditAmount: 0,
+        debitHallmark: 0,
+        creditHallmark: 0,
+        debitGold: 0,
+        creditGold: 0,
+        debitBC: 0,
+        creditBC: 0,
+        debitItem: 0,
+        creditItem: 0,
+      }
+    );
+  };
+
+  const totals = calculateTotals();
 
   const renderDetailFields = (metadata) => {
     if (!metadata) return null;
@@ -706,6 +746,83 @@ const BalanceStatement = ({ typeOverride }) => {
                 </TableCell>
               </TableRow>
             ))}
+            
+            {/* Totals Row */}
+            {data.length > 0 && (
+              <TableRow sx={{ backgroundColor: "#f5f5f5", fontWeight: "bold" }}>
+                <TableCell colSpan={4} align="right" sx={{ fontWeight: "bold" }}>
+                  TOTALS
+                </TableCell>
+                
+                {type === "customer" && (
+                  <>
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#2e7d32" }}>
+                      {formatVal(totals.debitAmount)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#d32f2f" }}>
+                      {formatVal(totals.creditAmount)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
+                      {formatVal(data[data.length - 1]?.afterCash)}
+                    </TableCell>
+                    
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#2e7d32" }}>
+                      {formatVal(totals.debitHallmark)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#d32f2f" }}>
+                      {formatVal(totals.creditHallmark)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
+                      {formatVal(data[data.length - 1]?.afterHallmark)}
+                    </TableCell>
+                  </>
+                )}
+                
+                {type === "goldsmith" && (
+                  <>
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#2e7d32" }}>
+                      {formatVal(totals.debitGold)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#d32f2f" }}>
+                      {formatVal(totals.creditGold)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
+                      {formatVal(data[data.length - 1]?.afterGold)}
+                    </TableCell>
+                  </>
+                )}
+                
+                {type === "supplier" && (
+                  <>
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#2e7d32" }}>
+                      {formatVal(totals.debitBC)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#d32f2f" }}>
+                      {formatVal(totals.creditBC)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
+                      {formatVal(data[data.length - 1]?.afterBC)}
+                    </TableCell>
+                    
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#2e7d32" }}>
+                      {formatVal(totals.debitItem)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#d32f2f" }}>
+                      {formatVal(totals.creditItem)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
+                      {formatVal(data[data.length - 1]?.afterItem)}
+                    </TableCell>
+                  </>
+                )}
+                <TableCell></TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
         <TablePagination
