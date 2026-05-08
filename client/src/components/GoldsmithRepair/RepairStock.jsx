@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { TablePagination, Button, Tabs, Tab } from "@mui/material";
@@ -27,7 +27,8 @@ const ProductStock = () => {
   const [goldsmiths, setGoldsmiths] = useState([]);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
 
   const [openSendDialog, setOpenSendDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState("");
@@ -106,7 +107,17 @@ const ProductStock = () => {
       p.displayWt?.toString().includes(s) ||
       p.touch?.toString().includes(s)
     );
-  }).sort((a, b) => b.id - a.id);
+  }).sort((a, b) => a.id - b.id);
+
+  useEffect(() => {
+    if (isFirstLoad.current && (productStock.length > 0 || itemPurchaseStock.length > 0)) {
+        const lastPage = Math.floor((unifiedStock.length - 1) / rowsPerPage);
+        if (lastPage >= 0) {
+            setPage(lastPage);
+            isFirstLoad.current = false;
+        }
+    }
+  }, [productStock, itemPurchaseStock, rowsPerPage, unifiedStock.length]);
 
   const paginated = unifiedStock.slice(
     page * rowsPerPage,
@@ -268,6 +279,7 @@ const ProductStock = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
+          rowsPerPageOptions={[10, 25, 50, 100]}
         />
 
       </div>

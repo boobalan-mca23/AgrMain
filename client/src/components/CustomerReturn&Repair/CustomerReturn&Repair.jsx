@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Button,
@@ -71,6 +71,7 @@ const CustomerReturn = () => {
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState(() => dayjs().subtract(15, "day"));
   const [toDate, setToDate] = useState(() => dayjs());
+  const isFirstLoad = useRef(true);
 
   // "RETURN" | "REPAIR"
   const [actionType, setActionType] = useState(null);
@@ -203,8 +204,19 @@ const CustomerReturn = () => {
     try {
       const res = await fetch(`${BACKEND_SERVER_URL}/api/bill?status=ACTIVE`);
       const json = await res.json();
-      setBills(Array.isArray(json.data) ? json.data : []);
-      console.log("bills", json.data);
+      const fetchedBills = Array.isArray(json.data) ? json.data : [];
+      setBills(fetchedBills);
+      
+      if (isFirstLoad.current && fetchedBills.length > 0) {
+          // Sort fetched bills temporarily to find the last page of Oldest First
+          const sorted = [...fetchedBills].sort((a, b) => new Date(a.date) - new Date(b.date));
+          const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
+          if (lastPage >= 0) {
+              setPage(lastPage);
+              isFirstLoad.current = false;
+          }
+      }
+      console.log("bills", fetchedBills);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch bills");
@@ -249,11 +261,11 @@ const CustomerReturn = () => {
 
     return matchesSearch && matchesFrom && matchesTo;
   }).sort((a, b) => {
-    if (fromDate || toDate) {
-      return new Date(a.date) - new Date(b.date); // Ascending
-    } else {
-      return new Date(b.date) - new Date(a.date); // Descending
-    }
+    // ALWAYS Oldest First (Ascending)
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    if (dateA - dateB !== 0) return dateA - dateB;
+    return (a.id || 0) - (b.id || 0);
   });
 
 
@@ -661,6 +673,8 @@ const CustomerReturn = () => {
             setSearch("");
             setFromDate(null);
             setToDate(null);
+            isFirstLoad.current = true;
+            fetchSoldBills();
           }}
         >
           Reset
@@ -756,6 +770,7 @@ const CustomerReturn = () => {
           setRowsPerPage(parseInt(e.target.value, 10));
           setPage(0);
         }}
+        rowsPerPageOptions={[10, 25, 50, 100]}
       />
 
       {/* ===== Modal ===== */}

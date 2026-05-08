@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -35,6 +35,7 @@ const ReturnStockList = () => {
   const [stockFilter, setStockFilter] = useState("ALL"); // ALL, PRODUCT, ITEM_PURCHASE
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [openDetailModal, setOpenDetailModal] = useState(false);
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
     if (fromDate && toDate && toDate.isBefore(fromDate, "day")) {
@@ -46,7 +47,18 @@ const ReturnStockList = () => {
   const fetchReturnedStock = async () => {
     try {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/returns/return-stock`);
-      setReturns(res.data.data || []);
+      const fetchedReturns = res.data.data || [];
+      setReturns(fetchedReturns);
+
+      if (isFirstLoad.current && fetchedReturns.length > 0) {
+          // Sort ascending for calculation
+          const sorted = [...fetchedReturns].sort((a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix());
+          const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
+          if (lastPage >= 0) {
+              setPage(lastPage);
+              isFirstLoad.current = false;
+          }
+      }
     } catch {
       toast.error("Failed to load returned products");
     }
@@ -75,11 +87,13 @@ const ReturnStockList = () => {
 
       return matchesSearch && matchesFrom && matchesTo && matchesStock;
     })
-    .sort((a, b) =>
-      fromDate || toDate
-        ? dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix()
-        : dayjs(b.createdAt).unix() - dayjs(a.createdAt).unix()
-    );
+    .sort((a, b) => {
+        // ALWAYS Oldest First (Ascending)
+        const dateA = dayjs(a.createdAt).unix();
+        const dateB = dayjs(b.createdAt).unix();
+        if (dateA - dateB !== 0) return dateA - dateB;
+        return (a.id || 0) - (b.id || 0);
+    });
 
   const paginatedData = filteredReturns.slice(
     page * rowsPerPage,
@@ -264,7 +278,8 @@ const ReturnStockList = () => {
             setFromDate(null);
             setToDate(null);
             setStockFilter("ALL");
-            setPage(0);
+            isFirstLoad.current = true;
+            // useEffect on fromDate/toDate will trigger fetchReturnedStock
           }}
         >
           Reset
@@ -350,6 +365,7 @@ const ReturnStockList = () => {
           setRowsPerPage(parseInt(e.target.value, 10));
           setPage(0);
         }}
+        rowsPerPageOptions={[10, 25, 50, 100]}
       />
 
       <ReturnDetailsModal 

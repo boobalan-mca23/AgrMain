@@ -51,7 +51,6 @@ const moveToItemDelivery = async (itemDelivery, jobcardId, goldSmithId) => {
           data: {
             ...data,
             stoneWeight: stoneWeightTotal,
-            isActive: false,
           },
         });
       } else {
@@ -422,6 +421,7 @@ const getAllJobCardsByGoldsmithId = async (req, res) => {
         deliveries: {
           include: {
             deduction: true,
+            productStock: true,
           },
         },
         received: true,

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Autocomplete,
@@ -123,22 +123,42 @@ const Billing = () => {
 
   const [editBillId, setEditBillId] = useState(null);
   const [billSearchTerm, setBillSearchTerm] = useState("");
+  const [billPage, setBillPage] = useState(0);
+  const [billRowsPerPage, setBillRowsPerPage] = useState(10);
+  const isBillFirstLoad = useRef(true);
 
   const filteredBills = useMemo(() => {
     if (!Array.isArray(bills)) return [];
-    if (!billSearchTerm.trim()) return bills;
-    const term = billSearchTerm.toLowerCase();
-    return bills.filter((b) => {
-      const billNo = b.id?.toString() || "";
-      const custName = b.customers?.name?.toLowerCase() || "";
-      return billNo.includes(term) || custName.includes(term);
-    });
+    let result = bills;
+    if (billSearchTerm.trim()) {
+      const term = billSearchTerm.toLowerCase();
+      result = bills.filter((b) => {
+        const billNo = b.id?.toString() || "";
+        const custName = b.customers?.name?.toLowerCase() || "";
+        return billNo.includes(term) || custName.includes(term);
+      });
+    }
+    // Sort by id ascending (Oldest First)
+    return [...result].sort((a, b) => (a.id || 0) - (b.id || 0));
   }, [bills, billSearchTerm]);
+
+  const paginatedBills = useMemo(() => {
+    return filteredBills.slice(
+      billPage * billRowsPerPage,
+      billPage * billRowsPerPage + billRowsPerPage
+    );
+  }, [filteredBills, billPage, billRowsPerPage]);
+
+  useEffect(() => {
+    if (!isBillFirstLoad.current) {
+      setBillPage(0);
+    }
+  }, [billSearchTerm]);
 
   const [stockSource, setStockSource] = useState("ALL");
   const [stockPage, setStockPage] = useState(0);
   const [stockRowsPerPage, setStockRowsPerPage] = useState(20);
-  
+
   // Reset stock page when filters change
   useEffect(() => {
     setStockPage(0);
@@ -237,9 +257,9 @@ const Billing = () => {
         const originalGross = uId.startsWith("ITEM_PURCHASE_") ? toNumber(productStock.grossWeight) : toNumber(productStock.itemWeight);
         const originalStone = toNumber(productStock.stoneWeight);
         const originalCount = toNumber(productStock.count);
-        
+
         const totalBilledWt = Object.values(weightAllocations[uId] || {}).reduce((a, b) => a + toNumber(b), 0);
-        
+
         const totalBilledStoneWt = billDetailRows
           .filter(row => row.uniqueId === uId)
           .reduce((sum, row) => {
@@ -967,7 +987,7 @@ const Billing = () => {
 
       setIsEditMode(false);
       setEditBillId(null);
-      
+
       const isFromUrl = new URLSearchParams(location.search).get("edit");
       if (isFromUrl) {
         navigate(-1);
@@ -1117,8 +1137,8 @@ const Billing = () => {
     // Apply Search Term
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      combined = combined.filter(p => 
-        p.itemName.toLowerCase().includes(s) || 
+      combined = combined.filter(p =>
+        p.itemName.toLowerCase().includes(s) ||
         (p.touch && p.touch.toString().toLowerCase().includes(s))
       );
     }
@@ -1271,7 +1291,14 @@ const Billing = () => {
       console.log("Bills fetched:", data);
 
       setBillNo(data.nextBillNo || 1);
-      setBills(Array.isArray(data.data) ? data.data : []);
+      const billsData = Array.isArray(data.data) ? data.data : [];
+      setBills(billsData);
+
+      if (isBillFirstLoad.current && billsData.length > 0) {
+        const lastPage = Math.floor((billsData.length - 1) / billRowsPerPage);
+        setBillPage(lastPage);
+        isBillFirstLoad.current = false;
+      }
     } catch (error) {
       console.error("Error fetching bills:", error);
       setBillNo(1);
@@ -1375,7 +1402,7 @@ const Billing = () => {
   const cancelEditMode = () => {
     setIsEditMode(false);
     setEditBillId(null);
-    
+
     const isFromUrl = new URLSearchParams(location.search).get("edit");
     if (isFromUrl) {
       navigate(-1);
@@ -1870,12 +1897,12 @@ const Billing = () => {
                             fontWeight: "500",
                             backgroundColor:
                               (row.repairStatus || "").includes("IN_REPAIR") ? "#ff9800"
-                              : (row.repairStatus || "").includes("PARTIALLY_IN_REPAIR") ? "#ffb74d"
-                              : (row.repairStatus || "").includes("REPAIRED_TO_STOCK") ? "#757575"
-                              : (row.repairStatus || "").includes("REPAIRED") ? "#2196f3"
-                              : (row.repairStatus || "").includes("PARTIALLY_REPAIRED") ? "#4caf50"
-                              : (row.repairStatus || "").includes("RETURNED") ? "#4caf50"
-                              : "#9e9e9e",
+                                : (row.repairStatus || "").includes("PARTIALLY_IN_REPAIR") ? "#ffb74d"
+                                  : (row.repairStatus || "").includes("REPAIRED_TO_STOCK") ? "#757575"
+                                    : (row.repairStatus || "").includes("REPAIRED") ? "#2196f3"
+                                      : (row.repairStatus || "").includes("PARTIALLY_REPAIRED") ? "#4caf50"
+                                        : (row.repairStatus || "").includes("RETURNED") ? "#4caf50"
+                                          : "#9e9e9e",
                             color: "white",
                             whiteSpace: "nowrap",
                           }}
@@ -1883,7 +1910,7 @@ const Billing = () => {
                           {(() => {
                             const s = row.repairStatus || "";
                             if (!s || s === "Sold" || s === "NONE") return "Sold";
-                            
+
                             // Hybrid Statuses
                             const isRepaired = s.includes("REPAIRED") || s.includes("PARTIALLY_REPAIRED");
                             const isInRepair = s.includes("IN_REPAIR") || s.includes("PARTIALLY_IN_REPAIR");
@@ -1899,7 +1926,7 @@ const Billing = () => {
                             if (s.includes("REPAIRED_TO_STOCK")) return "Repaired (Stock)";
                             if (s.includes("REPAIRED")) return "Repaired";
                             if (s.includes("RETURNED")) return "Returned";
-                            
+
                             return s;
                           })()}
                         </span>
@@ -2120,12 +2147,12 @@ const Billing = () => {
 
       {/* Right panel: available products — hidden during edit mode */}
       {!isEditMode && <Box className="right-panel no-print">
-        <Box sx={{ 
-          backgroundColor: "#0a4c9a", 
-          color: "white", 
-          textAlign: "center", 
-          py: 1, 
-          borderRadius: "8px", 
+        <Box sx={{
+          backgroundColor: "#0a4c9a",
+          color: "white",
+          textAlign: "center",
+          py: 1,
+          borderRadius: "8px",
           marginBottom: "12px",
           fontWeight: "bold"
         }}>
@@ -2210,7 +2237,7 @@ const Billing = () => {
                 unifiedStock.slice(stockPage * stockRowsPerPage, stockPage * stockRowsPerPage + stockRowsPerPage).map((prodata, index) => {
                   const uniqueId = prodata.uniqueId;
                   const isItemPurchase = prodata.stockType === "ITEM_PURCHASE";
-                  
+
                   const remainingWeight = getRemainingWeight(uniqueId, isItemPurchase ? prodata.displayWeight : prodata.itemWeight);
                   const remainingStone = getRemainingStone(uniqueId, isItemPurchase ? prodata.displayStone : prodata.stoneWeight);
                   const remainingCount = getRemainingCount(uniqueId, isItemPurchase ? prodata.displayCount : prodata.count);
@@ -2347,6 +2374,7 @@ const Billing = () => {
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
+                  <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "50px" }}> S.no </TableCell>
                   <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "90px" }}>  Bill No </TableCell>
                   <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "150px" }} >Customer </TableCell>
                   <TableCell style={{ textAlign: "center", backgroundColor: "#06387a", color: "white", width: "110px" }}> Amount </TableCell>
@@ -2355,9 +2383,10 @@ const Billing = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredBills.length > 0 ? (
-                  filteredBills.map((bill) => (
+                {paginatedBills.length > 0 ? (
+                  paginatedBills.map((bill, index) => (
                     <TableRow key={bill.id}>
+                      <TableCell style={{ textAlign: "center" }}> {billPage * billRowsPerPage + index + 1} </TableCell>
                       <TableCell style={{ textAlign: "center" }}>  {bill.id} </TableCell>
                       <TableCell style={{ textAlign: "center" }}> {bill.customers?.name || "N/A"} </TableCell>
                       <TableCell style={{ textAlign: "center" }}>  {(bill.billAmount).toFixed(3)} </TableCell>
@@ -2385,12 +2414,24 @@ const Billing = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} style={{ textAlign: "center" }}> No bills found </TableCell>
+                    <TableCell colSpan={6} style={{ textAlign: "center" }}> No bills found </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredBills.length}
+            page={billPage}
+            onPageChange={(e, newPage) => setBillPage(newPage)}
+            rowsPerPage={billRowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setBillRowsPerPage(parseInt(e.target.value, 10));
+              setBillPage(0);
+            }}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+          />
         </Box>
       </Modal>
     </Box >

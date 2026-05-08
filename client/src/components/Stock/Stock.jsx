@@ -1,4 +1,4 @@
-import { useState, useEffect,useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import { TablePagination, Button } from "@mui/material";
@@ -19,7 +19,7 @@ const Stock = () => {
   const [stockData, setStockData] = useState([]);
 
   const [page, setPage] = useState(0); 
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   const [groupPage, setGroupPage] = useState(0);
   const [groupRowsPerPage, setGroupRowsPerPage] = useState(5);
@@ -34,6 +34,7 @@ const Stock = () => {
   const [addNetWeight, setAddNetWeight] = useState("");
   const [groupedBCPurity, setGroupedBCPurity] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const isFirstLoad = useRef(true);
 
   const paginatedData = stockData.slice(
     page * rowsPerPage,
@@ -78,9 +79,21 @@ const Stock = () => {
 
   const fetchProductStock = async () => {
     const res = await axios.get(`${BACKEND_SERVER_URL}/api/productStock`);
-    const activeOnly = res.data.allStock.filter((item) => item.isActive);
-    setStockData(activeOnly);
-    console.log("Fetched stock data:", activeOnly);
+    const activeOnly = (res.data.allStock || []).filter((item) => item.isActive);
+    
+    // Sort by ID ascending (Oldest First)
+    const sorted = [...activeOnly].sort((a, b) => (a.id || 0) - (b.id || 0));
+    
+    setStockData(sorted);
+
+    if (isFirstLoad.current && sorted.length > 0) {
+        const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
+        if (lastPage >= 0) {
+            setPage(lastPage);
+            isFirstLoad.current = false;
+        }
+    }
+    console.log("Fetched stock data:", sorted);
   };
 
   const calculatePurity = (touch, netWeight) => {
@@ -550,7 +563,7 @@ const handleSaveAddWeight = async () => {
           <table className="stock-table">
             <thead>
               <tr>
-                <th>Serial No</th>
+                <th>S.No</th>
                 <th>ProductName</th>
                 <th>ItemWeight (g)</th>
                 <th>Count</th>
@@ -640,7 +653,7 @@ const handleSaveAddWeight = async () => {
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[10, 20, 50, 100]}
+            rowsPerPageOptions={[10, 25, 50, 100]}
           />
         )}
       </div>

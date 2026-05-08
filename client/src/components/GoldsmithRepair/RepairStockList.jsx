@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import "./Stock.css";
@@ -30,7 +30,8 @@ const RepairStockList = () => {
   const [goldsmiths, setGoldsmiths] = useState([]);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const isFirstLoad = useRef(true);
 
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
 
@@ -71,6 +72,9 @@ const RepairStockList = () => {
 
   useEffect(() => {
     fetchRepairStock();
+    if (!isFirstLoad.current) {
+        setPage(0);
+    }
   }, [filterGoldsmith, filterStatus, dateFrom, dateTo, search]);
 
   const fetchRepairStock = async () => {
@@ -87,12 +91,23 @@ const RepairStockList = () => {
       }
     );
 
-    const sorted = [...(res.data?.repairs || [])].sort(
-      (a, b) => (a.status === "InRepair" ? -1 : 1)
-    );
+    const repairs = res.data?.repairs || [];
+    // Sort by sentDate ascending (Oldest First)
+    const sorted = [...repairs].sort((a, b) => {
+        const dateA = dayjs(a.sentDate);
+        const dateB = dayjs(b.sentDate);
+        if (dateA.isBefore(dateB)) return -1;
+        if (dateA.isAfter(dateB)) return 1;
+        return (a.id || 0) - (b.id || 0);
+    });
 
     setRepairList(sorted);
-    setPage(0);
+    
+    if (isFirstLoad.current && sorted.length > 0) {
+        const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+    }
   };
 
   const fetchGoldsmiths = async () => {
@@ -250,6 +265,7 @@ const RepairStockList = () => {
               setDateFrom(null);
               setDateTo(null);
               setSearch("");
+              isFirstLoad.current = true;
             }}
           >
             Reset
@@ -263,7 +279,7 @@ const RepairStockList = () => {
         <table className="stock-table">
           <thead>
             <tr>
-              <th>Serial</th>
+              <th>S.No</th>
               <th>Sent Date</th>
               <th>Item Name</th>
               <th>Goldsmith</th>
@@ -360,6 +376,7 @@ const RepairStockList = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
+          rowsPerPageOptions={[5,10, 25, 50, 100]}
         />
       </div>
 
