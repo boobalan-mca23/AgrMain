@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-import { TablePagination, Button, Tabs, Tab } from "@mui/material";
+import { TablePagination, Button, Tabs, Box } from "@mui/material";
 import "./Stock.css";
 
 import {
@@ -117,7 +117,7 @@ const ProductStock = () => {
             isFirstLoad.current = false;
         }
     }
-  }, [productStock, itemPurchaseStock, rowsPerPage, unifiedStock.length]);
+  }, [productStock, itemPurchaseStock, rowsPerPage, unifiedStock.length, search]);
 
   const paginated = unifiedStock.slice(
     page * rowsPerPage,
@@ -200,17 +200,35 @@ const ProductStock = () => {
         <h2 className="stock-heading" style={{ margin: "0 0 12px 0" }}>
           Stock Management – Repair Module
         </h2>
-        <TextField
-          size="small"
-          label="Search (Item / Item Wt / Touch)"
-          variant="outlined"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(0);
-          }}
-          sx={{ width: "350px" }}
-        />
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <TextField
+            size="small"
+            label="Search (Item / Item Wt / Touch)"
+            variant="outlined"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+            sx={{ width: "350px" }}
+          />
+          <Button
+            variant="contained"
+            size="small"
+            sx={{
+              backgroundColor: "#d32f2f",
+              color: "white",
+              '&:hover': { backgroundColor: "#c62828" },
+              height: "40px"
+            }}
+            onClick={() => {
+              setSearch("");
+              isFirstLoad.current = true;
+            }}
+          >
+            Reset
+          </Button>
+        </Box>
       </div>
 
 

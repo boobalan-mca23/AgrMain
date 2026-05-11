@@ -30,7 +30,7 @@ const RepairStockList = () => {
   const [goldsmiths, setGoldsmiths] = useState([]);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const isFirstLoad = useRef(true);
 
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
@@ -266,6 +266,7 @@ const RepairStockList = () => {
               setDateTo(null);
               setSearch("");
               isFirstLoad.current = true;
+              fetchRepairStock();
             }}
           >
             Reset
@@ -376,7 +377,7 @@ const RepairStockList = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
-          rowsPerPageOptions={[5,10, 25, 50, 100]}
+          rowsPerPageOptions={[10, 25, 50, 100]}
         />
       </div>
 

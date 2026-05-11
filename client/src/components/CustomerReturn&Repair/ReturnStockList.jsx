@@ -28,7 +28,7 @@ import "./Customer.css";
 const ReturnStockList = () => {
   const [returns, setReturns] = useState([]);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState(() => dayjs().subtract(15, "day"));
   const [toDate, setToDate] = useState(() => dayjs());
@@ -44,20 +44,26 @@ const ReturnStockList = () => {
     fetchReturnedStock();
   }, [fromDate, toDate]);
 
-  const fetchReturnedStock = async () => {
+  const fetchReturnedStock = async (overrideFrom = undefined, overrideTo = undefined) => {
     try {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/returns/return-stock`);
       const fetchedReturns = res.data.data || [];
       setReturns(fetchedReturns);
 
+      // Use overrides if provided (for Reset), otherwise use current state
+      const effectiveFrom = overrideFrom !== undefined ? overrideFrom : fromDate;
+      const effectiveTo = overrideTo !== undefined ? overrideTo : toDate;
+
       if (isFirstLoad.current && fetchedReturns.length > 0) {
-          // Sort ascending for calculation
-          const sorted = [...fetchedReturns].sort((a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix());
-          const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
-          if (lastPage >= 0) {
-              setPage(lastPage);
-              isFirstLoad.current = false;
+          if (!effectiveFrom && !effectiveTo) {
+              // Sort ascending for calculation
+              const sorted = [...fetchedReturns].sort((a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix());
+              const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
+              if (lastPage >= 0) {
+                  setPage(lastPage);
+              }
           }
+          isFirstLoad.current = false;
       }
     } catch {
       toast.error("Failed to load returned products");
@@ -279,7 +285,7 @@ const ReturnStockList = () => {
             setToDate(null);
             setStockFilter("ALL");
             isFirstLoad.current = true;
-            // useEffect on fromDate/toDate will trigger fetchReturnedStock
+            fetchReturnedStock(null, null);
           }}
         >
           Reset
