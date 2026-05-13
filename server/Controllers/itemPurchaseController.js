@@ -172,8 +172,8 @@ exports.createEntry = async (req, res) => {
           supplierName: supplier.name,
 
           itemName,
-          count: count ? Number(count) : 1,
-          initialCount: count ? Number(count) : 1,
+          count: (count !== undefined && count !== null) ? Number(count) : 1,
+          initialCount: (count !== undefined && count !== null) ? Number(count) : 1,
           wastageType,
 
           moveTo: "item",
@@ -406,7 +406,7 @@ exports.updateEntry = async (req, res) => {
           supplierName: supplier.name,
 
           itemName,
-          count: count ? Number(count) : 1,
+          count: (count !== undefined && count !== null) ? Number(count) : 1,
           wastageType,
 
           advanceGold: calc.advanceGold,
