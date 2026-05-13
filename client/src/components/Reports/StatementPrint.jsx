@@ -1,7 +1,7 @@
 import React from "react";
 import "./StatementPrint.css";
 
-const StatementPrint = ({ data, type, entityName, fromDate, toDate }) => {
+const StatementPrint = ({ data, type, entityName, fromDate, toDate, startIndex = 0 }) => {
   const formatVal = (val) => (val != null ? val.toFixed(3) : "0.000");
 
   const RenderInlineDetails = ({ row }) => {
@@ -331,7 +331,7 @@ const StatementPrint = ({ data, type, entityName, fromDate, toDate }) => {
         <tbody>
           {data.map((row, index) => (
             <tr key={index}>
-              <td>{index + 1}</td>
+              <td>{startIndex + index + 1}</td>
               <td>{new Date(row.date).toLocaleDateString("en-GB")}</td>
               <td>{row.module}</td>
               <td className="print-desc-cell">
