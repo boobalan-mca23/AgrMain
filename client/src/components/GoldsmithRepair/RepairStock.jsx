@@ -27,7 +27,7 @@ const ProductStock = () => {
   const [goldsmiths, setGoldsmiths] = useState([]);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const isFirstLoad = useRef(true);
 
   const [openSendDialog, setOpenSendDialog] = useState(false);
@@ -107,7 +107,12 @@ const ProductStock = () => {
       p.displayWt?.toString().includes(s) ||
       p.touch?.toString().includes(s)
     );
-  }).sort((a, b) => a.id - b.id);
+  }).sort((a, b) => {
+    // EXACTLY match Stock Dashboard (Ascending by Date)
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateA - dateB;
+  });
 
   useEffect(() => {
     if (isFirstLoad.current && (productStock.length > 0 || itemPurchaseStock.length > 0)) {

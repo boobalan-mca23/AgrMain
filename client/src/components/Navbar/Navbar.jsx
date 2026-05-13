@@ -330,8 +330,7 @@ const Navbar = () => {
               onMouseLeave={() => setShowStock(false)}
             >
               {[
-                ["Product Stock", "/productstock"],
-                ["Item Purchase Stock", "/itempurchasestock"],
+                ["Stock Dashboard", "/productstock"],
                 ["Raw Gold Stock", "/rawgoldstock"],
               ].map(([name, path]) => (
                 <a

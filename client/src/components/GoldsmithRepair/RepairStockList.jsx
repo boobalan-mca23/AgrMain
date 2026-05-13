@@ -39,8 +39,8 @@ const RepairStockList = () => {
 
   const [filterGoldsmith, setFilterGoldsmith] = useState("all");
   const [filterStatus, setFilterStatus] = useState("InRepair");
-  const [dateFrom, setDateFrom] = useState(null);
-  const [dateTo, setDateTo] = useState(null);
+  const [dateFrom, setDateFrom] = useState(() => dayjs().subtract(15, "day"));
+  const [dateTo, setDateTo] = useState(() => dayjs());
   const [search, setSearch] = useState("");
   // const [activeTab, setActiveTab] = useState("PRODUCT");
 
@@ -266,7 +266,7 @@ const RepairStockList = () => {
               setDateTo(null);
               setSearch("");
               isFirstLoad.current = true;
-              fetchRepairStock();
+              // fetchRepairStock will be triggered by the date changes
             }}
           >
             Reset

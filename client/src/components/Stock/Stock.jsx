@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-import { TablePagination, Button } from "@mui/material";
+import { TablePagination, Button, Box, Chip } from "@mui/material";
 import { AddCircleOutline } from "@mui/icons-material";
 import "./Stock.css";
 import {
@@ -10,9 +10,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
-  Checkbox,
-  FormControlLabel
+  MenuItem
 } from "@mui/material";
 
 const Stock = () => {
@@ -36,83 +34,59 @@ const Stock = () => {
   const [isSaving, setIsSaving] = useState(false);
   const isFirstLoad = useRef(true);
 
-  const paginatedData = stockData.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
-  const currentPageTotal = useMemo(() => {
-    return paginatedData.reduce(
-      (acc, item) => {
-        acc.itemWt += Number(item.itemWeight ?? 0);
-        acc.finalWt += Number(item.finalPurity ?? 0);
-        return acc;
-      },
-      { itemWt: 0, finalWt: 0 }
-    );
-  }, [paginatedData]);
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
   useEffect(() => {
-    fetchProductStock();
+    fetchUnifiedStock();
     fetchPuritySummary();
   }, []);
 
   const fetchPuritySummary = async () => {
-
-    const res =
-      await axios.get(
-        `${BACKEND_SERVER_URL}/api/purchase-entry/purity-summary`
-      );
-
-    setGroupedBCPurity(res.data);
-
-  };
-
-  const fetchProductStock = async () => {
-    const res = await axios.get(`${BACKEND_SERVER_URL}/api/productStock`);
-    const activeOnly = (res.data.allStock || []).filter((item) => item.isActive);
-    
-    // Sort by ID ascending (Oldest First)
-    const sorted = [...activeOnly].sort((a, b) => (a.id || 0) - (b.id || 0));
-    
-    setStockData(sorted);
-
-    if (isFirstLoad.current && sorted.length > 0) {
-        const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
-        if (lastPage >= 0) {
-            setPage(lastPage);
-            isFirstLoad.current = false;
-        }
+    try {
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/purchase-entry/purity-summary`);
+      setGroupedBCPurity(res.data);
+    } catch (err) {
+      console.error("Failed to fetch purity summary", err);
     }
-    console.log("Fetched stock data:", sorted);
   };
 
-  const calculatePurity = (touch, netWeight) => {
-    const purityValue = (touch * netWeight) / 100;
-    return purityValue.toFixed(3);
-  };
+  const fetchUnifiedStock = async () => {
+    try {
+      // Fetch both stocks
+      const [prodRes, itemRes] = await Promise.all([
+        axios.get(`${BACKEND_SERVER_URL}/api/productStock`),
+        axios.get(`${BACKEND_SERVER_URL}/api/item-purchase/stock`)
+      ]);
 
-  const calculatePurityTotal = (stock) => {
-    const totalPurity = stock.reduce((acc, item) => {
-      return acc + ((item.touch ?? 0) / 100) * (item.netWeight ?? 0);
-    }, 0);
-    return totalPurity.toFixed(3);
-  };
+      const products = (prodRes.data.allStock || [])
+        .filter(item => item.isActive)
+        .map(item => ({ ...item, stockType: "PRODUCT", displayWeight: item.itemWeight }));
 
-  const calculatewastgePure = (stock) => {
-    const totalWastage = stock.reduce((acc, item) => {
-      return acc + (item.wastagePure ?? 0);
-    }, 0);
-    return totalWastage.toFixed(3);
+      const items = (itemRes.data.allStock || [])
+        .map(item => ({ 
+          ...item, 
+          stockType: "ITEM_PURCHASE", 
+          displayWeight: item.grossWeight,
+          itemName: item.itemName, // Ensure name is mapped correctly
+          wastageValue: item.wastage, // Map backend wastage to wastageValue for display consistency
+        }));
+
+      const combined = [...products, ...items].sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateA - dateB;
+      });
+
+      setStockData(combined);
+
+      if (isFirstLoad.current && combined.length > 0) {
+        const lastPage = Math.floor((combined.length - 1) / rowsPerPage);
+        if (lastPage >= 0) {
+          setPage(lastPage);
+          isFirstLoad.current = false;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch stock", err);
+    }
   };
 
   const safeFixed = (num, decimals = 3) => {
@@ -120,36 +94,21 @@ const Stock = () => {
     return isNaN(n) ? "0.000" : n.toFixed(decimals);
   };
 
-  const handleItemSold = async (id) => {
-    if (window.confirm('Do you want to make this item be "Sold"')) {
-      stockData.forEach((item) => {
-        if (item.id === id) {
-          console.log("Found item:", item);
-          const updateItem = async () => {
-            try {
-              const res = await axios.put(
-                `${BACKEND_SERVER_URL}/api/productStock/${id}`,
-                {
-                  isBillProduct: false,
-                  isActive: false,
-                }
-              );
-              console.log("Update response:", res.data);
-              setStockData((prevData) =>
-                prevData.map((it) =>
-                  it.id === id ? { ...it, isBillProduct: false } : it
-                )
-              );
-              await fetchProductStock();
-            } catch (error) {
-              console.error("Error updating item:", error);
-            }
-          };
-          updateItem();
+  const handleItemSold = async (item) => {
+    if (window.confirm('Do you want to mark this item as "Sold"?')) {
+      try {
+        if (item.stockType === "PRODUCT") {
+          await axios.put(`${BACKEND_SERVER_URL}/api/productStock/${item.id}`, {
+            isBillProduct: false,
+            isActive: false,
+          });
+        } else {
+          await axios.put(`${BACKEND_SERVER_URL}/api/item-purchase/sold/${item.id}`);
         }
-      });
-    } else {
-      console.log("cancelled");
+        await fetchUnifiedStock();
+      } catch (error) {
+        console.error("Error marking item as sold:", error);
+      }
     }
   };
 
@@ -164,7 +123,7 @@ const Stock = () => {
     });
 
     return Object.values(map).map((g) => {
-      const itemWeights = g.items.map((it) => Number(it.itemWeight ?? 0));
+      const itemWeights = g.items.map((it) => Number(it.displayWeight ?? 0));
       const stoneWeights = g.items.map((it) => Number(it.stoneWeight ?? 0));
       const netWeights = g.items.map((it) => Number(it.netWeight ?? 0));
 
@@ -174,10 +133,6 @@ const Stock = () => {
 
       const netPurity = (sumNet * (g.touch ?? 0)) / 100;
 
-      const itemWeightStr = safeFixed(sumItem) || "0.000";
-      const stoneWeightStr = safeFixed(sumStone) || "0.000";
-      const netWeightStr = safeFixed(sumNet) || "0.000";
-
       return {
         touch: g.touch,
         items: g.items,
@@ -185,169 +140,108 @@ const Stock = () => {
         sumStone,
         sumNet,
         netPurity,
-        itemWeightStr,
-        stoneWeightStr,
-        netWeightStr,
+        itemWeightStr: safeFixed(sumItem),
+        stoneWeightStr: safeFixed(sumStone),
+        netWeightStr: safeFixed(sumNet),
       };
     });
   };
 
-const computeFinalPurityForItem = (item) => {
+  const grouped = groupByTouch(stockData);
 
-  const net = Number(item.netWeight ?? 0);
-  const touch = Number(item.touch ?? 0);
-  const wast = Number(item.wastageValue ?? 0);
-  const type = item.wastageType;
+  const paginatedData = stockData.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
-  if (net <= 0 || touch <= 0) return 0;
+  const groupedPaginated = grouped.slice(
+    groupPage * groupRowsPerPage,
+    groupPage * groupRowsPerPage + groupRowsPerPage
+  );
 
-  let finalPurity = 0;
+  const purityPaginated = stockData.slice(
+    purityPage * purityRowsPerPage,
+    purityPage * purityRowsPerPage + purityRowsPerPage
+  );
 
-  if (type === "Touch") {
-    finalPurity = (net * wast) / 100;
-  }
+  const totals = useMemo(() => {
+    return stockData.reduce((acc, it) => {
+      acc.count += (it.count ?? 0);
+      acc.netWeight += Number(it.netWeight ?? 0);
+      acc.wastagePure += Number(it.wastagePure ?? 0);
+      acc.finalPurity += Number(it.finalPurity ?? 0);
+      return acc;
+    }, { count: 0, netWeight: 0, wastagePure: 0, finalPurity: 0 });
+  }, [stockData]);
 
-  else if (type === "%") {
-    const A = (net * wast) / 100;
-    const B = A + net;
-    finalPurity = (B * touch) / 100;
-  }
+  const groupedPaginatedTotal = groupedPaginated.reduce(
+    (acc, g) => acc + Number(g.netPurity ?? 0),
+    0
+  );
 
-  else if (type === "+") {
-    const A = net + wast;
-    finalPurity = (A * touch) / 100;
-  }
+  const purityPaginatedTotal = purityPaginated.reduce(
+    (acc, it) => acc + Number(it.finalPurity ?? 0),
+    0
+  );
 
-  return Number(finalPurity.toFixed(3));
-};
+  const openAddWeightPopup = async (product) => {
+    try {
+      setSelectedProduct(product);
+      setOpenAddPopup(true);
+      setAddNetWeight("");
+      setSelectedPurchase(null);
 
-const grouped = groupByTouch(stockData);
+      const res = await axios.get(`${BACKEND_SERVER_URL}/api/purchase-stock/touch/${product.touch}`);
+      const available = res.data.filter(ps => ps.netWeight > 0);
+      setPurchaseStocks(available);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-const groupedPaginated = grouped.slice(
-  groupPage * groupRowsPerPage,
-  groupPage * groupRowsPerPage + groupRowsPerPage
-);
+  const handleSaveAddWeight = async () => {
+    const weight = Number(addNetWeight);
+    if (!selectedPurchase || weight <= 0) {
+      alert("Invalid input");
+      return;
+    }
+    if (weight > selectedPurchase.netWeight) {
+      alert("Entered weight exceeds available purchase stock");
+      return;
+    }
 
-const purityPaginated = stockData.slice(
-  purityPage * purityRowsPerPage,
-  purityPage * purityRowsPerPage + purityRowsPerPage
-);
+    if (isSaving) return;
+    setIsSaving(true);
 
-const groupedPaginatedTotal = groupedPaginated.reduce(
-  (acc, g) => acc + Number(g.netPurity ?? 0),
-  0
-);
+    try {
+      await axios.post(`${BACKEND_SERVER_URL}/api/productStock/add-weight`, {
+        stockId: selectedProduct.id,
+        stockType: selectedProduct.stockType,
+        purchaseStockId: selectedPurchase.id,
+        addNetWeight: weight
+      });
 
-const purityPaginatedTotal = purityPaginated.reduce(
-  (acc, it) => acc + Number(it.finalPurity ?? 0),
-  0
-);
-
-const groupedNetPurityTotal = grouped.reduce(
-  (acc, g) => acc + (g.netPurity ?? 0),
-  0
-);
-
-const totalFinalPurity = stockData.reduce(
-  (acc, it) => acc + Number(it.finalPurity ?? 0),
-  0
-);
-
-const handleGroupChangePage = (event, newPage) => {
-  setGroupPage(newPage);
-};
-const handleGroupChangeRowsPerPage = (event) => {
-  setGroupRowsPerPage(parseInt(event.target.value, 10));
-  setGroupPage(0);
-};
-
-const handlePurityChangePage = (event, newPage) => {
-  setPurityPage(newPage);
-};
-const handlePurityChangeRowsPerPage = (event) => {
-  setPurityRowsPerPage(parseInt(event.target.value, 10));
-  setPurityPage(0);
-};
-
-const openAddWeightPopup = async (product) => {
-  try {
-    setSelectedProduct(product);
-    setOpenAddPopup(true);
-    setAddNetWeight("");
-    setSelectedPurchase(null);
-
-    const res = await axios.get(
-      `${BACKEND_SERVER_URL}/api/purchase-stock/touch/${product.touch}`
-    );
-
-    const available = res.data.filter(ps => ps.netWeight > 0);
-    setPurchaseStocks(available);
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-const handleSaveAddWeight = async () => {
-  const weight = Number(addNetWeight);
-
-  if (!selectedPurchase || weight <= 0) {
-    alert("Invalid input");
-    return;
-  }
-
-  if (weight > selectedPurchase.netWeight) {
-    alert("Entered weight exceeds available purchase stock");
-    return;
-  }
-
-  if (isSaving) return;
-  setIsSaving(true);
-
-  try {
-    await axios.post(`${BACKEND_SERVER_URL}/api/productStock/add-weight`, {
-    productStockId: selectedProduct.id,
-    purchaseStockId: selectedPurchase.id,
-    addNetWeight: weight
-  });
-
-    setOpenAddPopup(false);
-    await fetchProductStock();
-    await fetchPuritySummary();
-  } catch (err) {
-    alert(err.response?.data?.err || "Failed to add weight");
-  } finally {
-    setIsSaving(false);
-  }
-};
+      setOpenAddPopup(false);
+      await fetchUnifiedStock();
+      await fetchPuritySummary();
+    } catch (err) {
+      alert(err.response?.data?.err || "Failed to add weight");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="stock-container">
       <h2 className="stock-heading">Stock Dashboard</h2>
       <div className="stock-summary">
-        <div 
-        style={{
-          backgroundColor: "#f0f4ff",
-          padding: "18px",
-          borderRadius: "8px",
-          boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
-        }} 
-        >
+        <div className="stock-card" style={{ padding: "18px" }}>
           <p className="stock-label">Total Item's Count</p>
-          <p className="stock-value">
-            {stockData.length > 0 ? (
-              <>
-                {stockData.reduce((acc, it) => acc + (it.count ?? 0), 0)}
-              </>
-            ) : (
-              0
-            )}
-          </p>
+          <p className="stock-value">{totals.count}</p>
         </div>
 
-         
         <div className="stock-card">
           <p className="stock-label">Total Weight</p>
-        
           <div className="mini-table-wrapper">
             <table className="mini-table">
               <thead>
@@ -361,77 +255,47 @@ const handleSaveAddWeight = async () => {
                 </tr>
               </thead>
               <tbody>
-                {grouped.length === 0 && (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: "center" }}>
-                      No data
-                    </td>
-                  </tr>
-                )}
                 {groupedPaginated.map((g, idx) => (
-                  <tr key={groupPage * groupRowsPerPage + idx}>
+                  <tr key={idx}>
                     <td>{groupPage * groupRowsPerPage + idx + 1}</td>
                     <td>{g.touch}</td>
-                    <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>
-                      {g.itemWeightStr}
-                    </td>
-                    <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>
-                      {g.stoneWeightStr}
-                    </td>
-                    <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>
-                      {g.netWeightStr}
-                    </td>
+                    <td>{g.itemWeightStr}</td>
+                    <td>{g.stoneWeightStr}</td>
+                    <td>{g.netWeightStr}</td>
                     <td>{safeFixed(g.netPurity)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "right" }}>
-                    <strong>Total Net Purity</strong>
-                  </td>
-                  <td>
-                    <strong>{safeFixed(groupedPaginatedTotal)}</strong>
-                  </td>
+                  <td colSpan={5} style={{ textAlign: "right" }}>Total Net Purity</td>
+                  <td>{safeFixed(groupedPaginatedTotal)}</td>
                 </tr>
               </tfoot>
             </table>
-
-            {grouped.length > 0 && (
-              <TablePagination
-                component="div"
-                count={grouped.length}
-                page={groupPage}
-                onPageChange={handleGroupChangePage}
-                rowsPerPage={groupRowsPerPage}
-                onRowsPerPageChange={handleGroupChangeRowsPerPage}
-                rowsPerPageOptions={[5, 10, 25]}
-                sx={{ "& .MuiTablePagination-toolbar": { padding: "0 8px" } }}
-              />
-            )}
+            <TablePagination
+              component="div"
+              count={grouped.length}
+              page={groupPage}
+              onPageChange={(e, p) => setGroupPage(p)}
+              rowsPerPage={groupRowsPerPage}
+              onRowsPerPageChange={(e) => { setGroupRowsPerPage(parseInt(e.target.value, 10)); setGroupPage(0); }}
+              rowsPerPageOptions={[5, 10]}
+              sx={{ "& .MuiTablePagination-toolbar": { padding: "0 8px" } }}
+            />
           </div>
-
           <p style={{ marginTop: "6px" }}>
-            <strong>Total Weight:</strong> 
-            <span className="stock-value">{calculatePurityTotal(stockData)}</span>
+            <strong>Total Weight:</strong> <span className="stock-value">{safeFixed(totals.netWeight)}</span>
           </p>
         </div>
 
-        <div 
-         style={{
-          backgroundColor: "#f0f4ff",
-          padding: "18px",
-          borderRadius: "8px",
-          boxShadow: "0 0 6px rgba(0, 0, 0, 0.1)"
-         }}
-         >
-          <p className="stock-label">Total Wastage </p>
-          <p className="stock-value">{calculatewastgePure(stockData)}</p>
+        <div className="stock-card" style={{ padding: "18px" }}>
+          <p className="stock-label">Total Wastage</p>
+          <p className="stock-value">{safeFixed(totals.wastagePure)}</p>
         </div>
 
         <div className="stock-card">
           <p className="stock-label">Total Purity</p>
-
           <div className="mini-table-wrapper">
             <table className="mini-table">
               <thead>
@@ -443,65 +307,40 @@ const handleSaveAddWeight = async () => {
                 </tr>
               </thead>
               <tbody>
-                {stockData.length === 0 && (
-                  <tr>
-                    <td colSpan={4} style={{ textAlign: "center" }}>
-                      No data
-                    </td>
+                {purityPaginated.map((it, idx) => (
+                  <tr key={it.id}>
+                    <td>{purityPage * purityRowsPerPage + idx + 1}</td>
+                    <td>{it.wastageValue} ({it.wastageType})</td>
+                    <td>{safeFixed(it.netWeight)}</td>
+                    <td>{safeFixed(it.finalPurity)}</td>
                   </tr>
-                )}
-                {purityPaginated.map((it, idx) => {
-                  const finalPur = computeFinalPurityForItem(it);
-                  const serial = purityPage * purityRowsPerPage + idx + 1;
-                  return (
-                    <tr key={it.id ?? serial}>
-                      <td>{serial}</td>
-                      <td>{it.wastageValue} ({it.wastageType})</td>
-                      <td>{safeFixed(it.netWeight)}</td>
-                      <td>{safeFixed(it.finalPurity)}</td>
-                    </tr>
-                  );
-                })}
+                ))}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={3} style={{ textAlign: "right" }}>
-                    <strong>Total Final Purity</strong>
-                  </td>
-                  <td>
-                    <strong>{safeFixed(purityPaginatedTotal)}</strong>
-                  </td>
+                  <td colSpan={3} style={{ textAlign: "right" }}>Total Final Purity</td>
+                  <td>{safeFixed(purityPaginatedTotal)}</td>
                 </tr>
               </tfoot>
             </table>
-
-            {stockData.length > 0 && (
-              <TablePagination
-                component="div"
-                count={stockData.length}
-                page={purityPage}
-                onPageChange={handlePurityChangePage}
-                rowsPerPage={purityRowsPerPage}
-                onRowsPerPageChange={handlePurityChangeRowsPerPage}
-                rowsPerPageOptions={[5, 10, 25]}
-                sx={{ "& .MuiTablePagination-toolbar": { padding: "0 8px" } }}
-              />
-            )}
+            <TablePagination
+              component="div"
+              count={stockData.length}
+              page={purityPage}
+              onPageChange={(e, p) => setPurityPage(p)}
+              rowsPerPage={purityRowsPerPage}
+              onRowsPerPageChange={(e) => { setPurityRowsPerPage(parseInt(e.target.value, 10)); setPurityPage(0); }}
+              rowsPerPageOptions={[5, 10]}
+              sx={{ "& .MuiTablePagination-toolbar": { padding: "0 8px" } }}
+            />
           </div>
-            <strong>Total Purity:</strong> 
-            <span className="stock-value">{safeFixed(totalFinalPurity)}</span>
-  
+          <strong>Total Purity:</strong> <span className="stock-value">{safeFixed(totals.finalPurity)}</span>
         </div>
+
         <div className="stock-card">
-
-          <p className="stock-label">
-            Available BC Purchase
-          </p>
-
+          <p className="stock-label">Available BC Purchase</p>
           <div className="mini-table-wrapper">
-
             <table className="mini-table">
-
               <thead>
                 <tr>
                   <th>SNo</th>
@@ -509,15 +348,9 @@ const handleSaveAddWeight = async () => {
                   <th>Net Weight (g)</th>
                 </tr>
               </thead>
-
               <tbody>
-
                 {groupedBCPurity.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" style={{ textAlign: "center" }}>
-                      No Data
-                    </td>
-                  </tr>
+                  <tr><td colSpan="3">No Data</td></tr>
                 ) : (
                   groupedBCPurity.map((item, index) => (
                     <tr key={index}>
@@ -527,185 +360,135 @@ const handleSaveAddWeight = async () => {
                     </tr>
                   ))
                 )}
-
               </tbody>
-
               <tfoot>
                 <tr>
-                  <td colSpan="2" style={{ textAlign: "right" }}>
-                    <strong>Total</strong>
-                  </td>
-                  <td>
-                    <strong>
-                      {safeFixed(
-                        groupedBCPurity.reduce(
-                          (acc, item) =>
-                            acc + Number(item.netWeight || 0),
-                          0
-                        )
-                      )}
-                    </strong>
-                  </td>
+                  <td colSpan="2" style={{ textAlign: "right" }}>Total</td>
+                  <td>{safeFixed(groupedBCPurity.reduce((acc, item) => acc + Number(item.netWeight || 0), 0))}</td>
                 </tr>
               </tfoot>
-
             </table>
-
           </div>
-
         </div>
       </div>
-      
-
 
       <div className="stock-table-container">
-        {paginatedData.length >= 1 ? (
-          <table className="stock-table">
-            <thead>
-              <tr>
-                <th>S.No</th>
-                <th>ProductName</th>
-                <th>ItemWeight (g)</th>
-                <th>Count</th>
-                <th>Touch </th>
-                <th>StoneWt (g)</th>
-                <th>NetWeight (g)</th>
-                <th>WastageValue</th>
-                <th>WastagePure (g)</th>
-                <th>Final Purity (g)</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.map((item, index) => (
-                <tr key={item.id}>
-                  <td>{page * rowsPerPage + index + 1}</td>
-                  <td>{item.itemName}</td>
-
-                  <td>
-                    {safeFixed(item.itemWeight)}
-                  </td>
-
-                  <td>{item.count || 0}</td>
-                  <td>{item.touch ?? 0}</td>
-                  <td>{safeFixed(item.stoneWeight)}</td>
-                  <td>{safeFixed(item.netWeight)}</td>
-                  <td>{item.wastageValue} ({item.wastageType})</td>
-                  <td>{safeFixed(item.wastagePure)}</td>
-                  <td>{safeFixed(item.finalPurity)}</td>
-                  <td>
-                    <>
-                      
-                        <Button
-                          variant="contained"
-                          size="small"
-                          startIcon={<AddCircleOutline />}
-                          onClick={() => openAddWeightPopup(item)}
-                          sx={{ mr: 1 }}
-                        >
-                          Add BC
-                        </Button>
-                  
-
-                      {item.isBillProduct && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          color="error"
-                          onClick={() => handleItemSold(item.id)}
-                        >
-                          Sold
-                        </Button>
-                      )}
-                    </>
-
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={2}>
-                  <strong>Total</strong>
-                </td>
+        <table className="stock-table">
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>ProductName</th>
+              <th>Type</th>
+              <th>ItemWeight (g)</th>
+              <th>Count</th>
+              <th>Touch</th>
+              <th>StoneWt (g)</th>
+              <th>NetWeight (g)</th>
+              <th>WastageValue</th>
+              <th>WastagePure (g)</th>
+              <th>Final Purity (g)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedData.map((item, index) => (
+              <tr key={item.id}>
+                <td>{page * rowsPerPage + index + 1}</td>
+                <td>{item.itemName}</td>
                 <td>
-                  <strong>{safeFixed(currentPageTotal.itemWt)}</strong>
+                  <Chip 
+                    label={item.stockType === "PRODUCT" ? "PROD" : "ITEM"} 
+                    size="small" 
+                    color={item.stockType === "PRODUCT" ? "primary" : "secondary"} 
+                    variant="outlined"
+                  />
                 </td>
-                <td colSpan={6}></td>
+                <td>{safeFixed(item.displayWeight)}</td>
+                <td>{item.count || 0}</td>
+                <td>{item.touch ?? 0}</td>
+                <td>{safeFixed(item.stoneWeight)}</td>
+                <td>{safeFixed(item.netWeight)}</td>
+                <td>{item.wastageValue} ({item.wastageType})</td>
+                <td>{safeFixed(item.wastagePure)}</td>
+                <td>{safeFixed(item.finalPurity)}</td>
                 <td>
-                  <strong>{safeFixed(currentPageTotal.finalWt)}</strong>
+                  <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<AddCircleOutline />}
+                      onClick={() => openAddWeightPopup(item)}
+                    >
+                      Add BC
+                    </Button>
+                    {((item.stockType === "PRODUCT" && item.isBillProduct) || 
+                      (item.stockType === "ITEM_PURCHASE" && item.isBilled)) && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        onClick={() => handleItemSold(item)}
+                      >
+                        Sold
+                      </Button>
+                    )}
+                  </Box>
                 </td>
-                <td></td>
               </tr>
-            </tfoot>
-          </table>
-        ) : (
-          <p style={{ textAlign: "center", color: "red", fontSize: "larger" }}>
-            No Stock Information
-          </p>
-        )}
-
-        {stockData.length >= 1 && (
-          <TablePagination
-            component="div"
-            count={stockData.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[10, 25, 50, 100]}
-          />
-        )}
-      </div>
-      <Dialog
-        open={openAddPopup}
-        onClose={() => setOpenAddPopup(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add BC Weight</DialogTitle>
-
-        <DialogContent>
-          <p><strong>Product:</strong> {selectedProduct?.itemName}</p>
-          <p><strong>Touch:</strong> {selectedProduct?.touch}%</p>
-
-          <TextField
-            select
-            fullWidth
-            label="Purchase Stock"
-            margin="normal"
-            value={selectedPurchase?.id || ""}
-            onChange={(e) => {
-              const ps = purchaseStocks.find(
-                p => p.id === Number(e.target.value)
-              );
-              setSelectedPurchase(ps);
-            }}
-          >
-            {purchaseStocks.map(ps => (
-              <MenuItem key={ps.id} value={ps.id}>
-                {ps.jewelName} — Available {safeFixed(ps.netWeight)} g
-              </MenuItem>
             ))}
-          </TextField>
+          </tbody>
+        </table>
 
-          <TextField
-            fullWidth
-            label="Add BC Weight (g)"
-            type="number"
-            margin="normal"
-            value={addNetWeight}
-            onChange={(e) => setAddNetWeight(e.target.value)}
-            inputProps={{ min: 0 }}
-          />
+        <TablePagination
+          component="div"
+          count={stockData.length}
+          page={page}
+          onPageChange={(e, p) => setPage(p)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+        />
+      </div>
 
-          {selectedPurchase && (
-            <p style={{ color: Number(addNetWeight || 0) > selectedPurchase.netWeight ? "red" : "gray" }}>
-              Available: {safeFixed(selectedPurchase.netWeight - Number(addNetWeight || 0))} g
-            </p>
-          )}
+      <Dialog open={openAddPopup} onClose={() => setOpenAddPopup(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add BC Weight</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 1 }}>
+            <p><strong>Product:</strong> {selectedProduct?.itemName}</p>
+            <p><strong>Touch:</strong> {selectedProduct?.touch}%</p>
+            <p><strong>Type:</strong> {selectedProduct?.stockType}</p>
+
+            <TextField
+              select
+              fullWidth
+              label="Purchase Stock"
+              margin="normal"
+              value={selectedPurchase?.id || ""}
+              onChange={(e) => setSelectedPurchase(purchaseStocks.find(p => p.id === Number(e.target.value)))}
+            >
+              {purchaseStocks.map(ps => (
+                <MenuItem key={ps.id} value={ps.id}>
+                  {ps.jewelName} — Available {safeFixed(ps.netWeight)} g
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              fullWidth
+              label="Add BC Weight (g)"
+              type="number"
+              margin="normal"
+              value={addNetWeight}
+              onChange={(e) => setAddNetWeight(e.target.value)}
+            />
+
+            {selectedPurchase && (
+              <p style={{ color: Number(addNetWeight || 0) > selectedPurchase.netWeight ? "red" : "gray" }}>
+                Remaining: {safeFixed(selectedPurchase.netWeight - Number(addNetWeight || 0))} g
+              </p>
+            )}
+          </Box>
         </DialogContent>
-
         <DialogActions>
           <Button onClick={() => setOpenAddPopup(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleSaveAddWeight} disabled={isSaving}>
