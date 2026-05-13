@@ -30,12 +30,18 @@ import {
   Print,
 } from "@mui/icons-material";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 
 const OrderReport = () => {
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fromDate, setFromDate] = useState(dayjs().subtract(15, "day"));
+  const [toDate, setToDate] = useState(dayjs());
 
   const fetchOrders = async () => {
     try {
@@ -79,7 +85,9 @@ const OrderReport = () => {
         description: item.description,
         weight: weight.toFixed(3),
         dueDate: new Date(item.due_date?.split("T")[0]).toLocaleDateString("en-IN") || "N/A",
+        rawDueDate: item.due_date,
         status: item.status || "Pending",
+        workerName: item.worker_name || "",
         images: item.productImages || [],
       });
 
@@ -90,26 +98,40 @@ const OrderReport = () => {
       }
     });
 
-    return Object.values(grouped).map((group) => ({
-      ...group,
-      totalPurity: group.totalPurity.toFixed(3),
-      orderDate:new Date(group.createdAt.split("T")[0]).toLocaleDateString("en-IN"),
-      
-    }));
+    return Object.values(grouped)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      .map((group, idx) => ({
+        ...group,
+        displayIndex: idx + 1,
+        id: `Order #${idx + 1}`,
+        totalPurity: group.totalPurity.toFixed(3),
+        orderDate: new Date(group.createdAt.split("T")[0]).toLocaleDateString("en-IN"),
+        rawOrderDate: group.createdAt,
+      }));
   };
 
   const filteredOrders = orders.map((group) => {
     const filteredItems = group.items.filter((item) => {
       const matchesStatus = filter === "all" || item.status === filter;
+      // Search filter
+      const searchTermLower = searchTerm.toLowerCase();
       const matchesSearch =
         !searchTerm ||
-        (group.id && group.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (group.customer &&
-          group.customer.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.name &&
-          item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        (group.id && group.id.toLowerCase().includes(searchTermLower)) ||
+        (group.customer && group.customer.toLowerCase().includes(searchTermLower)) ||
+        (item.name && item.name.toLowerCase().includes(searchTermLower)) ||
+        (item.description && item.description.toLowerCase().includes(searchTermLower)) ||
+        (item.workerName && item.workerName.toLowerCase().includes(searchTermLower)) ||
+        group.displayIndex.toString().includes(searchTermLower);
 
-      return matchesStatus && matchesSearch;
+      // Date filter
+      const itemDate = dayjs(item.rawDueDate).startOf("day");
+      const start = fromDate ? fromDate.startOf("day") : null;
+      const end = toDate ? toDate.endOf("day") : null;
+      const matchesFromDate = !start || itemDate.isAfter(start) || itemDate.isSame(start, "day");
+      const matchesToDate = !end || itemDate.isBefore(end) || itemDate.isSame(end, "day");
+
+      return matchesStatus && matchesSearch && matchesFromDate && matchesToDate;
     });
 
     const totalPurity = filteredItems
@@ -154,11 +176,11 @@ const OrderReport = () => {
         <TextField
           variant="outlined"
           size="small"
-          placeholder="Search by customer or item name..."
+          placeholder="Order #, customer, item..."
           value={searchTerm}
           InputProps={{ startAdornment: <Search color="action" /> }}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ flex: 1, maxWidth: 400 }}
+          sx={{ flex: 1, maxWidth: 300 }}
         />
         <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Status</InputLabel>
@@ -172,6 +194,45 @@ const OrderReport = () => {
             <MenuItem value="Pending">Pending</MenuItem>
           </Select>
         </FormControl>
+
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="From Date"
+            value={fromDate}
+            format="DD/MM/YYYY"
+            onChange={(newValue) => setFromDate(newValue)}
+            slotProps={{ textField: { size: "small" } }}
+          />
+        </LocalizationProvider>
+
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="To Date"
+            value={toDate}
+            format="DD/MM/YYYY"
+            onChange={(newValue) => setToDate(newValue)}
+            slotProps={{ textField: { size: "small" } }}
+          />
+        </LocalizationProvider>
+
+        <IconButton 
+          color="primary" 
+          onClick={() => {
+            setFilter("all");
+            setSearchTerm("");
+            setFromDate(null);
+            setToDate(null);
+          }}
+          sx={{ 
+            border: "1px solid", 
+            borderColor: "primary.main", 
+            borderRadius: "8px",
+            p: 1,
+            "& .MuiTypography-root": { ml: 0.5 }
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>Clear</Typography>
+        </IconButton>
       </div>
 
       {loading ? (

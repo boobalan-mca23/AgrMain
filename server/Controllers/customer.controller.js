@@ -52,7 +52,7 @@ exports.getAllCustomers = async (req, res) => {
         customerBillBalance:true
       },
       orderBy:{
-       id:"desc"
+       id:"asc"
      }
     });
     res.status(200).json(customers);

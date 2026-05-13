@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
     Box,
     Typography,
@@ -31,7 +31,7 @@ import "./Customer.css";
 const CustomerRepairStockList = () => {
     const [repairs, setRepairs] = useState([]);
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [rowsPerPage, setRowsPerPage] = useState(25);
     const [search, setSearch] = useState("");
     const [fromDate, setFromDate] = useState(() => dayjs().subtract(15, "day"));
     const [toDate, setToDate] = useState(() => dayjs());
@@ -39,18 +39,38 @@ const CustomerRepairStockList = () => {
     const [statusFilter, setStatusFilter] = useState("ALL"); // ALL, InRepair, Returned
     const [selectedRepair, setSelectedRepair] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
+    const isFirstLoad = useRef(true);
 
     useEffect(() => {
+        if (fromDate && toDate && toDate.isBefore(fromDate, "day")) {
+            toast.error("To Date cannot be before From Date");
+        }
         fetchRepairStock();
-    }, []);
+    }, [fromDate, toDate]);
 
-    const fetchRepairStock = async () => {
+    const fetchRepairStock = async (overrideFrom = undefined, overrideTo = undefined) => {
         try {
             const res = await axios.get(`${BACKEND_SERVER_URL}/api/repair`, {
                 params: { source: "CUSTOMER" },
             });
-            setRepairs(res.data.repairs || []);
-            console.log("mydata", res.data.repairs)
+            const fetchedRepairs = res.data.repairs || [];
+            setRepairs(fetchedRepairs);
+            
+            // Use overrides if provided (for Reset), otherwise use current state
+            const effectiveFrom = overrideFrom !== undefined ? overrideFrom : fromDate;
+            const effectiveTo = overrideTo !== undefined ? overrideTo : toDate;
+
+            if (isFirstLoad.current && fetchedRepairs.length > 0) {
+                if (!effectiveFrom && !effectiveTo) {
+                    // Sort ascending for calculation
+                    const sorted = [...fetchedRepairs].sort((a, b) => dayjs(a.sentDate).unix() - dayjs(b.sentDate).unix());
+                    const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
+                    if (lastPage >= 0) {
+                        setPage(lastPage);
+                    }
+                }
+                isFirstLoad.current = false;
+            }
         } catch {
             toast.error("Failed to load customer repair stock");
         }
@@ -84,11 +104,13 @@ const CustomerRepairStockList = () => {
 
             return matchesSearch && matchesFrom && matchesTo && matchesStock && matchesStatus;
         })
-        .sort((a, b) =>
-            fromDate || toDate
-                ? dayjs(a.sentDate).unix() - dayjs(b.sentDate).unix()
-                : dayjs(b.sentDate).unix() - dayjs(a.sentDate).unix()
-        );
+        .sort((a, b) => {
+            // ALWAYS Oldest First (Ascending)
+            const dateA = dayjs(a.sentDate).unix();
+            const dateB = dayjs(b.sentDate).unix();
+            if (dateA - dateB !== 0) return dateA - dateB;
+            return (a.id || 0) - (b.id || 0);
+        });
 
     const paginatedData = filteredRepairs.slice(
         page * rowsPerPage,
@@ -276,6 +298,7 @@ const CustomerRepairStockList = () => {
                         slotProps={{ textField: { size: "small", sx: { width: 260 } } }}
                     />
                 </LocalizationProvider>
+
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                     <InputLabel>Status</InputLabel>
                     <Select
@@ -303,7 +326,8 @@ const CustomerRepairStockList = () => {
                         setToDate(null);
                         setStockFilter("ALL");
                         setStatusFilter("ALL");
-                        setPage(0);
+                        isFirstLoad.current = true;
+                        fetchRepairStock(null, null);
                     }}
                 >
                     Reset
@@ -335,7 +359,6 @@ const CustomerRepairStockList = () => {
                         <TableCell className="BillTable-th-td BillTable-reason">Reason</TableCell>
                         <TableCell className="BillTable-th-td">Status</TableCell>
                         <TableCell className="BillTable-th-td">Action</TableCell>
-
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -352,10 +375,10 @@ const CustomerRepairStockList = () => {
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.grossWeight)}</TableCell>
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.product?.stoneWeight ?? item.itemPurchase?.stoneWeight ?? 0)}</TableCell>
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.netWeight)}</TableCell>
-                                <TableCell className="BillTable-tb-td">{fmtNum(item.product.touch)}</TableCell>
-                                <TableCell className="BillTable-tb-td">{item.product.wastageType}</TableCell>
-                                <TableCell className="BillTable-tb-td">{fmtNum(item.product.wastageValue)}</TableCell>
-                                <TableCell className="BillTable-tb-td">{fmtNum(item.product.wastagePure)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.touch)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{item.product?.wastageType || "-"}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.wastageValue)}</TableCell>
+                                <TableCell className="BillTable-tb-td">{fmtNum(item.product?.wastagePure)}</TableCell>
                                 <TableCell className="BillTable-tb-td">{fmtNum(item.purity)}</TableCell>
                                 <TableCell className="BillTable-tb-td BillTable-reason">{item.reason || "-"}</TableCell>
                                 <TableCell className="BillTable-tb-td">{statusChip(item.status)}</TableCell>
@@ -380,7 +403,6 @@ const CustomerRepairStockList = () => {
                                         <VisibilityIcon fontSize="small" />
                                     </Button>
                                 </TableCell>
-
                             </TableRow>
                         ))
                     ) : (
@@ -397,7 +419,11 @@ const CustomerRepairStockList = () => {
                 page={page}
                 rowsPerPage={rowsPerPage}
                 onPageChange={(e, p) => setPage(p)}
-                onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+                onRowsPerPageChange={(e) => {
+                    setRowsPerPage(parseInt(e.target.value, 10));
+                    setPage(0);
+                }}
+                rowsPerPageOptions={[10, 25, 50, 100]}
             />
             <RepairDetailsModal 
                 open={modalOpen} 

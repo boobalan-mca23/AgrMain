@@ -403,30 +403,9 @@ exports.getCustomerStatement = async (req, res) => {
       entry.runningHallmark = currentHallmark;
     });
 
-    // RE-SORT for display: Latest at top — uses logical date, then createdAt sequence
-    const sortedLedger = ledger.sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        
-        // Use logic date normalized to Day as primary key (reverse chronological)
-        const dayA = Math.floor(dateA / (1000 * 60 * 60 * 24));
-        const dayB = Math.floor(dateB / (1000 * 60 * 60 * 24));
-        
-        if (dayB !== dayA) return dayB - dayA;
-        
-        // Within same day, use strict entry order (Reverse Chronological: Latest Entry on top)
-        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : dateA;
-        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : dateB;
-        
-        if (ctB !== ctA) return ctB - ctA;
-        
-        // Final fallback: sortPriority
-        return (b.sortPriority || 0) - (a.sortPriority || 0);
-    });
-
     res.status(200).json({ 
       customerName: customer.name, 
-      ledger: sortedLedger,
+      ledger: ledger,
       currentBalances: {
         cash: currentCash,
         hallmark: currentHallmark
@@ -723,30 +702,9 @@ exports.getGoldsmithStatement = async (req, res) => {
       entry.runningGold = runningGold;
     });
 
-    // RE-SORT for display: Latest at top — uses logical date, then createdAt sequence
-    const sortedLedger = ledger.sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        
-        // Use logic date normalized to Day as primary key (reverse chronological)
-        const dayA = Math.floor(dateA / (1000 * 60 * 60 * 24));
-        const dayB = Math.floor(dateB / (1000 * 60 * 60 * 24));
-        
-        if (dayB !== dayA) return dayB - dayA;
-        
-        // Within same day, use strict entry order (Reverse Chronological: Latest Entry on top)
-        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : dateA;
-        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : dateB;
-        
-        if (ctB !== ctA) return ctB - ctA;
-        
-        // Final fallback: sortPriority
-        return (b.sortPriority || 0) - (a.sortPriority || 0);
-    });
-
     res.status(200).json({ 
       goldsmithName: goldsmith.name, 
-      ledger: sortedLedger,
+      ledger: ledger,
       currentBalances: {
         gold: runningGold
       }
@@ -976,29 +934,9 @@ exports.getSupplierStatement = async (req, res) => {
     });
 
     // RE-SORT for display: Latest at top — uses logical date, then createdAt sequence
-    const sortedLedger = ledger.sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        
-        // Use logic date normalized to Day as primary key (reverse chronological)
-        const dayA = Math.floor(dateA / (1000 * 60 * 60 * 24));
-        const dayB = Math.floor(dateB / (1000 * 60 * 60 * 24));
-        
-        if (dayB !== dayA) return dayB - dayA;
-        
-        // Within same day, use strict entry order (Reverse Chronological: Latest Entry on top)
-        const ctA = a.createdAt ? new Date(a.createdAt).getTime() : dateA;
-        const ctB = b.createdAt ? new Date(b.createdAt).getTime() : dateB;
-        
-        if (ctB !== ctA) return ctB - ctA;
-        
-        // Final fallback: sortPriority
-        return (b.sortPriority || 0) - (a.sortPriority || 0);
-    });
-    
     res.status(200).json({ 
       supplierName: supplier.name, 
-      ledger: sortedLedger,
+      ledger: ledger,
       currentBalances: {
         bc: runningBC,
         item: runningItem,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
 import "./Stock.css";
@@ -30,7 +30,8 @@ const RepairStockList = () => {
   const [goldsmiths, setGoldsmiths] = useState([]);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const isFirstLoad = useRef(true);
 
   const [openReceiveDialog, setOpenReceiveDialog] = useState(false);
 
@@ -38,8 +39,8 @@ const RepairStockList = () => {
 
   const [filterGoldsmith, setFilterGoldsmith] = useState("all");
   const [filterStatus, setFilterStatus] = useState("InRepair");
-  const [dateFrom, setDateFrom] = useState(null);
-  const [dateTo, setDateTo] = useState(null);
+  const [dateFrom, setDateFrom] = useState(() => dayjs().subtract(15, "day"));
+  const [dateTo, setDateTo] = useState(() => dayjs());
   const [search, setSearch] = useState("");
   // const [activeTab, setActiveTab] = useState("PRODUCT");
 
@@ -55,6 +56,7 @@ const RepairStockList = () => {
     wastageDelta: 0,
     finalPurity: 0
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   const netWeight = Math.max(0, Number(qc.itemWeight || 0) - Number(qc.stoneWeight || 0));
 
@@ -70,6 +72,9 @@ const RepairStockList = () => {
 
   useEffect(() => {
     fetchRepairStock();
+    if (!isFirstLoad.current) {
+        setPage(0);
+    }
   }, [filterGoldsmith, filterStatus, dateFrom, dateTo, search]);
 
   const fetchRepairStock = async () => {
@@ -86,12 +91,23 @@ const RepairStockList = () => {
       }
     );
 
-    const sorted = [...(res.data?.repairs || [])].sort(
-      (a, b) => (a.status === "InRepair" ? -1 : 1)
-    );
+    const repairs = res.data?.repairs || [];
+    // Sort by sentDate ascending (Oldest First)
+    const sorted = [...repairs].sort((a, b) => {
+        const dateA = dayjs(a.sentDate);
+        const dateB = dayjs(b.sentDate);
+        if (dateA.isBefore(dateB)) return -1;
+        if (dateA.isAfter(dateB)) return 1;
+        return (a.id || 0) - (b.id || 0);
+    });
 
     setRepairList(sorted);
-    setPage(0);
+    
+    if (isFirstLoad.current && sorted.length > 0) {
+        const lastPage = Math.floor((sorted.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+    }
   };
 
   const fetchGoldsmiths = async () => {
@@ -134,6 +150,7 @@ const RepairStockList = () => {
   };
 
   const handleReceive = async (destination = "STOCK") => {
+    if (isSaving) return;
     const weight = Number(qc.itemWeight || 0);
     if (weight <= 0) {
       toast.error("Item weight must be greater than zero");
@@ -141,6 +158,7 @@ const RepairStockList = () => {
     }
 
     try {
+      setIsSaving(true);
       await axios.post(`${BACKEND_SERVER_URL}/api/repair/return`, {
         repairId: selectedRepair.id,
         itemWeight: qc.itemWeight,
@@ -158,6 +176,8 @@ const RepairStockList = () => {
       fetchRepairStock();
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to return repair");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -245,6 +265,8 @@ const RepairStockList = () => {
               setDateFrom(null);
               setDateTo(null);
               setSearch("");
+              isFirstLoad.current = true;
+              // fetchRepairStock will be triggered by the date changes
             }}
           >
             Reset
@@ -258,7 +280,7 @@ const RepairStockList = () => {
         <table className="stock-table">
           <thead>
             <tr>
-              <th>Serial</th>
+              <th>S.No</th>
               <th>Sent Date</th>
               <th>Item Name</th>
               <th>Goldsmith</th>
@@ -355,6 +377,7 @@ const RepairStockList = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
+          rowsPerPageOptions={[10, 25, 50, 100]}
         />
       </div>
 
@@ -499,9 +522,10 @@ const RepairStockList = () => {
           <Button
             variant="contained"
             color="success"
+            disabled={isSaving}
             onClick={() => handleReceive("STOCK")}
           >
-            Confirm & Return
+            {isSaving ? "Returning..." : "Confirm & Return"}
           </Button>
         </DialogActions>
 

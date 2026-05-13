@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Container,
   Paper,
@@ -19,6 +19,7 @@ import {
   DialogActions,
   Button,
   Tooltip,
+  TablePagination,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PreviewIcon from "@mui/icons-material/Preview";
@@ -34,6 +35,9 @@ import { BACKEND_SERVER_URL } from "../../Config/Config";
 const Customer = () => {
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
  
   const navigate = useNavigate();
 
@@ -43,6 +47,12 @@ const Customer = () => {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/customers`);
         const data = await response.json();
         setCustomers(data);
+
+        if (isFirstLoad.current && data.length > 0) {
+          const lastPage = Math.floor((data.length - 1) / rowsPerPage);
+          setPage(lastPage);
+          isFirstLoad.current = false;
+        }
       } catch (error) {
         console.error("Error fetching customers:", error);
       }
@@ -62,6 +72,27 @@ const Customer = () => {
 
     return nameMatch || phoneMatch || addressMatch;
   });
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedCustomers = filteredCustomers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Reset to first page when searching
+  useEffect(() => {
+    if (!isFirstLoad.current) {
+      setPage(0);
+    }
+  }, [searchTerm]);
 
   
 
@@ -99,7 +130,7 @@ const Customer = () => {
           }}
         />
 
-        {filteredCustomers.length > 0 ? (
+        {paginatedCustomers.length > 0 ? (
           <TableContainer>
             <Table>
               <TableHead
@@ -139,9 +170,9 @@ const Customer = () => {
               </TableHead>
 
               <TableBody>
-                {filteredCustomers.map((customer, index) => (
+                {paginatedCustomers.map((customer, index) => (
                   <TableRow key={index} hover>
-                    <TableCell align="center">{index+1}</TableCell>
+                    <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell align="center">{customer.name}</TableCell>
                     <TableCell align="center">{customer.phone || "-"}</TableCell>
                     <TableCell
@@ -220,8 +251,15 @@ const Customer = () => {
           </Typography>
         )}
       </Paper>
-
-      
+      <TablePagination
+        component="div"
+        count={filteredCustomers.length}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[10,25,50,100]}
+      />
     </Container>
   );
 };

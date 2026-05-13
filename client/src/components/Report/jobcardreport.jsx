@@ -29,9 +29,11 @@ const JobCardReport = () => {
   const [repairs, setRepairs] = useState([]);
   const [goldSmith, setGoldSmith] = useState([]);
   const [selectedGoldSmith, setSelectedGoldSmith] = useState({});
-  const [page, setPage] = useState(0); // 0-indexed for TablePagination
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [viewType, setViewType] = useState("ALL");
+  const [jobPage, setJobPage] = useState(0);
+  const [jobRowsPerPage, setJobRowsPerPage] = useState(5);
+  const [repairPage, setRepairPage] = useState(0);
+  const [repairRowsPerPage, setRepairRowsPerPage] = useState(5);
+  const [viewType, setViewType] = useState("JOBCARD");
   const repairsRef = useRef(null);
 
   const scrollToRepairs = () => {
@@ -39,13 +41,13 @@ const JobCardReport = () => {
   };
 
   const paginatedData = jobCard.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+    jobPage * jobRowsPerPage,
+    jobPage * jobRowsPerPage + jobRowsPerPage
   );
 
   const paginatedRepairs = repairs.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+    repairPage * repairRowsPerPage,
+    repairPage * repairRowsPerPage + repairRowsPerPage
   );
 
   // Calculate totals for current page
@@ -59,8 +61,8 @@ const JobCardReport = () => {
         jobCard={paginatedData}
         totalJobCard={jobCard}
         repairs={repairs}
-        page={page}
-        rowsPerPage={rowsPerPage}
+        page={viewType === "REPAIR" ? repairPage : jobPage}
+        rowsPerPage={viewType === "REPAIR" ? repairRowsPerPage : jobRowsPerPage}
         viewType={viewType}
       />
     );
@@ -89,22 +91,17 @@ const JobCardReport = () => {
     printWindow.document.close();
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-
-
   const handleDateClear = () => {
     setFromDate(null);
     setToDate(null);
     setSelectedGoldSmith({});
-    setJobCard([])
+    setJobCard([]);
+    setRepairs([]);
+    // Jump to the last page of the full list (or 0 if empty)
+    const lastJobPage = Math.floor((jobCard.length - 1) / jobRowsPerPage);
+    const lastRepairPage = Math.floor((repairs.length - 1) / repairRowsPerPage);
+    setJobPage(lastJobPage >= 0 ? lastJobPage : 0);
+    setRepairPage(lastRepairPage >= 0 ? lastRepairPage : 0);
   };
 
   useEffect(() => {
@@ -131,7 +128,17 @@ const JobCardReport = () => {
         console.log("data", response.data);
         setJobCard(response.data.jobCards || []);
         setRepairs(response.data.repairs || []);
-        setPage(0); // reset pagination when filters change
+
+        // Jump to last page only if no date filter is applied
+        if (!fromDate && !toDate) {
+          const lastJobPage = Math.floor(((response.data.jobCards?.length || 0) - 1) / jobRowsPerPage);
+          const lastRepairPage = Math.floor(((response.data.repairs?.length || 0) - 1) / repairRowsPerPage);
+          setJobPage(lastJobPage >= 0 ? lastJobPage : 0);
+          setRepairPage(lastRepairPage >= 0 ? lastRepairPage : 0);
+        } else {
+          setJobPage(0);
+          setRepairPage(0);
+        }
       } catch (error) {
         console.error("Error fetching goldsmith data:", error);
       }
@@ -280,7 +287,6 @@ const JobCardReport = () => {
               textColor="primary"
               indicatorColor="primary"
             >
-              <Tab label="All Records" value="ALL" />
               <Tab label="Job Cards" value="JOBCARD" />
               <Tab label="Repaired Products" value="REPAIR" />
             </Tabs>
@@ -290,23 +296,28 @@ const JobCardReport = () => {
               <JobCardRepTable 
                 paginatedData={paginatedData} 
                 paginatedRepairs={paginatedRepairs} 
-                page={page} 
-                rowsPerPage={rowsPerPage} 
+                page={viewType === "REPAIR" ? repairPage : jobPage} 
+                rowsPerPage={viewType === "REPAIR" ? repairRowsPerPage : jobRowsPerPage} 
                 repairsRef={repairsRef}
                 viewType={viewType}
               />
               <TablePagination
                 component="div"
-                count={
-                  viewType === "ALL" 
-                    ? Math.max(jobCard.length, repairs.length) 
-                    : (viewType === "REPAIR" ? repairs.length : jobCard.length)
-                }
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[5, 15, 30, 50, 100]}
+                count={viewType === "REPAIR" ? repairs.length : jobCard.length}
+                page={viewType === "REPAIR" ? repairPage : jobPage}
+                onPageChange={(e, p) => viewType === "REPAIR" ? setRepairPage(p) : setJobPage(p)}
+                rowsPerPage={viewType === "REPAIR" ? repairRowsPerPage : jobRowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (viewType === "REPAIR") {
+                    setRepairRowsPerPage(val);
+                    setRepairPage(0);
+                  } else {
+                    setJobRowsPerPage(val);
+                    setJobPage(0);
+                  }
+                }}
+                rowsPerPageOptions={[5,15, 30, 50, 100]}
               />
             </div>
           ) : (

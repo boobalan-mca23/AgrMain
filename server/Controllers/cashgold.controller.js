@@ -6,7 +6,7 @@ const { directTouch } = require('../Utils/directTouch')
 exports.getAllEntries = async (req, res) => {
   try {
     const entries = await prisma.entry.findMany({
-      orderBy: { id: "desc" },
+      orderBy: { id: "asc" },
     });
     console.log('cash or gold entries', entries)
     res.json(entries);

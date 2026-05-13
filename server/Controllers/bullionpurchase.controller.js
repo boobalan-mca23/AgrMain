@@ -104,7 +104,7 @@ exports.getAllBullionPurchases = async (req, res) => {
   try {
     const purchases = await prisma.bullionPurchase.findMany({
       include: { bullion: true, givenDetails: true },
-      orderBy: { id: "desc" },
+      orderBy: { id: "asc" },
     });
     res.json(purchases);
   } catch (error) {

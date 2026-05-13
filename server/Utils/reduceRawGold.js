@@ -145,5 +145,6 @@ const expenseGoldReduce=async( expenseDate,gold,touch,purity,description)=>{
 
 module.exports = {
   reduceRawGold,
-  expenseGoldReduce
+  expenseGoldReduce,
+  setTotalRawGold
 };

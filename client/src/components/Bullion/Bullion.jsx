@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
@@ -42,11 +42,13 @@ const Bullion = () => {
   const [allData, setAllData] = useState([]);
   const [editId, setEditId] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Search and Pagination State
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
@@ -118,6 +120,13 @@ const Bullion = () => {
         `${BACKEND_SERVER_URL}/api/bullion-purchase/`
       );
       setAllData(res.data);
+
+      // If first load, jump to last page
+      if (isFirstLoad.current && res.data.length > 0) {
+        const lastPage = Math.floor((res.data.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+      }
     } catch (err) {
       console.error("Error fetching all bullion entries:", err);
     }
@@ -157,6 +166,7 @@ const Bullion = () => {
     entries.reduce((sum, entry) => sum + (entry.grams || 0), 0);
 
   const handleAddGiven = async () => {
+    if (isSaving) return;
     if (!editId) {
       toast.error("Save the purchase first before adding installments.");
       return;
@@ -187,6 +197,7 @@ const Bullion = () => {
       ];
 
       try {
+        setIsSaving(true);
         await axios.put(
           `${BACKEND_SERVER_URL}/api/bullion-purchase/given-details/${editId}`,
           { givenDetails: updatedGiven }
@@ -201,6 +212,8 @@ const Bullion = () => {
       } catch (err) {
         console.error("Failed to add given detail", err);
         toast.error("Failed to add Installment");
+      } finally {
+        setIsSaving(false);
       }
     } else {
       toast.error("Please provide valid Amount, Touch, and Rate.");
@@ -222,7 +235,9 @@ const Bullion = () => {
       return;
     }
 
+    if (isSaving) return;
     try {
+      setIsSaving(true);
       const currentRate = parseFloat(rate);
       const amountVal = parseFloat(newGivenAmount);
       const touchVal = parseFloat(newGivenTouch);
@@ -254,6 +269,12 @@ const Bullion = () => {
           amount: parseFloat(totalPurchaseAmount.toFixed(2)),
           givenDetails: finalGivenEntries,
         });
+        
+        // Jump to the last page
+        const newTotal = allData.length + 1;
+        const newPage = Math.floor((newTotal - 1) / rowsPerPage);
+        setPage(newPage);
+
         toast.success("Bullion purchase created successfully");
       } else {
         // Update main fields
@@ -282,6 +303,8 @@ const Bullion = () => {
     } catch (err) {
       console.error("Failed to save bullion purchase", err);
       toast.error("Failed to save purchase");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -294,6 +317,14 @@ const Bullion = () => {
         `${BACKEND_SERVER_URL}/api/bullion-purchase/delete/${id}`
       );
       toast.success("Purchase deleted successfully");
+      
+      // Adjust page if current page becomes empty after deletion
+      const newTotal = allData.length - 1;
+      const maxPage = Math.max(0, Math.ceil(newTotal / rowsPerPage) - 1);
+      if (page > maxPage) {
+        setPage(maxPage);
+      }
+
       fetchAll();
     } catch (err) {
       console.error("Failed to delete purchase", err);
@@ -508,7 +539,7 @@ const Bullion = () => {
               />
               <IconButton
                 onClick={handleAddGiven}
-                disabled={!rate || !newGivenAmount || !newGivenTouch}
+                disabled={!rate || !newGivenAmount || !newGivenTouch || isSaving}
               >
                 <AddCircleOutlineIcon color="primary" />
               </IconButton>
@@ -527,8 +558,8 @@ const Bullion = () => {
 
         <DialogActions>
           <Button onClick={closeDialog}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>
-            {editId ? "Save" : "Create"}
+          <Button variant="contained" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : (editId ? "Save" : "Create")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -24,6 +24,7 @@ const NewExpense = ({
   handleClosePop,
   rawGold,
   setRawGold,
+  isEdit,
 }) => {
   const [expenseError, setExpenseError] = useState({})
 
@@ -122,7 +123,7 @@ const NewExpense = ({
       }}
     >
       <DialogTitle>
-        Add New Expense
+        {isEdit ? "Edit Expense" : "Add New Expense"}
         <IconButton
           aria-label="close"
           onClick={handleClosePop}
@@ -258,7 +259,7 @@ const NewExpense = ({
             handleSave();
           }}
         >
-          Save
+          {isEdit ? "Update" : "Save"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,10 +1,9 @@
-import React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-import { TablePagination, TextField, Button, Box, Typography, Paper } from "@mui/material";
+import { TablePagination, TextField, Button, Box, Typography, Paper, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -12,6 +11,9 @@ import dayjs from "dayjs";
 import NewExpense from "./NewExpense";
 import { FaWallet, FaReceipt } from "react-icons/fa"; // wallet icon for header
 import { AiOutlinePlus } from "react-icons/ai"; // plus icon for button
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import "./Expense.css";
 
 const ExpenseTracker = () => {
@@ -22,6 +24,9 @@ const ExpenseTracker = () => {
     const [masterTouch, setMasterTouch] = useState([]);
     const [rawGold, setRawGold] = useState([]);
     const [open, setOpen] = useState(false);
+    const [isEdit, setIsEdit] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
     const [page, setPage] = useState(0); // 0-indexed for TablePagination
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [newExpense, setNewExpense] = useState({
@@ -32,20 +37,42 @@ const ExpenseTracker = () => {
         purity: "",
     });
 
-    const filteredTransactions = allExpense.filter((transaction) => {
-        const transactionDate = dayjs(transaction.expenseDate);
+    const isFirstLoad = useRef(true);
 
-        const from = fromDate ? fromDate.startOf('day') : null;
-        const to = toDate ? toDate.endOf('day') : null;
+    const filteredTransactions = useMemo(() => {
+        const result = allExpense.filter((transaction) => {
+            const transactionDate = dayjs(transaction.expenseDate);
 
-        return (!from || transactionDate.isAfter(from) || transactionDate.isSame(from)) &&
-               (!to || transactionDate.isBefore(to) || transactionDate.isSame(to));
-    });
+            const from = fromDate ? fromDate.startOf('day') : null;
+            const to = toDate ? toDate.endOf('day') : null;
 
-    const paginatedData = filteredTransactions.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
-    );
+            return (!from || transactionDate.isAfter(from) || transactionDate.isSame(from)) &&
+                   (!to || transactionDate.isBefore(to) || transactionDate.isSame(to));
+        });
+
+        // Sort by date ascending (Oldest First)
+        return [...result].sort((a, b) => {
+            const dateA = dayjs(a.expenseDate);
+            const dateB = dayjs(b.expenseDate);
+            if (dateA.isBefore(dateB)) return -1;
+            if (dateA.isAfter(dateB)) return 1;
+            return (a.id || 0) - (b.id || 0);
+        });
+    }, [allExpense, fromDate, toDate]);
+
+    const paginatedData = useMemo(() => {
+        return filteredTransactions.slice(
+            page * rowsPerPage,
+            page * rowsPerPage + rowsPerPage
+        );
+    }, [filteredTransactions, page, rowsPerPage]);
+
+    // Reset page when filters change
+    useEffect(() => {
+        if (!isFirstLoad.current) {
+            setPage(0);
+        }
+    }, [fromDate, toDate]);
 
     const fetchRawGold = async () => {
         try {
@@ -59,6 +86,7 @@ const ExpenseTracker = () => {
 
     const handleClosePop = () => {
         setOpen(false);
+        setIsEdit(false);
         setNewExpense({
             expenseDate: today.format("YYYY-MM-DD"),
             description: "",
@@ -71,17 +99,59 @@ const ExpenseTracker = () => {
 
     const handleSaveExpense = async (payload) => {
         try {
-            const response = await axios.post(
-                `${BACKEND_SERVER_URL}/api/expense`,
-                payload
-            );
+            let response;
+            if (isEdit && payload.id) {
+                response = await axios.put(
+                    `${BACKEND_SERVER_URL}/api/expense/${payload.id}`,
+                    payload
+                );
+            } else {
+                response = await axios.post(
+                    `${BACKEND_SERVER_URL}/api/expense`,
+                    payload
+                );
+            }
 
             setAllExpense(response.data.allExpense);
             toast.success(response.data.message);
+            setIsEdit(false);
             fetchRawGold();
         } catch (err) {
             console.log(err.message);
-            toast.warn("Failed to save");
+            toast.warn(err.response?.data?.err || "Failed to save");
+        }
+    };
+
+    const handleEditClick = (item) => {
+        setIsEdit(true);
+        setNewExpense({
+            id: item.id,
+            expenseDate: dayjs(item.expenseDate).format("YYYY-MM-DD"),
+            description: item.description || "",
+            gold: item.gold,
+            touch: item.touch,
+            purity: item.purity,
+        });
+        setOpen(true);
+    };
+
+    const handleDeleteClick = (id) => {
+        setItemToDelete(id);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteExpense = async () => {
+        if (!itemToDelete) return;
+        try {
+            const response = await axios.delete(`${BACKEND_SERVER_URL}/api/expense/${itemToDelete}`);
+            setAllExpense(response.data.allExpense);
+            toast.success(response.data.message);
+            fetchRawGold();
+            setDeleteDialogOpen(false);
+            setItemToDelete(null);
+        } catch (err) {
+            console.error("Delete failed", err);
+            toast.error(err.response?.data?.err || "Failed to delete");
         }
     };
 
@@ -94,16 +164,23 @@ const ExpenseTracker = () => {
         setPage(0);
     };
 
-    useEffect(() => {
-        const fetchAllExpense = async () => {
-            try {
-                const response = await axios.get(`${BACKEND_SERVER_URL}/api/expense`);
-                setAllExpense(response.data.allExpense);
-            } catch (err) {
-                console.error("Failed to fetch Expense", err);
-            }
-        };
+    const fetchAllExpense = async () => {
+        try {
+            const response = await axios.get(`${BACKEND_SERVER_URL}/api/expense`);
+            const expenses = response.data.allExpense || [];
+            setAllExpense(expenses);
 
+            if (isFirstLoad.current && expenses.length > 0) {
+                const lastPage = Math.floor((expenses.length - 1) / rowsPerPage);
+                setPage(lastPage);
+                isFirstLoad.current = false;
+            }
+        } catch (err) {
+            console.error("Failed to fetch Expense", err);
+        }
+    };
+
+    useEffect(() => {
         const fetchTouch = async () => {
             try {
                 const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
@@ -120,6 +197,8 @@ const ExpenseTracker = () => {
     const handleClear = () => {
         setFromDate(null);
         setToDate(null);
+        isFirstLoad.current = true;
+        fetchAllExpense();
     };
 
     return (
@@ -192,6 +271,7 @@ const ExpenseTracker = () => {
                                 <th>Gold</th>
                                 <th>Touch</th>
                                 <th>Purity</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
 
@@ -207,11 +287,25 @@ const ExpenseTracker = () => {
                                         <td>{item.gold}</td>
                                         <td>{item.touch}</td>
                                         <td>{item.purity}</td>
+                                        <td>
+                                            <Box sx={{ display: "flex", gap: "5px", justifyContent: "center" }}>
+                                                <Tooltip title="Edit">
+                                                    <IconButton size="small" onClick={() => handleEditClick(item)} color="primary">
+                                                        <EditIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Delete">
+                                                    <IconButton size="small" onClick={() => handleDeleteClick(item.id)} color="error">
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Box>
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
+                                    <td colSpan="7" style={{ textAlign: "center", padding: "20px", fontWeight: "bold", color: "#666" }}>
                                         No Expense Voucher Added
                                     </td>
                                 </tr>
@@ -222,7 +316,7 @@ const ExpenseTracker = () => {
 
                 <TablePagination
                     component="div"
-                    count={allExpense.length}
+                    count={filteredTransactions.length}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={rowsPerPage}
@@ -232,6 +326,7 @@ const ExpenseTracker = () => {
             </Box>
             {open && (
                 <NewExpense
+                    isEdit={isEdit}
                     rawGold={rawGold}
                     setRawGold={setRawGold}
                     open={open}
@@ -242,6 +337,26 @@ const ExpenseTracker = () => {
                     handleClosePop={handleClosePop}
                 />
             )}
+
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+            >
+                <DialogTitle sx={{ display: "flex", alignItems: "center", gap: "10px", color: "error.main" }}>
+                    <WarningAmberIcon /> Confirm Delete
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>Are you sure you want to delete this expense? This action cannot be undone.</Typography>
+                </DialogContent>
+                <DialogActions sx={{ padding: "15px" }}>
+                    <Button onClick={() => setDeleteDialogOpen(false)} color="inherit" variant="outlined">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleDeleteExpense} color="error" variant="contained">
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 };

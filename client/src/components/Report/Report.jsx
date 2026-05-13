@@ -42,17 +42,29 @@ const DailySalesReport = () => {
       try {
         const response = await fetch(`${BACKEND_SERVER_URL}/api/bill`);
         const data = await response.json();
-        setBills(data.data || []);
+        const fetchedBills = data.data || [];
+        setBills(fetchedBills);
+
+        // Ensure we stay on page 0 on first load (initial filter)
+        if (isFirstLoad.current) {
+          setPage(0);
+          isFirstLoad.current = false;
+        }
       } catch (error) {
         console.error("Error fetching bills:", error);
       }
     };
     fetchBills();
-  }, []);
+  }, [rowsPerPage]);
+
+  const isFirstLoad = React.useRef(true);
 
   // Reset page when filters change
   useEffect(() => {
-    setPage(0);
+    // Only reset to 0 if a filter is active
+    if (fromDate || toDate) {
+      setPage(0);
+    }
   }, [fromDate, toDate]);
 
   // calculate totals - same logic as you had
@@ -137,12 +149,8 @@ const DailySalesReport = () => {
       return true;
     })
     .sort((a, b) => {
-      // if filter applied -> ascending within range (oldest -> newest)
-      if (fromDate || toDate) {
-        return dayjs(a.date || a.createdAt).valueOf() - dayjs(b.date || b.createdAt).valueOf();
-      }
-      // default -> descending (latest first)
-      return dayjs(b.date || b.createdAt).valueOf() - dayjs(a.date || a.createdAt).valueOf();
+      // Always old to new (ascending)
+      return dayjs(a.date || a.createdAt).valueOf() - dayjs(b.date || b.createdAt).valueOf();
     });
 
   const totalsVisible = calculateTotals(visibleBills);
@@ -160,7 +168,9 @@ const DailySalesReport = () => {
   const handleClear = () => {
     setFromDate(null);
     setToDate(null);
-    setPage(0);
+    // When clearing, we want to jump to the last page of the full list
+    const lastPage = Math.floor((bills.length - 1) / rowsPerPage);
+    setPage(lastPage >= 0 ? lastPage : 0);
   };
 
   const HandlebillDelete = async (billId) => {

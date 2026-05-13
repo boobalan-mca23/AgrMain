@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "./Customertrans.css";
 import {
@@ -58,6 +58,7 @@ const Customertrans = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [editId, setEditId] = useState(null);
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -67,6 +68,13 @@ const Customertrans = () => {
             `${BACKEND_SERVER_URL}/api/transactions/${customerId}`
           );
           setTransactions(response.data);
+
+          // If first load, jump to last page
+          if (isFirstLoad.current && response.data.length > 0) {
+            const lastPage = Math.floor((response.data.length - 1) / rowsPerPage);
+            setPage(lastPage);
+            isFirstLoad.current = false;
+          }
         }
       } catch (error) {
         console.error("Error fetching transactions:", error);
@@ -93,7 +101,20 @@ const Customertrans = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const updatedTransaction = { ...newTransaction, [name]: value };
+    let updatedTransaction = { ...newTransaction, [name]: value };
+
+    // Reset fields if type changes
+    if (name === "type") {
+      updatedTransaction = {
+        ...updatedTransaction,
+        gold: "",
+        amount: "",
+        touch: "",
+        purity: "",
+        pureGold: "",
+      };
+      setGoldRate("");
+    }
 
     if (updatedTransaction.type === "Cash" || updatedTransaction.type === "Cash RTGS") {
       if (name === "amount") updatedTransaction.value = value;
@@ -179,8 +200,13 @@ const Customertrans = () => {
             `${BACKEND_SERVER_URL}/api/transactions`,
             transactionData
           );
-          setTransactions([response.data, ...transactions]);
+          const updatedTransactions = [...transactions, response.data];
+          setTransactions(updatedTransactions);
           toast.success("Transaction added successfully!");
+
+          // Jump to last page for new transaction
+          const newLastPage = Math.floor((updatedTransactions.length - 1) / rowsPerPage);
+          setPage(newLastPage);
         }
         resetForm();
         setShowPopup(false);
@@ -216,8 +242,15 @@ const Customertrans = () => {
     if (!window.confirm("Are you sure you want to delete this transaction?")) return;
     try {
       await axios.delete(`${BACKEND_SERVER_URL}/api/transactions/${id}`);
-      setTransactions(transactions.filter((t) => t.id !== id));
+      const updatedTransactions = transactions.filter((t) => t.id !== id);
+      setTransactions(updatedTransactions);
       toast.success("Transaction deleted successfully!");
+
+      // If current page is empty after deletion, go back one page
+      const newLastPage = Math.max(0, Math.ceil(updatedTransactions.length / rowsPerPage) - 1);
+      if (page > newLastPage) {
+        setPage(newLastPage);
+      }
     } catch (error) {
       console.error("Error deleting transaction:", error);
       toast.error("Failed to delete transaction");

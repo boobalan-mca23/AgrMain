@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
-import { TablePagination, Button, Tabs, Tab } from "@mui/material";
+import { TablePagination, Button, Tabs, Box } from "@mui/material";
 import "./Stock.css";
 
 import {
@@ -27,7 +27,8 @@ const ProductStock = () => {
   const [goldsmiths, setGoldsmiths] = useState([]);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const isFirstLoad = useRef(true);
 
   const [openSendDialog, setOpenSendDialog] = useState(false);
   const [selectedGoldsmith, setSelectedGoldsmith] = useState("");
@@ -44,6 +45,7 @@ const ProductStock = () => {
     netWeight: 0,
     finalPurity: 0,
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   const calculatePurity = (qc) => {
     const netWeight = (Number(qc.itemWeight) || 0) - (Number(qc.stoneWeight) || 0);
@@ -105,7 +107,22 @@ const ProductStock = () => {
       p.displayWt?.toString().includes(s) ||
       p.touch?.toString().includes(s)
     );
-  }).sort((a, b) => b.id - a.id);
+  }).sort((a, b) => {
+    // EXACTLY match Stock Dashboard (Ascending by Date)
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateA - dateB;
+  });
+
+  useEffect(() => {
+    if (isFirstLoad.current && (productStock.length > 0 || itemPurchaseStock.length > 0)) {
+        const lastPage = Math.floor((unifiedStock.length - 1) / rowsPerPage);
+        if (lastPage >= 0) {
+            setPage(lastPage);
+            isFirstLoad.current = false;
+        }
+    }
+  }, [productStock, itemPurchaseStock, rowsPerPage, unifiedStock.length, search]);
 
   const paginated = unifiedStock.slice(
     page * rowsPerPage,
@@ -142,39 +159,42 @@ const ProductStock = () => {
       toast.error("Weight must be greater than zero");
       return;
     }
+    if (isSaving) return;
+    setIsSaving(true);
 
-    await axios.post(`${BACKEND_SERVER_URL}/api/repair/send`, {
+    try {
+      await axios.post(`${BACKEND_SERVER_URL}/api/repair/send`, {
+        source: selectedProduct.stockType === "PRODUCT" ? "GOLDSMITH" : "ITEM_PURCHASE",
+        productId: selectedProduct.id,
+        goldsmithId: selectedGoldsmith || null,
+        reason: reason || null,
+        repairProduct: {
+          ...selectedProduct,
+          weight: repairQC.itemWeight,
+          count: repairQC.count,
+          stoneWeight: repairQC.stoneWeight,
+          touch: repairQC.touch,
+          wastageValue: repairQC.wastageValue,
+          wastageType: repairQC.wastageType,
+          wastagePure: currentWastagePure,
+          netWeight: currentNetWeight,
+          finalPurity: currentFinalPurity,
+          actualPurity: currentActualPurity,
+        }
+      });
 
-      source: selectedProduct.stockType === "PRODUCT" ? "GOLDSMITH" : "ITEM_PURCHASE",
+      setOpenSendDialog(false);
+      setSelectedGoldsmith("");
+      setReason("");
+      toast.success("Sent to repair successfully");
 
-      productId: selectedProduct.id,
-
-      goldsmithId: selectedGoldsmith || null,
-
-      reason: reason || null,
-
-      repairProduct: {
-        ...selectedProduct,
-        weight: repairQC.itemWeight,
-        count: repairQC.count,
-        stoneWeight: repairQC.stoneWeight,
-        touch: repairQC.touch,
-        wastageValue: repairQC.wastageValue,
-        wastageType: repairQC.wastageType,
-        wastagePure: currentWastagePure,
-        netWeight: currentNetWeight,
-        finalPurity: currentFinalPurity,
-        actualPurity: currentActualPurity,
-      }
-
-    });
-
-    setOpenSendDialog(false);
-    setSelectedGoldsmith("");
-    setReason("");
-
-    await fetchProductStock();
-    await fetchItemPurchaseStock();
+      await fetchProductStock();
+      await fetchItemPurchaseStock();
+    } catch (err) {
+      toast.error("Failed to send to repair");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -185,17 +205,35 @@ const ProductStock = () => {
         <h2 className="stock-heading" style={{ margin: "0 0 12px 0" }}>
           Stock Management – Repair Module
         </h2>
-        <TextField
-          size="small"
-          label="Search (Item / Item Wt / Touch)"
-          variant="outlined"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(0);
-          }}
-          sx={{ width: "350px" }}
-        />
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <TextField
+            size="small"
+            label="Search (Item / Item Wt / Touch)"
+            variant="outlined"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+            sx={{ width: "350px" }}
+          />
+          <Button
+            variant="contained"
+            size="small"
+            sx={{
+              backgroundColor: "#d32f2f",
+              color: "white",
+              '&:hover': { backgroundColor: "#c62828" },
+              height: "40px"
+            }}
+            onClick={() => {
+              setSearch("");
+              isFirstLoad.current = true;
+            }}
+          >
+            Reset
+          </Button>
+        </Box>
       </div>
 
 
@@ -264,6 +302,7 @@ const ProductStock = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
+          rowsPerPageOptions={[10, 25, 50, 100]}
         />
 
       </div>
@@ -482,10 +521,10 @@ const ProductStock = () => {
 
           <Button
             variant="contained"
-            disabled={!selectedGoldsmith}
+            disabled={!selectedGoldsmith || isSaving}
             onClick={handleSend}
           >
-            Confirm
+            {isSaving ? "Processing..." : "Confirm"}
           </Button>
         </DialogActions>
 

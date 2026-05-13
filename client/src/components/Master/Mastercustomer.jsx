@@ -42,6 +42,7 @@ function MasterCustomer() {
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowPerPage] = useState(10);
+  const isFirstLoad = useRef(true);
 
   const navigate = useNavigate();
   const nameRef = useRef(null);
@@ -59,6 +60,12 @@ function MasterCustomer() {
         if (response.ok) {
           const data = await response.json();
           setCustomers(data);
+          
+          if (isFirstLoad.current && data.length > 0) {
+            const lastPage = Math.floor((data.length - 1) / rowsPerPage);
+            setPage(lastPage);
+            isFirstLoad.current = false;
+          }
         }
       } catch (error) {
         console.error("Error fetching customers:", error);
@@ -167,7 +174,11 @@ function MasterCustomer() {
 
       if (response.ok) {
         const newCustomer = await response.json();
-        setCustomers((prev) => [...prev, newCustomer]);
+        const updatedCustomers = [...customers, newCustomer];
+        setCustomers(updatedCustomers);
+        
+        const newPage = Math.floor((updatedCustomers.length - 1) / rowsPerPage);
+        setPage(newPage);
         toast.success("Customer added successfully!");
         closeModal();
       } else {
@@ -193,7 +204,14 @@ function MasterCustomer() {
         );
 
         if (response.ok) {
-          setCustomers(customers.filter((customer) => customer.id !== id));
+          const updatedCustomers = customers.filter((customer) => customer.id !== id);
+          setCustomers(updatedCustomers);
+          
+          const maxPage = Math.max(0, Math.floor((updatedCustomers.length - 1) / rowsPerPage));
+          if (page > maxPage) {
+            setPage(maxPage);
+          }
+          
           toast.success("Customer deleted successfully!");
         } else {
           const errorData = await response.json();
@@ -224,6 +242,7 @@ function MasterCustomer() {
   };
 
   const handleUpdate = async () => {
+    if (saving) return;
     const phoneTrimmed = editedData.phone.trim();
     if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
       toast.error("Phone number must be 10 digits.");

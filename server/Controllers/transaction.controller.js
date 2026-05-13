@@ -30,7 +30,7 @@ const getAllTransactions = async (req, res) => {
     }
     const transactions = await prisma.transaction.findMany({
       where: { customerId: parseInt(customerId) },
-      orderBy: { id: "desc" },
+      orderBy: { id: "asc" },
     });
     res.status(200).json(transactions);
   } catch (error) {

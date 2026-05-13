@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -16,6 +16,8 @@ const Masteradditems = () => {
   const [editValue, setEditValue] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [isSaving, setIsSaving] = useState(false);
+  const isFirstLoad = useRef(true);
 
   // Regex: only letters, numbers, spaces allowed
   const validName = /^[a-zA-Z0-9\s]+$/;
@@ -27,37 +29,55 @@ const Masteradditems = () => {
   const fetchItems = async () => {
     try {
       const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-items`);
-      setItems(res.data);
+      const data = res.data;
+      setItems(data);
+
+      if (isFirstLoad.current && data.length > 0) {
+        const lastPage = Math.floor((data.length - 1) / rowsPerPage);
+        setPage(lastPage);
+        isFirstLoad.current = false;
+      }
     } catch (err) {
       console.error("Failed to fetch items", err);
     }
   };
 
   const handleAddItem = async () => {
-    if (itemName.trim()) {
-
-
-
-      if (!validName.test(itemName.trim())) {
-        toast.warn("Special characters are not allowed.", { autoClose: 2000 });
-        return;
-      }
-
-      try {
-        await axios.post(`${BACKEND_SERVER_URL}/api/master-items/create`, {
-          itemName: itemName.trim(),
-        });
-        setItemName("");
-        fetchItems();
-        toast.success("Item added successfully!");
-      } catch (err) {
-        console.error("Failed to add item", err);
-        toast.error(err.response?.data?.msg || "Something went wrong", {
-          autoClose: 2000,
-        });
-      }
-    } else {
+    if (!itemName.trim()) {
       toast.warn("Please enter item name.");
+      return;
+    }
+
+    if (!validName.test(itemName.trim())) {
+      toast.warn("Special characters are not allowed.", { autoClose: 2000 });
+      return;
+    }
+
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      const res = await axios.post(`${BACKEND_SERVER_URL}/api/master-items/create`, {
+        itemName: itemName.trim(),
+      });
+      setItemName("");
+
+      const newItem = res.data;
+      const updatedItems = [...items, newItem];
+      setItems(updatedItems);
+
+      // Jump to the last page to show the new item
+      const newPage = Math.max(0, Math.floor((updatedItems.length - 1) / rowsPerPage));
+      setPage(newPage);
+
+      toast.success("Item added successfully!");
+    } catch (err) {
+      console.error("Failed to add item", err);
+      toast.error(err.response?.data?.msg || "Something went wrong", {
+        autoClose: 2000,
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -65,8 +85,15 @@ const Masteradditems = () => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
         await axios.delete(`${BACKEND_SERVER_URL}/api/master-items/${id}`);
+        const updatedItems = items.filter((item) => item.id !== id);
+        setItems(updatedItems);
+
+        const maxPage = Math.max(0, Math.floor((updatedItems.length - 1) / rowsPerPage));
+        if (page > maxPage) {
+          setPage(maxPage);
+        }
+
         toast.success("Item deleted successfully!");
-        fetchItems();
       } catch (err) {
         console.error("Failed to delete item", err);
         toast.error("Failed to delete item. Please try again.");
@@ -93,6 +120,9 @@ const Masteradditems = () => {
       toast.warn("Special characters are not allowed.", { autoClose: 2000 });
       return;
     }
+
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       await axios.put(`${BACKEND_SERVER_URL}/api/master-items/${id}`, {
         itemName: editValue.trim(),
@@ -106,6 +136,8 @@ const Masteradditems = () => {
       toast.error(err.response?.data?.msg || "Something went wrong", {
         autoClose: 2000,
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -153,8 +185,9 @@ const Masteradditems = () => {
             }}
             variant="contained"
             onClick={handleAddItem}
+            disabled={isSaving}
           >
-            Add Item
+            {isSaving ? "Adding..." : "Add Item"}
           </Button>
         </div>
 
@@ -206,8 +239,9 @@ const Masteradditems = () => {
                                 cursor: "pointer",
                               }}
                               onClick={() => handleSaveEdit(item.id)}
+                              disabled={isSaving}
                             >
-                              Save
+                              {isSaving ? "..." : "Save"}
                             </button>
                             <button
                               style={{

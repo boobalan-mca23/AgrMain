@@ -74,11 +74,10 @@ const updateProductStock = async (req, res) => {
 };
 
 const addNetWeightToProduct = async (req, res) => {
-
   try {
-
     const {
-      productStockId,
+      stockId,      // Renamed from productStockId
+      stockType,    // New: PRODUCT or ITEM_PURCHASE
       purchaseStockId,
       addNetWeight
     } = req.body;
@@ -90,26 +89,18 @@ const addNetWeightToProduct = async (req, res) => {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-
       /* =============================
-         1️⃣ Fetch records
+         1️⃣ Fetch purchase record
       ============================= */
-
-      const product = await tx.productStock.findUnique({
-        where: { id: Number(productStockId) }
-      });
-
       const purchase = await tx.purchaseStock.findUnique({
         where: { id: Number(purchaseStockId) }
       });
 
-      if (!product || !purchase) {
-        throw new Error("Stock not found");
+      if (!purchase) {
+        throw new Error("Purchase stock not found");
       }
 
-      const purchaseNetWeight =
-        Number(purchase.netWeight || 0);
-
+      const purchaseNetWeight = Number(purchase.netWeight || 0);
       if (purchaseNetWeight < weight) {
         throw new Error("Insufficient purchase stock");
       }
@@ -117,121 +108,97 @@ const addNetWeightToProduct = async (req, res) => {
       /* =============================
          2️⃣ Reduce purchase netWeight
       ============================= */
-
-      const remainingWeight =
-        Number((purchaseNetWeight - weight).toFixed(3));
-
+      const remainingWeight = Number((purchaseNetWeight - weight).toFixed(3));
       await tx.purchaseStock.update({
-
         where: { id: purchase.id },
-
-        data: {
-          netWeight: remainingWeight
-        }
-
+        data: { netWeight: remainingWeight }
       });
 
-
       /* =============================
-         3️⃣ Update product gross weight
+         3️⃣ Handle different stock types
       ============================= */
-
-      const newItemWeight =
-        Number(product.itemWeight || 0) + weight;
-
-      const stoneWeight =
-        Number(product.stoneWeight || 0);
-
-      const netWeight =
-        Number((newItemWeight - stoneWeight).toFixed(3));
-
-
-      /* =============================
-         4️⃣ Keep touch SAME
-      ============================= */
-
-      const touch =
-        Number(product.touch || 0);
-
-
-      /* =============================
-         5️⃣ Recalculate purity
-      ============================= */
-
-      const actualPure =
-        Number(((netWeight * touch) / 100).toFixed(3));
-
-      let finalPurity = 0;
-
-      const wastage =
-        Number(product.wastageValue || 0);
-
-      const wastageType =
-        product.wastageType;
-
-      if (wastageType === "Touch") {
-
-        finalPurity =
-          (netWeight * wastage) / 100;
-
-      }
-
-      else if (wastageType === "%") {
-
-        const A =
-          (netWeight * wastage) / 100;
-
-        const B =
-          netWeight + A;
-
-        finalPurity =
-          (B * touch) / 100;
-
-      }
-
-      else if (wastageType === "+") {
-
-        const A =
-          netWeight + wastage;
-
-        finalPurity =
-          (A * touch) / 100;
-
-      }
-
-      finalPurity =
-        Number(finalPurity.toFixed(3));
-
-      const wastagePure =
-        Number((finalPurity - actualPure).toFixed(3));
-
-
-      /* =============================
-         6️⃣ Update product stock
-      ============================= */
-
-      const updatedProduct =
-        await tx.productStock.update({
-
-          where: { id: product.id },
-
-          data: {
-
-            itemWeight:
-              Number(newItemWeight.toFixed(3)),
-
-            netWeight,
-
-            finalPurity,
-
-            wastagePure
-
-          }
-
+      if (stockType === "ITEM_PURCHASE") {
+        const item = await tx.itemPurchaseEntry.findUnique({
+          where: { id: Number(stockId) }
         });
 
-      return updatedProduct;
+        if (!item) throw new Error("Item Purchase record not found");
 
+        const newItemWeight = Number(item.grossWeight || 0) + weight;
+        const netWeight = Number((newItemWeight - Number(item.stoneWeight || 0)).toFixed(3));
+        const touch = Number(item.touch || 0);
+        const actualPure = Number(((netWeight * touch) / 100).toFixed(3));
+
+        let finalPurity = 0;
+        const wastage = Number(item.wastage || 0);
+        const wastageType = item.wastageType;
+
+        if (wastageType === "Touch") {
+          finalPurity = (netWeight * wastage) / 100;
+        } else if (wastageType === "%") {
+          const A = (netWeight * wastage) / 100;
+          const B = netWeight + A;
+          finalPurity = (B * touch) / 100;
+        } else if (wastageType === "+") {
+          const A = netWeight + wastage;
+          finalPurity = (A * touch) / 100;
+        }
+
+        finalPurity = Number(finalPurity.toFixed(3));
+        const wastagePure = Number((finalPurity - actualPure).toFixed(3));
+
+        return await tx.itemPurchaseEntry.update({
+          where: { id: item.id },
+          data: {
+            grossWeight: Number(newItemWeight.toFixed(3)),
+            netWeight,
+            finalPurity,
+            wastagePure,
+            actualPure
+          }
+        });
+
+      } else {
+        // Default to PRODUCT
+        const product = await tx.productStock.findUnique({
+          where: { id: Number(stockId) }
+        });
+
+        if (!product) throw new Error("Product Stock record not found");
+
+        const newItemWeight = Number(product.itemWeight || 0) + weight;
+        const netWeight = Number((newItemWeight - Number(product.stoneWeight || 0)).toFixed(3));
+        const touch = Number(product.touch || 0);
+        const actualPure = Number(((netWeight * touch) / 100).toFixed(3));
+
+        let finalPurity = 0;
+        const wastage = Number(product.wastageValue || 0);
+        const wastageType = product.wastageType;
+
+        if (wastageType === "Touch") {
+          finalPurity = (netWeight * wastage) / 100;
+        } else if (wastageType === "%") {
+          const A = (netWeight * wastage) / 100;
+          const B = netWeight + A;
+          finalPurity = (B * touch) / 100;
+        } else if (wastageType === "+") {
+          const A = netWeight + wastage;
+          finalPurity = (A * touch) / 100;
+        }
+
+        finalPurity = Number(finalPurity.toFixed(3));
+        const wastagePure = Number((finalPurity - actualPure).toFixed(3));
+
+        return await tx.productStock.update({
+          where: { id: product.id },
+          data: {
+            itemWeight: Number(newItemWeight.toFixed(3)),
+            netWeight,
+            finalPurity,
+            wastagePure
+          }
+        });
+      }
     });
 
     res.json({
@@ -239,18 +206,10 @@ const addNetWeightToProduct = async (req, res) => {
       product: result
     });
 
-  }
-
-  catch (err) {
-
+  } catch (err) {
     console.error(err);
-
-    res.status(400).json({
-      err: err.message
-    });
-
+    res.status(400).json({ err: err.message });
   }
-
 };
 
 module.exports = {
