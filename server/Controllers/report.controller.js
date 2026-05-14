@@ -16,11 +16,11 @@ exports.getCustomerStatement = async (req, res) => {
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
     const dateFilter = {};
-    if (fromDate) dateFilter.gte = new Date(fromDate);
     if (toDate) dateFilter.lte = new Date(toDate);
 
     const filterObj = Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {};
     const createdAtFilter = Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {};
+    const sentDateFilter = Object.keys(dateFilter).length > 0 ? { sentDate: dateFilter } : {};
 
     // Fetch all related transactions
     const [bills, billReceived, receiptVouchers, transactions, returns, adjustments] = await Promise.all([
@@ -41,7 +41,7 @@ exports.getCustomerStatement = async (req, res) => {
         bill: {
           customer_id: parseInt(id)
         },
-        ...createdAtFilter
+        ...sentDateFilter
       },
       include: {
         bill: true,
@@ -290,8 +290,8 @@ exports.getCustomerStatement = async (req, res) => {
         const hmRed = hallmarkRate * reductionCount;
 
         let reasonStr = rep.reason ? ` - Reason: ${rep.reason}` : "";
-        let stoneWt = rep.stoneWeight || rep.orderItem?.stoneWeight || 0;
-        let stoneStr = stoneWt > 0 ? `, St.Wt: ${stoneWt}g` : "";
+        let stoneWt = rep.stoneWeight || ((Number(rep.grossWeight) || 0) - (Number(rep.netWeight) || 0)) || rep.orderItem?.stoneWeight || 0;
+        let stoneStr = stoneWt > 0 ? `, St.Wt: ${stoneWt.toFixed(3)}g` : "";
         let billingTouch = rep.percentage || rep.orderItem?.percentage || 100;
         let desc = `Sent for Repair: ${rep.itemName} (Gross Wt: ${rep.grossWeight}g${stoneStr}, FWT: ${fwtRed.toFixed(3)}g, Qty: ${reductionCount}, T: ${billingTouch}%)${reasonStr} - Bill #${rep.billId || rep.bill?.id || "N/A"}`;
         if (rep.reason) desc += ` - Reason: ${rep.reason}`;
@@ -402,6 +402,21 @@ exports.getCustomerStatement = async (req, res) => {
       entry.runningCash = currentCash;
       entry.runningHallmark = currentHallmark;
     });
+    
+    // Final Filtering by fromDate:
+    // We calculate the full history to ensure running balances are correct,
+    // but only return the rows the user requested.
+    if (fromDate) {
+      const startLimit = new Date(fromDate);
+      // Normalize to start of day
+      const startLimitTime = new Date(startLimit.getFullYear(), startLimit.getMonth(), startLimit.getDate()).getTime();
+      
+      ledger = ledger.filter(entry => {
+        const entryDate = new Date(entry.date);
+        const entryTime = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate()).getTime();
+        return entryTime >= startLimitTime;
+      });
+    }
 
     res.status(200).json({ 
       customerName: customer.name, 
@@ -429,7 +444,6 @@ exports.getGoldsmithStatement = async (req, res) => {
     if (!goldsmith) return res.status(404).json({ message: "Goldsmith not found" });
 
     const createdAtFilter = {};
-    if (fromDate) createdAtFilter.gte = new Date(fromDate);
     if (toDate) createdAtFilter.lte = new Date(toDate);
 
     const filterObj = Object.keys(createdAtFilter).length > 0 ? { createdAt: createdAtFilter } : {};
@@ -569,7 +583,7 @@ exports.getGoldsmithStatement = async (req, res) => {
     // Handle RepairStock (Sent & Returned)
     repairStock.forEach(rs => {
       // 1. Sent to Repair (Debit)
-      const isSentInRange = (!fromDate || rs.sentDate >= new Date(fromDate)) && (!toDate || rs.sentDate <= new Date(toDate));
+      const isSentInRange = (!toDate || rs.sentDate <= new Date(toDate));
       if (isSentInRange) {
         const stoneWtStr = rs.stoneWeight > 0 ? `, St.Wt: ${rs.stoneWeight}g` : "";
         const sourceLabel = (rs.source === "GOLDSMITH" || rs.source === "ITEM_PURCHASE") ? "Stock" : "Customer";
@@ -608,7 +622,7 @@ exports.getGoldsmithStatement = async (req, res) => {
 
       // 2. Returned from Repair (Credit)
       if (rs.status === "Returned" && rs.receivedDate) {
-        const isReceivedInRange = (!fromDate || rs.receivedDate >= new Date(fromDate)) && (!toDate || rs.receivedDate <= new Date(toDate));
+        const isReceivedInRange = (!toDate || rs.receivedDate <= new Date(toDate));
         if (isReceivedInRange) {
           const stoneWtStr = rs.stoneWeight > 0 ? `, St.Wt: ${rs.stoneWeight}g` : "";
           const sourceLabel = (rs.source === "GOLDSMITH" || rs.source === "ITEM_PURCHASE") ? "Stock" : "Customer";
@@ -702,6 +716,17 @@ exports.getGoldsmithStatement = async (req, res) => {
       entry.runningGold = runningGold;
     });
 
+    if (fromDate) {
+      const startLimit = new Date(fromDate);
+      const startLimitTime = new Date(startLimit.getFullYear(), startLimit.getMonth(), startLimit.getDate()).getTime();
+      
+      ledger = ledger.filter(entry => {
+        const entryDate = new Date(entry.date);
+        const entryTime = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate()).getTime();
+        return entryTime >= startLimitTime;
+      });
+    }
+
     res.status(200).json({ 
       goldsmithName: goldsmith.name, 
       ledger: ledger,
@@ -727,7 +752,6 @@ exports.getSupplierStatement = async (req, res) => {
     if (!supplier) return res.status(404).json({ message: "Supplier not found" });
 
     const createdAtFilter = {};
-    if (fromDate) createdAtFilter.gte = new Date(fromDate);
     if (toDate) createdAtFilter.lte = new Date(toDate);
 
     const filterObj = Object.keys(createdAtFilter).length > 0 ? { createdAt: createdAtFilter } : {};
@@ -932,6 +956,17 @@ exports.getSupplierStatement = async (req, res) => {
       }
       entry.afterBC = runningBC; entry.afterItem = runningItem; entry.afterCash = runningCash;
     });
+
+    if (fromDate) {
+      const startLimit = new Date(fromDate);
+      const startLimitTime = new Date(startLimit.getFullYear(), startLimit.getMonth(), startLimit.getDate()).getTime();
+      
+      ledger = ledger.filter(entry => {
+        const entryDate = new Date(entry.date);
+        const entryTime = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate()).getTime();
+        return entryTime >= startLimitTime;
+      });
+    }
 
     // RE-SORT for display: Latest at top — uses logical date, then createdAt sequence
     res.status(200).json({ 

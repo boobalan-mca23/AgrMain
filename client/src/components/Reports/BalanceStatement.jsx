@@ -34,7 +34,7 @@ const BalanceStatement = ({ typeOverride }) => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(15);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const isFirstLoad = useRef(true);
   
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -94,11 +94,12 @@ const BalanceStatement = ({ typeOverride }) => {
   const handlePrint = () => {
     const printContent = (
       <StatementPrint
-        data={data}
+        data={data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
         type={type}
         entityName={entityName}
         fromDate={fromDate?.format("DD/MM/YYYY")}
         toDate={toDate?.format("DD/MM/YYYY")}
+        startIndex={page * rowsPerPage}
       />
     );
 
@@ -599,29 +600,44 @@ const BalanceStatement = ({ typeOverride }) => {
 
       {/* Control Bar */}
       <Box className="statement-controls">
-        {/* <Box display="flex" gap={2} alignItems="center">
+        <Box display="flex" gap={2} alignItems="center">
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="From"
               value={fromDate}
-              onChange={setFromDate}
+              format="DD/MM/YYYY"
+              onChange={(val) => {
+                setFromDate(val);
+                setPage(0);
+              }}
               slotProps={{ textField: { size: "small", className: "date-field" } }}
             />
             <DatePicker
               label="To"
               value={toDate}
-              onChange={setToDate}
+              format="DD/MM/YYYY"
+              minDate={fromDate || undefined}
+              onChange={(val) => {
+                setToDate(val);
+                setPage(0);
+              }}
               slotProps={{ textField: { size: "small", className: "date-field" } }}
             />
           </LocalizationProvider>
           <Button 
+            variant="outlined"
             startIcon={<FilterAltIcon />} 
-            onClick={() => { setFromDate(null); setToDate(null); }}
+            onClick={() => { 
+              setFromDate(null); 
+              setToDate(null); 
+              isFirstLoad.current = true;
+            }}
             className="clear-filter-btn"
+            sx={{ height: "40px" }}
           >
-            Clear
+            Reset
           </Button>
-        </Box> */}
+        </Box>
         <Button 
           variant="contained" 
           startIcon={<PrintIcon />} 
@@ -636,52 +652,65 @@ const BalanceStatement = ({ typeOverride }) => {
       <TableContainer component={Paper} className="statement-table-paper">
         <Table stickyHeader size="small">
           <TableHead>
-            <TableRow>
-              <TableCell width="60px" align="center">S.No</TableCell>
-              <TableCell width="120px" align="center">Date</TableCell>
-              <TableCell width="140px" align="center">Type</TableCell>
-              <TableCell align="center">Description</TableCell>
-              
+            <TableRow className="statement-header-row">
+              <TableCell>S.No</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Type</TableCell>
+              <TableCell className="desc-cell-header">Description</TableCell>
               {type === "customer" && (
                 <>
-                  <TableCell align="center" className="col-group-start">Before Bal</TableCell>
-                  <TableCell align="center" className="col-pos">+</TableCell>
-                  <TableCell align="center" className="col-neg">-</TableCell>
-                  <TableCell align="center" className="col-total">Balance</TableCell>
-                  <TableCell align="center" className="col-group-start">Before HM</TableCell>
-                  <TableCell align="center" className="col-pos">+</TableCell>
-                  <TableCell align="center" className="col-neg">-</TableCell>
-                  <TableCell align="center" className="col-total">HM Balance</TableCell>
+                  <TableCell className="cell-before">Before Balance</TableCell>
+                  <TableCell align="right" className="cell-pos">Debit (+)</TableCell>
+                  <TableCell align="right" className="cell-neg">Credit (-)</TableCell>
+                  <TableCell align="right" className="cell-bal">Balance</TableCell>
+                  <TableCell className="cell-before">Before HM</TableCell>
+                  <TableCell align="right" className="cell-pos">HM (+)</TableCell>
+                  <TableCell align="right" className="cell-neg">HM (-)</TableCell>
+                  <TableCell align="right" className="cell-bal">HM Balance</TableCell>
                 </>
               )}
-              
               {type === "goldsmith" && (
                 <>
-                  <TableCell align="center" className="col-group-start">Before Gold</TableCell>
-                  <TableCell align="center" className="col-pos">+</TableCell>
-                  <TableCell align="center" className="col-neg">-</TableCell>
-                  <TableCell align="center" className="col-total">After Gold</TableCell>
+                  <TableCell className="cell-before">Before Gold</TableCell>
+                  <TableCell align="right" className="cell-pos">Gold (+)</TableCell>
+                  <TableCell align="right" className="cell-neg">Gold (-)</TableCell>
+                  <TableCell align="right" className="cell-bal">After Gold</TableCell>
                 </>
               )}
-              
               {type === "supplier" && (
                 <>
-                  <TableCell align="center" className="col-group-start">Before BC</TableCell>
-                  <TableCell align="center" className="col-pos">+</TableCell>
-                  <TableCell align="center" className="col-neg">-</TableCell>
-                  <TableCell align="center" className="col-total">BC Bal</TableCell>
-                  <TableCell align="center" className="col-group-start">Before Item</TableCell>
-                  <TableCell align="center" className="col-pos">+</TableCell>
-                  <TableCell align="center" className="col-neg">-</TableCell>
-                  <TableCell align="center" className="col-total">Item Bal</TableCell>
+                  <TableCell className="cell-before">Before BC</TableCell>
+                  <TableCell align="right" className="cell-pos">BC (+)</TableCell>
+                  <TableCell align="right" className="cell-neg">BC (-)</TableCell>
+                  <TableCell align="right" className="cell-bal">After BC</TableCell>
+                  <TableCell className="cell-before">Before Item</TableCell>
+                  <TableCell align="right" className="cell-pos">Item (+)</TableCell>
+                  <TableCell align="right" className="cell-neg">Item (-)</TableCell>
+                  <TableCell align="right" className="cell-bal">After Item</TableCell>
                 </>
               )}
-              
-              <TableCell align="center" width="80px">Action</TableCell>
+              <TableCell align="center">Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
+            {(() => {
+              const currentPageData = data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+              const pageTotals = currentPageData.reduce((acc, row) => ({
+                debitAmount: acc.debitAmount + (Number(row.debitAmount) || 0),
+                creditAmount: acc.creditAmount + (Number(row.creditAmount) || 0),
+                debitHallmark: acc.debitHallmark + (Number(row.debitHallmark) || 0),
+                creditHallmark: acc.creditHallmark + (Number(row.creditHallmark) || 0),
+                debitGold: acc.debitGold + (Number(row.debitGold) || 0),
+                creditGold: acc.creditGold + (Number(row.creditGold) || 0),
+                debitBC: acc.debitBC + (Number(row.debitBC) || 0),
+                creditBC: acc.creditBC + (Number(row.creditBC) || 0),
+                debitItem: acc.debitItem + (Number(row.debitItem) || 0),
+                creditItem: acc.creditItem + (Number(row.creditItem) || 0),
+              }), { debitAmount: 0, creditAmount: 0, debitHallmark: 0, creditHallmark: 0, debitGold: 0, creditGold: 0, debitBC: 0, creditBC: 0, debitItem: 0, creditItem: 0 });
+
+              return (
+                <>
+                  {currentPageData.map((row, index) => (
               <TableRow key={index} hover className={`${row.type === "Opening" ? "row-opening" : ""} ${row.isManualAdjustment ? "row-adjustment" : ""}`}>
                 <TableCell align="center" className="cell-sno">{index + 1 + (page * rowsPerPage)}</TableCell>
                 <TableCell className="cell-date">{new Date(row.date).toLocaleDateString("en-GB")}</TableCell>
@@ -747,11 +776,71 @@ const BalanceStatement = ({ typeOverride }) => {
               </TableRow>
             ))}
             
-            {/* Totals Row */}
+            {/* Page Totals Row */}
+            {data.length > 0 && (
+              <TableRow sx={{ backgroundColor: "#fafafa", fontStyle: "italic" }}>
+                <TableCell colSpan={4} align="right" sx={{ fontWeight: "600", color: "#666", pr: 4 }}>Page Totals</TableCell>
+                {type === "customer" && (
+                  <>
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#4caf50", opacity: 0.8 }}>
+                      {formatVal(pageTotals.debitAmount)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#f44336", opacity: 0.8 }}>
+                      {formatVal(pageTotals.creditAmount)}
+                    </TableCell>
+                    <TableCell className="cell-bal"></TableCell>
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#4caf50", opacity: 0.8 }}>
+                      {formatVal(pageTotals.debitHallmark)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#f44336", opacity: 0.8 }}>
+                      {formatVal(pageTotals.creditHallmark)}
+                    </TableCell>
+                    <TableCell className="cell-bal"></TableCell>
+                  </>
+                )}
+                {type === "goldsmith" && (
+                  <>
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#4caf50", opacity: 0.8 }}>
+                      {formatVal(pageTotals.debitGold)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#f44336", opacity: 0.8 }}>
+                      {formatVal(pageTotals.creditGold)}
+                    </TableCell>
+                    <TableCell className="cell-bal"></TableCell>
+                  </>
+                )}
+                {type === "supplier" && (
+                  <>
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#4caf50", opacity: 0.8 }}>
+                      {formatVal(pageTotals.debitBC)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#f44336", opacity: 0.8 }}>
+                      {formatVal(pageTotals.creditBC)}
+                    </TableCell>
+                    <TableCell className="cell-bal"></TableCell>
+                    <TableCell className="cell-before"></TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#4caf50", opacity: 0.8 }}>
+                      {formatVal(pageTotals.debitItem)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: "bold", color: "#f44336", opacity: 0.8 }}>
+                      {formatVal(pageTotals.creditItem)}
+                    </TableCell>
+                    <TableCell className="cell-bal"></TableCell>
+                  </>
+                )}
+                <TableCell></TableCell>
+              </TableRow>
+            )}
+            
+            {/* Overall Totals Row */}
             {data.length > 0 && (
               <TableRow sx={{ backgroundColor: "#f5f5f5", fontWeight: "bold" }}>
                 <TableCell colSpan={4} align="right" sx={{ fontWeight: "bold" }}>
-                  TOTALS
+                  Overall Totals
                 </TableCell>
                 
                 {type === "customer" && (
@@ -823,16 +912,22 @@ const BalanceStatement = ({ typeOverride }) => {
                 <TableCell></TableCell>
               </TableRow>
             )}
-          </TableBody>
+          </>
+        );
+      })()}
+    </TableBody>
         </Table>
         <TablePagination
-          rowsPerPageOptions={[15, 30, 50]}
+          rowsPerPageOptions={[10, 25, 50, 100]}
           component="div"
           count={data.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={(e, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
         />
       </TableContainer>
 

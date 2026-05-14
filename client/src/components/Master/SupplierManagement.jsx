@@ -60,6 +60,8 @@ function SupplierManagement() {
   const [form, setForm] = useState(initialForm);
   const [moduleTransactions, setModuleTransactions] = useState({ bc: 0, item: 0, general: 0 });
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const navigate = useNavigate();
 
   // Menu-related states
@@ -129,6 +131,7 @@ function SupplierManagement() {
     );
 
     setFilteredSuppliers(filtered);
+    setPage(0); // Reset to first page when filtering
 
   };
 
@@ -385,10 +388,10 @@ function SupplierManagement() {
             )}
 
 
-            {filteredSuppliers.map((supplier, index) => (
+            {filteredSuppliers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((supplier, index) => (
 
               <tr key={supplier.id}>
-                <td style={{ textAlign: "center" }}>{index + 1}</td>
+                <td style={{ textAlign: "center" }}>{page * rowsPerPage + index + 1}</td>
                 <td style={{ textAlign: "center" }}>{supplier.name}</td>
                 <td style={{ textAlign: "center" }}>{supplier.contactNumber || "-"}</td>
                 <td style={{ textAlign: "center" }}>{supplier.address || "-"}</td>
@@ -428,6 +431,19 @@ function SupplierManagement() {
           </tbody>
 
         </table>
+
+        <TablePagination
+          component="div"
+          count={filteredSuppliers.length}
+          page={page}
+          onPageChange={(e, p) => setPage(p)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={[5, 10, 25, 50]}
+        />
 
       </Paper>
 

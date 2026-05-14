@@ -123,7 +123,7 @@ function ItemPurchaseEntry() {
 
   const [receiveSearch, setReceiveSearch] = useState("");
   const [receivePage, setReceivePage] = useState(0);
-  const [receiveRowsPerPage] = useState(5);
+  const [receiveRowsPerPage, setReceiveRowsPerPage] = useState(5);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const isFirstLoad = useRef(true);
@@ -388,11 +388,15 @@ function ItemPurchaseEntry() {
 
     const wastagePure = round3(finalPurity - actualPure);
 
-    // ✅ FIX: calculate only when finalPurity exists
+    // ✅ FIX: calculate gold balance for both item entries and advance-only entries
     let goldBalance = obj.goldBalance;
 
-    if (finalPurity > 0)
+    if (finalPurity > 0) {
       goldBalance = round3(advance - finalPurity);
+    } else if (advance > 0 && !obj.itemName && gross === 0 && touch === 0) {
+      // If it's an advance-only entry (no item info), balance is the advance gold itself
+      goldBalance = advance;
+    }
 
     return {
       netWeight,
@@ -505,8 +509,20 @@ function ItemPurchaseEntry() {
       advanceTouch: form.advanceTouch ? Number(form.advanceTouch) : null,
     };
 
-    if (!payload.itemName || !payload.grossWeight || !payload.touch) {
-      toast.error("Please fill all mandatory fields (Item Name, Gross Weight, Touch)");
+    const isAdvanceFilled = payload.advanceGold > 0 && payload.advanceTouch;
+    const isItemDataPartiallyFilled = payload.itemName || payload.grossWeight > 0 || payload.touch > 0;
+
+    if (isItemDataPartiallyFilled) {
+      if (!payload.itemName || !payload.grossWeight || !payload.touch) {
+        toast.error("Please fill all mandatory item fields (Item Name, Gross Weight, Touch)");
+        return;
+      }
+    } else if (isAdvanceFilled) {
+      // Advance only entry - set default item name for database consistency
+      payload.itemName = "Advance Gold";
+      payload.count = 0;
+    } else {
+      toast.error("Please provide either Item details or Advance Gold details");
       return;
     }
 
@@ -709,9 +725,10 @@ function ItemPurchaseEntry() {
             label="Filter by Item Name"
             size="small"
             value={itemFilter}
-            onChange={(e) =>
-              setItemFilter(e.target.value)
-            }
+            onChange={(e) => {
+              setItemFilter(e.target.value);
+              setPage(0);
+            }}
             variant="outlined"
             style={{ minWidth: 200 }}
           />
@@ -721,7 +738,10 @@ function ItemPurchaseEntry() {
             label="Status Filter"
             size="small"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
             variant="outlined"
             style={{ minWidth: 160 }}
           >
@@ -737,7 +757,10 @@ function ItemPurchaseEntry() {
             <ButtonGroup size="small">
               <Button
                 variant={valueView === "initial" ? "contained" : "outlined"}
-                onClick={() => setValueView("initial")}
+                onClick={() => {
+                  setValueView("initial");
+                  setPage(0);
+                }}
                 style={{
                   borderRadius: "20px 0 0 20px",
                   textTransform: "none",
@@ -748,7 +771,10 @@ function ItemPurchaseEntry() {
               </Button>
               <Button
                 variant={valueView === "current" ? "contained" : "outlined"}
-                onClick={() => setValueView("current")}
+                onClick={() => {
+                  setValueView("current");
+                  setPage(0);
+                }}
                 style={{
                   borderRadius: "0 20px 20px 0",
                   textTransform: "none",
@@ -768,9 +794,10 @@ function ItemPurchaseEntry() {
             label="Touch"
             size="small"
             value={touchFilter}
-            onChange={(e) =>
-              setTouchFilter(e.target.value)
-            }
+            onChange={(e) => {
+              setTouchFilter(e.target.value);
+              setPage(0);
+            }}
             style={{ minWidth: 150 }}
           >
             <MenuItem value="">All Touches</MenuItem>
@@ -842,7 +869,7 @@ function ItemPurchaseEntry() {
                   <tr key={e.id}>
                     <td>{page * rowsPerPage + i + 1}</td>
                     <td style={{ fontWeight: "500" }}>{e.itemName}</td>
-                    <td style={{ textAlign: "center" }}>{e.count || 1}</td>
+                    <td style={{ textAlign: "center" }}>{e.count ?? 1}</td>
                     <td>{displayGross}</td>
                     <td>{displayStone}</td>
                     <td>{displayNet}</td>
@@ -1327,12 +1354,16 @@ function ItemPurchaseEntry() {
               </tbody>
             </table>
             <TablePagination
-              rowsPerPageOptions={[5]}
+              rowsPerPageOptions={[5, 10]}
               component="div"
               count={selectedEntryForReceive?.receivedGold?.length || 0}
               rowsPerPage={receiveRowsPerPage}
               page={receivePage}
               onPageChange={(e, p) => setReceivePage(p)}
+              onRowsPerPageChange={(e) => {
+                setReceiveRowsPerPage(parseInt(e.target.value, 10));
+                setReceivePage(0);
+              }}
             />
           </div>
         </DialogContent>
