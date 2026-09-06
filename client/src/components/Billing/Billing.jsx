@@ -74,7 +74,7 @@ const Billing = () => {
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    const updateTime = () => {
       if (isEditMode) return; // preserve original bill date/time during editing
       const now = new Date();
       setDate(now.toLocaleDateString("en-IN"));
@@ -85,7 +85,8 @@ const Billing = () => {
           hour12: true,
         })
       );
-    }, 1000);
+    };
+    const timer = setInterval(updateTime, 60000);
     return () => clearInterval(timer);
   }, [isEditMode]);
 
@@ -96,7 +97,15 @@ const Billing = () => {
 
   const [selectedFilter, setSelectedFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 150);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   const [billDetailRows, setBillDetailRows] = useState([]); // Bill items
   const [billHallmark, setBillHallmark] = useState("");
@@ -812,13 +821,12 @@ const Billing = () => {
       setHallmarkQty(0);
       setSelectedProductCounts({});
       //to fecth new bills
-      await fetchAllBills();
-      await fetchCustomers();
-      // await fetchLastBill();
-      //much faster but little slower
-      // setBills(prev => [resJson.bill, ...(prev || [])]);
-      await fetchProductStock();
-      await fetchItemPurchaseStock();
+      await Promise.all([
+        fetchAllBills(),
+        fetchCustomers(),
+        fetchProductStock(),
+        fetchItemPurchaseStock(),
+      ]);
       toast.success("Bill saved successfully!");
     } catch (error) {
       console.error("Error saving bill:", error);
@@ -938,10 +946,12 @@ const Billing = () => {
         navigate(-1);
       }
 
-      await fetchAllBills();
-      await fetchCustomers();
-      await fetchProductStock();
-      await fetchItemPurchaseStock();
+      await Promise.all([
+        fetchAllBills(),
+        fetchCustomers(),
+        fetchProductStock(),
+        fetchItemPurchaseStock(),
+      ]);
 
       toast.success("Bill updated successfully!");
     } catch (error) {
@@ -972,7 +982,6 @@ const Billing = () => {
   }, [visibleRows, isEditMode]);
 
   const FWT = useMemo(() => visibleRows.reduce((total, row) => total + (toNumber(row.fwt) || 0), 0), [visibleRows]);
-  console.log("FWT Calculation:", FWT);
   const { billDetailsProfit, stoneProfit, totalBillProfit, billProfitPercentage } = useMemo(() => {
     let detailsProfit = 0;
     let stoneProfitCalc = 0;
@@ -1100,28 +1109,22 @@ const Billing = () => {
 
   const handleSearch = (e) => {
     const searchValue = e.target.value.toLowerCase();
-    setSearchTerm(searchValue);
-    applyFilters(searchValue, selectedFilter);
+    setSearchInput(searchValue);
   };
 
   const handleFilterChange = (e) => {
     const filterValue = e.target.value;
     setSelectedFilter(filterValue);
-    applyFilters(searchTerm, filterValue);
   };
 
-  const applyFilters = (search, filter) => {
-    // Logic moved to unifiedStock useMemo
-  };
-
-  const getUniqueProductNames = () => {
+  const uniqueProductNames = useMemo(() => {
     const combined = [
       ...(availableProducts?.allStock || []),
       ...(itemPurchaseProducts || [])
     ];
     const uniqueNames = [...new Set(combined.map((product) => product.itemName))];
     return uniqueNames.sort();
-  };
+  }, [availableProducts, itemPurchaseProducts]);
 
   const handleReset = () => {
     try {
@@ -1129,6 +1132,8 @@ const Billing = () => {
       // setRows([]);
       setSelectedCustomer(null);
       setBillHallmark("");
+      setSearchInput("");
+      setSearchTerm("");
       setTime(new Date().toLocaleTimeString("en-IN", {
         hour: "2-digit",
         minute: "2-digit",
@@ -2147,7 +2152,7 @@ const Billing = () => {
               label="Search by Name/Touch"
               variant="outlined"
               size="small"
-              value={searchTerm}
+              value={searchInput}
               onChange={handleSearch}
               placeholder="Search name or touch value"
             />
@@ -2159,7 +2164,7 @@ const Billing = () => {
                 onChange={handleFilterChange}
               >
                 <MenuItem value="">All Products</MenuItem>
-                {getUniqueProductNames().map((productName) => (
+                {uniqueProductNames.map((productName) => (
                   <MenuItem key={productName} value={productName}>{productName}</MenuItem>
                 ))}
               </Select>

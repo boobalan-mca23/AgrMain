@@ -187,9 +187,6 @@ const NotificationBell = () => {
     }
   };
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
 
   useEffect(() => {
   fetchNotifications(); 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import {
   Container,
   Paper,
@@ -89,10 +89,16 @@ const Goldsmith = () => {
   };
 
   useEffect(() => {
-    const fetchGoldsmiths = async () => {
+    const fetchAllData = async () => {
       try {
-        const response = await fetch(`${BACKEND_SERVER_URL}/api/goldsmith`);
-        const data = await response.json();
+        const [goldsmithRes, masterItemsRes, touchRes, wastageRes] = await Promise.all([
+          fetch(`${BACKEND_SERVER_URL}/api/goldsmith`).then((r) => r.json()).catch(() => []),
+          axios.get(`${BACKEND_SERVER_URL}/api/master-items/`).catch(() => ({ data: [] })),
+          axios.get(`${BACKEND_SERVER_URL}/api/master-touch`).catch(() => ({ data: [] })),
+          axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`).catch(() => ({ data: [] })),
+        ]);
+
+        const data = goldsmithRes || [];
         setGoldsmith(data);
 
         // If first load, jump to last page
@@ -101,47 +107,34 @@ const Goldsmith = () => {
           setPage(lastPage);
           isFirstLoad.current = false;
         }
+
+        setDropDownItems((prev) => ({
+          ...prev,
+          masterItems: masterItemsRes.data || [],
+          touchList: touchRes.data || [],
+          masterWastage: wastageRes.data || [],
+        }));
       } catch (error) {
-        console.error("Error fetching goldsmith data:", error);
-      }
-    };
-    const fetchMasterItems = async () => {
-      const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-items/`);
-      setDropDownItems((prev) => ({ ...prev, masterItems: res.data }));
-    };
-    const fetchTouch = async () => {
-      try {
-        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-touch`);
-        setDropDownItems((prev) => ({ ...prev, touchList: res.data }));
-      } catch (err) {
-        console.error("Failed to fetch touch values", err);
-      }
-    };
-    const fetchWastageVal = async () => {
-      try {
-        const res = await axios.get(`${BACKEND_SERVER_URL}/api/master-wastage`);
-        console.log("wastage fecth test:", res.data);
-        setDropDownItems((prev) => ({ ...prev, masterWastage: res.data }));
-      } catch (err) {
-        console.error("Failed to fetch touch values", err);
+        console.error("Error fetching goldsmith page data:", error);
       }
     };
 
-    fetchWastageVal();
     fetchRawGold();
-    fetchMasterItems();
-    fetchTouch();
-    fetchGoldsmiths();
+    fetchAllData();
   }, []);
 
-  const filteredGoldsmith = goldsmith.filter((gs) => {
-    const nameMatch =
-      gs.name && gs.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const phoneMatch = gs.phone && gs.phone.includes(searchTerm);
-    const addressMatch =
-      gs.address && gs.address.toLowerCase().includes(searchTerm.toLowerCase());
-    return nameMatch || phoneMatch || addressMatch;
-  });
+  const filteredGoldsmith = useMemo(() => {
+    if (!searchTerm) return goldsmith;
+    const term = searchTerm.toLowerCase();
+    return goldsmith.filter((gs) => {
+      const nameMatch =
+        gs.name && gs.name.toLowerCase().includes(term);
+      const phoneMatch = gs.phone && gs.phone.includes(searchTerm);
+      const addressMatch =
+        gs.address && gs.address.toLowerCase().includes(term);
+      return nameMatch || phoneMatch || addressMatch;
+    });
+  }, [goldsmith, searchTerm]);
   const handleCloseJobcard = () => {
     fetchRawGold();
     setOpen(false);

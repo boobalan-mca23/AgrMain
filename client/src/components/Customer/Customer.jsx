@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import {
   Container,
   Paper,
@@ -61,17 +61,21 @@ const Customer = () => {
     fetchCustomers();
   }, []);
 
-  const filteredCustomers = customers.filter((customer) => {
-    const nameMatch =
-      customer.name &&
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const phoneMatch = customer.phone && customer.phone.includes(searchTerm);
-    const addressMatch =
-      customer.address &&
-      customer.address.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCustomers = useMemo(() => {
+    if (!searchTerm) return customers;
+    const term = searchTerm.toLowerCase();
+    return customers.filter((customer) => {
+      const nameMatch =
+        customer.name &&
+        customer.name.toLowerCase().includes(term);
+      const phoneMatch = customer.phone && customer.phone.includes(searchTerm);
+      const addressMatch =
+        customer.address &&
+        customer.address.toLowerCase().includes(term);
 
-    return nameMatch || phoneMatch || addressMatch;
-  });
+      return nameMatch || phoneMatch || addressMatch;
+    });
+  }, [customers, searchTerm]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -82,10 +86,12 @@ const Customer = () => {
     setPage(0);
   };
 
-  const paginatedCustomers = filteredCustomers.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const paginatedCustomers = useMemo(() => {
+    return filteredCustomers.slice(
+      page * rowsPerPage,
+      page * rowsPerPage + rowsPerPage
+    );
+  }, [filteredCustomers, page, rowsPerPage]);
 
   // Reset to first page when searching
   useEffect(() => {

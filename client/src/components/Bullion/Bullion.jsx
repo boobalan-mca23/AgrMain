@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
@@ -64,14 +64,20 @@ const Bullion = () => {
     setPage(0);
   };
 
-  const filteredData = allData.filter((item) =>
-    item.bullion?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredData = useMemo(() => {
+    if (!searchQuery) return allData;
+    const query = searchQuery.toLowerCase();
+    return allData.filter((item) =>
+      item.bullion?.name?.toLowerCase().includes(query)
+    );
+  }, [allData, searchQuery]);
 
-  const paginatedData = filteredData.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const paginatedData = useMemo(() => {
+    return filteredData.slice(
+      page * rowsPerPage,
+      page * rowsPerPage + rowsPerPage
+    );
+  }, [filteredData, page, rowsPerPage]);
 
   const openDialog = async (editData = null) => {
     setOpen(true);

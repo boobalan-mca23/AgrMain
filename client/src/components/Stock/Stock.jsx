@@ -147,7 +147,7 @@ const Stock = () => {
     });
   };
 
-  const grouped = groupByTouch(stockData);
+  const grouped = useMemo(() => groupByTouch(stockData), [stockData]);
 
   const paginatedData = stockData.slice(
     page * rowsPerPage,

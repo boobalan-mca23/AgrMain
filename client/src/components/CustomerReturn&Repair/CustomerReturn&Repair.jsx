@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import {
   Box,
   Button,
@@ -236,44 +236,43 @@ const CustomerReturn = () => {
 
 
 
-  const filteredBills = bills.filter((bill) => {
-
-    const searchValue = search.toLowerCase();
-    // const allReturned = bill.orders?.every(item => item.repairStatus === "RETURNED");
-    // if (allReturned) return false;
-
-    const matchesSearch =
-      !search ||
-      bill.id.toString().includes(searchValue) ||
-      bill.customers?.name?.toLowerCase().includes(searchValue) ||
-      bill.orders?.some(item =>
-        item.productName?.toLowerCase().includes(searchValue)
-      );
-
-    const billDateLocal = bill.date ? dayjs(bill.date) : null;
-
+  const filteredBills = useMemo(() => {
+    const searchValue = search ? search.toLowerCase() : "";
     // Normalize bounds to ignore time comparison errors
     const from = fromDate ? fromDate.startOf("day") : null;
     const to = toDate ? toDate.endOf("day") : null;
 
-    const matchesFrom = !from || (billDateLocal && (billDateLocal.isAfter(from) || billDateLocal.isSame(from, "day")));
-    const matchesTo = !to || (billDateLocal && (billDateLocal.isBefore(to) || billDateLocal.isSame(to, "day")));
+    return bills.filter((bill) => {
+      const matchesSearch =
+        !searchValue ||
+        (bill.id && bill.id.toString().includes(searchValue)) ||
+        (bill.customers?.name && bill.customers.name.toLowerCase().includes(searchValue)) ||
+        (bill.orders && bill.orders.some(item =>
+          item.productName && item.productName.toLowerCase().includes(searchValue)
+        ));
 
-    return matchesSearch && matchesFrom && matchesTo;
-  }).sort((a, b) => {
-    // ALWAYS Oldest First (Ascending)
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    if (dateA - dateB !== 0) return dateA - dateB;
-    return (a.id || 0) - (b.id || 0);
-  });
+      const billDateLocal = bill.date ? dayjs(bill.date) : null;
+      const matchesFrom = !from || (billDateLocal && (billDateLocal.isAfter(from) || billDateLocal.isSame(from, "day")));
+      const matchesTo = !to || (billDateLocal && (billDateLocal.isBefore(to) || billDateLocal.isSame(to, "day")));
+
+      return matchesSearch && matchesFrom && matchesTo;
+    }).sort((a, b) => {
+      // ALWAYS Oldest First (Ascending)
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      if (dateA - dateB !== 0) return dateA - dateB;
+      return (a.id || 0) - (b.id || 0);
+    });
+  }, [bills, search, fromDate, toDate]);
 
 
   // ================= PAGINATION =================
-  const paginatedBills = filteredBills.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const paginatedBills = useMemo(() => {
+    return filteredBills.slice(
+      page * rowsPerPage,
+      page * rowsPerPage + rowsPerPage
+    );
+  }, [filteredBills, page, rowsPerPage]);
 
 
   useEffect(() => {
