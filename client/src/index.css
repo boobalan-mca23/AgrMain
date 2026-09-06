@@ -19,6 +19,12 @@ code {
     monospace;
 }
 
+/* Ensure all native select and option elements are crisp and visible across all platforms */
+select, option {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
 /* Fix MUI DatePicker selected date visibility */
 .MuiPickersDay-root.Mui-selected {
   color: #ffffff !important;

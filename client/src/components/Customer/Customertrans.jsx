@@ -14,7 +14,9 @@ import {
   Button,
   Box,
   TablePagination,
-  IconButton
+  IconButton,
+  Select,
+  MenuItem
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -376,18 +378,38 @@ const Customertrans = () => {
               </div>
 
               <div className="form-group">
-                <label>Type:</label>
-                <select
+                <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Type:</label>
+                <Select
                   name="type"
                   value={newTransaction.type}
-                  onChange={handleChange}
-                  required
+                  onChange={(e) => handleChange({ target: { name: "type", value: e.target.value } })}
+                  size="small"
+                  fullWidth
+                  sx={{
+                    backgroundColor: "#fff",
+                    borderRadius: "4px",
+                    textAlign: "left",
+                    "& .MuiSelect-select": {
+                      padding: "8px 12px",
+                      color: "#111827",
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        zIndex: 99999,
+                        maxHeight: 260,
+                      },
+                    },
+                  }}
                 >
-                  <option value="Select">Select</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Cash RTGS">Cash RTGS</option>
-                  <option value="Gold">Gold</option>
-                </select>
+                  <MenuItem value="Select">
+                    <em>Select Type</em>
+                  </MenuItem>
+                  <MenuItem value="Cash">Cash</MenuItem>
+                  <MenuItem value="Cash RTGS">Cash RTGS</MenuItem>
+                  <MenuItem value="Gold">Gold</MenuItem>
+                </Select>
               </div>
 
               {(newTransaction.type === "Cash" || newTransaction.type === "Cash RTGS") && (
