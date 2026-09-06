@@ -1,7 +1,6 @@
-const { PrismaClient } = require("@prisma/client");
 const { itemPurchaseToRawGold, deleteItemPurchaseFromRawGold, receiveGoldToStock, setTotalRawGold } = require("../Utils/addRawGoldStock");
 
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
 
 
 // =============================

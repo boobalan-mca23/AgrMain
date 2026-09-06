@@ -1,9 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../Middleware/auth.middleware");
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
 
 router.get("/users", verifyToken, async (req, res) => {
   try {

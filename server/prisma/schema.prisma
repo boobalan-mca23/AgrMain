@@ -83,6 +83,8 @@ model Transaction {
 
   @@index([customerId], map: "Transaction_customerId_fkey")
   @@index([logId], map: "Transaction_logId_fkey")
+  @@index([date])
+  @@index([createdAt])
 }
 
 model Entry {
@@ -100,6 +102,8 @@ model Entry {
   rawGoldLogs RawGoldLogs? @relation(fields: [logId], references: [id])
 
   @@index([logId], map: "Entry_logId_fkey")
+  @@index([date])
+  @@index([createdAt])
 }
 
 model customer_order {
@@ -456,6 +460,9 @@ model Bill {
   returnLogs         returnLogs[]
 
   @@index([customer_id], map: "Bill_customer_id_fkey")
+  @@index([date])
+  @@index([createdAt])
+  @@index([customer_id, date])
 }
 
 model OrderItems {
@@ -531,6 +538,8 @@ model receiptVoucher {
 
   @@index([customer_id], map: "receiptVoucher_customer_id_fkey")
   @@index([logId], map: "receiptVoucher_logId_fkey")
+  @@index([date])
+  @@index([createdAt])
 }
 
 model customerBillBalance {
@@ -656,6 +665,8 @@ model ItemPurchaseEntry {
 
   @@index([advanceLogId], map: "item_purchase_entries_advanceLogId_fkey")
   @@index([supplierId], map: "item_purchase_entries_supplierId_fkey")
+  @@index([isSold, isBilled])
+  @@index([moveTo])
   @@map("item_purchase_entries")
 }
 
@@ -734,6 +745,8 @@ model RepairStock {
   @@index([goldsmithId])
   @@index([billId])
   @@index([orderItemId])
+  @@index([status])
+  @@index([sentDate])
   @@map("repairstock")
 }
 

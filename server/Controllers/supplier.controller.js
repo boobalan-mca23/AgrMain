@@ -1,5 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
+const { getOrSetCache, invalidateCache } = require("../Utils/cache");
 
 module.exports = {
   createSupplier: async (req, res) => {
@@ -18,6 +18,7 @@ module.exports = {
           openingItemBalance: openingItemBalance ? Number(openingItemBalance) : 0,
         },
       });
+      invalidateCache("suppliers_list");
       return res.json(sup);
     } catch (err) {
       console.error(err);
@@ -27,68 +28,70 @@ module.exports = {
 
   getSuppliers: async (req, res) => {
     try {
-      const suppliers = await prisma.supplier.findMany({
-        include: {
-          purchaseEntries: {
-            include: {
-              receivedGold: true
+      const list = await getOrSetCache("suppliers_list", async () => {
+        const suppliers = await prisma.supplier.findMany({
+          include: {
+            purchaseEntries: {
+              include: {
+                receivedGold: true
+              }
+            },
+            itemPurchaseEntries: {
+              include: {
+                receivedGold: true
+              }
             }
           },
-          itemPurchaseEntries: {
-            include: {
-              receivedGold: true
-            }
-          }
-        },
-        orderBy: { name: "asc" }
-      });
+          orderBy: { name: "asc" }
+        });
 
-      // Fetch all adjustments for these suppliers
-      const adjustments = await prisma.balanceAdjustment.findMany({
-        where: { entityType: "SUPPLIER" }
-      });
+        // Fetch all adjustments for these suppliers
+        const adjustments = await prisma.balanceAdjustment.findMany({
+          where: { entityType: "SUPPLIER" }
+        });
 
-      const list = suppliers.map(s => {
-        const initialBC = Number(s.openingBCBalance || 0);
-        const initialItem = Number(s.openingItemBalance || 0);
-        const initialGeneral = Number(s.openingBalance || 0);
+        return suppliers.map(s => {
+          const initialBC = Number(s.openingBCBalance || 0);
+          const initialItem = Number(s.openingItemBalance || 0);
+          const initialGeneral = Number(s.openingBalance || 0);
 
-        const currentBC = s.purchaseEntries.reduce((sum, e) => {
-          const received = e.receivedGold.reduce((rSum, r) => rSum + r.weight, 0);
-          return sum + (e.goldBalance - received);
-        }, 0);
-
-        const currentItem = s.itemPurchaseEntries
-          .filter(e => {
-            const isReturned = e.moveTo === "returned";
-            const isValidSource = ["PURCHASE", "CUSTOMER_RETURN"].includes(e.source) || !e.source;
-            return isValidSource && !isReturned;
-          })
-          .reduce((sum, e) => {
+          const currentBC = s.purchaseEntries.reduce((sum, e) => {
             const received = e.receivedGold.reduce((rSum, r) => rSum + r.weight, 0);
             return sum + (e.goldBalance - received);
           }, 0);
 
-        // Add Adjustments
-        const supAdjustments = adjustments.filter(a => a.entityId === s.id);
-        const adjBC = supAdjustments.reduce((sum, a) => sum + (a.bcAmount || 0), 0);
-        const adjItem = supAdjustments.reduce((sum, a) => sum + (a.itemAmount || 0), 0);
-        const adjCash = supAdjustments.reduce((sum, a) => sum + (a.cashAmount || 0), 0);
+          const currentItem = s.itemPurchaseEntries
+            .filter(e => {
+              const isReturned = e.moveTo === "returned";
+              const isValidSource = ["PURCHASE", "CUSTOMER_RETURN"].includes(e.source) || !e.source;
+              return isValidSource && !isReturned;
+            })
+            .reduce((sum, e) => {
+              const received = e.receivedGold.reduce((rSum, r) => rSum + r.weight, 0);
+              return sum + (e.goldBalance - received);
+            }, 0);
 
-        const totalBC = initialBC + currentBC + adjBC;
-        const totalItem = initialItem + currentItem + adjItem;
-        const totalCash = initialGeneral + adjCash;
-        const grandTotal = totalCash + totalBC + totalItem;
+          // Add Adjustments
+          const supAdjustments = adjustments.filter(a => a.entityId === s.id);
+          const adjBC = supAdjustments.reduce((sum, a) => sum + (a.bcAmount || 0), 0);
+          const adjItem = supAdjustments.reduce((sum, a) => sum + (a.itemAmount || 0), 0);
+          const adjCash = supAdjustments.reduce((sum, a) => sum + (a.cashAmount || 0), 0);
 
-        // Remove the large relation objects before sending to client
-        const { purchaseEntries, itemPurchaseEntries, ...rest } = s;
-        return {
-          ...rest,
-          totalBCBalance: Number(totalBC.toFixed(3)),
-          totalItemBalance: Number(totalItem.toFixed(3)),
-          totalBalance: Number(grandTotal.toFixed(3)),
-          totalCashBalance: Number(totalCash.toFixed(3))
-        };
+          const totalBC = initialBC + currentBC + adjBC;
+          const totalItem = initialItem + currentItem + adjItem;
+          const totalCash = initialGeneral + adjCash;
+          const grandTotal = totalCash + totalBC + totalItem;
+
+          // Remove the large relation objects before sending to client
+          const { purchaseEntries, itemPurchaseEntries, ...rest } = s;
+          return {
+            ...rest,
+            totalBCBalance: Number(totalBC.toFixed(3)),
+            totalItemBalance: Number(totalItem.toFixed(3)),
+            totalBalance: Number(grandTotal.toFixed(3)),
+            totalCashBalance: Number(totalCash.toFixed(3))
+          };
+        });
       });
 
       res.json(list);
@@ -194,6 +197,8 @@ module.exports = {
         await prisma.balanceAdjustment.create({ data: adjustmentData });
       }
 
+      invalidateCache("suppliers_list");
+
       res.status(200).json(updated);
     } catch (err) {
       console.error(err);
@@ -205,6 +210,7 @@ module.exports = {
     try {
       const id = Number(req.params.id);
       await prisma.supplier.delete({ where: { id }});
+      invalidateCache("suppliers_list");
       res.json({ msg: "Deleted" });
     } catch (err) {
       res.status(500).json({ msg: "Server error", error: err.message });

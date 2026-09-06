@@ -1,5 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
+const { getOrSetCache, invalidateCache } = require("../Utils/cache");
 
 exports.createItem = async (req, res) => {
   const { itemName } = req.body;
@@ -18,6 +18,7 @@ exports.createItem = async (req, res) => {
         itemName,
       },
     });
+    invalidateCache("master_items");
     res.status(201).json(newItem);
   } catch (err) {
     console.error("Error creating item:", err);
@@ -27,9 +28,11 @@ exports.createItem = async (req, res) => {
 
 exports.getItems = async (req, res) => {
   try {
-    const items = await prisma.masterItem.findMany({
-      orderBy: { id: "asc" },
-    });
+    const items = await getOrSetCache("master_items", () =>
+      prisma.masterItem.findMany({
+        orderBy: { id: "asc" },
+      })
+    );
     res.json(items);
   } catch (err) {
     console.error("Error fetching items:", err);
@@ -50,6 +53,7 @@ exports.updateItem = async (req, res) => {
       where: { id: parseInt(id) },
       data: { itemName: itemName.trim() },
     });
+    invalidateCache("master_items");
 
     res.json(updatedItem);
   } catch (err) {
@@ -73,6 +77,7 @@ exports.deleteItem = async (req, res) => {
     await prisma.masterItem.delete({
       where: { id: parseInt(id) },
     });
+    invalidateCache("master_items");
 
     res.status(200).json({ message: "Item deleted successfully" });
   } catch (error) {

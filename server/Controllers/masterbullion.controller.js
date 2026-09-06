@@ -1,5 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
+const { getOrSetCache, invalidateCache } = require("../Utils/cache");
 
 exports.createBullion = async (req, res) => {
   const { name, phone, address } = req.body;
@@ -16,6 +16,8 @@ exports.createBullion = async (req, res) => {
         address: address || null,
       },
     });
+    invalidateCache("master_bullions");
+
     res.status(201).json(newBullion);
   } catch (error) {
     console.error("Create Bullion Error:", error); 
@@ -28,7 +30,9 @@ exports.createBullion = async (req, res) => {
   
 exports.getAllBullion = async (req, res) => {
   try {
-    const bullion = await prisma.masterBullion.findMany();
+    const bullion = await getOrSetCache("master_bullions", () =>
+      prisma.masterBullion.findMany()
+    );
     res.status(200).json(bullion);
   } catch (error) {
     res.status(500).json({ message: "Error fetching bullion", error });
@@ -61,6 +65,8 @@ exports.updateBullion = async (req, res) => {
         address,
       },
     });
+    invalidateCache("master_bullions");
+
     res.status(200).json(updatedBullion);
   } catch (error) {
     res.status(500).json({ message: "Error updating bullion", error });
@@ -73,6 +79,8 @@ exports.deleteBullion = async (req, res) => {
     await prisma.masterBullion.delete({
       where: { id: parseInt(id) },
     });
+    invalidateCache("master_bullions");
+
     res.status(200).json({ message: "Bullion deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting bullion", error });

@@ -1,5 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
+const { getOrSetCache, invalidateCache } = require("../Utils/cache");
 
 const createTouch = async (req, res) => {
   const { touch } = req.body;
@@ -32,19 +32,16 @@ const createTouch = async (req, res) => {
       },
       
     });
+    invalidateCache("master_touches");
       
     return res.status(201).json(newTouch);
-
-    
-    
-    
-
-  
 };
 
 const getTouch = async (req, res) => {
   try {
-    const touches = await prisma.masterTouch.findMany();
+    const touches = await getOrSetCache("master_touches", () =>
+      prisma.masterTouch.findMany()
+    );
     res.json(touches);
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -61,6 +58,7 @@ const updateTouch =  async (req, res) => {
       where: { id: parseInt(id) },
       data: { touch: parseFloat(touch) },
     });
+    invalidateCache("master_touches");
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: "Touch Already Exist" });
@@ -81,6 +79,8 @@ const deleteTouch = async (req, res) => {
     await prisma.masterTouch.delete({
       where: { id: touchId },
     });
+
+    invalidateCache("master_touches");
 
     res.json({ message: "Touch value deleted" });
   } catch (err) {

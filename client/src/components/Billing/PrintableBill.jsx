@@ -24,6 +24,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
     totalHallmark,
     FWT,
     TotalFWT,
+    isEditMode,
   } = props;
 
   const styles = {
@@ -81,7 +82,7 @@ const PrintableBill = React.forwardRef((props, ref) => {
               <strong>Bill No:</strong> {billNo}
             </p>
             <p style={styles.billInfoItem}>
-              <strong>Customer Name:</strong> {selectedCustomer.name || selectedCustomer || "null"}
+              <strong>Customer Name:</strong> {selectedCustomer?.name || (typeof selectedCustomer === "string" ? selectedCustomer : "") || "N/A"}
             </p>
           </div>
           <div>

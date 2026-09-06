@@ -1,5 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
+const { getOrSetCache, invalidateCache } = require("../Utils/cache");
  
 const createWastage = async (req, res) => {
   const { wastage } = req.body;
@@ -22,13 +22,16 @@ const createWastage = async (req, res) => {
       data: { wastage: parsedWastage },
       
     });
+    invalidateCache("master_wastages");
       
     return res.status(201).json(newWastage);
 };
  
 const getWastage = async (req, res) => {
   try {
-    const wastages = await prisma.masterWastage.findMany();
+    const wastages = await getOrSetCache("master_wastages", () =>
+      prisma.masterWastage.findMany()
+    );
     res.json(wastages);
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -60,6 +63,7 @@ const updateWastage = async (req, res) => {
       where: { id: parseInt(id) },
       data: { wastage: parsedWastage },
     });
+    invalidateCache("master_wastages");
  
     res.json(updated);
   } catch (err) {
@@ -75,6 +79,8 @@ const deleteWastage =  async (req, res) => {
     await prisma.masterWastage.delete({
       where: { id: parseInt(id) },
     });
+    invalidateCache("master_wastages");
+
     res.json({ message: "Wastage value deleted" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete Wastage value" });

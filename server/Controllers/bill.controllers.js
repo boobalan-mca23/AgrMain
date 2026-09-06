@@ -1,5 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
 const addRawGold = require("../Utils/addRawGoldStock");
 const getCustomerBal = require("../Utils/getCustomerBalance");
 // createBill
@@ -91,8 +90,8 @@ const createBill = async (req, res) => {
 
     const nextBillNo = lastBill ? (lastBill.billno || lastBill.id) + 1 : 1;
 
-    const billPureEffect = parseFloat(pureBalance) - parseFloat(prevBalance);
-    const billHallmarkEffect = parseFloat(hallmarkBalance) - parseFloat(prevHallmark);
+    const billPureEffect = (parseFloat(pureBalance) || 0) - (parseFloat(prevBalance) || 0);
+    const billHallmarkEffect = (parseFloat(hallmarkBalance) || 0) - (parseFloat(prevHallmark) || 0);
     let newBill;
 
     await prisma.$transaction(async (tx) => {
@@ -103,17 +102,17 @@ const createBill = async (req, res) => {
           time: time,
           customername: customername,
           hallmarkQty: parseFloat(hallmarkQty) || 0,
-          cashBalance: parseFloat(cashBalance),
+          cashBalance: parseFloat(cashBalance) || 0,
           customer_id: parseInt(customerId),
-          billAmount: parseFloat(billTotal),
-          hallMark: parseFloat(hallMark),
-          prevHallMark: parseFloat(prevHallmark),
-          PrevBalance: parseFloat(prevBalance),
-          billPureEffect,
-          billHallmarkEffect,
-          billDetailsprofit: parseFloat(billDetailsprofit),
-          Stoneprofit: parseFloat(Stoneprofit),
-          Totalprofit: parseFloat(Totalprofit),
+          billAmount: parseFloat(billTotal) || 0,
+          hallMark: parseFloat(hallMark) || 0,
+          prevHallMark: parseFloat(prevHallmark) || 0,
+          PrevBalance: parseFloat(prevBalance) || 0,
+          billPureEffect: isNaN(billPureEffect) ? 0 : billPureEffect,
+          billHallmarkEffect: isNaN(billHallmarkEffect) ? 0 : billHallmarkEffect,
+          billDetailsprofit: parseFloat(billDetailsprofit) || 0,
+          Stoneprofit: parseFloat(Stoneprofit) || 0,
+          Totalprofit: parseFloat(Totalprofit) || 0,
           orders: { create: modifiyOrders },
         },
         include: {
@@ -403,10 +402,10 @@ const updateBill = async (req, res) => {
 
     // new bill effect
     const newPureEffect =
-      parseFloat(pureBalance) - parseFloat(prevBalance);
+      (parseFloat(pureBalance) || 0) - (parseFloat(prevBalance) || 0);
 
     const newHallEffect =
-      parseFloat(hallmarkBalance) - parseFloat(prevHallmark);
+      (parseFloat(hallmarkBalance) || 0) - (parseFloat(prevHallmark) || 0);
 
     // compute new overall balances
     const updatedPureBalance =

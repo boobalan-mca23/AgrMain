@@ -1,6 +1,5 @@
 
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
 const transToRawGold=require('../Utils/addRawGoldStock')
 const {directTouch}=require('../Utils/directTouch')
 const createTransaction = async (req, res) => {

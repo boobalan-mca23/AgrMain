@@ -1,6 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
 
 const setTotalRawGold = async (tx = prisma) => {
   // 1. Get all raw gold stocks
