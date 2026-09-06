@@ -49,18 +49,31 @@ const { autoUpdater } = require("electron-updater");
 const isWindows = process.platform === "win32";
 const isMac = process.platform === "darwin";
 
-// Detect Wine environment
-const isWine = Object.keys(process.env).some(key => key.toUpperCase().startsWith("WINE")) || 
-               (process.env.PATH && process.env.PATH.includes("/.wine"));
+// Detect Wine environment robustly across standard Wine, PortProton, Lutris, Bottles, Flatpak
+const isWine = 
+  Object.keys(process.env).some(key => key.toUpperCase().startsWith("WINE")) || 
+  (process.env.PATH && process.env.PATH.includes("/.wine")) ||
+  !!process.env.PORTPROTON ||
+  !!process.env.WINEPREFIX ||
+  !!process.env.WINELOADER ||
+  !!process.env.WINESERVER ||
+  (process.platform === "win32" && (
+    fs.existsSync("C:\\windows\\system32\\wineboot.exe") ||
+    fs.existsSync("Z:\\proc\\version") ||
+    fs.existsSync("Z:\\home")
+  ));
 
 if (isWine) {
   console.log("[Electron Main] Wine environment detected. Disabling hardware acceleration for stability.");
   app.disableHardwareAcceleration();
   app.commandLine.appendSwitch("disable-gpu");
-  app.commandLine.appendSwitch("disable-software-rasterizer");
   app.commandLine.appendSwitch("disable-gpu-compositing");
   app.commandLine.appendSwitch("disable-gpu-rasterization");
   app.commandLine.appendSwitch("disable-gpu-sandbox");
+} else {
+  // In native desktop environments, enable hardware rasterization and zero-copy for fluid rendering
+  app.commandLine.appendSwitch("enable-gpu-rasterization");
+  app.commandLine.appendSwitch("enable-zero-copy");
 }
 
 // Single-instance lock to prevent port collisions and database corruption
@@ -620,33 +633,12 @@ async function createMainWindow() {
       nodeIntegration: false,
       webSecurity: true,
       backgroundThrottling: false,
+      spellcheck: false,
     }
   });
 
   // Trigger or re-initialize startup tasks concurrently
   startInitialization();
-
-  // Handle keyboard zoom events (Ctrl+ / Ctrl- / Ctrl0)
-  mainWindow.webContents.on("before-input-event", (event, input) => {
-    if (input.type === "keyDown" && (input.control || input.meta)) {
-      if (input.key === "=" || input.key === "+") {
-        const currentZoom = mainWindow.webContents.getZoomLevel();
-        if (currentZoom < 4) {
-          mainWindow.webContents.setZoomLevel(currentZoom + 0.5);
-        }
-        event.preventDefault();
-      } else if (input.key === "-") {
-        const currentZoom = mainWindow.webContents.getZoomLevel();
-        if (currentZoom > -2) {
-          mainWindow.webContents.setZoomLevel(currentZoom - 0.5);
-        }
-        event.preventDefault();
-      } else if (input.key === "0") {
-        mainWindow.webContents.setZoomLevel(0);
-        event.preventDefault();
-      }
-    }
-  });
 
   // Determine environment and load page
   const isDev = !app.isPackaged && (process.env.NODE_ENV === "development" || process.argv.includes("--dev"));
@@ -861,6 +853,7 @@ function registerIpcHandlers() {
         preload: path.join(__dirname, "preload.js"),
         contextIsolation: true,
         nodeIntegration: false,
+        spellcheck: false,
       },
       ...options,
     });
