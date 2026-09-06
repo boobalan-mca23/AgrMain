@@ -36,9 +36,20 @@ export default function TitleBar() {
     if (!isElectron) return;
     syncMaximized();
 
+    let timeoutId = null;
+    const handleResize = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        syncMaximized();
+      }, 100);
+    };
+
     // Re-sync on resize (covers maximize/unmaximize via OS or double-click)
-    window.addEventListener("resize", syncMaximized);
-    return () => window.removeEventListener("resize", syncMaximized);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      window.removeEventListener("resize", handleResize);
+    };
   }, [isElectron, syncMaximized]);
 
   if (!isElectron) return null;
