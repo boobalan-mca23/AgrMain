@@ -70,7 +70,9 @@ require("dotenv").config();
 const app = express();
 var morgan = require("morgan");
 const PORT = process.env.PORT || 5002;
-app.use(morgan("dev"));
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
 app.use(compression());
 
 app.use(cors({
