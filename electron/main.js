@@ -30,6 +30,33 @@
   });
 })();
 
+// File logging stream for Electron main process
+let mainLogStream = null;
+const origLog = console.log;
+const origWarn = console.warn;
+const origError = console.error;
+
+function writeMainLog(type, args) {
+  if (!mainLogStream) return;
+  try {
+    const text = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ");
+    mainLogStream.write(`[${new Date().toISOString()}] [${type}] ${text}\n`);
+  } catch (_) {}
+}
+
+console.log = function (...args) {
+  origLog.apply(console, args);
+  writeMainLog("INFO", args);
+};
+console.warn = function (...args) {
+  origWarn.apply(console, args);
+  writeMainLog("WARN", args);
+};
+console.error = function (...args) {
+  origError.apply(console, args);
+  writeMainLog("ERROR", args);
+};
+
 // Global safety error handlers for Electron main process
 process.on("uncaughtException", (err) => {
   console.error("[Electron Main] Uncaught Exception caught safely:", err);
@@ -184,6 +211,12 @@ function initializeEnvironment() {
   // Ensure log directory exists
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
+  }
+
+  if (!mainLogStream) {
+    try {
+      mainLogStream = fs.createWriteStream(path.join(logDir, "main.log"), { flags: "a" });
+    } catch (_) {}
   }
 
   if (fs.existsSync(defaultEnvPath)) {
@@ -352,6 +385,16 @@ function runPrismaMigrations() {
 
       let stdoutData = "";
       let stderrData = "";
+      let isSettled = false;
+
+      const migrationTimeout = setTimeout(() => {
+        if (!isSettled) {
+          isSettled = true;
+          console.warn("[Electron Main] Prisma migrate deploy timed out (6s limit). Continuing startup sequence...");
+          try { migrationProcess.kill(); } catch (_) {}
+          resolve(true);
+        }
+      }, 6000);
 
       migrationProcess.stdout.on("data", (data) => {
         stdoutData += data.toString();
@@ -362,6 +405,9 @@ function runPrismaMigrations() {
       });
 
       migrationProcess.on("close", (code) => {
+        if (isSettled) return;
+        isSettled = true;
+        clearTimeout(migrationTimeout);
         console.log(`[Electron Main] Prisma migration exited with code ${code}`);
         if (code === 0) {
           saveMigrationState();
@@ -383,6 +429,9 @@ function runPrismaMigrations() {
       });
 
       migrationProcess.on("error", (err) => {
+        if (isSettled) return;
+        isSettled = true;
+        clearTimeout(migrationTimeout);
         console.error("[Electron Main] Failed to spawn Prisma migration:", err);
         resolve(true);
       });
@@ -398,6 +447,16 @@ function runPrismaMigrations() {
 
       let stdoutData = "";
       let stderrData = "";
+      let isSettled = false;
+
+      const baselineTimeout = setTimeout(() => {
+        if (!isSettled) {
+          isSettled = true;
+          console.warn("[Electron Main] Prisma baseline resolve timed out (5s limit). Continuing startup sequence...");
+          try { baselineProcess.kill(); } catch (_) {}
+          resolve(true);
+        }
+      }, 5000);
 
       baselineProcess.stdout.on("data", (data) => {
         stdoutData += data.toString();
@@ -408,6 +467,9 @@ function runPrismaMigrations() {
       });
 
       baselineProcess.on("close", (code) => {
+        if (isSettled) return;
+        isSettled = true;
+        clearTimeout(baselineTimeout);
         console.log(`[Electron Main] Prisma baseline resolve exited with code ${code}`);
         if (code === 0) {
           console.log("[Electron Main] Initial migration resolved successfully. Retrying deploy...");
@@ -421,6 +483,9 @@ function runPrismaMigrations() {
       });
 
       baselineProcess.on("error", (err) => {
+        if (isSettled) return;
+        isSettled = true;
+        clearTimeout(baselineTimeout);
         console.error("[Electron Main] Failed to spawn Prisma baseline resolve:", err);
         resolve(true);
       });
@@ -433,11 +498,11 @@ function runPrismaMigrations() {
 // Check if Express backend server is alive
 function checkServerHealth(port = SERVER_PORT) {
   return new Promise((resolve) => {
-    const req = http.get(`http://localhost:${port}/`, (res) => {
+    const req = http.get(`http://127.0.0.1:${port}/`, (res) => {
       resolve(res.statusCode === 200 || res.statusCode === 304 || res.statusCode === 404);
     });
     req.on("error", () => resolve(false));
-    req.setTimeout(1000, () => {
+    req.setTimeout(800, () => {
       req.destroy();
       resolve(false);
     });
@@ -534,7 +599,7 @@ function stopExpressServer() {
   console.log("[Electron Main] Sending shutdown command to Express backend...");
   try {
     const req = http.request({
-      hostname: "localhost",
+      hostname: "127.0.0.1",
       port: SERVER_PORT,
       path: "/api/shutdown",
       method: "POST",
@@ -574,8 +639,8 @@ function stopExpressServer() {
   }
 }
 
-// Poll until server is ready (up to 32 seconds, checking every 80ms)
-function waitForServer(port = SERVER_PORT, retries = 400, intervalMs = 80) {
+// Poll until server is ready (up to 8 seconds, checking every 100ms)
+function waitForServer(port = SERVER_PORT, retries = 80, intervalMs = 100) {
   return new Promise((resolve) => {
     let attempts = 0;
     const check = () => {
@@ -586,7 +651,7 @@ function waitForServer(port = SERVER_PORT, retries = 400, intervalMs = 80) {
         } else if (++attempts < retries) {
           setTimeout(check, intervalMs);
         } else {
-          console.error(`[Electron Main] Server did not start after ${retries} attempts`);
+          console.warn(`[Electron Main] Server did not report ready after ${retries} attempts`);
           resolve(false);
         }
       });
@@ -606,8 +671,9 @@ function createSplashWindow() {
     height: 350,
     frame: false,
     resizable: false,
-    transparent: !isWine,
+    transparent: false, // Opaque to prevent alpha composition bugs under Wine/Linux/X11
     alwaysOnTop: true,
+    show: false, // Initially hidden to eliminate white flashes before first paint
     icon: iconPath,
     backgroundColor: "#0f0f1a",
     webPreferences: {
@@ -616,6 +682,16 @@ function createSplashWindow() {
       nodeIntegration: false,
     }
   });
+
+  const showSplash = () => {
+    if (splashWindow && !splashWindow.isDestroyed() && !splashWindow.isVisible()) {
+      splashWindow.show();
+    }
+  };
+
+  splashWindow.once("ready-to-show", showSplash);
+  splashWindow.webContents.once("did-finish-load", showSplash);
+  setTimeout(showSplash, 1500); // Safety fallback
 
   const splashPath = path.join(__dirname, "splash.html");
   splashWindow.loadFile(splashPath).catch((err) => {
@@ -691,41 +767,50 @@ async function createMainWindow() {
     mainWindow.webContents.once("did-fail-load", () => resolve(false));
   });
 
+  let transitioned = false;
+  const transitionToMain = () => {
+    if (transitioned || !mainWindow || mainWindow.isDestroyed()) return;
+    transitioned = true;
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+    }
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+    setTimeout(() => {
+      setupAutoUpdater();
+    }, 3000);
+  };
+
   Promise.all([rendererLoaded, serverPromise || Promise.resolve(true)])
     .then(([rendererSuccess, serverSuccess]) => {
       if (!mainWindow || mainWindow.isDestroyed()) return;
 
       if (rendererSuccess && serverSuccess) {
-        // Transition from splash screen to main window only when backend is ready
-        if (splashWindow && !splashWindow.isDestroyed()) {
-          splashWindow.close();
-        }
-        mainWindow.show();
-
-        // Delay non-critical tasks like auto updater until 3 seconds after transition
-        setTimeout(() => {
-          setupAutoUpdater();
-        }, 3000);
+        transitionToMain();
+      } else if (rendererSuccess && !serverSuccess) {
+        console.warn("[Electron Main] Backend server not yet confirmed ready, but frontend loaded. Showing main window.");
+        transitionToMain();
       } else {
         if (splashWindow && !splashWindow.isDestroyed()) {
           splashWindow.close();
         }
-        if (!serverSuccess) {
-          dialog.showErrorBox("Backend Server Failure", "Failed to connect to backend server. Please restart the application.");
-        } else {
-          dialog.showErrorBox("Startup Error", "Failed to load frontend resources. Please restart the application.");
-        }
+        dialog.showErrorBox("Startup Error", "Failed to load application frontend resources. Please restart the application.");
         app.quit();
       }
     })
     .catch((err) => {
       console.error("[Electron Main] Error during startup sequence:", err);
-      if (splashWindow && !splashWindow.isDestroyed()) {
-        splashWindow.close();
-      }
-      dialog.showErrorBox("Startup Failure", `An unexpected error occurred: ${err.message || err}`);
-      app.quit();
+      transitionToMain();
     });
+
+  // Safety fallback: Never keep splash screen visible longer than 6 seconds
+  setTimeout(() => {
+    if (!transitioned) {
+      console.warn("[Electron Main] Startup safety fallback timer fired (6s). Transitioning to main window.");
+      transitionToMain();
+    }
+  }, 6000);
 
   // Handle external links opening in user's browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
