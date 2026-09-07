@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 
 import { useLocation } from "react-router-dom";
@@ -298,35 +298,39 @@ const CustomerOrders = () => {
     if (customerId) fetchCustomerOrders();
   }, [customerId]);
 
-  const filteredOrders = orders.map(order => {
-    const filteredItems = order.items.filter(item => {
-      // Status filter
-      const matchesStatus = statusFilter === "All" || item.status === statusFilter;
+  const filteredOrders = useMemo(() => {
+    const searchTermLower = searchTerm ? searchTerm.toLowerCase() : "";
+    const start = fromDate ? new Date(fromDate) : null;
+    if (start) start.setHours(0, 0, 0, 0);
+    const end = toDate ? new Date(toDate) : null;
+    if (end) end.setHours(23, 59, 59, 999);
 
-      // Search filter
-      const searchTermLower = searchTerm.toLowerCase();
-      const matchesSearch = !searchTerm ||
-        item.itemName.toLowerCase().includes(searchTermLower) ||
-        item.description.toLowerCase().includes(searchTermLower) ||
-        (item.workerName && item.workerName.toLowerCase().includes(searchTermLower)) ||
-        order.displayIndex.toString().includes(searchTermLower) ||
-        `order #${order.displayIndex}`.toLowerCase().includes(searchTermLower);
+    return orders.map(order => {
+      const orderIndexStr = order.displayIndex != null ? order.displayIndex.toString() : "";
+      const orderHashStr = `order #${orderIndexStr}`.toLowerCase();
 
-      // Date filter
-      const itemDate = new Date(item.rawDueDate);
-      // Normalize dates to midnight for comparison
-      const start = fromDate ? new Date(fromDate) : null;
-      if (start) start.setHours(0, 0, 0, 0);
-      const end = toDate ? new Date(toDate) : null;
-      if (end) end.setHours(23, 59, 59, 999);
+      const filteredItems = order.items.filter(item => {
+        // Status filter
+        const matchesStatus = statusFilter === "All" || item.status === statusFilter;
 
-      const matchesFromDate = !start || itemDate >= start;
-      const matchesToDate = !end || itemDate <= end;
+        // Search filter
+        const matchesSearch = !searchTermLower ||
+          (item.itemName && item.itemName.toLowerCase().includes(searchTermLower)) ||
+          (item.description && item.description.toLowerCase().includes(searchTermLower)) ||
+          (item.workerName && item.workerName.toLowerCase().includes(searchTermLower)) ||
+          orderIndexStr.includes(searchTermLower) ||
+          orderHashStr.includes(searchTermLower);
 
-      return matchesStatus && matchesSearch && matchesFromDate && matchesToDate;
-    });
-    return { ...order, items: filteredItems };
-  }).filter(order => order.items.length > 0);
+        // Date filter
+        const itemDate = new Date(item.rawDueDate);
+        const matchesFromDate = !start || itemDate >= start;
+        const matchesToDate = !end || itemDate <= end;
+
+        return matchesStatus && matchesSearch && matchesFromDate && matchesToDate;
+      });
+      return { ...order, items: filteredItems };
+    }).filter(order => order.items.length > 0);
+  }, [orders, statusFilter, searchTerm, fromDate, toDate]);
 
   const handleOpenImageModal = (imageUrl) => {
     setSelectedImage(imageUrl);

@@ -1,16 +1,25 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webFrame } = require("electron");
+
+// Detect Wine environment locally without blocking synchronous IPC
+const isWine = Object.keys(process.env).some(key => key.toUpperCase().startsWith("WINE")) || 
+               (process.env.PATH && process.env.PATH.includes("/.wine")) ||
+               !!process.env.PORTPROTON ||
+               !!process.env.WINEPREFIX ||
+               !!process.env.WINELOADER;
 
 // Expose safe, isolated Electron API to the renderer process
 contextBridge.exposeInMainWorld("electronAPI", {
   isElectron: true,
   platform: process.platform,
-  isWine: ipcRenderer.sendSync("check-wine"),
+  isWine: !!isWine,
   minimizeWindow: () => ipcRenderer.send("window-minimize"),
   maximizeWindow: () => ipcRenderer.send("window-maximize"),
   closeWindow: () => ipcRenderer.send("window-close"),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   isMaximized: () => ipcRenderer.invoke("is-maximized"),
   checkServerHealth: () => ipcRenderer.invoke("check-server-health"),
+  getZoomLevel: () => webFrame.getZoomLevel(),
+  setZoomLevel: (level) => webFrame.setZoomLevel(level),
 
   // Auto-update: main process fires this when user clicked "Later" on the dialog.
   // `callback` receives the new version string e.g. "1.1.0"

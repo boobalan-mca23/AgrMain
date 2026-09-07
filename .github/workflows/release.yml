@@ -52,6 +52,8 @@ jobs:
 
       # Step 6: Build the React frontend into client/dist
       - name: Build React client
+        env:
+          VITE_BACKEND_SERVER_URL: "http://127.0.0.1:5002"
         run: npm run build
         working-directory: client
 

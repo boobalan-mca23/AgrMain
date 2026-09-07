@@ -5,6 +5,8 @@ import {
   Button,
   Box,
   Typography,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import axios from "axios";
 import { BACKEND_SERVER_URL } from "../../Config/Config";
@@ -435,16 +437,39 @@ const handleSaveReeceipt = async () => {
                       )}
                     </td>
                     <td>
-                      <select
+                      <Select
+                        size="small"
                         value={item.type}
+                        displayEmpty
                         onChange={(e) => handleChangeReceipt(index, "type", e.target.value)}
-                        className="receiptSelect"
+                        sx={{
+                          minWidth: 130,
+                          backgroundColor: "#fff",
+                          "& .MuiSelect-select": {
+                            padding: "6px 10px",
+                            fontSize: "0.9rem",
+                            textAlign: "left",
+                            color: "#111827",
+                          },
+                        }}
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              zIndex: 99999,
+                              maxHeight: 260,
+                            },
+                          },
+                        }}
                       >
-                        <option value="">Select Type</option>
+                        <MenuItem value="">
+                          <em>Select Type</em>
+                        </MenuItem>
                         {selectedType.map((option) => (
-                          <option key={option} value={option}>{option}</option>
+                          <MenuItem key={option} value={option}>
+                            {option}
+                          </MenuItem>
                         ))}
-                      </select>
+                      </Select>
                       <br />
                       {receiptErrors[index]?.type && (
                         <span className="error">{receiptErrors[index]?.type}</span>

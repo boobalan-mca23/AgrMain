@@ -1,6 +1,6 @@
 {
   "name": "agr-jewellery-desktop",
-  "version": "1.4.7",
+  "version": "1.4.9",
   "description": "AGR Jewellery Management Desktop Application",
   "main": "electron/main.js",
   "scripts": {
@@ -9,8 +9,8 @@
     "dev:client": "npm --prefix client run dev",
     "dev": "concurrently -k \"npm --prefix server run dev\" \"npm --prefix client run dev\" \"wait-on http://localhost:3000 && electron .\"",
     "build:client": "npm --prefix client run build",
-    "dist": "npm run build:client && electron-builder",
-    "dist:win": "npm run build:client && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
+    "dist": "npm run build:client && rimraf release && electron-builder",
+    "dist:win": "npm run build:client && rimraf release && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
     "release:patch": "npm version patch && git push && git push --tags",
     "release:minor": "npm version minor && git push && git push --tags",
     "release:major": "npm version major && git push && git push --tags"

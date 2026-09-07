@@ -1,5 +1,5 @@
 import React from "react";
-import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, useLocation, Outlet } from "react-router-dom";
 import Home from "./components/Home/Home";
 import Customer from "./components/Customer/Customer";
 import Goldsmith from "./components/Goldsmith/Goldsmith";
@@ -53,9 +53,29 @@ function App() {
     const unsubServer = window.electronAPI.onServerStatus((status) => setServerStatus(status));
     const unsubMigration = window.electronAPI.onMigrationStatus((status) => setMigrationStatus(status));
 
+    // Handle zoom controls without main-process IPC input interception
+    const handleZoomKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && window.electronAPI?.getZoomLevel && window.electronAPI?.setZoomLevel) {
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          const current = window.electronAPI.getZoomLevel();
+          if (current < 4) window.electronAPI.setZoomLevel(current + 0.5);
+        } else if (e.key === "-") {
+          e.preventDefault();
+          const current = window.electronAPI.getZoomLevel();
+          if (current > -2) window.electronAPI.setZoomLevel(current - 0.5);
+        } else if (e.key === "0") {
+          e.preventDefault();
+          window.electronAPI.setZoomLevel(0);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleZoomKeyDown);
+
     return () => {
       unsubServer();
       unsubMigration();
+      window.removeEventListener("keydown", handleZoomKeyDown);
     };
   }, [isElectron]);
 
@@ -239,230 +259,36 @@ function App() {
 
     <HashRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-
-        <Route
-          path="/customer"
-          element={
-            <PageWithNavbar>
-              <Customer />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/goldsmith"
-          element={
-            <PageWithNavbar>
-              <Goldsmith />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/goldsmithcard/:id/:name"
-          element={
-            <PageWithNavbar>
-              <JobCardDetails/>
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/expenseVoucher"
-          element={
-            <PageWithNavbar>
-             <ExpenseTracker/>
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/bill"
-          element={
-            <PageWithNavbar>
-              <Billing />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/bill-view/:billId"
-          element={
-            <PageWithNavbar>
-              <BillView />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/report"
-          element={
-            <PageWithNavbar>
-              <Report />
-            </PageWithNavbar>
-          }
-        />
-        {/* <Route
-          path="/repair"
-          element={
-            <PageWithNavbar>
-              <Repair />
-            </PageWithNavbar>
-          }
-        ></Route> */}
-        <Route
-          path="/repairgoldsmith"
-          element={
-            <PageWithNavbar>
-              <GoldsmithRepair />
-            </PageWithNavbar>
-          }
-        ></Route>
-        <Route
-          path="/customerreturn"
-          element={
-            <PageWithNavbar>
-              <CustomerReturn />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/returnstocklist"
-          element={
-            <PageWithNavbar>
-              <ReturnStockList />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/customerrepairstocklist"
-          element={
-            <PageWithNavbar>
-              <CustomerRepairStockList />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/repairstocklist"
-          element={
-            <PageWithNavbar>
-              <RepairStockList />
-            </PageWithNavbar>
-          }
-        ></Route>
-        <Route
-          path="/customerreport"
-          element={
-            <PageWithNavbar>
-              <CustomerReport />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/jewelstockreport"
-          element={
-            <PageWithNavbar>
-              <Jewelstockreport />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/overallreport"
-          element={
-            <PageWithNavbar>
-              <Overallreport />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/orderreport"
-          element={
-            <PageWithNavbar>
-              <Orderreport />
-            </PageWithNavbar>
-          }
-        ></Route>
-        <Route
-          path="/jobcardreport"
-          element={
-            <PageWithNavbar>
-              <Jobcardreport />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/receiptreport"
-          element={
-            <PageWithNavbar>
-              <ReceiptReport />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/receiptvoucher"
-          element={
-            <PageWithNavbar>
-              <Receipt />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/productstock"
-          element={
-            <PageWithNavbar>
-              <Stock />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/rawGoldStock"
-          element={
-            <PageWithNavbar>
-              <RawGoldStock/>
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/customertrans"
-          element={
-            <PageWithNavbar>
-              <Customertrans />
-            </PageWithNavbar>
-          }
-        />
-        <Route
-          path="/customerorders"
-          element={
-            <PageWithNavbar>
-              <Customerorders />
-            </PageWithNavbar>
-          }
-        />
-
-        <Route
-          path="/newjobcard/:id/:name"
-          element={
-            <PageWithNavbar>
-              <Newjobcard />
-            </PageWithNavbar>
-          }
-        />
-
-
-        <Route
-          path="/bullion"
-          element={
-            <PageWithNavbar>
-              <Bullion />
-            </PageWithNavbar>
-          }
-        ></Route>
-
-        <Route
-          path="/statement/:type/:id"
-          element={
-            <PageWithNavbar>
-              <BalanceStatement />
-            </PageWithNavbar>
-          }
-        />
-
-        <Route path="/master/*" element={<Master />} />
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/customer" element={<Customer />} />
+          <Route path="/goldsmith" element={<Goldsmith />} />
+          <Route path="/goldsmithcard/:id/:name" element={<JobCardDetails />} />
+          <Route path="/expenseVoucher" element={<ExpenseTracker />} />
+          <Route path="/bill" element={<Billing />} />
+          <Route path="/bill-view/:billId" element={<BillView />} />
+          <Route path="/report" element={<Report />} />
+          <Route path="/repairgoldsmith" element={<GoldsmithRepair />} />
+          <Route path="/customerreturn" element={<CustomerReturn />} />
+          <Route path="/returnstocklist" element={<ReturnStockList />} />
+          <Route path="/customerrepairstocklist" element={<CustomerRepairStockList />} />
+          <Route path="/repairstocklist" element={<RepairStockList />} />
+          <Route path="/customerreport" element={<CustomerReport />} />
+          <Route path="/jewelstockreport" element={<Jewelstockreport />} />
+          <Route path="/overallreport" element={<Overallreport />} />
+          <Route path="/orderreport" element={<Orderreport />} />
+          <Route path="/jobcardreport" element={<Jobcardreport />} />
+          <Route path="/receiptreport" element={<ReceiptReport />} />
+          <Route path="/receiptvoucher" element={<Receipt />} />
+          <Route path="/productstock" element={<Stock />} />
+          <Route path="/rawGoldStock" element={<RawGoldStock />} />
+          <Route path="/customertrans" element={<Customertrans />} />
+          <Route path="/customerorders" element={<Customerorders />} />
+          <Route path="/newjobcard/:id/:name" element={<Newjobcard />} />
+          <Route path="/bullion" element={<Bullion />} />
+          <Route path="/statement/:type/:id" element={<BalanceStatement />} />
+          <Route path="/master/*" element={<Master />} />
+        </Route>
       </Routes>
     </HashRouter>
     {/* Floating update badge — only visible in Electron when user deferred a major/minor update */}
@@ -471,17 +297,14 @@ function App() {
   );
 }
 
-function PageWithNavbar({ children }) {
+function AppLayout() {
   const location = useLocation();
-  const hideNavbarPaths = ["/"];
-  if (hideNavbarPaths.includes(location.pathname)) {
-    return children;
-  }
+  const hideNavbar = location.pathname === "/" || location.pathname.startsWith("/master");
 
   return (
     <>
-      <Navbar />
-      {children}
+      {!hideNavbar && <Navbar />}
+      <Outlet />
     </>
   );
 }
