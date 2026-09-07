@@ -234,6 +234,31 @@ function initializeEnvironment() {
   }
 }
 
+// Helper to compute a hash of Prisma schema and migrations to avoid redundant CLI spawns
+function getMigrationsHash() {
+  try {
+    let serverDir;
+    if (app.isPackaged) {
+      serverDir = path.join(process.resourcesPath, "../server");
+    } else {
+      serverDir = path.join(__dirname, "../server");
+    }
+    const schemaPath = path.join(serverDir, "prisma/schema.prisma");
+    const migrationsDir = path.join(serverDir, "prisma/migrations");
+    const hash = crypto.createHash("sha256");
+    if (fs.existsSync(schemaPath)) {
+      hash.update(fs.readFileSync(schemaPath));
+    }
+    if (fs.existsSync(migrationsDir)) {
+      const entries = fs.readdirSync(migrationsDir).sort();
+      hash.update(entries.join(";"));
+    }
+    return hash.digest("hex");
+  } catch (e) {
+    return null;
+  }
+}
+
 // Helper to check if migrations can be skipped
 function shouldSkipMigrations() {
   try {
@@ -246,9 +271,13 @@ function shouldSkipMigrations() {
     const currentVersion = app.getVersion();
     const currentDbUrl = process.env.DATABASE_URL || "";
     const dbUrlHash = crypto.createHash("sha256").update(currentDbUrl).digest("hex");
+    const migrationHash = getMigrationsHash();
 
-    if (state.lastVersion === currentVersion && state.lastDbUrlHash === dbUrlHash) {
-      console.log("[Electron Main] Skipping Prisma migrations as app version and database URL have not changed.");
+    if (
+      (state.lastVersion === currentVersion && state.lastDbUrlHash === dbUrlHash) ||
+      (migrationHash && state.lastMigrationHash === migrationHash && state.lastDbUrlHash === dbUrlHash)
+    ) {
+      console.log("[Electron Main] Skipping Prisma migrations as schema and database URL have not changed.");
       return true;
     }
   } catch (err) {
@@ -265,10 +294,12 @@ function saveMigrationState() {
     const currentVersion = app.getVersion();
     const currentDbUrl = process.env.DATABASE_URL || "";
     const dbUrlHash = crypto.createHash("sha256").update(currentDbUrl).digest("hex");
+    const migrationHash = getMigrationsHash();
 
     fs.writeFileSync(statePath, JSON.stringify({
       lastVersion: currentVersion,
-      lastDbUrlHash: dbUrlHash
+      lastDbUrlHash: dbUrlHash,
+      lastMigrationHash: migrationHash
     }, null, 2), "utf-8");
     console.log("[Electron Main] Migration state saved successfully.");
   } catch (err) {
